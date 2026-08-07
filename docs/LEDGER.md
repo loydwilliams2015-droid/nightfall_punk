@@ -1,101 +1,110 @@
-# nightfall!punk v0.1 Ledger
+# nightfall!punk master ledger
 
-## Locked decisions
+Versioning rule: **one flat version = one coherent development contract.** Git commits record fine-grained work. We do not create nested subversions.
+
+## Locked project decisions
 
 - [x] C + raylib
 - [x] Linux-first
 - [x] authoritative dedicated-server architecture from day one
-- [x] fixed-timestep simulation
+- [x] fixed 60 Hz simulation
 - [x] data-oriented ECS-lite direction
-- [x] 4-player target for now; possible 5 later
-- [x] full traversal target: walk, sprint, crouch, jump, crouch-jump/double-jump, mantle, vault, ladders, moving platforms
-- [x] mixed authored + seeded temple mechanisms
+- [x] four-player target for now; possible five later
 - [x] round-based matches
+- [x] mixed authored + seeded physical/temple mechanisms
 - [x] placeholder assets before original aesthetics
+- [x] direct confrontation is the gameplay emphasis
+- [x] rewards come from simple physical puzzles performed under combat pressure
+- [x] moderate tactical walk + fast sprint
+- [x] infinite sprint for now; contextual fatigue later
+- [x] crouch-jump enables a second jump
+- [x] waist/chest mantle; higher mantle needs momentum
+- [x] mild fall damage later for major drops only
+- [x] Fuzzy Rail = local geometric traversal intelligence
+- [x] Dynamic Affordance Graph = later utility + affordances + influence + blackboard
 
-## Contract A — Foundation
-- [x] repository initialized
-- [x] CMake build system
-- [x] shared world module
-- [x] dedicated-server entry point
-- [x] raylib client entry point
-- [x] world smoke test
-- [x] build helper script
-- [ ] CI
-- [ ] configuration loader
-- [ ] structured logging/assertions
+# v0.1 — Foundation — COMPLETE
 
-## Contract B — Core Engine
-- [x] entity ID type
-- [x] canonical world state
-- [x] actor storage
-- [x] fixed simulation tick constant
-- [ ] component pools / ECS-lite refinement
-- [ ] event queue
-- [ ] serialization
-- [ ] seeded RNG service
-- [ ] resource manager
+## Existing features retained and unified
+- [x] repository and CMake build
+- [x] shared simulation library
+- [x] headless dedicated-server executable
+- [x] raylib client executable
+- [x] canonical world/entity state
+- [x] smoke testing
+- [x] placeholder-only presentation policy
 
-## Contract C — Simulation / Traversal
-- [ ] gravity and grounded state
-- [ ] collision world
-- [ ] walk/sprint
-- [ ] crouch
-- [ ] jump
-- [ ] crouch-jump/double-jump
-- [ ] stairs/slopes
-- [ ] mantle/vault
-- [ ] ladders
-- [ ] moving platforms
-- [ ] triggers
+# v0.2 — Movement — CURRENT BUILD
 
-## Contract D — Networking
-- [ ] transport abstraction
-- [ ] dedicated server loop
-- [ ] connection handshake and protocol versioning
-- [ ] input commands
-- [ ] authoritative snapshots
-- [ ] interpolation
-- [ ] prediction
-- [ ] reconciliation
-- [ ] spawn/despawn replication
-- [ ] relevance management
-- [ ] reconnect handling
-- [ ] latency/loss simulation
-- [ ] automated network clients
+## Existing / regression protection
+- [x] preserve 60 Hz shared simulation
+- [x] preserve server and client executables
+- [x] preserve headless test path
+- [x] separate headless/full CMake build directories to eliminate cache regression
+- [x] keep raylib outside simulation code
+- [x] keep four factions represented in shared types
 
-## Contract E — Gameplay
-- [ ] player
-- [ ] teammate
-- [ ] rival
-- [ ] Nightmare Rancher
-- [ ] weapons/damage/health
-- [ ] pickups/inventory
-- [ ] round lifecycle
-- [ ] respawn
-- [ ] cargo objective
-- [ ] relic objective
-- [ ] temple mechanisms
+## Advancing features
+- [x] compact graybox movement lab
+- [x] stairs/steps and two slope/ramp test surfaces
+- [x] low vault obstacle and mantle obstacle
+- [x] elevated platform / narrow bridge
+- [x] ladder test volume and crouch tunnel
+- [x] moving platform
+- [x] simulation-owned player body independent of camera
+- [x] WASD intent + yaw input command shape
+- [x] acceleration / deceleration / reverse braking
+- [x] gravity and grounded state
+- [x] walk / sprint / crouch / jump
+- [x] crouch-gated second jump
+- [x] air control and step assist
+- [x] analytical ramp support
+- [x] ladder / bounded vault / bounded mantle states
+- [x] moving-platform carry
 
-## Contract F — AI / Game Theory
-- [ ] reflex layer
-- [ ] tactical utility layer
-- [ ] strategic layer
-- [ ] squad event layer
-- [ ] cooperative teammate utility
-- [ ] competitive rival utility
-- [ ] opportunistic/ecological Rancher utility
+### Fuzzy Rail
+- [x] local traversal candidate types
+- [x] distance + alignment scoring
+- [x] step / vault / mantle / ladder classification
+- [x] acquire / retain hysteresis
+- [x] bounded assistance rather than hard snapping
+- [x] debug candidate visualization
+- [ ] multi-candidate top-N set (single best candidate in v0.2)
+- [ ] richer edge probes / arbitrary mesh edge extraction
+- [ ] AI consumer of the same candidate API
 
-## Contract G — Presentation
-- [x] minimal raylib client shell
-- [ ] 3D graybox map
-- [ ] debug actor capsules
-- [ ] collision visualization
-- [ ] traversal diagnostics
-- [ ] network diagnostics
-- [ ] AI state visualization
-- [ ] placeholder asset integration
+### Diagnostics and tests
+- [x] position / velocity / horizontal speed
+- [x] grounded / crouched / movement mode / jump count
+- [x] Fuzzy Rail candidate type / score / feature
+- [x] gravity-ground regression test
+- [x] walk-vs-sprint regression test
+- [x] crouch-gated second-jump test
+- [x] crouch-clearance test
+- [x] Fuzzy Rail vault-candidate test
 
-## v0.1 readiness rule
+## Par / Compare-5 targets
+- [x] Quake III: immediate acceleration/deceleration vocabulary represented
+- [x] Red Eclipse: traversal creates alternate geometric routes
+- [x] Urban Terror: base locomotion remains grounded and human-readable
+- [x] Halo 3: platform scale and forgiving vertical route readability represented
+- [x] Titanfall 2: vault/mantle/ladder are explicit transition states rather than camera tricks
+- [ ] tuning pass after human playtest
 
-Build infrastructure deeply, content narrowly. No aesthetic subsystem may become a dependency of simulation, gameplay, AI, or networking.
+## Stable-coherence gate for v0.2
+- [x] simulation has no raylib dependency
+- [x] movement state is explicit and inspectable
+- [x] input shape can later be serialized for networking
+- [x] Fuzzy Rail does not choose global routes
+- [x] Dynamic Affordance Graph remains deferred from movement implementation
+- [x] aesthetics remain non-blocking
+- [ ] full graphical build verified on target Pop!_OS machine
+- [ ] human movement playtest completed
+
+## Deferred intentionally
+
+### v0.3 — Networked Movement
+Transport, protocol versioning, input commands over network, authoritative snapshots, interpolation, prediction, reconciliation, reconnect and latency/loss simulation.
+
+### Later graybox contracts
+Combat, faction AI/game theory, Dynamic Affordance Graph, round lifecycle, physical reward puzzles, cargo/relic mechanics, then graphics/aesthetic layer.

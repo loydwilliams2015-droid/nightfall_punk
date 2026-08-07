@@ -2,43 +2,48 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_DIR="$ROOT_DIR/build"
-
+BUILD_ROOT="$ROOT_DIR/build"
+FULL_BUILD_DIR="$BUILD_ROOT/full"
+HEADLESS_BUILD_DIR="$BUILD_ROOT/headless"
 cmd="${1:-help}"
 
 case "$cmd" in
   standard-check)
     command -v cmake >/dev/null
     command -v cc >/dev/null
+    test -f "$ROOT_DIR/CMakeLists.txt"
+    test -f "$ROOT_DIR/src/shared/nf_world.c"
+    test -f "$ROOT_DIR/src/shared/nf_movement.c"
     echo "[ok] cmake: $(cmake --version | head -n1)"
     echo "[ok] cc: $(cc --version | head -n1)"
-    echo "[ok] source tree present"
+    echo "[ok] v0.2 source tree present"
     ;;
   build)
-    cmake -S "$ROOT_DIR" -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug
-    cmake --build "$BUILD_DIR" -j
+    cmake -S "$ROOT_DIR" -B "$FULL_BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=ON
+    cmake --build "$FULL_BUILD_DIR" -j
     ;;
   build-headless)
-    cmake -S "$ROOT_DIR" -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=OFF
-    cmake --build "$BUILD_DIR" -j
+    cmake -S "$ROOT_DIR" -B "$HEADLESS_BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=OFF
+    cmake --build "$HEADLESS_BUILD_DIR" -j
     ;;
   test)
-    cmake -S "$ROOT_DIR" -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=OFF
-    cmake --build "$BUILD_DIR" -j
-    ctest --test-dir "$BUILD_DIR" --output-on-failure
+    cmake -S "$ROOT_DIR" -B "$HEADLESS_BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=OFF
+    cmake --build "$HEADLESS_BUILD_DIR" -j
+    ctest --test-dir "$HEADLESS_BUILD_DIR" --output-on-failure
     ;;
   server)
-    exec "$BUILD_DIR/nightfall_server"
+    if [[ -x "$FULL_BUILD_DIR/nightfall_server" ]]; then exec "$FULL_BUILD_DIR/nightfall_server"; fi
+    exec "$HEADLESS_BUILD_DIR/nightfall_server"
     ;;
   client)
-    exec "$BUILD_DIR/nightfall_client"
+    exec "$FULL_BUILD_DIR/nightfall_client"
     ;;
   clean)
-    rm -rf "$BUILD_DIR"
+    rm -rf "$BUILD_ROOT"
     ;;
   *)
     cat <<'EOF'
-nightfall!punk v0.1 build helper
+nightfall!punk v0.2 build helper
 
   ./nightfall.sh standard-check
   ./nightfall.sh build
@@ -47,6 +52,9 @@ nightfall!punk v0.1 build helper
   ./nightfall.sh server
   ./nightfall.sh client
   ./nightfall.sh clean
+
+Headless and graphical builds use separate CMake directories so their
+configuration options cannot contaminate one another.
 EOF
     ;;
 esac

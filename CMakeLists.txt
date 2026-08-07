@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(nightfall_punk VERSION 0.1.0 LANGUAGES C)
+project(nightfall_punk VERSION 0.2 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -12,9 +12,13 @@ option(NF_FETCH_RAYLIB "Fetch raylib when no system package is found" ON)
 
 add_library(nightfall_shared STATIC
     src/shared/nf_world.c
+    src/shared/nf_movement.c
 )
 target_include_directories(nightfall_shared PUBLIC src/shared)
 target_compile_options(nightfall_shared PRIVATE -Wall -Wextra -Wpedantic)
+if(UNIX)
+    target_link_libraries(nightfall_shared PUBLIC m)
+endif()
 
 if(NF_BUILD_SERVER)
     add_executable(nightfall_server src/server/main.c)
@@ -24,23 +28,16 @@ endif()
 
 if(NF_BUILD_CLIENT)
     find_package(raylib 5.5 QUIET)
-
     if(NOT raylib_FOUND AND NF_FETCH_RAYLIB)
         include(FetchContent)
         set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
         set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
-        FetchContent_Declare(raylib
-            GIT_REPOSITORY https://github.com/raysan5/raylib.git
-            GIT_TAG 5.5
-            GIT_SHALLOW TRUE
-        )
+        FetchContent_Declare(raylib GIT_REPOSITORY https://github.com/raysan5/raylib.git GIT_TAG 5.5 GIT_SHALLOW TRUE)
         FetchContent_MakeAvailable(raylib)
     endif()
-
     if(NOT TARGET raylib)
         message(FATAL_ERROR "raylib 5.5 was not found. Install raylib or configure with -DNF_FETCH_RAYLIB=ON.")
     endif()
-
     add_executable(nightfall_client src/client/main.c)
     target_link_libraries(nightfall_client PRIVATE nightfall_shared raylib)
     target_compile_options(nightfall_client PRIVATE -Wall -Wextra -Wpedantic)
@@ -51,5 +48,5 @@ if(NF_BUILD_TESTS)
     add_executable(nightfall_world_test src/tests/test_world.c)
     target_link_libraries(nightfall_world_test PRIVATE nightfall_shared)
     target_compile_options(nightfall_world_test PRIVATE -Wall -Wextra -Wpedantic)
-    add_test(NAME world_smoke COMMAND nightfall_world_test)
+    add_test(NAME simulation_v02 COMMAND nightfall_world_test)
 endif()
