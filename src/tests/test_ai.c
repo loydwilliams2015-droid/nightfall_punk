@@ -80,6 +80,40 @@ static void agent_contract(void) {
         nf_world_step(&world,1.0f/(float)NF_TICK_RATE);
     }
     assert(held&&!shot_during_truce);
+
+    /* Human-Rival truce must not turn the always-non-negotiable Cattler into
+       an ignored actor. Remove the human target and place a Cattler in the
+       first Rival's current view direction; ordinary perception/utility must
+       acquire and engage it without privileged faction scripting. */
+    assert(nf_world_despawn_actor(&world,player));
+    NfAiAgent *first_agent=&ai.agents[0];
+    NfActor *first_rival=nf_world_find_actor(&world,first_agent->actor_id);
+    assert(first_rival!=NULL);
+    NfVec3 cattler_pos={
+        first_rival->transform.position.x+sinf(first_agent->yaw)*7.0f,
+        0.05f,
+        first_rival->transform.position.z+cosf(first_agent->yaw)*7.0f
+    };
+    NfEntityId cattler=nf_world_spawn_actor(&world,NF_FACTION_RANCHER,cattler_pos);
+    assert(cattler!=0u);
+    bool cattler_seen=false,cattler_engaged=false;
+    for(unsigned step=0;step<180u;++step) {
+        NfControlFrame frames[NF_AI_MAX_AGENTS];
+        size_t count=nf_ai_tick(&ai,&world,&semantics,frames,NF_AI_MAX_AGENTS);
+        for(size_t i=0;i<count;++i) {
+            const NfAiAgent *agent=nf_ai_find_agent_const(&ai,frames[i].actor);
+            assert(agent!=NULL);
+            if(agent->knowledge.target==cattler&&agent->knowledge.confidence>0.5f) {
+                cattler_seen=true;
+                if(agent->mode==NF_AGENT_ENGAGE||frames[i].combat.fire_held||frames[i].combat.fire_pressed) {
+                    cattler_engaged=true;
+                }
+            }
+            nf_world_set_input(&world,frames[i].actor,frames[i].move);
+        }
+        nf_world_step(&world,1.0f/(float)NF_TICK_RATE);
+    }
+    assert(cattler_seen&&cattler_engaged);
 }
 
 static void encounter_contract(void) {
