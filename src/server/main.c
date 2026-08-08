@@ -80,7 +80,7 @@ static NfVec3 spawn_for_slot(size_t slot) {
     static const NfVec3 p[NF_SERVER_CLIENTS]={{-3,0.05f,-18},{3,0.05f,18},{3,0.05f,-18},{-3,0.05f,18}};
     return p[slot%NF_SERVER_CLIENTS];
 }
-static NfFaction faction_for_slot(size_t slot) { return (slot%2u)==0u?NF_FACTION_PLAYER:NF_FACTION_RIVAL; }
+static NfFaction faction_for_slot(size_t slot) { return slot==0u?NF_FACTION_PLAYER:NF_FACTION_TEAMMATE; }
 
 static void reset_movement_after_respawn(NfWorld *world,NfActor *a) {
     a->movement=(NfMovementState){0}; a->movement.mode=NF_MOVE_AIR; a->movement.body_height=world->movement.stand_height;
