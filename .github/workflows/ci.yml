@@ -1,4 +1,4 @@
-name: nightfall v0.4 CI
+name: nightfall v0.5 CI
 
 on:
   push:
@@ -28,8 +28,11 @@ jobs:
       - name: Full compile
         run: ./nightfall.sh build
 
-      - name: Simulation, combat and protocol tests
+      - name: Simulation combat network and AI tests
         run: ./nightfall.sh test
 
-      - name: Four-client combat smoke test
+      - name: Four-client plus AI combat smoke
         run: ./nightfall.sh combat-smoke
+
+      - name: Human-shaped client versus AI smoke
+        run: ./nightfall.sh ai-smoke
