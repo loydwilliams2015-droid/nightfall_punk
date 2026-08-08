@@ -27,6 +27,12 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 - [x] individual crew-member names are similarly derived from characters in those same verified public-domain source texts, transformed enough to belong naturally to the nightfall!punk world
 - [x] commercial-use naming gate: use only source texts and source-character elements verified public domain for the intended market; do not borrow expression, costume, characterization, translations, illustrations or naming innovations unique to later copyrighted adaptations
 - [x] public-domain status and trademark risk are separate checks: before shipping a crew or character name, record source work, author, publication date/edition and public-domain basis, then perform a separate title/name trademark-clearance check
+- [x] formal crew-member naming grammar = **public-domain literary given-name variation + Old English-derived modern surname**; example form: `Zora Ashdown — Silver Fleece Crew`
+- [x] Old English surname layer should favor naturalized modern English surnames descended from landscape, settlement, occupational and place-name vocabulary rather than conspicuously archaic Anglo-Saxon personal names
+- [x] surname vocabulary should subtly reinforce the ecological score-play world through inherited landscape terms such as **wood, field, ford, heath, ash, oak, down, ley/clearing and settlement**
+- [x] naming semiotics = **literary given name = inherited cultural memory; Old English-derived surname = inherited ecology/landscape; Crew name = present social organization**
+- [x] roster naming should balance recognizability and transformation: names must read as plausible contemporary/cosmopolitan people first and literary references second
+- [x] current exemplar naming register includes forms such as **Zora Ashdown, Bles Fenwick, Alwyn Hartley, Wynn Ridley, Sulla Atwood, Radius Langley, Prim Hadley, Alquist Bromley, Jim Beckley, Julia Westwood, Davis Sutton, Jule Easton, Avis Ashford, Ern Woodward, Anna Fordham, Mora Underwood, Vash Oakley, Kuno Whitfield, Vas Alderton and Kunel Radford**; these are working roster examples subject to final public-domain provenance and trademark clearance
 - [x] formal genre identity = **Neo-Xennial Shooter / Neo-Xennial FPS**
 - [x] design subtype = **Systemic Arena FPS**
 - [x] genre thesis = Quake-style immediacy + Deus Ex-style systemic possibility + Halo-style spatial clarity + F.E.A.R.-style encounter intelligence + contemporary simulation/network infrastructure
