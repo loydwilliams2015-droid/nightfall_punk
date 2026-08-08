@@ -96,12 +96,13 @@ void nf_world_build_movement_lab(NfWorld *world) {
             (NfVec3){c.x+2.4f,height,c.z+1.4f});
     }
 
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-22,0,-18},(NfVec3){-10,2.2f,-6});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){10,0,-18},(NfVec3){22,2.2f,-6});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-22,2.2f,7},(NfVec3){-10,2.55f,19});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){10,2.2f,7},(NfVec3){22,2.55f,19});
-    nf_world_add_collider(world,NF_COLLIDER_LADDER,(NfVec3){-10.45f,0,-14},(NfVec3){-9.95f,2.6f,-12.8f});
-    nf_world_add_collider(world,NF_COLLIDER_LADDER,(NfVec3){9.95f,0,12},(NfVec3){10.45f,2.6f,13.2f});
+    /* Central traversal landmarks sit outside the initial player/Rival spawn lanes. */
+    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-44,0,-18},(NfVec3){-32,2.2f,-6});
+    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){32,0,-18},(NfVec3){44,2.2f,-6});
+    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-44,2.2f,7},(NfVec3){-32,2.55f,19});
+    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){32,2.2f,7},(NfVec3){44,2.55f,19});
+    nf_world_add_collider(world,NF_COLLIDER_LADDER,(NfVec3){-32.45f,0,-14},(NfVec3){-31.95f,2.6f,-12.8f});
+    nf_world_add_collider(world,NF_COLLIDER_LADDER,(NfVec3){31.95f,0,12},(NfVec3){32.45f,2.6f,13.2f});
     nf_world_add_moving_platform(world,(NfVec3){-4,1.2f,28},(NfVec3){4,1.55f,34},(NfVec3){1,0,0},8,8);
 
     nf_world_add_ramp(world,(NfVec3){-95,0,-25},(NfVec3){-80,2.2f,-10},NF_RAMP_POS_Z);
