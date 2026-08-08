@@ -22,6 +22,11 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 - [x] genre thesis = continue the late-1990s/early-2000s FPS trajectory rather than merely imitate retro aesthetics: Quake-style immediacy and arena freedom + Deus Ex-style systemic possibility + Halo-style spatial clarity + F.E.A.R.-style encounter intelligence + contemporary simulation/network infrastructure
 - [x] neo-xennial pillars = arena freedom, systemic worlds, autonomous AI, physicality, emergent narrative, and open/moddable dedicated-server infrastructure
 - [x] manifesto = **The neo-xennial shooter continues the FPS future that the early 2000s started: fast, physical, systemic, open, and unpredictable.**
+- [x] **Dragon Master lore is retired and replaced by Ghost Static / Apophis.**
+- [x] **Ghost Static** = the public, street and broadcast identity: an unseen punk DJ / pirate-radio arena conductor rooted in cosmopolitan hip-hop and punk culture, with samurai-film cool as a stylistic influence
+- [x] **Apophis** = the mythic / occult / true-name layer behind Ghost Static, invoking the serpent-in-the-signal, chaos in the broadcast and a deeper intelligence moving through arena infrastructure
+- [x] Ghost Static / Apophis shapes matches through signal, timing, interference, music, environmental cueing and arena-wide pressure rather than brute-force direct combat
+- [x] presentation rule = player-facing material generally uses **Ghost Static**; hidden lore, rare voice lines, symbols and deeper system references may invoke **Apophis**
 
 # v0.1 — Foundation — COMPLETE / ARCHIVED
 - [x] `archive/v0.1`
