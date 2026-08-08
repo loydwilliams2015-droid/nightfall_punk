@@ -3,6 +3,7 @@
 #include "nf_agent.h"
 #include "nf_ai.h"
 #include "nf_combat.h"
+#include "nf_encounter.h"
 #include "nf_net.h"
 #include "nf_prediction.h"
 #include "nf_relations.h"
@@ -239,7 +240,7 @@ static NfControlFrame client_control(const NfServerClient *c) {
 }
 
 int main(int argc,char **argv) {
-    uint16_t port=NF_NET_DEFAULT_PORT; uint32_t sim_latency=0,sim_jitter=0; float sim_loss=0.0f; double duration=0.0; bool friendly_fire=false; size_t ai_count=4u; NfRelationship rival_relation=NF_RELATION_HOSTILE;
+    uint16_t port=NF_NET_DEFAULT_PORT; uint32_t sim_latency=0,sim_jitter=0; float sim_loss=0.0f; double duration=0.0; bool friendly_fire=false; size_t ai_count=4u; size_t pressure_slots=2u; NfRelationship rival_relation=NF_RELATION_HOSTILE;
     for(int i=1;i<argc;++i) {
         if(strcmp(argv[i],"--port")==0&&i+1<argc)port=(uint16_t)atoi(argv[++i]);
         else if(strcmp(argv[i],"--sim-latency")==0&&i+1<argc)sim_latency=(uint32_t)atoi(argv[++i]);
@@ -247,6 +248,7 @@ int main(int argc,char **argv) {
         else if(strcmp(argv[i],"--sim-loss")==0&&i+1<argc)sim_loss=(float)atof(argv[++i]);
         else if(strcmp(argv[i],"--duration")==0&&i+1<argc)duration=atof(argv[++i]);
         else if(strcmp(argv[i],"--ai-count")==0&&i+1<argc){long v=strtol(argv[++i],NULL,10);ai_count=v<0?0u:(size_t)v;if(ai_count>NF_AI_MAX_AGENTS)ai_count=NF_AI_MAX_AGENTS;}
+        else if(strcmp(argv[i],"--pressure-slots")==0&&i+1<argc){long v=strtol(argv[++i],NULL,10);pressure_slots=v<0?0u:(size_t)v;if(pressure_slots>NF_ENCOUNTER_MAX_PRESSURE_SLOTS)pressure_slots=NF_ENCOUNTER_MAX_PRESSURE_SLOTS;}
         else if(strcmp(argv[i],"--rival-truce")==0)rival_relation=NF_RELATION_TRUCE;
         else if(strcmp(argv[i],"--friendly-fire")==0)friendly_fire=true;
     }
@@ -254,11 +256,11 @@ int main(int argc,char **argv) {
     if(!nf_security_init()||!nf_net_global_init()) { fprintf(stderr,"nightfall: network/security init failed\n"); return 1; }
     NfNetHost net; if(!nf_net_server_open(&net,port,NF_SERVER_CLIENTS)) { fprintf(stderr,"nightfall: could not open UDP port %u\n",port); nf_net_global_shutdown(); return 1; }
     nf_net_set_simulation(&net,sim_latency,sim_jitter,sim_loss);
-    NfWorld world; nf_world_init(&world,20260807u); nf_world_build_movement_lab(&world); NfServerClient clients[NF_SERVER_CLIENTS]={0}; NfHistoryFrame history[NF_HISTORY_FRAMES]={0}; NfSemanticBus semantics; nf_semantic_bus_init(&semantics); NfAiSystem ai; nf_ai_init(&ai,&world,ai_count,world.seed^0xA105u); nf_ai_set_rival_relationship(&ai,rival_relation);
+    NfWorld world; nf_world_init(&world,20260807u); nf_world_build_movement_lab(&world); NfServerClient clients[NF_SERVER_CLIENTS]={0}; NfHistoryFrame history[NF_HISTORY_FRAMES]={0}; NfSemanticBus semantics; nf_semantic_bus_init(&semantics); NfAiSystem ai; nf_ai_init(&ai,&world,ai_count,world.seed^0xA105u); nf_ai_set_rival_relationship(&ai,rival_relation); NfEncounterState encounter; nf_encounter_init(&encounter,&ai,&world,pressure_slots,world.seed^0xE06u);
     history_record(history,&world);
-    printf("nightfall!punk dedicated server v0.5 agent intelligence\n");
-    printf("port=%u tick=%u snapshot=%u max_players=%u ai=%zu relation=%s crypto=%s friendly_fire=%s sim=%ums +/- %ums %.1f%% loss\n",port,NF_TICK_RATE,NF_NET_SNAPSHOT_HZ,NF_NET_MAX_PLAYERS,ai.count,nf_relationship_name(rival_relation),nf_security_is_strong()?"libsodium":"scaffold",friendly_fire?"on":"off",sim_latency,sim_jitter,sim_loss);
-    printf("[ai] semantic perception + memory + utility + cover affordances + squad reports enabled\n");
+    printf("nightfall!punk dedicated server v0.6 encounter intelligence\n");
+    printf("port=%u tick=%u snapshot=%u max_players=%u ai=%zu pressure_slots=%zu relation=%s crypto=%s friendly_fire=%s sim=%ums +/- %ums %.1f%% loss\n",port,NF_TICK_RATE,NF_NET_SNAPSHOT_HZ,NF_NET_MAX_PLAYERS,ai.count,encounter.pressure_slots,nf_relationship_name(rival_relation),nf_security_is_strong()?"libsodium":"scaffold",friendly_fire?"on":"off",sim_latency,sim_jitter,sim_loss);
+    printf("[encounter] bounded pressure + finite tracking + aim settling + damage suppression enabled\n");
     const double fixed_ms=1000.0/(double)NF_TICK_RATE; uint32_t last=nf_net_now_ms(),start=last; double acc=0.0; uint64_t next_ai_log_tick=0u;
     while(g_running) {
         NfNetEvent ev;
@@ -274,7 +276,7 @@ int main(int argc,char **argv) {
         }
         uint32_t now=nf_net_now_ms(); uint32_t elapsed=now-last; last=now; if(elapsed>250u)elapsed=250u; acc+=(double)elapsed; expire_reservations(&world,clients,now);
         while(acc>=fixed_ms) {
-            NfControlFrame ai_controls[NF_AI_MAX_AGENTS]; size_t ai_controls_count=nf_ai_tick(&ai,&world,&semantics,ai_controls,NF_AI_MAX_AGENTS);
+            NfControlFrame ai_controls[NF_AI_MAX_AGENTS]; size_t ai_controls_count=nf_ai_tick(&ai,&world,&semantics,ai_controls,NF_AI_MAX_AGENTS); nf_encounter_filter_controls(&encounter,&ai,&world,ai_controls,ai_controls_count);
             for(size_t i=0;i<NF_SERVER_CLIENTS;++i) {
                 NfServerClient *c=&clients[i]; if(!c->occupied)continue; NfMoveInput move=c->connected?c->current_input:(NfMoveInput){0}; nf_world_set_input(&world,c->entity_id,move);
                 if(c->connected){NfControlFrame control=client_control(c);process_combat_control(&net,&world,clients,&semantics,&control,history,rival_relation,friendly_fire);c->current_input.jump_pressed=false;c->combat_input.fire_pressed=false;c->combat_input.reload_pressed=false;c->combat_input.weapon_slot=0u;}
@@ -282,7 +284,7 @@ int main(int argc,char **argv) {
             for(size_t i=0;i<ai_controls_count;++i){nf_world_set_input(&world,ai_controls[i].actor,ai_controls[i].move);process_combat_control(&net,&world,clients,&semantics,&ai_controls[i],history,rival_relation,friendly_fire);}
             nf_world_step(&world,1.0f/(float)NF_TICK_RATE); process_respawns(&net,&world,clients,&ai,&semantics); history_record(history,&world);
             if(world.tick%(NF_TICK_RATE/NF_NET_SNAPSHOT_HZ)==0u) for(size_t i=0;i<NF_SERVER_CLIENTS;++i) if(clients[i].occupied&&clients[i].connected) send_snapshot(&net,&world,&clients[i]);
-            if(world.tick>=next_ai_log_tick){for(size_t i=0;i<ai.count;++i){const NfAiAgent*a=&ai.agents[i];const NfActor*body=nf_world_find_actor_const(&world,a->actor_id);printf("[ai] id=%u role=%s mode=%s target=%u confidence=%.2f visible=%s health=%.0f cover=%d\n",a->actor_id,nf_squad_role_name(a->role),nf_agent_mode_name(a->mode),a->knowledge.target,a->knowledge.confidence,a->knowledge.visible_now?"yes":"no",body?body->health:0.0f,a->selected_affordance);}next_ai_log_tick=world.tick+NF_TICK_RATE*2u;}
+            if(world.tick>=next_ai_log_tick){for(size_t i=0;i<ai.count;++i){const NfAiAgent*a=&ai.agents[i];const NfActor*body=nf_world_find_actor_const(&world,a->actor_id);const NfEncounterAgentState*es=nf_encounter_agent_state_const(&encounter,a->actor_id);printf("[ai] id=%u role=%s mode=%s target=%u confidence=%.2f visible=%s health=%.0f cover=%d pressure=%s settle=%.2f suppression=%.2f aimerr=%.3f\n",a->actor_id,nf_squad_role_name(a->role),nf_agent_mode_name(a->mode),a->knowledge.target,a->knowledge.confidence,a->knowledge.visible_now?"yes":"no",body?body->health:0.0f,a->selected_affordance,es&&es->pressure_authorized?"yes":"no",es?es->aim_settle:0.0f,es?es->suppression:0.0f,es?es->last_aim_error:0.0f);}next_ai_log_tick=world.tick+NF_TICK_RATE*2u;}
             acc-=fixed_ms;
         }
         nf_net_flush(&net); if(duration>0.0&&(double)(now-start)>=duration*1000.0)break; sleep_ms(1);
