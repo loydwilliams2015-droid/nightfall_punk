@@ -96,6 +96,7 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 - [x] four-client `./nightfall.sh net-smoke` harness
 - [x] protocol round-trip tests
 - [x] prediction/reconciliation regression test
+- [x] GitHub Actions full compile + contract tests + four-client smoke test
 
 ### Reconnect / security readiness
 - [x] 20-second server-side entity reservation on disconnect
@@ -135,8 +136,9 @@ These are behavioral targets, not claims about proprietary internal implementati
 - [x] server performs Fuzzy Rail candidate evaluation itself
 - [x] local and headless build directories remain separate
 - [x] contract/syntax validation passes in development environment
-- [ ] full ENet + raylib target build verified on Pop!_OS
-- [ ] `./nightfall.sh net-smoke` passes on target machine
+- [x] GitHub-hosted Ubuntu full ENet + raylib compile passes
+- [x] GitHub-hosted four-client `net-smoke` passes
+- [ ] full target build verified on Pop!_OS
 - [ ] recorded v0.3 demo reviewed
 
 # Planned next contracts
