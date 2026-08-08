@@ -38,6 +38,15 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 - [x] genre thesis = Quake-style immediacy + Deus Ex-style systemic possibility + Halo-style spatial clarity + F.E.A.R.-style encounter intelligence + contemporary simulation/network infrastructure
 - [x] manifesto = **The neo-xennial shooter continues the FPS future that the early 2000s started: fast, physical, systemic, open, and unpredictable.**
 - [x] Ghost Static / Apophis replaces Dragon Master lore: Ghost Static is the public pirate-radio arena-conductor identity; Apophis is the deeper mythic/signal layer
+- [x] **aesthetic-engine content target = PG-13 ambient/paranormal/psychological cyberpunk horror, not splatterpunk or uncensored gore horror**
+- [x] visual thesis = **objective realism haunted by the horror of violence, with comic-book comic relief as quiet understatement**; violence should feel consequential and unsettling without becoming visually indulgent
+- [x] comic-book stylization belongs primarily in silhouettes, selective outlines/halftone language, UI, signage, color blocking, impact abstraction and dry visual wit; it must not trivialize suffering or turn combat into slapstick
+- [x] weapon/inventory art direction = materially believable, human-scale, used/repaired, utilitarian and near-term speculative; avoid fetishized real-world firearm replication, excessive tactical glamour, implausible super-weapons and gore-centric presentation
+- [x] inventory should visibly include restorative/ecological tools alongside weapons so the player's carried object-language communicates **survive / repair / heal / interact / contest**, not only kill
+- [x] damage feedback should be subtle and readable: directional cues, desaturation, audio pressure, brief comic-noir abstraction and restrained screen treatment rather than explicit bodily trauma
+- [x] HUD thesis = **diegetic-minimal, information-dense only when needed, comic-noir in graphic language, quiet during ordinary traversal**; primary combat HUD should preserve sightlines and let the world remain the dominant visual field
+- [x] social HUD grammar must reinforce reciprocity rules: **Teammates never intentionally kill Player and may heal; Rivals may kill or heal depending on relationship/context; Dream Cattlers may kill and never heal Player**
+- [x] aesthetic engine remains a later, substantially boxed-off build phase so graybox movement/network/combat/AI truth is preserved underneath visual replacement rather than being rewritten for presentation
 
 # v0.1 — Foundation — COMPLETE / ARCHIVED
 - [x] fixed-tick C foundation, headless server shell, raylib client shell, smoke test
