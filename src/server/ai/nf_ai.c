@@ -99,9 +99,11 @@ static bool line_blocked(const NfWorld *world, NfVec3 from, NfVec3 to) {
     return false;
 }
 
-static bool is_human_target(const NfActor *actor) {
+static bool is_adversary_target(const NfActor *actor) {
     if (actor == NULL || !actor->active || !actor->combat.alive) return false;
-    return actor->faction == NF_FACTION_PLAYER || actor->faction == NF_FACTION_TEAMMATE;
+    return actor->faction == NF_FACTION_PLAYER ||
+        actor->faction == NF_FACTION_TEAMMATE ||
+        actor->faction == NF_FACTION_RANCHER;
 }
 
 static void release_cover(NfAiSystem *ai, NfAiAgent *agent) {
@@ -216,7 +218,7 @@ static void perceive(
 
     for (size_t i = 0; i < NF_MAX_ENTITIES; ++i) {
         const NfActor *other = &world->actors[i];
-        if (!is_human_target(other)) continue;
+        if (!is_adversary_target(other)) continue;
 
         const NfRelationship relation = nf_relation_between(
             self->faction, other->faction, ai->rival_relationship);
@@ -270,7 +272,7 @@ static void perceive(
     for (size_t i = 0; i < heard_count; ++i) {
         const NfSemanticAlert *event = &heard[i];
         const NfActor *source = nf_world_find_actor_const(world, event->source);
-        if (source == NULL || !is_human_target(source)) continue;
+        if (source == NULL || !is_adversary_target(source)) continue;
         const bool relevant_damage = event->type == NF_SEMANTIC_DAMAGE_TAKEN &&
             event->subject == agent->actor_id;
         if (event->type == NF_SEMANTIC_GUNFIRE || relevant_damage) {
@@ -357,7 +359,6 @@ static void decide(NfAiSystem *ai, NfAiAgent *agent, NfWorld *world) {
              self->combat.reserve_ammo[self->combat.weapon] > 0u)
                 ? 1.0f
                 : (1.0f-ammo)*0.22f;
-
         const int cover = choose_cover(ai, world, agent, known);
         agent->mode_scores[NF_AGENT_SEEK_COVER] = cover >= 0
             ? (1.0f-health)*0.58f + (1.0f-ammo)*0.20f +

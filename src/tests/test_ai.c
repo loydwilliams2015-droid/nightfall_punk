@@ -1,4 +1,5 @@
 #include "nf_ai.h"
+#include "nf_cattler.h"
 #include "nf_encounter.h"
 #include "nf_region.h"
 #include "nf_relations.h"
@@ -79,6 +80,40 @@ static void agent_contract(void) {
         nf_world_step(&world,1.0f/(float)NF_TICK_RATE);
     }
     assert(held&&!shot_during_truce);
+
+    /* Human-Rival truce must not turn the always-non-negotiable Cattler into
+       an ignored actor. Remove the human target and place a Cattler in the
+       first Rival's current view direction; ordinary perception/utility must
+       acquire and engage it without privileged faction scripting. */
+    assert(nf_world_despawn_actor(&world,player));
+    NfAiAgent *first_agent=&ai.agents[0];
+    NfActor *first_rival=nf_world_find_actor(&world,first_agent->actor_id);
+    assert(first_rival!=NULL);
+    NfVec3 cattler_pos={
+        first_rival->transform.position.x+sinf(first_agent->yaw)*7.0f,
+        0.05f,
+        first_rival->transform.position.z+cosf(first_agent->yaw)*7.0f
+    };
+    NfEntityId cattler=nf_world_spawn_actor(&world,NF_FACTION_RANCHER,cattler_pos);
+    assert(cattler!=0u);
+    bool cattler_seen=false,cattler_engaged=false;
+    for(unsigned step=0;step<180u;++step) {
+        NfControlFrame frames[NF_AI_MAX_AGENTS];
+        size_t count=nf_ai_tick(&ai,&world,&semantics,frames,NF_AI_MAX_AGENTS);
+        for(size_t i=0;i<count;++i) {
+            const NfAiAgent *agent=nf_ai_find_agent_const(&ai,frames[i].actor);
+            assert(agent!=NULL);
+            if(agent->knowledge.target==cattler&&agent->knowledge.confidence>0.5f) {
+                cattler_seen=true;
+                if(agent->mode==NF_AGENT_ENGAGE||frames[i].combat.fire_held||frames[i].combat.fire_pressed) {
+                    cattler_engaged=true;
+                }
+            }
+            nf_world_set_input(&world,frames[i].actor,frames[i].move);
+        }
+        nf_world_step(&world,1.0f/(float)NF_TICK_RATE);
+    }
+    assert(cattler_seen&&cattler_engaged);
 }
 
 static void encounter_contract(void) {
@@ -206,12 +241,93 @@ static void spatial_contract(void) {
            state->interrupt==NF_SPATIAL_INTERRUPT_NONE);
 }
 
+static void cattler_contract(void) {
+    NfWorld world; nf_world_init(&world,20260807u); nf_world_build_movement_lab(&world);
+    NfSemanticBus semantics; nf_semantic_bus_init(&semantics);
+    NfCattlerSystem cattlers;
+    nf_cattler_init(&cattlers,&world,3u,NF_CATTLER_PROFILE_PACK,world.seed^0xCA771Eu);
+    assert(cattlers.count==3u);
+    for(size_t i=0;i<cattlers.count;++i) {
+        const NfActor *body=nf_world_find_actor_const(&world,cattlers.agents[i].actor_id);
+        assert(body!=NULL&&body->faction==NF_FACTION_RANCHER);
+        assert(cattlers.agents[i].social==NF_CATTLER_PACK);
+        assert(cattlers.agents[i].locomotor_integrity==1.0f);
+        const float score=nf_cattler_habitat_score(&cattlers,&cattlers.agents[i],&world,cattlers.agents[i].home_region);
+        assert(score>=0.0f&&score<=1.0f);
+    }
+
+    NfActor *first=nf_world_find_actor(&world,cattlers.agents[0].actor_id);
+    assert(first!=NULL);
+    NfEntityId player_id=nf_world_spawn_actor(
+        &world,NF_FACTION_PLAYER,
+        (NfVec3){first->transform.position.x,0.05f,first->transform.position.z+16.0f});
+    assert(player_id!=0u);
+
+    bool report_seen=false;
+    bool predation_control_seen=false;
+    bool moving_seen=false;
+    for(unsigned step=0;step<1800u;++step) {
+        NfControlFrame frames[NF_CATTLER_MAX_AGENTS];
+        const size_t count=nf_cattler_tick(
+            &cattlers,&world,&semantics,frames,NF_CATTLER_MAX_AGENTS);
+        assert(count==3u);
+        for(size_t i=0;i<count;++i) {
+            if(frames[i].combat.fire_held||frames[i].combat.fire_pressed) predation_control_seen=true;
+            if(fabsf(frames[i].move.forward)>0.1f||fabsf(frames[i].move.strafe)>0.1f) moving_seen=true;
+            nf_world_set_input(&world,frames[i].actor,frames[i].move);
+        }
+        nf_world_step(&world,1.0f/(float)NF_TICK_RATE);
+    }
+    for(size_t i=0;i<NF_CATTLER_BLACKBOARD_REPORTS;++i) {
+        if(cattlers.reports[i].active) report_seen=true;
+    }
+    bool infestation_seen=false;
+    for(uint8_t r=0u;r<NF_REGION_MAX;++r) {
+        const NfCattlerRegionState *region=nf_cattler_region_state_const(&cattlers,r);
+        assert(region!=NULL);
+        if(region->infestation>0.20f) infestation_seen=true;
+    }
+    assert(report_seen&&predation_control_seen&&moving_seen&&infestation_seen);
+
+    const float locomotor_before=cattlers.agents[0].locomotor_integrity;
+    NfCombatEvent knee={
+        .server_tick=world.tick,.type=NF_COMBAT_EVENT_DAMAGE,
+        .source=player_id,.target=cattlers.agents[0].actor_id,
+        .weapon=NF_WEAPON_CARBINE,.hit_zone=NF_HIT_KNEE,.amount=22.5f,
+        .position=first->transform.position
+    };
+    nf_cattler_on_combat_event(&cattlers,&world,&knee);
+    assert(cattlers.agents[0].locomotor_integrity<locomotor_before);
+
+    NfCombatEvent prey={
+        .server_tick=world.tick,.type=NF_COMBAT_EVENT_DAMAGE,
+        .source=cattlers.agents[0].actor_id,.target=player_id,
+        .weapon=NF_WEAPON_CARBINE,.hit_zone=NF_HIT_BODY,.amount=18.0f,
+        .position=nf_world_find_actor_const(&world,player_id)->transform.position
+    };
+    nf_cattler_on_combat_event(&cattlers,&world,&prey);
+    assert(cattlers.agents[0].score.prey>0.0f);
+    assert(cattlers.ecology_score.prey>0.0f);
+
+    NfWorld loner_world; nf_world_init(&loner_world,20260807u); nf_world_build_movement_lab(&loner_world);
+    NfCattlerSystem loner; nf_cattler_init(&loner,&loner_world,1u,NF_CATTLER_PROFILE_LONER,123u);
+    assert(loner.agents[0].social==NF_CATTLER_LONER);
+
+    NfWorld horde_world; nf_world_init(&horde_world,20260807u); nf_world_build_movement_lab(&horde_world);
+    NfSemanticBus horde_semantics; nf_semantic_bus_init(&horde_semantics);
+    NfCattlerSystem horde; nf_cattler_init(&horde,&horde_world,5u,NF_CATTLER_PROFILE_HORDE,456u);
+    NfControlFrame horde_frames[NF_CATTLER_MAX_AGENTS];
+    assert(nf_cattler_tick(&horde,&horde_world,&horde_semantics,horde_frames,NF_CATTLER_MAX_AGENTS)==5u);
+    assert(horde.event_mode==NF_CATTLER_EVENT_HUNT_SURGE);
+}
+
 int main(void) {
     relation_contract();
     semantic_contract();
     agent_contract();
     encounter_contract();
     spatial_contract();
-    puts("nightfall v0.7 spatial ecology tests: PASS");
+    cattler_contract();
+    puts("nightfall v0.8 dream cattler habitat ecology tests: PASS");
     return 0;
 }
