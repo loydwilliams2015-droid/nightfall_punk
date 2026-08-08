@@ -9,7 +9,7 @@ if [[ $# -gt 0 ]]; then shift; fi
 
 run_smoke() {
   test -x "$HEADLESS_BUILD_DIR/nightfall_netbot" || "$0" build-headless
-  "$HEADLESS_BUILD_DIR/nightfall_server" --duration 9 >"$BUILD_ROOT/combat-smoke-server.log" 2>&1 &
+  "$HEADLESS_BUILD_DIR/nightfall_server" --duration 9 --ai-count 4 >"$BUILD_ROOT/combat-smoke-server.log" 2>&1 &
   server_pid=$!
   trap 'kill "$server_pid" 2>/dev/null || true' EXIT INT TERM
   sleep 0.35
@@ -24,6 +24,19 @@ run_smoke() {
   return "$result"
 }
 
+run_ai_smoke() {
+  test -x "$HEADLESS_BUILD_DIR/nightfall_netbot" || "$0" build-headless
+  "$HEADLESS_BUILD_DIR/nightfall_server" --duration 12 --ai-count 4 >"$BUILD_ROOT/ai-smoke-server.log" 2>&1 &
+  server_pid=$!
+  trap 'kill "$server_pid" 2>/dev/null || true' EXIT INT TERM
+  sleep 0.35
+  result=0
+  "$HEADLESS_BUILD_DIR/nightfall_netbot" --duration 9 --pattern 0 --passive --require-incoming-death || result=1
+  wait "$server_pid" || true
+  cat "$BUILD_ROOT/ai-smoke-server.log" || true
+  return "$result"
+}
+
 case "$cmd" in
   standard-check)
     command -v cmake >/dev/null
@@ -34,6 +47,9 @@ case "$cmd" in
     test -f "$ROOT_DIR/src/shared/nf_protocol.c"
     test -f "$ROOT_DIR/src/shared/nf_prediction.c"
     test -f "$ROOT_DIR/src/shared/nf_combat.c"
+    test -f "$ROOT_DIR/src/shared/nf_relations.c"
+    test -f "$ROOT_DIR/src/shared/nf_semantics.c"
+    test -f "$ROOT_DIR/src/server/ai/nf_ai.c"
     echo "[ok] cmake: $(cmake --version | head -n1)"
     echo "[ok] cc: $(cc --version | head -n1)"
     echo "[ok] nightfall.sh syntax"
@@ -42,7 +58,7 @@ case "$cmd" in
     else
       echo "[warn] libsodium-dev not detected; localhost security scaffold will be used"
     fi
-    echo "[ok] v0.4 authoritative combat source tree present"
+    echo "[ok] v0.5 agent intelligence source tree present"
     ;;
   build)
     cmake -S "$ROOT_DIR" -B "$FULL_BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=ON
@@ -69,9 +85,12 @@ case "$cmd" in
     mkdir -p "$BUILD_ROOT"
     server_pid=""
     local_port=""
+    ai_count="${NF_AI_COUNT:-4}"
+    server_extra=()
+    if [[ "${NF_RIVAL_TRUCE:-0}" == "1" ]]; then server_extra+=(--rival-truce); fi
     for attempt in 1 2 3 4 5; do
       local_port=$((20000 + RANDOM % 20000))
-      "$FULL_BUILD_DIR/nightfall_server" --port "$local_port" >"$BUILD_ROOT/server.log" 2>&1 &
+      "$FULL_BUILD_DIR/nightfall_server" --port "$local_port" --ai-count "$ai_count" "${server_extra[@]}" >"$BUILD_ROOT/server.log" 2>&1 &
       candidate_pid=$!
       sleep 0.20
       if kill -0 "$candidate_pid" 2>/dev/null; then
@@ -81,7 +100,7 @@ case "$cmd" in
       wait "$candidate_pid" 2>/dev/null || true
     done
     if [[ -z "$server_pid" ]]; then
-      echo "nightfall: local v0.4 server failed to start on five isolated ports" >&2
+      echo "nightfall: local v0.5 server failed to start on five isolated ports" >&2
       echo "nightfall: server log follows" >&2
       cat "$BUILD_ROOT/server.log" >&2 || true
       exit 1
@@ -89,22 +108,25 @@ case "$cmd" in
     trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT INT TERM
     sleep 0.20
     if ! kill -0 "$server_pid" 2>/dev/null; then
-      echo "nightfall: local v0.4 server exited before client launch" >&2
+      echo "nightfall: local v0.5 server exited before client launch" >&2
       cat "$BUILD_ROOT/server.log" >&2 || true
       exit 1
     fi
-    echo "[local] v0.4 dedicated server pid=$server_pid isolated_port=$local_port"
+    echo "[local] v0.5 dedicated server pid=$server_pid isolated_port=$local_port ai_count=$ai_count truce=${NF_RIVAL_TRUCE:-0}"
     "$FULL_BUILD_DIR/nightfall_client" "$@" --port "$local_port"
     ;;
   net-smoke|combat-smoke)
     run_smoke
+    ;;
+  ai-smoke)
+    run_ai_smoke
     ;;
   clean)
     rm -rf "$BUILD_ROOT"
     ;;
   *)
     cat <<'HELP'
-nightfall!punk v0.4 build helper
+nightfall!punk v0.5 build helper
 
   ./nightfall.sh standard-check
   ./nightfall.sh build
@@ -112,14 +134,20 @@ nightfall!punk v0.4 build helper
   ./nightfall.sh test
   ./nightfall.sh local
   ./nightfall.sh combat-smoke
+  ./nightfall.sh ai-smoke
   ./nightfall.sh net-smoke
-  ./nightfall.sh server [--friendly-fire --sim-latency MS --sim-jitter MS --sim-loss PERCENT]
+  ./nightfall.sh server [--ai-count 0..4 --rival-truce --friendly-fire --sim-latency MS --sim-jitter MS --sim-loss PERCENT]
   ./nightfall.sh client [--host HOST --sim-latency MS --sim-jitter MS --sim-loss PERCENT]
   ./nightfall.sh clean
 
-local         = isolated-port dedicated v0.4 server + graphical combat client over real ENet localhost
-combat-smoke  = dedicated server + four automated movement/combat clients
+local         = isolated-port v0.5 server + graphical client; four Human Rival AI by default
+combat-smoke  = dedicated server + four automated network clients + four server AI rivals
+ai-smoke      = passive automated player; passes only if server AI damages and kills it
 net-smoke     = alias retained for continuity
+
+Local debug environment:
+  NF_AI_COUNT=1 ./nightfall.sh local
+  NF_RIVAL_TRUCE=1 ./nightfall.sh local
 HELP
     ;;
 esac

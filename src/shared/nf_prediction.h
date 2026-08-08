@@ -12,6 +12,7 @@ typedef struct NfPrediction {
     uint32_t next_sequence;
     uint32_t last_acknowledged;
     uint32_t corrections;
+    uint32_t resyncs;
     float last_error;
     float max_error;
     NfPredictionSlot history[NF_NET_HISTORY];
