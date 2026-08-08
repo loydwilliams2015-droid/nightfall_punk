@@ -47,20 +47,15 @@ run_spatial_smoke() {
 }
 
 run_cattler_smoke() {
-  test -x "$HEADLESS_BUILD_DIR/nightfall_netbot" || "$0" build-headless
-  "$HEADLESS_BUILD_DIR/nightfall_server" --duration 13 --ai-count 0 --pressure-slots 0 --cattler-count 3 --cattler-profile pack >"$BUILD_ROOT/cattler-smoke-server.log" 2>&1 &
-  server_pid=$!
-  trap 'kill "$server_pid" 2>/dev/null || true' EXIT INT TERM
-  sleep 0.35
-  result=0
-  "$HEADLESS_BUILD_DIR/nightfall_netbot" --duration 9 --pattern 1 --passive || result=1
-  wait "$server_pid" || true
+  test -x "$HEADLESS_BUILD_DIR/nightfall_server" || "$0" build-headless
+  "$HEADLESS_BUILD_DIR/nightfall_server" --duration 8 --ai-count 0 --pressure-slots 0 --cattler-count 3 --cattler-profile pack >"$BUILD_ROOT/cattler-smoke-server.log" 2>&1
   cat "$BUILD_ROOT/cattler-smoke-server.log" || true
-  grep -q "\[cattler\] habitat continuity" "$BUILD_ROOT/cattler-smoke-server.log" || result=1
-  grep -q "social=PACK" "$BUILD_ROOT/cattler-smoke-server.log" || result=1
-  grep -q "infest=" "$BUILD_ROOT/cattler-smoke-server.log" || result=1
-  grep -q "\[ecology\]" "$BUILD_ROOT/cattler-smoke-server.log" || result=1
-  return "$result"
+  grep -q "\[cattler\] habitat continuity" "$BUILD_ROOT/cattler-smoke-server.log"
+  grep -q "social=PACK" "$BUILD_ROOT/cattler-smoke-server.log"
+  grep -q "mode=INFEST" "$BUILD_ROOT/cattler-smoke-server.log"
+  grep -q "infest=" "$BUILD_ROOT/cattler-smoke-server.log"
+  grep -q "\[ecology\]" "$BUILD_ROOT/cattler-smoke-server.log"
+  grep -Eq "expansion=[1-9]" "$BUILD_ROOT/cattler-smoke-server.log"
 }
 
 case "$cmd" in
@@ -185,7 +180,7 @@ local            = isolated-port v0.8 server + graphical client; 4 Human Rivals 
 combat-smoke     = v0.4-v0.7 combat/network regression proof with Cattlers disabled
 encounter-smoke  = passive player versus v0.6 bounded-pressure Human Rivals with Cattlers disabled
 spatial-smoke    = v0.7 situated Rival roaming proof with Cattlers disabled
-cattler-smoke    = 3-Cattler pack ecology proof: habitat/pack/infestation/ledger diagnostics
+cattler-smoke    = server-only 3-Cattler pack habitat proof: LURK/INFEST persistence, physical occupation and internal ecology accounting
 net-smoke        = alias retained for continuity
 
 Local debug environment:
