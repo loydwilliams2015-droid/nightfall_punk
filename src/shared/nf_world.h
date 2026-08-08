@@ -1,6 +1,8 @@
 #ifndef NF_WORLD_H
 #define NF_WORLD_H
 
+#include "nf_energy.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -216,6 +218,7 @@ typedef struct NfWorld {
     NfRamp ramps[NF_MAX_RAMPS];
     size_t ramp_count;
     NfMovementConfig movement;
+    NfEnergySystem energy;
 } NfWorld;
 
 void nf_world_init(NfWorld *world, uint32_t seed);
