@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(nightfall_punk VERSION 0.3 LANGUAGES C)
+project(nightfall_punk VERSION 0.4 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -27,8 +27,6 @@ elseif(NF_FETCH_ENET)
         GIT_TAG v1.3.18
         GIT_SHALLOW TRUE)
     FetchContent_MakeAvailable(enet)
-    # nightfall itself stays strict C11. ENet's Unix implementation expects
-    # the normal POSIX/GNU feature surface (addrinfo/getaddrinfo/etc.).
     if(UNIX AND TARGET enet)
         set_property(TARGET enet PROPERTY C_EXTENSIONS ON)
         target_compile_definitions(enet PRIVATE _DEFAULT_SOURCE)
@@ -47,12 +45,13 @@ if(TARGET PkgConfig::SODIUM)
     set(NF_SODIUM_TARGET PkgConfig::SODIUM)
     message(STATUS "nightfall: libsodium enabled")
 else()
-    message(WARNING "nightfall: libsodium not found; v0.3 security API will use non-cryptographic localhost scaffolding. Install libsodium-dev for authenticated token derivation.")
+    message(WARNING "nightfall: libsodium not found; v0.4 localhost testing will use non-cryptographic session-token scaffolding. Install libsodium-dev for authenticated token derivation.")
 endif()
 
 add_library(nightfall_shared STATIC
     src/shared/nf_world.c
-    src/shared/nf_movement.c)
+    src/shared/nf_movement.c
+    src/shared/nf_combat.c)
 target_include_directories(nightfall_shared PUBLIC src/shared)
 target_compile_options(nightfall_shared PRIVATE -Wall -Wextra -Wpedantic)
 if(UNIX)
@@ -111,10 +110,15 @@ if(NF_BUILD_TESTS)
     add_executable(nightfall_world_test src/tests/test_world.c)
     target_link_libraries(nightfall_world_test PRIVATE nightfall_shared)
     target_compile_options(nightfall_world_test PRIVATE -Wall -Wextra -Wpedantic)
-    add_test(NAME simulation_v03 COMMAND nightfall_world_test)
+    add_test(NAME simulation_v04 COMMAND nightfall_world_test)
+
+    add_executable(nightfall_combat_test src/tests/test_combat.c)
+    target_link_libraries(nightfall_combat_test PRIVATE nightfall_shared)
+    target_compile_options(nightfall_combat_test PRIVATE -Wall -Wextra -Wpedantic)
+    add_test(NAME combat_contract_v04 COMMAND nightfall_combat_test)
 
     add_executable(nightfall_network_test src/tests/test_network.c)
     target_link_libraries(nightfall_network_test PRIVATE nightfall_network)
     target_compile_options(nightfall_network_test PRIVATE -Wall -Wextra -Wpedantic)
-    add_test(NAME network_contract_v03 COMMAND nightfall_network_test)
+    add_test(NAME network_contract_v04 COMMAND nightfall_network_test)
 endif()
