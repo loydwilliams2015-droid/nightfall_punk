@@ -18,8 +18,15 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 - [x] AI knowledge is perspectival: server truth != individual knowledge != squad report
 - [x] faction identity is distinct from relationship state
 - [x] Human Rivals = secondary antagonism / temporary terrain antagonism / negotiable
-- [x] Nightmare Ranchers = primary antagonism / semi-permanent environmental antagonism / always non-negotiable
-- [x] Rancher `predatory` and `non-negotiable` are independent axes; a rare seeded hostile/non-predatory Rancher may permit avoidant detente without diplomacy
+- [x] **Dream Cattlers** replace the former Nightmare Ranchers in player-facing lore: primary ecological antagonists / semi-permanent environmental antagonism / always non-negotiable
+- [x] existing `Rancher` identifiers may remain temporarily in implementation/technical notes until a coordinated rename pass; player-facing terminology is **Dream Cattler**
+- [x] Dream Cattler `predatory` and `non-negotiable` remain independent axes; a rare seeded hostile/non-predatory Dream Cattler may permit avoidant detente without diplomacy
+- [x] ecological conflict topology for score-play: **Player Crew + teammates contend with Dream Cattlers over ecology/habitat; Player Crew and Rival Crews compete with one another over ecological resources**
+- [x] score-play should therefore reward/measure ecological control, preservation, extraction, access, denial and resource contest alongside direct combat rather than reducing match value to kill count alone
+- [x] player and rival factions are named **“[X] Crew”** from carefully adapted public-domain literary sources with cyberpunk-adjacent, proto-speculative, anti-imperial, colonial/post-colonial or cosmopolitan themes
+- [x] individual crew-member names are similarly derived from characters in those same verified public-domain source texts, transformed enough to belong naturally to the nightfall!punk world
+- [x] commercial-use naming gate: use only source texts and source-character elements verified public domain for the intended market; do not borrow expression, costume, characterization, translations, illustrations or naming innovations unique to later copyrighted adaptations
+- [x] public-domain status and trademark risk are separate checks: before shipping a crew or character name, record source work, author, publication date/edition and public-domain basis, then perform a separate title/name trademark-clearance check
 - [x] formal genre identity = **Neo-Xennial Shooter / Neo-Xennial FPS**
 - [x] design subtype = **Systemic Arena FPS**
 - [x] genre thesis = Quake-style immediacy + Deus Ex-style systemic possibility + Halo-style spatial clarity + F.E.A.R.-style encounter intelligence + contemporary simulation/network infrastructure
@@ -57,7 +64,7 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 
 ## Contract thesis
 
-Four server-controlled Human Rivals should perceive the player through limited evidence, remember imperfectly, share bounded reports, select tactical intent with utility scoring, query local world affordances, move through the same movement/Fuzzy Rail system, fire through the same combat system, damage/kill the player, die and respawn. The framework must remain reusable by teammates and later Ranchers without forcing their motivational policies to become the same.
+Four server-controlled Human Rivals should perceive the player through limited evidence, remember imperfectly, share bounded reports, select tactical intent with utility scoring, query local world affordances, move through the same movement/Fuzzy Rail system, fire through the same combat system, damage/kill the player, die and respawn. The framework must remain reusable by teammates and later Dream Cattlers without forcing their motivational policies to become the same.
 
 ## Existing / regression protection
 
@@ -79,11 +86,11 @@ Four server-controlled Human Rivals should perceive the player through limited e
 - [x] Human Rival relationship is separate from faction identity and defaults HOSTILE in v0.5
 - [x] relationship policy gates damage in server hit validation
 - [x] `--rival-truce` / `NF_RIVAL_TRUCE=1` debug path proves hostility can be suppressed without changing faction identity
-- [x] Rancher relation always resolves to NONNEGOTIABLE_HOSTILE
-- [x] Rancher profile API keeps non-predatory rarity externally tunable instead of hard-coding a final probability
-- [x] rare hostile/non-predatory Rancher profile remains non-negotiable and biases avoidance/territorial behavior over pursuit
+- [x] Dream Cattler relation always resolves to NONNEGOTIABLE_HOSTILE
+- [x] Dream Cattler profile API keeps non-predatory rarity externally tunable instead of hard-coding a final probability
+- [x] rare hostile/non-predatory Dream Cattler profile remains non-negotiable and biases avoidance/territorial behavior over pursuit
 - [ ] polished player-facing negotiation UX is later
-- [ ] live Rancher ecological behavior is later
+- [ ] live Dream Cattler ecological behavior is later
 
 ## Advancing — World Semantic Alerts
 
@@ -127,7 +134,7 @@ Four server-controlled Human Rivals should perceive the player through limited e
 - [x] selected tactical goal feeds ordinary movement instead of bypassing physics
 - [x] Fuzzy Rail candidate state can trigger AI ladder interaction / vault / mantle input
 - [ ] coarse region/A* route graph beyond direct tactical goal steering remains a later expansion if human footage proves necessary
-- [ ] full spatial influence fields (enemy threat / ally support / Rancher pressure / objective value) remain later
+- [ ] full spatial influence fields (enemy threat / ally support / Dream Cattler pressure / objective value) remain later
 
 ## Advancing — squad intelligence
 
@@ -162,7 +169,7 @@ Four server-controlled Human Rivals should perceive the player through limited e
 ## Automated contracts
 
 - [x] relationship/damage/truce policy tests added
-- [x] Rancher non-negotiable + tunable rare non-predatory disposition tests added
+- [x] Dream Cattler non-negotiable + tunable rare non-predatory disposition tests added
 - [x] semantic hearing radius/lifetime tests added
 - [x] AI perception/engage/fire-output test added
 - [x] truce suppresses AI firing in deterministic test
@@ -185,7 +192,7 @@ Four server-controlled Human Rivals should perceive the player through limited e
 - [x] AI does not apply damage directly
 - [x] AI and network actors converge at shared control intent before movement/combat
 - [x] AI knowledge is not server omniscience
-- [x] Rancher and Human Rival motivational policies remain distinct even though lower layers are shareable
+- [x] Dream Cattler and Human Rival motivational policies remain distinct even though lower layers are shareable
 - [x] network-controlled teammates and server-controlled Human Rivals now have distinct faction identities consistent with their relationship semantics
 - [x] no dynamic allocation required in AI tick path
 - [x] implementation tree passed full strict-warning CI before merge
@@ -197,18 +204,18 @@ Behavioral/design references, not claims about proprietary internals.
 
 - [x] F.E.A.R. — legible tactical intent and reusable action vocabulary
 - [x] Halo 2/3 — partial knowledge, scalable agent architecture, readable combat spaces
-- [x] Alien: Isolation — future Rancher uncertainty/persistence model; not copied into Human Rival policy
+- [x] Alien: Isolation — future Dream Cattler uncertainty/persistence model; not copied into Human Rival policy
 - [x] Left 4 Dead — higher-level pressure/director logic remains separate from individual brains
 - [x] The Last of Us — grounded search/reaction behavior and distinct AI families over shared technology
 - [x] Killzone lineage — tactical position evaluation informs affordance scoring
 - [x] Dishonored lineage — search/chase spatial reasoning informs stale-knowledge investigation
 - [x] Prey 2017 — world possibilities/objects inform agent affordances
 - [x] Quake / Unreal Tournament bots — combat remains compatible with arena movement
-- [x] S.T.A.L.K.E.R. / A-Life lineage — future persistence/ecology inspiration for Ranchers, not an immediate v0.5 simulation target
+- [x] S.T.A.L.K.E.R. / A-Life lineage — future persistence/ecology inspiration for Dream Cattlers, not an immediate v0.5 simulation target
 
 ## Deliberate v0.5 boundaries
 
-- [ ] no final Rancher brain yet
+- [ ] no final Dream Cattler brain yet
 - [ ] no polished negotiation/dialogue interface yet
 - [ ] no full teammate tactical combat controller yet
 - [ ] no global tactical influence-map stack yet
