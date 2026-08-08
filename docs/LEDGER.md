@@ -6,212 +6,234 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 
 - [x] C + raylib; Linux-first
 - [x] fixed 60 Hz simulation; authoritative dedicated server
+- [x] server truth + client prediction/reconciliation
 - [x] four-player target for now; possible five later
-- [x] round-based story-oriented arena FPS
-- [x] mixed authored + seeded physical/temple mechanisms
-- [x] placeholder assets before original aesthetics
-- [x] direct confrontation is the gameplay emphasis
-- [x] rewards come from simple physical puzzles under combat pressure
-- [x] moderate tactical walk + fast sprint; contextual fatigue later
-- [x] crouch-jump enables a second jump
-- [x] Fuzzy Rail = local geometric traversal intelligence
-- [x] Dynamic Affordance Graph = later utility + affordances + influence + blackboard
-- [x] World Semantic Alerts = explicit server-authored gameplay-event layer, never inferred from raw packets
+- [x] round-based story-oriented systemic arena FPS
+- [x] placeholder/graybox mechanics before original aesthetics
+- [x] direct confrontation remains the gameplay emphasis
+- [x] physical puzzle/mechanism play later creates rewards and route advantages under combat pressure
+- [x] Fuzzy Rail = shared local geometric traversal intelligence, not strategic pathing
+- [x] Dynamic Affordance Graph = utility + bounded affordance queries + spatial pressure + blackboards; selective planning later
+- [x] World Semantic Alerts = explicit server-authored gameplay-event layer; AI never infers critical world truth from packet arrival
+- [x] AI knowledge is perspectival: server truth != individual knowledge != squad report
+- [x] faction identity is distinct from relationship state
+- [x] Human Rivals = secondary antagonism / temporary terrain antagonism / negotiable
+- [x] Nightmare Ranchers = primary antagonism / semi-permanent environmental antagonism / always non-negotiable
+- [x] Rancher `predatory` and `non-negotiable` are independent axes; a rare seeded hostile/non-predatory Rancher may permit avoidant detente without diplomacy
 - [x] formal genre identity = **Neo-Xennial Shooter / Neo-Xennial FPS**
 - [x] design subtype = **Systemic Arena FPS**
-- [x] genre thesis = continue the late-1990s/early-2000s FPS trajectory rather than merely imitate retro aesthetics: Quake-style immediacy and arena freedom + Deus Ex-style systemic possibility + Halo-style spatial clarity + F.E.A.R.-style encounter intelligence + contemporary simulation/network infrastructure
-- [x] neo-xennial pillars = arena freedom, systemic worlds, autonomous AI, physicality, emergent narrative, and open/moddable dedicated-server infrastructure
+- [x] genre thesis = Quake-style immediacy + Deus Ex-style systemic possibility + Halo-style spatial clarity + F.E.A.R.-style encounter intelligence + contemporary simulation/network infrastructure
 - [x] manifesto = **The neo-xennial shooter continues the FPS future that the early 2000s started: fast, physical, systemic, open, and unpredictable.**
-- [x] **Dragon Master lore is retired and replaced by Ghost Static / Apophis.**
-- [x] **Ghost Static** = the public, street and broadcast identity: an unseen punk DJ / pirate-radio arena conductor rooted in cosmopolitan hip-hop and punk culture, with samurai-film cool as a stylistic influence
-- [x] **Apophis** = the mythic / occult / true-name layer behind Ghost Static, invoking the serpent-in-the-signal, chaos in the broadcast and a deeper intelligence moving through arena infrastructure
-- [x] Ghost Static / Apophis shapes matches through signal, timing, interference, music, environmental cueing and arena-wide pressure rather than brute-force direct combat
-- [x] presentation rule = player-facing material generally uses **Ghost Static**; hidden lore, rare voice lines, symbols and deeper system references may invoke **Apophis**
+- [x] Ghost Static / Apophis replaces Dragon Master lore: Ghost Static is the public pirate-radio arena-conductor identity; Apophis is the deeper mythic/signal layer
 
 # v0.1 — Foundation — COMPLETE / ARCHIVED
+- [x] fixed-tick C foundation, headless server shell, raylib client shell, smoke test
 - [x] `archive/v0.1`
 
 # v0.2 — Movement — COMPLETE / ARCHIVED
-- [x] movement/traversal/Fuzzy Rail contract
+- [x] shared movement/traversal/Fuzzy Rail contract
 - [x] `archive/v0.2`
 
 # v0.3 — Networked Movement — COMPLETE / ARCHIVED
-- [x] ENet abstraction + protocol v3
-- [x] 60 Hz server/input/prediction + 30 Hz snapshots
-- [x] reconciliation, remote interpolation scaffold, reconnect/session tokens
-- [x] latency/jitter/loss simulation + four-netbot smoke
-- [x] libsodium token derivation on target machine
-- [x] normal/impaired-network recording reviewed
+- [x] ENet abstraction + explicit protocol
+- [x] authoritative server, prediction/reconciliation, remote interpolation scaffold
+- [x] reconnect/session tokens, impairment simulation, libsodium readiness
+- [x] four-client network smoke and Pop!_OS recordings accepted
 - [x] `archive/v0.3`
 
-# v0.4 — Combat — CURRENT BUILD
+# v0.4 — Combat — COMPLETE / ARCHIVED
+
+- [x] two authoritative weapons: carbine + pistol
+- [x] health, ammo, reload/switch state, body/head hitscan, bounded rewind, death/3-second respawn
+- [x] client sends combat intent, never hit/damage truth
+- [x] combat events: GUNFIRE / DAMAGE / DEATH / RESPAWN / RELOAD / WEAPON_SWITCH
+- [x] four-client combat smoke with authoritative damage/death
+- [x] Linux mouse-capture/focus defect fixed and isolated-port local launcher hardened
+- [x] Pop!_OS human combat recording accepted: mouse/camera, authoritative handshake, movement, firing, ammo, weapon switching, damage, death/respawn and reload behavior considered good for current graybox
+- [x] `archive/v0.4`
+- [x] v0.4 correction-counter discrepancy carried forward for semantic cleanup: raw resync passes had been presented as if every pass were a visible correction
+
+# v0.5 — Agent Intelligence Framework — CURRENT BUILD
 
 ## Contract thesis
 
-Two guns. Hitscan. Server truth. Medium TTK. Health/death/respawn. Reload/switch. Lag-compensated target history. Four networked combatants. Combat events become the first concrete producers for the later World Semantic Alerts system.
+Four server-controlled Human Rivals should perceive the player through limited evidence, remember imperfectly, share bounded reports, select tactical intent with utility scoring, query local world affordances, move through the same movement/Fuzzy Rail system, fire through the same combat system, damage/kill the player, die and respawn. The framework must remain reusable by teammates and later Ranchers without forcing their motivational policies to become the same.
 
 ## Existing / regression protection
 
-- [x] v0.2 movement remains the single movement implementation
+- [x] v0.2 movement remains the single physical movement implementation
 - [x] v0.3 ENet transport remains behind `nf_net`
-- [x] client still sends intent, never authoritative transforms or hit claims
-- [x] server still owns movement, collision, Fuzzy Rail and snapshots
-- [x] 60 Hz server/input/prediction and 30 Hz snapshots retained
-- [x] reconnect/session-token and network impairment scaffolding retained
-- [x] raylib remains presentation-only
-- [x] `./nightfall.sh local` now isolates each graphical demo on a random localhost port and verifies the just-launched server survives before starting the client
+- [x] v0.4 combat remains the single weapon/damage/death implementation
+- [x] network clients still submit intent, never transforms/hits/damage
+- [x] server AI does not impersonate a network client
+- [x] shared `NfControlFrame` converges network and AI control onto `NfMoveInput` + `NfCombatInput`
+- [x] server AI cannot teleport, bypass collision, bypass ammo, bypass reload, manufacture damage, or skip authoritative respawn
+- [x] project-owned code remains under `-Wall -Wextra -Wpedantic -Werror`
 
-## Advancing — combat simulation
+## Advancing — relationships / antagonism
 
-- [x] `nf_combat` shared simulation module
-- [x] explicit weapon state: READY / RECOVERING / RELOADING / SWITCHING / EMPTY
-- [x] two weapon slots: carbine + pistol
-- [x] carbine: automatic, 30-round magazine, medium damage
-- [x] pistol: semi-automatic, 12-round magazine, higher per-shot damage
-- [x] 100-health baseline
-- [x] body + head hit zones; head multiplier
-- [x] server-side damage/death
-- [x] 3-second graybox respawn
-- [x] faction damage rule with friendly fire off by default
-- [x] reload timing with late commit point
-- [x] sprint/interact/weapon switch can interrupt reload
-- [x] weapon switching is timed and authoritative
-- [x] server rate-of-fire and ammo enforcement
-- [x] dead actors cannot move/fire
+- [x] explicit relationship states: NEUTRAL / COOPERATIVE / TRUCE / CONTESTED / HOSTILE / NONNEGOTIABLE_HOSTILE
+- [x] Player <-> Teammate defaults cooperative
+- [x] Human Rival relationship is separate from faction identity and defaults HOSTILE in v0.5
+- [x] relationship policy gates damage in server hit validation
+- [x] `--rival-truce` / `NF_RIVAL_TRUCE=1` debug path proves hostility can be suppressed without changing faction identity
+- [x] Rancher relation always resolves to NONNEGOTIABLE_HOSTILE
+- [x] Rancher profile API keeps non-predatory rarity externally tunable instead of hard-coding a final probability
+- [x] rare hostile/non-predatory Rancher profile remains non-negotiable and biases avoidance/territorial behavior over pursuit
+- [ ] polished player-facing negotiation UX is later
+- [ ] live Rancher ecological behavior is later
 
-## Advancing — network combat
+## Advancing — World Semantic Alerts
 
-- [x] protocol v4 / `NF04`
-- [x] combat input travels with sequenced input commands
-- [x] client sends fire/reload/switch/aim intent, never hit outcome
-- [x] combat state included in snapshots: faction, health, alive, weapon, state, ammo
-- [x] explicit `COMBAT_EVENT` network message
-- [x] server-authored GUNFIRE / DAMAGE / DEATH / RESPAWN / RELOAD / WEAPON_SWITCH events
-- [x] transient gunfire/damage events use state channel; important discrete transitions use reliable control channel
-- [x] authoritative combat state applies even when movement reconciliation is unnecessary
-- [x] first World Semantic Alert producers exist as combat events; full semantic routing is intentionally later
+- [x] fixed-capacity semantic event bus; no allocation in tick path
+- [x] combat facts map into bounded semantic alerts
+- [x] GUNFIRE carries hearing radius/lifetime
+- [x] DAMAGE / DEATH / RESPAWN have explicit semantic forms
+- [x] AI hearing consumes semantic alerts rather than transport packets
+- [x] semantic query is local/radius bounded
+- [ ] broader mechanisms/objectives/route/resource semantic vocabulary later
 
-## Advancing — hitscan and latency safety
+## Advancing — perception / memory / knowledge
 
-- [x] server reconstructs shot from authoritative actor + submitted yaw/pitch intent
-- [x] 64-frame server actor-history ring
-- [x] rewind limited to 12 ticks (~200 ms)
-- [x] historical actor target test for hitscan
-- [x] world-solid occlusion check
-- [x] rewind duration carried on damage/death combat event for diagnostics
-- [x] client never submits target/damage
-- [ ] tune rewind policy from human impaired-network combat footage
+- [x] Human Rival vision is bounded by range, facing and world occlusion
+- [x] perception is staggered and runs below simulation frequency
+- [x] reaction delay is deterministic/seeded and roughly human-scale rather than zero-latency
+- [x] AI records last-seen and last-heard positions
+- [x] knowledge confidence decays when evidence goes stale
+- [x] AI can hear gunfire it cannot currently see
+- [x] direct damage semantics can strengthen attacker knowledge
+- [x] no authoritative hidden player transform is copied into Rival knowledge
+- [x] squad reports are secondhand, lower-confidence knowledge rather than telepathy
+- [ ] teammate controller behavior beyond shared relation/perception substrate remains later
 
-## Advancing — graybox combat lab
+## Advancing — utility / tactical intent
 
-- [x] two stationary opposite-faction target dummies in server world so either current faction has a valid target
-- [x] alternating player/rival factions across four network client slots for duel testing
-- [x] remote actors colored ally/opponent in client presentation
-- [x] primitive carbine/pistol viewmodel placeholder
-- [x] immediate local muzzle-flash presentation
-- [x] server-confirmed hit marker
-- [x] incoming-damage screen border
-- [x] health / weapon / ammo / weapon-state HUD
-- [x] combat event / hit-zone / damage / rewind diagnostics
-- [x] network diagnostics retained
-- [x] focus-aware mouse capture releases on focus loss and reacquires after focus return
-- [x] mouse-look fallback can use absolute-position delta when a backend reports zero relative delta
-- [x] HUD reports mouse focus, capture state, delta and fallback activation
-- [x] Pop!_OS final retest confirms `FOCUSED`, `capture ON`, non-zero mouse deltas and visible camera rotation after authoritative handshake
+- [x] bounded utility modes: IDLE / INVESTIGATE / ADVANCE / ENGAGE / SEEK_COVER / RETREAT / RELOAD / TRUCE_HOLD
+- [x] utility inputs include visibility/confidence, range, health and ammunition
+- [x] action hysteresis reduces tactical thrashing
+- [x] ordinary decisions do not require GOAP/planning
+- [x] selective GOAP/planning remains architecturally reserved for later compound goals
+- [x] AI updates are multi-rate rather than one giant 60 Hz brain
 
-## Controls
+## Advancing — Dynamic Affordance Graph first slice
 
-- [x] WASD move
-- [x] mouse look
-- [x] Shift sprint
-- [x] Ctrl crouch
-- [x] Space jump / crouch-gated second jump
-- [x] E interact / ladder
-- [x] Left Mouse fire
-- [x] R reload
-- [x] 1 carbine
-- [x] 2 pistol
-- [x] F10 toggle / reacquire mouse capture
+- [x] world geometry generates bounded cover candidates at server startup
+- [x] affordance queries are local and capacity-limited rather than whole-world brute-force scans
+- [x] cover evaluation considers travel cost, world occlusion and reservation
+- [x] cover slots can be reserved by one AI actor
+- [x] reservation prevents all agents selecting the same exclusive cover candidate
+- [x] selected tactical goal feeds ordinary movement instead of bypassing physics
+- [x] Fuzzy Rail candidate state can trigger AI ladder interaction / vault / mantle input
+- [ ] coarse region/A* route graph beyond direct tactical goal steering remains a later expansion if human footage proves necessary
+- [ ] full spatial influence fields (enemy threat / ally support / Rancher pressure / objective value) remain later
+
+## Advancing — squad intelligence
+
+- [x] four Human Rival AI by default; `NF_AI_COUNT=1` supports isolated debugging
+- [x] ephemeral roles: PRESSURE / FLANK_LEFT / FLANK_RIGHT / HOLD
+- [x] shared blackboard reports target position with reduced confidence
+- [x] flanking roles bias lateral combat movement differently
+- [x] cover reservation handles first occupancy conflict
+- [x] per-agent updates are staggered to avoid synchronized CPU spikes
+- [ ] sophisticated role bidding / formation / negotiated squad planning later
+
+## Advancing — combat behavior
+
+- [x] AI uses the existing carbine combat state
+- [x] imperfect deterministic aim jitter
+- [x] reaction delay before first fire
+- [x] role-dependent burst cadence instead of uninterrupted aimbot fire
+- [x] AI reload requests go through `nf_combat_start_reload`
+- [x] AI shots go through the same hitscan/world occlusion/damage validation as network players
+- [x] AI can damage/kill Player/Teammate actors only when current relationship permits
+- [x] AI can be killed and respawns through the same combat truth
+- [x] stuck detection can trigger bounded jump/strafe recovery
+
+## Advancing — diagnostics
+
+- [x] v0.4 prediction ambiguity resolved structurally: `resyncs` counts reconciliation/state rebuild passes; `corrections` counts threshold-crossing positional corrections
+- [x] graphical HUD now labels `visible corrections` separately from `resyncs`
+- [x] server prints each AI actor's id / role / mode / target / confidence / visibility / health / cover selection at a bounded cadence
+- [ ] richer in-client per-AI utility/knowledge overlay is deferred until after first human v0.5 behavior recording
 
 ## Automated contracts
 
-- [x] weapon state / rate-of-fire test
-- [x] ammo consumption test
-- [x] reload commit/cancel test
-- [x] weapon-switch test
-- [x] semi-auto pistol test
-- [x] faction-damage rule test
-- [x] damage/death/respawn test
-- [x] protocol round-trip for combat input/state/events
-- [x] reconciliation test retains authoritative health
-- [x] four automated clients generate movement + aiming + firing + reload/switch inputs
-- [x] combat-smoke requires authoritative damage events as well as snapshots/combat events
-- [x] GitHub CI full raylib + ENet + libsodium compile green on initial v0.4 branch
-- [x] GitHub simulation / combat / network contract tests green: 3/3
-- [x] GitHub four-client combat smoke green; authoritative damage and death observed by every bot
-- [x] project-owned C targets compile under `-Wall -Wextra -Wpedantic -Werror`
-- [x] GitHub CI green on mouse-capture repair tree
-- [x] GitHub CI green on isolated-port local-handshake launcher repair
-- [ ] Pop!_OS clean build/tests/combat-smoke green
-- [x] Pop!_OS isolated local handshake reaches `AUTHORITATIVE + PREDICTED` with advancing server/client ticks
-- [x] Pop!_OS mouse-look / camera rotation retest green
-- [x] human recording confirms live gunfire, ammo consumption, weapon switching and authoritative pistol damage (30 body damage with 16 ms rewind observed)
-- [ ] final human combat closeout pass reviewed: explicit reload completion/interruption plus death/3-second respawn
-
-## Par / Compare-5
-
-Behavioral targets, not claims about proprietary internals.
-
-- [x] Quake III lineage — shooting remains compatible with expressive movement
-- [x] Urban Terror — grounded readable gunfight scale
-- [x] Source / Counter-Strike lineage — server-authoritative hitscan + bounded lag-compensation philosophy
-- [x] Halo 3 — medium-TTK counterplay rather than one-tap lethality
-- [x] Titanfall 2 — traversal states remain valid while weapons are active
-- [ ] human tuning of TTK, recoil/spread feel and movement/fire transition from recorded demo
-
-## Deliberate v0.4 boundaries
-
-- [ ] no ADS yet
-- [ ] no projectile weapons yet
-- [ ] no final weapon art/assets required
-- [ ] no full inventory/pickup economy yet; two authoritative weapon slots and reserve ammo are the inventory substrate
-- [ ] no AI combat behavior yet
-- [ ] no full World Semantic Alert routing/consumers yet
-- [ ] no rounds/objectives/reward mechanisms yet
-- [ ] recoil/spread sophistication follows the first human gunfeel review rather than preceding it
+- [x] relationship/damage/truce policy tests added
+- [x] Rancher non-negotiable + tunable rare non-predatory disposition tests added
+- [x] semantic hearing radius/lifetime tests added
+- [x] AI perception/engage/fire-output test added
+- [x] truce suppresses AI firing in deterministic test
+- [x] legacy simulation/combat/network tests retained
+- [ ] exact v0.5 full compile green in GitHub CI
+- [ ] 4/4 CTest contracts green
+- [ ] four-network-client + four-AI combat smoke green
+- [ ] one-human-shaped-client + four-AI smoke green
+- [ ] Pop!_OS clean build/tests green
+- [ ] human v0.5 demo reviewed
 
 ## Stable-coherence gate
 
-- [x] combat simulation has no raylib dependency
-- [x] combat simulation has no ENet dependency
-- [x] transport does not decide damage/hits
-- [x] client does not claim hits/damage/death
-- [x] snapshots are recovery truth; combat events are causal/feedback messages
-- [x] movement and combat states remain separate but live on the same actor/world truth
-- [x] initial GitHub-hosted full compile green
-- [x] all automated tests green
-- [x] four-client combat smoke green with damage/death
-- [x] mouse-capture repair exact tree green in CI
-- [x] isolated local-launch repair exact tree green in CI
-- [ ] target Pop!_OS clean build/tests/combat-smoke green
-- [x] target Pop!_OS local handshake confirmed
-- [x] target Pop!_OS mouse look confirmed
-- [ ] target Pop!_OS run + final combat closeout demo reviewed
+- [x] AI library has no raylib dependency
+- [x] AI library has no ENet dependency
+- [x] semantic and relationship layers have no raylib/ENet dependency
+- [x] transport does not decide AI intent or hit outcome
+- [x] AI does not apply damage directly
+- [x] AI and network actors converge at shared control intent before movement/combat
+- [x] AI knowledge is not server omniscience
+- [x] Rancher and Human Rival motivational policies remain distinct even though lower layers are shareable
+- [x] no dynamic allocation required in AI tick path
+- [ ] exact branch CI green before merge
+- [ ] target-machine behavior accepted before `archive/v0.5`
+
+## Par / Compare-10 synthesis
+
+Behavioral/design references, not claims about proprietary internals.
+
+- [x] F.E.A.R. — legible tactical intent and reusable action vocabulary
+- [x] Halo 2/3 — partial knowledge, scalable agent architecture, readable combat spaces
+- [x] Alien: Isolation — future Rancher uncertainty/persistence model; not copied into Human Rival policy
+- [x] Left 4 Dead — higher-level pressure/director logic remains separate from individual brains
+- [x] The Last of Us — grounded search/reaction behavior and distinct AI families over shared technology
+- [x] Killzone lineage — tactical position evaluation informs affordance scoring
+- [x] Dishonored lineage — search/chase spatial reasoning informs stale-knowledge investigation
+- [x] Prey 2017 — world possibilities/objects inform agent affordances
+- [x] Quake / Unreal Tournament bots — combat remains compatible with arena movement
+- [x] S.T.A.L.K.E.R. / A-Life lineage — future persistence/ecology inspiration for Ranchers, not an immediate v0.5 simulation target
+
+## Deliberate v0.5 boundaries
+
+- [ ] no final Rancher brain yet
+- [ ] no polished negotiation/dialogue interface yet
+- [ ] no full teammate tactical combat controller yet
+- [ ] no global tactical influence-map stack yet
+- [ ] no general GOAP planner yet
+- [ ] no rounds/objectives/reward mechanisms yet
+- [ ] no final original art/audio requirement
+- [ ] no claim of production-final cover/pathfinding; first human footage determines the next navigation investment
+
+## Human demo acceptance checklist
+
+For the first v0.5 recording, verify visually rather than trying to prove every internal unit contract:
+
+- [ ] client reaches `AUTHORITATIVE + PREDICTED`
+- [ ] red Human Rivals are moving rather than stationary dummies
+- [ ] Rivals acquire/approach/strafe instead of always bee-lining
+- [ ] Rivals fire in bounded bursts and miss sometimes
+- [ ] player takes authoritative damage from Rival fire
+- [ ] at least one Rival can kill the player; 3-second player respawn still works
+- [ ] player can kill a Rival; Rival respawn still works
+- [ ] hiding behind solid geometry interrupts direct fire/line-of-sight behavior
+- [ ] reappearing produces reacquisition
+- [ ] no obvious wall shooting / teleportation / collision bypass
+- [ ] movement/mouse/combat v0.4 regressions absent
+- [ ] note anything surprisingly excellent or catastrophically wrong; silence on a requested behavior is not automatically interpreted as success
 
 ## Current tuning watch
 
-- [x] HUD reports `mouse FOCUSED | capture ON` and non-zero delta while physically moving the mouse on Pop!_OS
-- [x] fixed-camera symptom in second recording traced to `NET HANDSHAKE`: server/client ticks remained zero, no local actor existed, and the current camera only consumes yaw/pitch once the local actor exists
-- [x] local launcher hardened against stale/orphan port-7777 servers by using an isolated per-run localhost port and verifying server liveness
-- [x] isolated local launch now reaches `NET AUTHORITATIVE + PREDICTED`; server/client ticks advance normally
-- [x] already-observed non-zero mouse delta now visibly rotates the camera
-- [x] normal localhost human combat demonstrates low instantaneous prediction error (about 0.002 m late in the recording) and max observed error about 0.218 m
-- [ ] reconcile diagnostic semantics before archive: the displayed correction count reached about 480 by ~88 seconds despite tiny instantaneous error and no obvious large rubber-banding; distinguish reconciliation/state-resync passes from player-visible corrections rather than treating the raw count as gunfeel failure
-- [ ] explicitly capture reload completion/interruption and target death/3-second respawn in the final closeout pass
-- [ ] inspect larger movement-prediction errors around automated death/respawn transitions (bot max observed up to ~0.82 m) in human footage before deciding whether this is visible or merely a discontinuity diagnostic
-- [ ] tune TTK / recoil / spread / weapon transitions from the recorded human combat pass
-- [ ] tune hitscan rewind policy under impaired-network human combat
-
-# Planned next graybox contracts
-
-After v0.4 is accepted and archived, prioritize faction AI/game theory + Dynamic Affordance Graph, then broaden World Semantic Alerts, rounds/objectives and physical reward puzzles before the graphics/aesthetic engine phase.
+- [x] correction diagnostic semantics separated before v0.5 human review
+- [ ] inspect whether four Rival default pressure is fun or instantly overwhelming
+- [ ] inspect whether aim jitter/reaction/burst timing reads human rather than robotic
+- [ ] inspect cover-selection usefulness versus direct-goal navigation failures
+- [ ] inspect AI clumping and stuck recovery around ladders/platforms/obstacles
+- [ ] inspect whether semantic hearing/search is visible enough to deserve richer debug overlay
+- [ ] use human footage to decide whether v0.6 should deepen navigation/affordances, social/teammate behavior, or broader world semantics first
