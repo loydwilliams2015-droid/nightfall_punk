@@ -37,7 +37,7 @@ Snapshots include authoritative position, velocity, movement mode, grounded/crou
 
 Fuzzy Rail is local geometric movement intelligence, not a global AI route. It detects nearby steps, edges, vaults, mantles and ladders and scores possible local transitions from distance + approach alignment. Candidate retention uses hysteresis so usable geometry feels crisp without becoming a hard track.
 
-Network rule: **the client's selected Fuzzy Rail feature is predictive only.** The server independently evaluates geometry and sends authoritative traversal state. A divergence counter makes disagreements visible during graybox development.
+Network rule: **the client's selected Fuzzy Rail feature is predictive only.** The server independently evaluates geometry and sends authoritative traversal state. The current v0.3 diagnostic can report short-lived candidate disagreement as well as meaningful movement corrections; this is accepted as a graybox diagnostic limitation and may be refined during later traversal/combat hardening.
 
 ## Dynamic Affordance Graph
 
@@ -47,10 +47,26 @@ Planned composition:
 
 `world affordances -> influence/pressure fields -> faction utility -> squad blackboard -> desired action/destination -> Fuzzy Rail local traversal -> physics/server authority`
 
+## World Semantic Alerts — planned, not implemented in v0.3
+
+v0.3 does **not** contain a world-semantic alert/event layer. Raw network messages and simulation state are not semantic alerts.
+
+A later authoritative world-event layer should convert simulation facts into durable gameplay meanings such as:
+
+- gunfire emitted / heard
+- actor damaged, downed, killed or revived
+- mechanism activated, blocked or completed
+- reward exposed, claimed or stolen
+- route opened, closed or transformed
+- objective state changed
+- faction sighting / threat escalation
+
+These events should be generated from server-authoritative world state and consumed selectively by the Dynamic Affordance Graph, faction AI, squad blackboards, Dragon Master/director logic, audio/FX presentation and objective systems. Networking should replicate only the semantic events clients actually need for presentation or prediction; semantic meaning should not be inferred independently by each client when the server can establish it once.
+
 ## Security boundary
 
 v0.3 introduces session nonces/tokens and optional libsodium-backed token derivation/comparison. This is scaffolding for public servers; encrypted gameplay payloads are intentionally deferred until the transport/movement contract is proven.
 
 ## Scope discipline
 
-v0.3 does not add combat, faction AI, round objectives, or aesthetic assets. Networking may replicate movement; movement remains independent from networking and rendering.
+v0.3 does not add combat, faction AI, round objectives, world semantic alerts or aesthetic assets. Networking may replicate movement; movement remains independent from networking and rendering.
