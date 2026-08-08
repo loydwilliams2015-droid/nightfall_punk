@@ -15,305 +15,387 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 - [x] **Fuzzy Rail** = shared local geometric traversal intelligence, never global strategic pathing
 - [x] **Dynamic Affordance Graph** = utility + bounded affordance queries + spatial fields + blackboards; selective planning only when earned
 - [x] **World Semantic Alerts** = server-authored gameplay meaning above packet semantics; AI never infers critical truth from packet arrival/loss
-- [x] epistemic contract: `server truth != individual knowledge != squad report`
+- [x] epistemic contract: `server truth != individual knowledge != group report`
 - [x] faction identity is distinct from relationship state
 - [x] Human Rivals = secondary antagonism / temporary terrain antagonism / negotiable
 - [x] Dream Cattlers = primary ecological antagonism / semi-permanent environmental antagonism / always non-negotiable
 - [x] Dream Cattler `predatory` and `non-negotiable` are independent axes; rare hostile/non-predatory disposition may permit avoidant detente without diplomacy
-- [x] existing technical `Rancher` identifiers may remain until a coordinated rename; player-facing term is **Dream Cattler**
+- [x] technical `Rancher` identifiers may remain temporarily; player-facing term is **Dream Cattler**
 - [x] ecological score topology: Player Crew + teammates contend with Dream Cattlers over habitat/ecology; Player Crew and Rival Crews compete over ecological resources
 - [x] score-play eventually measures control, preservation, extraction, access, denial and resource contest as well as direct combat
-- [x] player/rival factions use carefully adapted verified-public-domain literary `[X] Crew` naming
-- [x] crew-member grammar = public-domain literary given-name variation + naturalized Old English-derived modern surname
-- [x] public-domain provenance and trademark clearance are separate shipping gates
 - [x] formal genre identity = **Neo-Xennial Shooter / Neo-Xennial FPS**
 - [x] subtype = **Systemic Arena FPS**
 - [x] genre thesis = Quake immediacy + Deus Ex systemic possibility + Halo spatial clarity + F.E.A.R. encounter intelligence + contemporary simulation/network infrastructure
 - [x] manifesto = **The neo-xennial shooter continues the FPS future that the early 2000s started: fast, physical, systemic, open, and unpredictable.**
 - [x] Ghost Static / Apophis replaces Dragon Master lore: Ghost Static is the public pirate-radio arena-conductor identity; Apophis is the deeper mythic/signal layer
 - [x] aesthetic target = PG-13 ambient/paranormal/psychological cyberpunk horror, not splatter/gore-centric horror
-- [x] visual thesis = objective realism haunted by violence, with comic-book comic relief as quiet understatement
 - [x] aesthetic engine remains a later boxed-off phase so presentation does not rewrite movement/network/combat/AI truth
 
 ## Version / archive status
 
-- [x] **v0.1 Foundation** — archived at `archive/v0.1`
-- [x] **v0.2 Movement** — archived at `archive/v0.2`
-- [x] **v0.3 Networked Movement** — archived at `archive/v0.3`
-- [x] **v0.4 Combat** — archived at `archive/v0.4`
-- [x] **v0.5 Agent Intelligence Framework** — archived at `archive/v0.5`
-- [x] **v0.6 Encounter Intelligence** — code/CI baseline merged to `main`
-- [ ] **v0.6 archive remains intentionally pending** because its Pop!_OS human acceptance recording was not separately closed before v0.7 work began
-- [x] **v0.7 Spatial Ecology / Situated Agency** — active candidate on PR #10 / `build/v0.7-spatial-ecology`
-- [ ] do not merge v0.7 or create `archive/v0.6` / `archive/v0.7` until the next human Pop!_OS demo is reviewed
+- [x] **v0.1 Foundation** — `archive/v0.1`
+- [x] **v0.2 Movement** — `archive/v0.2`
+- [x] **v0.3 Networked Movement** — `archive/v0.3`
+- [x] **v0.4 Combat** — `archive/v0.4`
+- [x] **v0.5 Agent Intelligence Framework** — `archive/v0.5`
+- [x] **v0.6 Encounter Intelligence** — accepted baseline; archived at `archive/v0.6` from merge `a8f52f1c6d91107a0cbe53e255d4bddde1a6a968`
+- [x] **v0.7 Spatial Ecology / Situated Agency** — human accepted from Pop!_OS recordings + server trace; PR #10 merged as `f656fb1731271c496076934ed9e850143021aa2c`; archived at `archive/v0.7`
+- [ ] **v0.8 Dream Cattler Habitat Ecology** — active build candidate on `build/v0.8-dream-cattler-ecology`; do not merge/archive until CI + Pop!_OS human acceptance close
 
-# v0.6 — Encounter Intelligence — CARRY-FORWARD BASELINE
+# Regression-protected baseline through v0.7
 
-The v0.6 contract remains regression-protected under v0.7:
+## v0.1–v0.4 truth substrate
 
-- [x] movement + Fuzzy Rail remain the only physical traversal truth
-- [x] ENet / server authority / prediction/reconciliation remain intact
-- [x] weapon/ammo/hitscan/damage/death/respawn remain the only combat truth
-- [x] perception / imperfect memory / semantic hearing / utility / cover affordances remain live
-- [x] finite yaw/pitch tracking + aim-settle remain live
-- [x] default soft pressure budget remains two Rivals
-- [x] contextual PRESSURE / FLANK_LEFT / FLANK_RIGHT / HOLD rebidding remains live
-- [x] damage-driven suppression / retreat remains live
-- [x] AI still emits ordinary `NfControlFrame` intent and cannot teleport, manufacture damage or bypass ammo/reload/collision
-- [x] AI/encounter code remains free of raylib/ENet dependencies
-- [x] strict project warnings remain `-Wall -Wextra -Wpedantic -Werror`
+- [x] fixed simulation and headless/graphical split
+- [x] movement/Fuzzy Rail owns step/vault/mantle/ladder/local physical traversal
+- [x] ENet transport is behind `nf_net`
+- [x] server validates client intent; snapshots + reconciliation remain authoritative
+- [x] carbine/pistol ammo/reload/hitscan/rewind/damage/death/respawn are authoritative combat truth
+- [x] relationship/faction policy gates damage
 
-# v0.7 — Spatial Ecology / Situated Agency — ACTIVE CANDIDATE
+## v0.5–v0.6 Human Rival intelligence
 
-## Contract thesis
+- [x] limited perception, imperfect memory/confidence, semantic hearing, utility and cover affordances
+- [x] Human Rival AI emits ordinary `NfControlFrame`; no teleport or privileged damage path
+- [x] finite yaw/pitch tracking and aim settling
+- [x] default two-slot soft pressure economy
+- [x] contextual PRESSURE / FLANK_LEFT / FLANK_RIGHT / HOLD roles
+- [x] damage-driven suppression/retreat
+- [x] AI/encounter code has no raylib/ENet dependency
 
-**Agents can traverse the whole arena, choose meaningful regions, temporarily inhabit local tasks, coordinate occupation with their squad, remember recent spatial history, and respond to authoritative events without continuously solving the entire world.**
+### v0.7 carry-forward watch
 
-The hierarchy is:
+Human footage accepted the v0.7 thesis. One non-blocking follow-up remains:
+
+- [ ] a badly wounded Human Rival can remain in `RETREAT` too long after reaching safety because no post-retreat recovery/withdrawal resolution exists yet
+- [x] do **not** hide this with an arbitrary timer; later solve it through a coherent life-state/support affordance
+
+## v0.7 Spatial Ecology / Situated Agency — accepted contract
+
+Thesis:
+
+> Agents can traverse the whole arena, choose meaningful regions, temporarily inhabit local tasks, coordinate occupation, remember recent spatial history, and respond to authoritative events without continuously solving the entire world.
+
+Hierarchy:
 
 `region chooses context -> local task chooses purpose -> action chooses behavior -> Fuzzy Rail handles physical execution -> server validates truth`
 
-Global mobility does not mean global continuous thought. **Large world != large per-agent thought.**
+- [x] 0.40 km² / 500 m x 800 m graybox = 5% of eventual 8 km² map-area target
+- [x] deterministic 24-region coarse graph
+- [x] bounded next-hop routing
+- [x] five local samples/query
+- [x] top-four bounded deep regional candidates
+- [x] spatial preference: congestion -> ally support -> enemy threat -> exposure -> pressure -> objective value
+- [x] global roaming + local ROAM/WATCH/INVESTIGATE/OCCUPY/PRESSURE/FLANK/REGROUP/CONTEST
+- [x] task hysteresis / claims / visitation memory / incident memory / deterministic variation
+- [x] F4 region diagnostic overlay
+- [x] server-side field reasoning; clients receive consequences rather than whole tactical scratch state
+- [x] no giant whole-map influence texture/grid
+- [x] no general GOAP
+- [x] human recording proved cross-region relocation and maintained v0.6 combat competence
 
-## Existing / regression protection
+# v0.8 — Dream Cattler Habitat Ecology — ACTIVE BUILD
 
-- [x] v0.1 fixed simulation and headless/graphical split preserved
-- [x] v0.2 movement/Fuzzy Rail still owns step/vault/mantle/ladder/physical traversal
-- [x] v0.3 networking still owns validated client intent, snapshots and reconciliation
-- [x] v0.4 combat authority unchanged
-- [x] v0.5 epistemic AI / utility / local cover architecture retained
-- [x] v0.6 encounter-governance layer remains downstream of raw AI intent
-- [x] spatial intelligence is server-side tactical scratchwork; normal clients receive consequences, not complete AI field state
-- [x] no whole-map high-resolution influence grid
-- [x] no general GOAP introduced
+## Contract thesis
 
-## A1 — spatial-field priority
+> Dream Cattlers are Goliath-scale ecological predators whose power comes from height, lurking, long-range prey pressure, swooping commitment and hyper-exploitative colonization of space. Their strength is also a weakness: mature infestation creates ecological inertia, while feet/knee damage collapses spatial dominance. Individuals remain epistemically limited; packs coordinate through imperfect evidence; rare Director-conditioned hunt surges create dogpile fights; rare loners hunt independently. Exact ecological scoring stays server-side and reaches the player as sense-data through world behavior, not score numbers.
 
-Default local spatial preference order is locked:
+Pipeline:
 
-1. **route congestion**
-2. **ally support**
-3. **enemy threat**
-4. **exposure**
-5. **pressure**
-6. **objective value**
+`authoritative world + semantic events`
 
-- [x] all six fields exist in `NfSpatialFields`
-- [x] field values are bounded `[0,1]`
-- [x] current local preference score weights those fields in the locked descending order
-- [ ] if footage shows lower-priority fields overturning tactically obvious congestion/support decisions, promote the score from ordered weighted refinement to a quantized lexicographic/tier comparison
-- [x] objectives select the **problem**; spatial intelligence selects a sensible way to solve it
+`-> Human Rival perception/utility/spatial/encounter path`
 
-## A2 — representation
+`-> Dream Cattler habitat + pack-predator path`
 
-- [x] hybrid representation = **coarse region graph + bounded local samples**
-- [x] shared `nf_region` module defines deterministic graph topology usable by server logic and client diagnostics
-- [x] v0.7 lab graph contains **24 coarse regions**
-- [x] local tactical selection considers **5 bounded samples** around the active region/next-hop center
-- [x] global route selection and local movement remain separate from Fuzzy Rail
+`-> ordinary NfControlFrame intent`
 
-## A3 — temporal / bandwidth model
+`-> shared movement/Fuzzy Rail + authoritative combat`
 
-- [x] event-driven semantic changes feed activity / incident / objective-dynamic memory
-- [x] region selection runs at a slow bounded cadence (~2 Hz baseline)
-- [x] local sampling runs at ~5 Hz staggered cadence
-- [x] spatial activity/incident fields decay at bounded sub-rate
-- [x] structural exposure is cached on regions and refined locally against known threat LOS
-- [x] tactical spatial state is not replicated as ordinary snapshot state
-- [x] client F4 overlay draws shared region topology only; authoritative per-agent task/field reasoning remains in server diagnostics for this build
+`-> world truth + ecological consequences`
 
-## A4 — bias vs veto
+No Cattler subsystem may manufacture hits, damage, hidden transforms, teleportation, or privileged traversal.
 
-- [x] spatial fields **bias** choices by default
-- [x] hard vetoes are reserved for physical/logical impossibilities: invalid/unreachable region, occupied exclusive affordance, relationship/combat prohibition, dead/unavailable actor, etc.
-- [x] high threat or low objective value alone never makes a physically valid region impossible
+## B1 — habitat value order
 
-## A5–A9 — global wandering / local habitation / individuality
+Locked order:
 
-- [x] agents are globally mobile through the region graph
-- [x] agents pick a region, then adopt a bounded local task to **inhabit** that situation
-- [x] local-first movement escalates through region routing when relocation is required
-- [x] flank/objective-style relocation may consult regional context proactively
-- [x] local task families implemented: ROAM / WATCH / INVESTIGATE / OCCUPY / PRESSURE / FLANK / REGROUP / CONTEST
-- [x] task commitment/hysteresis prevents 2% utility differences from causing constant thrash
-- [x] low-activity residency eventually loses value through novelty / visitation logic
-- [x] region choice considers novelty, semantic activity, distribution, role relation, objective value, congestion, incident cost and travel steps
-- [x] recent visits are remembered per agent
-- [x] top regional candidates are bounded to four deep candidates; deterministic seeded selection prevents all agents collapsing onto one exact optimum
-- [x] modest seeded personality envelopes (~0.90–1.10) vary support/risk/residency tendency without overriding faction policy or server truth
-- [x] Human Rival policy uses temporary tactical residency
-- [ ] teammate residency policy remains later
-- [ ] Dream Cattler habitat persistence/infestation policy remains later and must not be a renamed Rival policy
+1. **habitat continuity**
+2. **resource / ecological value**
+3. **prey evidence**
+4. **disturbance**
+5. **territorial pressure**
+6. **access / travel cost**
 
-## A10–A12 — claims / memory / bounded adaptation
+- [x] implemented as bounded server-side habitat scoring
+- [x] infestation continuity and local territorial inertia influence residency
+- [x] predatory/non-predatory dispositions interpret disturbance differently
+- [x] travel cost remains subordinate to belonging
 
-- [x] existing cover nodes retain hard exclusive reservation
-- [x] local tactical tasks use soft claim pressure so duplicate WATCH/OCCUPY work is discouraged rather than globally forbidden
-- [x] short tactical target memory remains in v0.5 `NfAiKnowledge`
-- [x] individual regional visitation memory lives in `NfSpatialAgentState`
-- [x] slower crew-level regional incident memory lives in `NfSpatialSystem`
-- [x] damage/death activity raises temporary incident cost
-- [x] incident memory decays, preventing permanent cowardice / map blacklisting
-- [x] respawn clears individual spatial visitation/task state while retaining shared crew-level incident history
-- [ ] no cross-match persistent adaptation / invisible ML counterstrategy
+Maxim: **Human Rivals optimize occupation. Dream Cattlers optimize belonging.**
 
-## A13 — interruption hierarchy
+## B2 / B6 / B16 — infestation and colonization
 
-Interrupt severities are intentionally small and generic:
+- [x] Cattlers linger/lurk and deepen infestation while physically occupying a region
+- [x] unoccupied infestation decays slowly instead of disappearing instantly
+- [x] infestation creates residency/inertia rather than raw health/damage buffs
+- [x] expansion requires physical use of new territory; adjacent regions never become magically infested from a numeric threshold
+- [x] crossing a foothold threshold contributes to internal expansion accounting
+- [x] killing the current occupant does not instantly erase the region's infestation history
+- [ ] future presentation may express mature infestation through richer environmental traces/audio/resources; v0.8 proves behavior first
 
-`NONE -> REEVALUATE -> TASK_BREAK -> EMERGENCY -> AUTHORITATIVE`
+Natural rhythm:
 
-- [x] route invalidation may force AUTHORITATIVE interruption
-- [x] direct damage may force EMERGENCY interruption
-- [x] nearby gunfire/death/suspicious sound may trigger REEVALUATE
-- [x] objective/story phase change may trigger TASK_BREAK
-- [x] interruption means **reconsider now**, not “execute this hidden script,” except where physics/server truth leaves no choice
-- [x] semantic vocabulary now includes `OBJECTIVE_CHANGED`, `ROUTE_CHANGED`, `STORY_PHASE_CHANGED` for future authored producers
+`LINGER -> LURK -> PREY -> EXPLOIT -> EXPAND -> LINGER`
 
-## A14 — story authority
+## B3 / B5 — epistemic contract and pack blackboard
 
-Story-mode authoring contract is locked even though producers are not yet live:
+Individual Cattlers may know:
 
-1. **CONTEXT** — normal: raise/lower relevance of region/objective/person
-2. **CONSTRAINT** — occasional: actor must reach/remain/defend a broad region
-3. **DIRECT ACTION** — rare synchronization/cinematic escape hatch
+- firsthand sight
+- audible/semantic evidence
+- last-known prey position
+- coarse region activity
+- imperfect secondhand reports
 
-- [x] v0.7 interruption semantics are compatible with the three-level model
-- [ ] no story campaign logic is added merely to exercise the hook
+Pack blackboard may share:
 
-## A15 — diagnostics
+- approximate prey region / position hint
+- evidence type, confidence and age
+- watched/occupied hunting space
+- territorial disturbance
+- injury/death/hunt outcomes
 
-- [x] server diagnostics now report region current->target, next hop, local task, interrupt severity and six field values + aggregate preference score
-- [x] graphical client title/footer identify v0.7 Spatial Ecology / Situated Agency
-- [x] **F4** toggles a visual 24-region graph overlay in the graybox client
-- [x] HUD shows local player region/name, graph count and 0.40 km² lab scale
-- [ ] per-Rival task/field values are deliberately not network-replicated into the client in v0.7; use `build/server.log` for authoritative reasoning traces
+Pack blackboard may **not** share:
 
-## A16 — determinism
+- exact current unseen prey transform
+- exact unseen velocity
+- another actor's entire perception state
+- global LOS
+- perfect route knowledge of prey
 
-- [x] region selection / personality variation / tie variation derive from authoritative seed + actor id + bounded epoch
-- [x] no new uncontrolled gameplay `rand()` path
-- [x] same relevant state + seed should produce reproducible spatial decisions suitable for bug reproduction
+- [x] firsthand visual evidence is full-confidence
+- [x] secondhand pack evidence is confidence-reduced and expires
+- [x] reports can become stale/wrong
+- [x] loners ignore ordinary pack-report coordination
 
-## A17 — computational boundaries
+Maxim: **server truth != individual knowledge != pack report**.
 
-- [x] 24 regions in this demo; architecture supports a larger bounded graph later
-- [x] 5 local candidate samples per local query
-- [x] top 4 regional candidates retained for deep choice
-- [x] region path search is bounded by `NF_REGION_MAX`
-- [x] region decisions ~2 Hz, local samples ~5 Hz, event-driven semantic impulses, simulation-rate physical execution
-- [x] fixed-capacity hot-path state; no per-tick allocation
-- [x] cover-affordance capacity expanded from 32 to 96 to remain locally useful across the larger graybox
+## B4 — predator grammar / ambush
 
-## A18 — v0.7 map / milestone scale
+Cattler modes in the v0.8 graybox vocabulary:
 
-Ultimate map-area target remains **8 km²**. v0.7 deliberately tests only **5%** of that area:
+`LURK / STALK / SNIPE / SWOOP / INFEST / EXPAND / RECOVER / WITHDRAW / AVOID`
 
-- [x] demo area = **0.40 km² / 400,000 m²**
-- [x] graybox dimensions = **500 m x 800 m**
-- [x] sparse connective territory is intentional so roaming/relocation can be observed rather than every square meter becoming a combat toy
-- [x] map includes distributed solid structures, local cover objects, vertical landmarks, ladders, ramps and a moving platform while retaining open regional corridors
+- [x] distant firsthand prey -> long-range SNIPE pressure
+- [x] medium-range viable prey -> committed SWOOP opportunity
+- [x] secondhand evidence -> LURK/STALK/reposition rather than psychic direct attack
+- [x] normal pack behavior distributes through different evidence/regions rather than Human-Rival PRESSURE/FLANK roles
+- [x] SWOOP in v0.8 is deliberately a **graybox committed sprint/jump approach**, not a final flight/aerial-physics system
+- [ ] human recording must prove whether the proxy reads as swooping enough to earn a dedicated aerial traversal primitive later
 
-## Build pipeline / implementation order
+Target fear:
 
-Current authoritative flow:
+> Seeing one Cattler must not answer the question “where is the threat?”
 
-`semantic/world state -> spatial region/task update -> v0.5 AI control intent -> spatial situated movement filter -> v0.6 encounter governance -> shared movement/combat -> server truth`
+## Goliath morphology / David counterplay
 
-The spatial filter only supplies situated movement when ordinary tactical AI is free to roam/watch; live combat/investigation/cover/retreat modes retain their existing authority.
+- [x] Dream Cattler combat silhouette is taller than humans in server hit geometry and client presentation
+- [x] dedicated `KNEE` and `FOOT` hit zones added
+- [x] knee/foot hits reduce separate locomotor integrity as well as normal health
+- [x] lower locomotor integrity reduces willingness/range for relocation and suppresses confident swoop behavior
+- [x] client graybox gives knee/foot test bands without pretending these are final art
+- [ ] movement collision capsule is still shared/human-sized in this candidate; true tall low-clearance navigation remains a deliberate post-compile watch rather than destabilizing shared movement before human proof
 
-## Automated contracts / compile gate
+David principle:
 
-- [x] CMake project version advanced to 0.7
-- [x] shared `nf_region.c/.h` added
-- [x] server AI `nf_spatial.c/.h` added
-- [x] situated control adapter `nf_spatial_filter.c` added
-- [x] 0.40 km² graybox integrated through the existing shared world builder so client prediction and server collision see identical geometry
-- [x] 24-region graph connectivity/path contracts added
-- [x] spatial field bounds/order contract added
-- [x] deterministic roaming/control contract added
-- [x] existing simulation/combat/network/encounter contracts retained
-- [x] first v0.7 PR CI attempt: strict full graphical compile green; new spatial test exposed a real central-spawn geometry collision and failed intentionally
-- [x] central spawn lanes subsequently cleared in the graybox instead of weakening the roaming test
-- [ ] exact final-head 4/4 CTest green
-- [ ] combat smoke green on final head
-- [ ] encounter smoke green on final head
-- [ ] spatial smoke green on final head
-- [ ] exact final-head GitHub CI green before human demo handoff
+> Do not out-stat Goliath. Attack its locomotion, break vertical/spatial dominance, deny prey, and make its colonized space stop working for it.
 
-## Par / Compare-5 for v0.7
+## B8 / B13 / B14 — internal ecological ledger, player sense-data
 
-Behavioral/design references, not claims about proprietary internals.
+Authoritative internal channels:
 
-- [x] **Dishonored 2** — bounded shared knowledge, search/coordination and systemic local context
-- [x] **F.E.A.R.** — local tactical behavior should read as purposeful without requiring a giant planner
-- [x] **Halo 3** — map-scale spatial clarity and readable encounter geography
-- [x] **The Last of Us** — believable search, uncertainty, spatial mistakes and human-scale reacquisition
-- [x] **Left 4 Dead** — distinguish individual agent competence from higher-order encounter/spatial intensity; do not bake a Director into every actor
+- **INFESTATION**
+- **PREY**
+- **DISPLACEMENT**
+- **EXPANSION**
+- **SURVIVAL**
 
-## Deliberate v0.7 boundaries
+- [x] individual Cattler and aggregate ecology ledgers are distinct
+- [x] Cattler-caused damage/death contributes graded prey success; kills are not the only ecological value
+- [x] physical occupation/foothold contributes infestation/expansion
+- [x] exact values are emitted only in server/debug diagnostics
+- [x] ordinary client HUD deliberately does **not** display Cattler score numbers
 
-- [ ] no full Ghost Static / global AI Director yet
-- [ ] no live autonomous teammate combat brain yet
-- [ ] no live Dream Cattler ecological brain yet
-- [ ] no giant continuous influence-map texture/grid
-- [ ] no general GOAP planner
-- [ ] no full objective/ecological scoring implementation
-- [ ] no polished negotiation UI
-- [ ] no final art/audio pass
-- [ ] no cross-match adaptive AI
-- [ ] no 8 km² production map yet
+Player-facing contract:
 
-## Human v0.7 demo acceptance checklist
+> **The scoreboard measures the ecology for the simulation; the world expresses the scoreboard for the player.**
 
-Record roughly **90–150 seconds** if possible.
+Sense-data should eventually include persistent lurking, repeated perch use, territorial recurrence, prey pressure, route abandonment, colonization traces and Ghost Static interpretation—not `+5 INFESTATION` popups.
 
-- [ ] title reads `v0.7 - SPATIAL ECOLOGY / SITUATED AGENCY LAB`
+## B9–B12 — 90 / 5 / 5 social ecology
+
+Target distribution is an ecological/encounter distribution, not a random personality reroll each tick:
+
+- **~90% normal pack-predator ecology** — lurk / stalk / watch / snipe / swoop with imperfect blackboard evidence
+- **~5% HUNT_SURGE / dogpile ecology** — rare zombie-horde-style convergence
+- **~5% true loners** — persistent seeded solitary disposition
+
+- [x] default v0.8 demo population = **3 Cattlers**
+- [x] deterministic seeded ~5% loner disposition in normal profile
+- [x] `PACK` debug profile forces pack-linked Cattlers
+- [x] `LONER` debug profile forces solitary behavior
+- [x] `HORDE` debug profile forces 4–5 Cattlers + HUNT_SURGE
+- [x] normal HUNT_SURGE eligibility is rare, ecology-conditioned and followed by cooldown/repose
+- [x] Director/event context changes convergence incentives; it does not directly author control inputs or hidden prey coordinates
+
+## B17–B20 — ecological counterplay / defeat semantics
+
+Player/crew may weaken infestation by:
+
+- wounding/killing occupants
+- foot/knee locomotor attacks
+- denying prey
+- reoccupying/contesting valuable regions
+- disrupting useful routes/perches/resources later
+- forcing relocation away from accumulated colonization value
+
+Hierarchy:
+
+`CATTLER KILLED = individual defeat`
+
+`INFESTATION COLLAPSED = local ecological defeat`
+
+`CATTLERS DISPLACED = regional strategic defeat`
+
+`SPECIES ABSENT = temporary world state, not permanent extermination`
+
+- [x] v0.8 region infestation persists temporarily after occupant death and decays without reoccupation
+- [ ] full human reclamation/objective semantics remain later because objective/resource systems are not yet implemented
+
+## Ghost Static / Director boundary
+
+- [x] Director may conceptually access authoritative state for Events
+- [x] current HUNT_SURGE scaffold represents event-level convergence authority
+- [x] Director may alter context/event eligibility, never inject exact hidden prey transforms into actor cognition
+- [ ] no full Ghost Static pacing/story Director is implemented in v0.8
+
+Maxim: **Ghost Static conducts conditions; the ecology performs them.**
+
+## Existing / advancing / par checklist
+
+### Existing systems that must remain green
+
+- [x] v0.1 fixed simulation
+- [x] v0.2 movement/Fuzzy Rail
+- [x] v0.3 ENet authority/prediction/reconciliation
+- [x] v0.4 authoritative combat/hitscan/rewind/death/respawn
+- [x] v0.5 Human Rival perception/memory/utility/affordances
+- [x] v0.6 finite tracking/pressure/suppression
+- [x] v0.7 24-region / 0.40 km² spatial ecology
+
+### Advancing systems targeted in v0.8
+
+- [x] separate `nf_cattler` AI family; not a renamed Human Rival controller
+- [x] three default Dream Cattlers; five maximum in current lab
+- [x] habitat score + infestation persistence
+- [x] imperfect pack evidence
+- [x] lurking/stalking/sniping/swoop-proxy behaviors
+- [x] pack/loner/horde debug profiles
+- [x] rare HUNT_SURGE scaffold
+- [x] knee/foot hit zones + locomotor integrity
+- [x] internal ecological ledger + player-facing sense-data boundary
+- [x] Cattlers emit ordinary `NfControlFrame` and use shared combat/movement truth
+- [ ] reciprocal Human Rival perception/response to Cattlers is a readiness discrepancy to close if it can be done coherently before final v0.8 candidate; do not fake it via forced targeting
+- [ ] true aerial swoop physics deferred unless human proof shows the graybox proxy is insufficient
+- [ ] true faction-specific tall collision capsule is a watch item after compile/human proof
+
+### Par / Compare-5 for v0.8
+
+Behavioral/design references only; not claims about proprietary internals.
+
+1. **Rain World** — creatures should appear to participate in an ecology whose purposes exceed the player
+2. **Alien: Isolation** — stalking uncertainty, reacquisition limits and predator pressure rather than psychic pursuit
+3. **S.T.A.L.K.E.R.** — world presence, roaming actors and persistent location-level danger
+4. **The Forest** — observation, approach/withdrawal/escalation and territorial hostility rather than permanent charge behavior
+5. **Monster Hunter: World** — morphology, habitat and territorial behavior should make the creature feel like it belongs somewhere
+
+Synthesis:
+
+> Rain World autonomy + S.T.A.L.K.E.R. world presence + Alien uncertainty + The Forest escalation + Monster Hunter habitat legibility, filtered through nightfall!punk's bounded deterministic server architecture.
+
+## v0.8 automated compile gate
+
+- [x] CMake version advanced to 0.8
+- [x] new `nf_cattler.c/.h` source family
+- [x] AI contract extended with Dream Cattler tests
+- [x] old Human Rival combat/encounter/spatial smokes isolate Cattlers so regression evidence stays interpretable
+- [x] new `cattler-smoke` isolates three pack Cattlers
+- [x] local helper supports `NF_CATTLER_COUNT` + `NF_CATTLER_PROFILE`
+- [x] full client presents tall orange Cattlers and graybox knee/foot bands without exposing ecology score numbers
+- [ ] exact final-head strict graphical compile green
+- [ ] 4/4 CTest green
+- [ ] combat smoke green
+- [ ] encounter smoke green
+- [ ] spatial smoke green
+- [ ] Cattler ecology smoke green
+- [ ] exact final-head GitHub Actions green
+
+## v0.8 human acceptance checklist
+
+Record roughly **2–3 minutes** if possible. Default run first.
+
+- [ ] title reads `v0.8 - DREAM CATTLER HABITAT ECOLOGY LAB`
 - [ ] client reaches `AUTHORITATIVE + PREDICTED`
-- [ ] movement/mouse/combat remain functional
-- [ ] use **F4** at least once to show the coarse region graph
-- [ ] move far enough to make the 0.40 km² scale legible; the whole map does not need to be traversed
-- [ ] observe whether Rivals actually leave the immediate spawn neighborhood when combat evidence goes stale
-- [ ] break LOS and note whether Rivals investigate/reposition rather than magically track
-- [ ] look for Rivals distributing rather than four bodies choosing the same region/cover/task
-- [ ] look for temporary local habitation: watch / occupy / investigate / flank / pressure before relocation
-- [ ] standing exposed should still be dangerous; v0.7 must not erase v0.6 encounter competence
-- [ ] strafe/reverse/jump should still buy counterplay against finite tracking
-- [ ] kill at least one Rival and allow at least one player death/respawn if practical
-- [ ] traverse at least one ramp/ladder/obstacle so larger-map geometry does not hide a movement regression
-- [ ] note any AI repeatedly walking into the same obstacle, ping-ponging between two regions, freezing, or clustering
-- [ ] note anything that is **extremely right** as well as anything obviously wrong
+- [ ] red Human Rivals and tall orange Dream Cattlers are visually distinguishable
+- [ ] ordinary movement/combat/network behavior remains stable
+- [ ] observe at least one Cattler lingering/infesting rather than constantly beelining to player
+- [ ] observe Cattlers redistributing after prey evidence or LOS changes
+- [ ] look for a situation where visible and unseen Cattlers create ambush uncertainty
+- [ ] aim low at yellow knee/foot graybox bands and compare mobility/commitment afterward
+- [ ] note whether Cattlers ever look like “Human Rivals, but tall”; that is an explicit failure condition
+- [ ] note whether three Cattlers are frightening because of behavior rather than raw population pressure
+- [ ] kill/escape from at least one Cattler if practical and observe whether regional danger appears to persist
+- [ ] allow at least one player death/respawn if practical
+- [ ] use F4 briefly to retain v0.7 regional context
+- [ ] note anything **extremely right** as well as anything obviously wrong
 
-After closing the demo, capture:
+After default recording, capture:
 
 ```bash
-tail -n 160 build/server.log
+tail -n 200 build/server.log
 ```
 
-The recording shows outward behavior; the log shows region/task/field reasoning.
+Optional diagnostic A/B after default:
 
-## Current tuning watch
+```bash
+NF_AI_COUNT=0 NF_CATTLER_COUNT=1 NF_CATTLER_PROFILE=loner ./nightfall.sh local
+NF_AI_COUNT=0 NF_CATTLER_COUNT=5 NF_CATTLER_PROFILE=horde ./nightfall.sh local
+```
 
-- [ ] verify regional goals actually produce visible cross-region travel at human timescale
-- [ ] verify region centers/corridors do not create straight-line obstacle traps
-- [ ] verify route-congestion preference meaningfully reduces clumping
-- [ ] verify ally-support preference does not recreate clumping through another route
-- [ ] verify objective value remains subordinate to spatial coherence until hard objective semantics exist
-- [ ] verify novelty/boredom does not make agents wander during an obviously meaningful local fight
-- [ ] verify local task commitment reads as intention rather than hesitation
-- [ ] verify incident memory changes repeated approaches without making the squad permanently timid
-- [ ] verify F4 graph overlay is useful without becoming ordinary HUD clutter
-- [ ] verify 96 cover affordances remain a bounded useful cost at this map scale
-- [ ] keep v0.6 pressure-slot / finite-tracking / suppression tuning on watch
-- [ ] prediction max-error spikes around death/respawn remain a watch item
+Only record these if the default run leaves the social difference ambiguous. The default video + server trace remain the primary acceptance evidence.
 
-## Pre-v0.8 decision gate
+## Deliberate v0.8 boundaries
 
-The v0.7 human recording chooses the next emphasis. Do **not** lock v0.8 before that evidence. Candidate branches are:
+- [ ] no final Cattler art/audio
+- [ ] no final flight/aerial navigation system
+- [ ] no full Ghost Static Director
+- [ ] no autonomous teammate brain
+- [ ] no full objective/resource/reclamation loop
+- [ ] no final player-facing ecological sense-data presentation beyond behavior itself
+- [ ] no general GOAP
+- [ ] no giant influence grids
+- [ ] no cross-match adaptive ML
+- [ ] no 8 km² production map yet
 
-1. teammate / crew social intelligence
-2. Dream Cattler habitat ecology
-3. Ghost Static / director-level pacing and story context
-4. a spatial/navigation refinement pass if v0.7 exposes region-routing or local-obstacle failures
+## Standing question subroutine
 
-Viewing for v0.8 should be processed through the standing **question subroutine**: `WATCH -> QUESTION -> COMPARE WITH CURRENT CODE -> KEEP / ADAPT / DEFER / REJECT -> CODING CONTRACT -> COMPILE -> HUMAN VIDEO`.
+`WATCH -> QUESTION -> COMPARE WITH CURRENT CODE -> KEEP / ADAPT / DEFER / REJECT -> CODING CONTRACT -> COMPILE -> HUMAN VIDEO -> REASSESS`
+
+Before every compile ask:
+
+1. What did we learn that changes the code?
+2. What merely confirms what we already have?
+3. What is attractive but premature?
+4. What adds complexity without proportionate gameplay value?
+5. What is the smallest implementation that lets the next human recording prove/disprove the idea?
