@@ -26,13 +26,14 @@ run_smoke() {
 
 run_ai_smoke() {
   test -x "$HEADLESS_BUILD_DIR/nightfall_netbot" || "$0" build-headless
-  "$HEADLESS_BUILD_DIR/nightfall_server" --duration 8 --ai-count 4 >"$BUILD_ROOT/ai-smoke-server.log" 2>&1 &
+  "$HEADLESS_BUILD_DIR/nightfall_server" --duration 12 --ai-count 4 >"$BUILD_ROOT/ai-smoke-server.log" 2>&1 &
   server_pid=$!
   trap 'kill "$server_pid" 2>/dev/null || true' EXIT INT TERM
   sleep 0.35
   result=0
-  "$HEADLESS_BUILD_DIR/nightfall_netbot" --duration 5 --pattern 0 || result=1
+  "$HEADLESS_BUILD_DIR/nightfall_netbot" --duration 9 --pattern 0 --passive --require-incoming-death || result=1
   wait "$server_pid" || true
+  cat "$BUILD_ROOT/ai-smoke-server.log" || true
   return "$result"
 }
 
@@ -141,7 +142,7 @@ nightfall!punk v0.5 build helper
 
 local         = isolated-port v0.5 server + graphical client; four Human Rival AI by default
 combat-smoke  = dedicated server + four automated network clients + four server AI rivals
-ai-smoke      = one automated player against four server AI rivals
+ai-smoke      = passive automated player; passes only if server AI damages and kills it
 net-smoke     = alias retained for continuity
 
 Local debug environment:
