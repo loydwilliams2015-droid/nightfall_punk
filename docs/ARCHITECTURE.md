@@ -10,151 +10,148 @@
 - presentation observes simulation; it does not own gameplay state
 - ENet is hidden behind `nf_net`, not exposed as gameplay logic
 - combat is hidden behind `nf_combat`, not owned by renderer/network presentation
-- AI, encounter-governance and spatial-ecology code have no raylib or ENet dependency
+- AI, encounter, spatial and habitat-ecology code have no raylib or ENet dependency
 - fixed-capacity hot-path state is preferred over per-tick allocation
 
 ## Simulation ownership
 
-The player camera and weapon viewmodel are presentation. Actor body, faction, relationship permissions, health, weapon state, ammunition, movement and death are simulation/server truth. The same `NfWorld` and movement functions execute on client prediction and server authority; combat outcomes execute authoritatively on the server and recover through snapshots.
+Actor body, faction, relationship permissions, health, weapon state, ammunition, movement and death are simulation/server truth. The player camera and viewmodel are presentation. The same `NfWorld` movement path supports client prediction and server authority; combat outcomes are server-authored and recover through snapshots/events.
 
-Movement states: GROUND, SPRINT, CROUCH, AIR, LADDER, VAULT, MANTLE and PLATFORM.
+Movement states remain GROUND, SPRINT, CROUCH, AIR, LADDER, VAULT, MANTLE and PLATFORM.
 
-Weapon states: READY, RECOVERING, RELOADING, SWITCHING and EMPTY.
+Weapon states remain READY, RECOVERING, RELOADING, SWITCHING and EMPTY.
 
 ## Shared control contract
 
-Network players and server AI converge at the same control vocabulary before movement/combat:
+Network players and both server AI families converge on one intent vocabulary:
 
 `network packet -> validated NfControlFrame -> NfMoveInput + NfCombatInput`
 
-`AI perception/decision -> NfControlFrame -> NfMoveInput + NfCombatInput`
+`Human Rival perception/utility/spatial reasoning -> NfControlFrame`
 
-AI is therefore **not** a fake network client and does not own a privileged damage or traversal path. Human and AI control sources submit intent; authoritative movement/combat systems decide outcomes.
+`Dream Cattler habitat/pack-predator reasoning -> NfControlFrame`
 
-v0.7 inserts spatial situated movement as a bounded **control filter**, not a replacement controller:
+No AI is a fake network client. No AI owns privileged damage or traversal. Authoritative movement/combat systems decide outcomes.
 
-`world semantics -> spatial context/task -> ordinary AI control -> spatial movement filter when AI is free to roam -> encounter governance -> movement/combat -> truth`
+## Parallel AI-family pipeline — v0.8
 
-The spatial layer does not overwrite active combat/cover/retreat decisions merely because a distant region has a higher score.
+Human Rivals and Dream Cattlers share truth primitives but not motivational policy.
+
+```text
+AUTHORITATIVE WORLD + WORLD SEMANTIC ALERTS
+        |
+        +--> HUMAN RIVAL
+        |    perception -> imperfect memory -> utility/local affordances
+        |    -> v0.7 region/task reasoning -> v0.6 encounter governance
+        |    -> NfControlFrame
+        |
+        +--> DREAM CATTLER
+             perception -> imperfect individual knowledge
+             -> imperfect pack reports / habitat state / infestation
+             -> lurk/stalk/snipe/swoop/infest/expand policy
+             -> NfControlFrame
+
+        -> SHARED MOVEMENT / FUZZY RAIL
+        -> AUTHORITATIVE COMBAT
+        -> WORLD TRUTH + SEMANTIC / ECOLOGICAL CONSEQUENCES
+```
+
+Subsystems do not solve each other's questions:
+
+- **Perception:** what do I know?
+- **Utility / motivation:** what do I want?
+- **Affordances:** what local opportunities exist?
+- **Region/habitat reasoning:** which part of the arena matters?
+- **Navigation/local steering:** how do I approach it?
+- **Fuzzy Rail:** how do I physically negotiate immediate geometry?
+- **Action execution:** what control input now?
+- **Blackboard:** what has the group reported/claimed?
+- **Encounter governance:** how much Human-Rival lethal certainty reaches execution?
+- **Director/Event layer:** what world circumstances become important now?
+
+General GOAP remains reserved for later multi-step goals.
 
 ## Network truth contract
 
-The client sends **intent**, not outcome.
+The client sends intent, not outcome:
 
 `input -> local movement prediction -> ENet input packet -> authoritative server movement/combat -> snapshot + combat event -> reconciliation/presentation`
 
 - server simulation: 60 Hz
 - client input/prediction: 60 Hz
 - snapshot publication: 30 Hz
-- reliable channel: handshake/control + important discrete combat transitions
-- unreliable/state channel: high-frequency input, snapshots and transient combat feedback
+- reliable channel: handshake/control + important discrete transitions
+- state channel: high-frequency input, snapshots and transient feedback
 - input history: 256 commands
 - redundant input bundle: latest 3 commands
-- current network-player cap: 4
+- network-player cap: 4
+- snapshot actor cap: 16, sufficient for the current four clients + four Human Rivals + up to five Cattlers
 
-Protocol v4 (`NF04`) continues to carry fire/reload/switch/aim intent, authoritative combat state in snapshots and explicit server-authored combat events. v0.7 does **not** replicate whole AI field maps or per-agent tactical scratch state.
+Protocol v4 (`NF04`) carries ordinary actor/combat state. v0.8 does **not** replicate whole AI field maps, pack scratch state, infestation grids or exact ecological ledger values to ordinary clients.
 
 ## Current faction topology
 
 - network slot 0 = PLAYER
 - additional network slots = TEAMMATE
 - server Human Rival agents = RIVAL
-- Dream Cattler implementation currently retains the technical `RANCHER` faction identifier pending a coordinated rename
+- Dream Cattler implementation temporarily retains technical `RANCHER`
 
-Faction identity remains distinct from relationship state. Player/Teammate is cooperative. Human Rival relationships may move through hostility, contest, truce and cooperation. Dream Cattlers remain non-negotiable whether a particular disposition is predatory or the rare hostile/non-predatory avoidant type.
+Faction identity is distinct from relationship state. Player/Teammate is cooperative. Human Rival relationships may be hostile/contested/truce/cooperative. Dream Cattlers are non-negotiable regardless of whether a seeded individual is predatory or rare hostile/non-predatory.
 
-Damage permission is resolved through central relationship/faction policy before authoritative hit application. Friendly fire remains off by default.
+Damage permission is centrally relationship-gated before authoritative hit application. Friendly fire remains off by default.
 
-## Combat authority
+## Combat authority / morphology
 
-The client and AI controller never submit a target, hit zone, damage value, death result, ammo value or successful-shot result.
+The client or AI never submits target, hit zone, damage, death, ammo or successful-shot outcome.
 
-A shot is resolved as:
+`fire intent -> validate actor/weapon/state/ammo/rate -> reconstruct aim -> bounded rewind -> world occlusion + actor hit test -> relationship permission -> authoritative damage/death -> event/snapshot`
 
-`fire intent -> server validates actor/weapon/state/ammo/rate -> reconstruct aim -> bounded history rewind -> world occlusion + actor hit test -> relationship damage permission -> authoritative damage/death -> combat event + snapshot recovery truth`
+Human graybox hit zones remain BODY + HEAD.
 
-The current hitscan layer has BODY and HEAD zones. Carbine and pistol remain intentionally simple graybox weapons used to prove combat/AI substrate before recoil/spread/ADS/projectile complexity.
+Dream Cattler graybox hit geometry adds:
+
+- HEAD
+- BODY
+- KNEE
+- FOOT
+
+Knee/foot hits reduce ordinary health through the same combat system and separately notify the Cattler ecology layer so locomotor integrity can decline. Locomotor integrity is **not** a hidden damage system; it changes mobility/behavioral confidence such as swoop/relocation willingness.
+
+The current Cattler visual/combat silhouette is taller than a human. Shared movement still uses the common human-sized collision configuration in this v0.8 candidate; faction-specific tall clearance is explicitly a post-compile/human-proof watch so movement truth is not destabilized prematurely.
 
 ## Lag compensation
 
-The server stores a 64-frame actor-position history. Hitscan rewind is clamped to 12 ticks (~200 ms). Only target geometry is historically sampled; server truth remains current for weapon state, ammo, relationship rules and damage application. Applied rewind duration is surfaced in combat-event diagnostics.
+The server stores a 64-frame actor-position history. Hitscan rewind is clamped to 12 ticks (~200 ms). Historical actor position is sampled while weapon state, ammo, relationships and damage remain current server truth.
 
 ## World Semantic Alerts
 
-Combat events are promoted into fixed-capacity server-authored semantic facts. Current/declared vocabulary includes:
+Current/declared vocabulary includes GUNFIRE, DAMAGE_TAKEN, ACTOR_DIED, ACTOR_RESPAWNED, ENEMY_SEEN/LOST scaffolding, SUSPICIOUS_SOUND, AFFORDANCE reservations, OBJECTIVE_CHANGED, ROUTE_CHANGED and STORY_PHASE_CHANGED.
 
-- GUNFIRE
-- DAMAGE_TAKEN
-- ACTOR_DIED
-- ACTOR_RESPAWNED
-- ENEMY_SEEN / ENEMY_LOST scaffolding
-- SUSPICIOUS_SOUND
-- AFFORDANCE_RESERVED / AFFORDANCE_RELEASED scaffolding
-- OBJECTIVE_CHANGED
-- ROUTE_CHANGED
-- STORY_PHASE_CHANGED
+Critical AI truth is never inferred from packet loss/arrival.
 
-Critical AI truth is never inferred from packet arrival/loss.
+Human Rival spatial reasoning consumes semantic impulses for activity/incidents/interruption. Dream Cattler ecology consumes ordinary combat semantics/evidence as prey activity and disturbance without granting exact hidden prey transforms.
 
-v0.7 consumes semantic alerts to change regional **activity**, **incident history**, **objective relevance** and interruption urgency. Story/objective/route producers are scaffolding until the relevant gameplay systems exist; the semantic vocabulary is present so those systems can later affect AI without bypassing normal reasoning.
+## Epistemic contract
 
-## Epistemic AI contract
+**Server owns reality; AI does not automatically know reality.**
 
-The server owns reality, but AI does not automatically know reality:
+Human Rival:
 
-`server truth != individual knowledge != squad report`
+`server truth != individual Rival knowledge != squad report`
 
-Human Rival perception remains bounded by range/facing/world occlusion. Agents remember last-seen and last-heard positions, attach confidence, decay stale knowledge and may receive lower-confidence secondhand reports. Spatial fields that depend on an enemy are calculated from this **perspectival evidence**, not hidden authoritative transforms.
+Dream Cattler:
 
-This separation is required for search, surprise, deception and non-psychic pursuit.
+`server truth != individual Cattler knowledge != pack report`
 
-## Utility / decision contract
+Cattler firsthand evidence may come from bounded LOS and audible semantic events. Pack reports contain coarse position/region, evidence type, confidence and age. Reports decay and may be stale. Loners ignore ordinary pack coordination.
 
-Ordinary tactical decisions remain bounded utility modes:
+Ghost Static/Director may later use authoritative truth to schedule **Events**, but an Event changes circumstances/context; it does not inject exact hidden target coordinates into individual cognition.
 
-- IDLE
-- INVESTIGATE
-- ADVANCE
-- ENGAGE
-- SEEK_COVER
-- RETREAT
-- RELOAD
-- TRUCE_HOLD
+## v0.7 spatial architecture retained
 
-The subsystem questions remain deliberately non-overlapping:
+The current 0.40 km² / 500 m × 800 m lab contains 24 coarse regions and bounded local samples. This is 5% of the eventual 8 km² map-area target.
 
-- **Perception:** what do I know?
-- **Utility:** what do I want?
-- **Affordances:** what local opportunities exist?
-- **Spatial ecology / region graph:** which part of the arena should I inhabit or traverse toward?
-- **Navigation/local steering:** how do I approach it?
-- **Fuzzy Rail:** how do I physically negotiate immediate geometry?
-- **Action execution:** what control input now?
-- **Squad blackboard:** what has the group reported/claimed?
-- **Encounter governance:** how much simultaneous certainty/lethal pressure reaches execution?
-
-General GOAP remains reserved for later compound multi-step goals.
-
-## Dynamic Affordance Graph — v0.7 slice
-
-v0.5 introduced bounded generated cover candidates with exclusive reservation. v0.7 adds a second spatial scale rather than replacing those local affordances.
-
-### Coarse region graph
-
-The current spatial lab uses 24 named coarse regions. The graph supports:
-
-- nearest-region lookup
-- bounded connectivity/path-step queries
-- deterministic next-hop routing
-- region-level novelty / visit memory
-- regional activity / incident / objective relevance
-- squad distribution/congestion pressure
-
-The eventual 8 km² maps may contain many more regions, but each agent should continue to reason over a bounded graph frontier/candidate set rather than scale its thought with total map area.
-
-### Local samples
-
-Once a region/next hop is selected, v0.7 evaluates five bounded nearby candidate samples. The locked field preference order is:
+Human Rival field order remains:
 
 1. route congestion
 2. ally support
@@ -163,134 +160,134 @@ Once a region/next hop is selected, v0.7 evaluates five bounded nearby candidate
 5. pressure
 6. objective value
 
-Current implementation uses descending ordered weights as the first stable slice. If human footage shows a lower-priority field overriding an obviously more important congestion/support distinction, this can be upgraded to quantized lexicographic tiers without changing the surrounding architecture.
+Fields bias rather than veto except for true physical/logical impossibility. Region selection is slower than physical simulation and uses bounded candidate sets. Fuzzy Rail remains local traversal, never global strategic route selection.
 
-Fields **bias** choice. Hard vetoes belong only to physical/logical impossibility such as invalid/unreachable destinations, occupied exclusive affordances, relationship prohibition or unavailable actors.
+**Large world != large per-agent thought.**
 
-Structural exposure is cached at region level and refined against known threat LOS. Threat derives from agent knowledge. Activity/incident/objective impulses are semantic/event-driven and decay.
+## Dream Cattler habitat ecology — v0.8
 
-## Situated agency / habitation
+Dream Cattlers use the same 24-region graph but interpret it through a different value system. Habitat score order is:
 
-Agents are globally mobile but locally situated.
+1. habitat continuity
+2. resource/ecological value
+3. prey evidence
+4. disturbance
+5. territorial pressure
+6. access cost
 
-`roam -> enter region -> sample local world -> adopt task -> inhabit task -> completion/invalidity/boredom/interrupt -> release -> roam`
+A Cattler's power is partly spatial. Occupying useful territory gradually raises infestation. Unoccupied infestation decays slowly. Mature infestation increases residency/inertia; it does not grant magical health/damage multipliers.
 
-Current Human Rival local task vocabulary:
+Propagation is grounded in behavior:
 
-- ROAM
-- WATCH
-- INVESTIGATE
-- OCCUPY
-- PRESSURE
-- FLANK
-- REGROUP
-- CONTEST
+`occupy -> lurk/exploit -> foothold -> weak infestation -> continued residence -> mature infestation -> adjacent physical relocation/occupation -> expansion`
 
-Task commitment/hysteresis prevents marginal score changes from causing thrash. Soft task claims discourage redundant WATCH/OCCUPY behavior; physically exclusive cover affordances retain hard reservation.
+No adjacent region becomes infested merely because a number crosses a threshold.
 
-Regional selection uses bounded combinations of novelty, semantic activity, squad distribution, role relation, objective value, congestion, incident cost and travel. A small deterministic seeded choice among near-top regions keeps actors from converging on one mathematically identical optimum.
+### Predator grammar
 
-Seeded personality envelopes modestly vary support/risk/residency preferences while remaining subordinate to faction policy, relationships and physical truth.
+Current graybox modes:
 
-Human Rivals use temporary tactical residency. Future teammates should remain more relationally anchored to the Player Crew. Future Dream Cattlers should use more persistent habitat/territorial **infestation** rather than a renamed Rival policy.
+- LURK
+- STALK
+- SNIPE
+- SWOOP
+- INFEST
+- EXPAND
+- RECOVER
+- WITHDRAW
+- AVOID
 
-## Spatial memory
+The v0.8 SWOOP is a committed sprint/jump approach through shared movement. A dedicated aerial primitive is deferred until human video proves it is necessary.
 
-v0.7 establishes three compatible timescales:
+### Pack blackboard
 
-- short individual tactical memory — existing last seen/heard/confidence
-- medium individual regional memory — recent region visits/task context
-- slower squad/regional incident memory — damage/death/activity history
+May share:
 
-Respawn clears the individual's immediate spatial/task state while shared regional incident history may persist. Incident memory decays; there is no cross-match persistent adaptation or invisible machine-learning counterstrategy.
+- approximate prey region / position hint
+- evidence type
+- confidence / age
+- territory/hunting occupancy context
+- relevant outcomes
 
-## Interruption contract
+May not share:
 
-Interruption severity remains intentionally small:
+- exact unseen prey transform
+- exact unseen velocity
+- another actor's complete perception
+- global LOS
+- perfect prey routes
 
-`NONE -> REEVALUATE -> TASK_BREAK -> EMERGENCY -> AUTHORITATIVE`
+This supports emergent ambush geometry: one visible Cattler may occupy attention while another uses a different report/region to stalk or lurk. There is no scripted military PRESSURE/FLANK role assignment for Cattlers.
 
-Typical sources:
+## 90 / 5 / 5 social ecology
 
-- route invalidation / unavailable destination -> AUTHORITATIVE
-- severe direct danger/damage -> EMERGENCY
-- nearby gunfire/death/suspicious sound -> REEVALUATE
-- story/objective phase change -> TASK_BREAK
+The intended distribution is not a per-tick random roll:
 
-An interrupt normally means **reconsider now**, not “execute this hidden script.” Exact forced behavior is reserved for physics/server-truth necessities or rare explicitly authored synchronization later.
+- ~90% normal pack-predator ecology
+- ~5% rare Director-conditioned HUNT_SURGE/dogpile episodes
+- ~5% seeded persistent loners
 
-## Story-authoring authority
+Normal profile uses deterministic seeded loner disposition and rare ecology-conditioned hunt-surge eligibility. Debug profiles force PACK, LONER or HORDE behavior for testing.
 
-Future story-mode integration uses three levels:
+HUNT_SURGE changes convergence incentives for a short period and has a repose/cooldown. It does not bypass perception, navigation, combat or server truth.
 
-1. **CONTEXT** — preferred: change what region/objective/person matters
-2. **CONSTRAINT** — occasional: require a broad reach/remain/defend condition
-3. **DIRECT ACTION** — rare cinematic/synchronization escape hatch
+## Ecological ledger vs player sense-data
 
-The default story system should change **what matters** while allowing AI to decide how to act within that context.
+Server/debug can maintain exact internal channels:
 
-## Fuzzy Rail
+- infestation
+- prey
+- displacement
+- expansion
+- survival
 
-Fuzzy Rail remains local geometric movement intelligence, not a global route planner. It detects nearby steps, vaults, mantles and ladders, scores local transitions and uses hysteresis so geometry is permissive without becoming a hard track. Spatial ecology selects context/destination; Fuzzy Rail still owns immediate traversal execution.
+There are individual and aggregate ecology ledgers.
 
-The client candidate is predictive; the server independently resolves traversal. Diagnostics distinguish candidate disagreement from authoritative positional correction.
+The ordinary player does **not** receive `+5 infestation` style score feedback. Player-facing ecology must emerge as sense-data: recurrent occupation, lurking, route pressure, territorial persistence, prey behavior and later environmental/audio traces or Ghost Static interpretation.
 
-## v0.6 encounter-governance layer
+Principle:
 
-v0.6 remains a separate bounded layer after AI/spatial intent and before authoritative execution:
+> **The scoreboard measures the ecology for the simulation; the world expresses the scoreboard for the player.**
 
-`perception -> utility/affordance -> spatial situated control -> encounter governance -> movement/combat -> truth`
+## Director boundary
 
-It owns:
+Ghost Static is not a v0.8 full AI Director. The current HUNT_SURGE state is an event-level scaffold proving that higher-order context can alter ecological convergence without directly steering actors.
 
-- finite yaw/pitch tracking speed
-- aim-settle state
-- target-motion / own-motion / suppression effects on firing readiness
-- soft squad pressure authorization (two slots by default)
-- contextual role rebidding
-- damage-driven suppression and retreat response
+Future Director authority:
 
-It does not weaken weapon damage, grant hidden knowledge, move actors directly or decide hit outcomes.
+- may know authoritative state
+- may schedule/change Events or broad context
+- may alter significance/eligibility
+- may not directly drive movement/combat controls as normal behavior
+- may not make individual actors omniscient
+
+> **Ghost Static conducts conditions; the ecology performs them.**
 
 ## Multi-rate / efficiency contract
 
-Not every subsystem runs at 60 Hz.
+Not every subsystem runs at 60 Hz:
 
-- physical movement/control execution: simulation rate
-- aim tracking: simulation-rate bounded controller
+- physical execution: simulation rate
+- Human Rival aim tracking: simulation-rate bounded controller
 - perception: staggered sub-rate
 - utility decisions: sub-rate
-- role/pressure rebidding: slower cadence
-- region selection: ~2 Hz baseline
-- local spatial samples: ~5 Hz staggered
-- regional activity/incident decay: bounded sub-rate
-- semantic changes: event-driven
-- path search: bounded by current region graph size/frontier
+- Rival region selection: slow bounded cadence
+- local spatial sampling: staggered bounded cadence
+- Cattler perception: staggered sub-rate
+- Cattler habitat/decision: slower sub-rate
+- infestation/prey/disturbance values: cheap bounded updates + event impulses
+- Director event eligibility: very slow cadence
 
-Expensive facts should be sensed once and reused from cached knowledge. New intelligence should prefer event-driven semantics, indexed local affordances and bounded candidate sets over whole-world polling.
+Fixed arrays and bounded graph queries are preferred to whole-world high-resolution fields.
 
-**Large world != large per-agent thought.** The 0.40 km² v0.7 demo intentionally exercises the same hierarchy intended for the eventual 8 km² maps.
+## Diagnostics
 
-## v0.7 diagnostics
+Human Rival server trace reports role/mode, knowledge/confidence, encounter pressure, aim settle/suppression, current/target/next region, situated task and spatial fields.
 
-Server diagnostics report, per Rival:
+Dream Cattler server trace reports social mode, predator mode, prey evidence/confidence, locomotor integrity, current/target/next region, infestation/prey-activity/disturbance, current event mode and exact internal ecology ledger values.
 
-- role / utility mode
-- target/confidence/visibility
-- health / cover
-- pressure authorization / aim settle / suppression / aim error
-- current region -> target region / next hop
-- local spatial task / interrupt severity
-- congestion / ally support / threat / exposure / pressure / objective values + aggregate preference
-
-The graphical client exposes **F4** to render the shared 24-region topology and shows the player's local region. Full per-agent tactical scratch state remains server-side to avoid turning debug replication into a gameplay dependency.
-
-## Security boundary
-
-Session nonces/tokens and libsodium-backed token derivation/comparison remain intact. Encrypted gameplay payloads remain a later public-server hardening task; gameplay authority is not conflated with transport encryption.
+The graphical client shows red Human Rivals, tall orange Dream Cattlers and temporary yellow knee/foot graybox bands. It deliberately does not expose the internal Cattler ecology score.
 
 ## Current scope discipline
 
-v0.7 intentionally does **not** add a full Ghost Static Director, autonomous teammate combat brain, live Dream Cattler ecology, giant continuous influence grid, general GOAP, complete objective/ecological score system, polished negotiation UI, final art/audio or the 8 km² production map.
-
-The next Pop!_OS recording determines whether v0.8 should emphasize teammate/social intelligence, Dream Cattler habitat ecology, Ghost Static/director context, or a spatial/navigation refinement pass.
+v0.8 intentionally does **not** add final Cattler art/audio, full aerial navigation, a full Ghost Static Director, an autonomous teammate brain, full resource/reclamation objectives, general GOAP, giant influence grids, cross-match ML adaptation or the 8 km² production map.
