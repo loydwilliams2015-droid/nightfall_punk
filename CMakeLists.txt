@@ -27,6 +27,12 @@ elseif(NF_FETCH_ENET)
         GIT_TAG v1.3.18
         GIT_SHALLOW TRUE)
     FetchContent_MakeAvailable(enet)
+    # nightfall itself stays strict C11. ENet's Unix implementation expects
+    # the normal POSIX/GNU feature surface (addrinfo/getaddrinfo/etc.).
+    if(UNIX AND TARGET enet)
+        set_property(TARGET enet PROPERTY C_EXTENSIONS ON)
+        target_compile_definitions(enet PRIVATE _DEFAULT_SOURCE)
+    endif()
     set(NF_ENET_TARGET enet)
     set(NF_ENET_FETCH_INCLUDE "${enet_SOURCE_DIR}/include")
 else()
