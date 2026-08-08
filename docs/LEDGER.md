@@ -41,7 +41,9 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 - [x] horizontal camera/strafe basis corrected after human playtest
 - [x] preserved as `archive/v0.2`
 
-# v0.3 — Networked Movement — COMPLETE
+# v0.3 — Networked Movement — COMPLETE / ARCHIVED
+
+- [x] preserved as `archive/v0.3`
 
 ## Existing features retained and unified
 - [x] v0.2 movement code remains the single movement implementation
@@ -153,7 +155,7 @@ These are behavioral targets, not claims about proprietary internal implementati
 - [ ] authenticated encryption of gameplay payloads remains a later public-server hardening contract
 - [ ] current Fuzzy Rail counter may include harmless short-lived candidate disagreement; refine when traversal events become semantically meaningful
 
-# Planned next contracts
+# Next contract
 
 ## v0.4 — Combat
 Authoritative hits/damage, weapon state, ammo/reload, simple pickup inventory, combat diagnostics and latency-safe fire semantics. Combat should begin the first useful producers of future World Semantic Alerts (gunfire, damage, death, reload/weapon events), but the semantic event layer itself should remain explicit and server-authored rather than inferred from raw network packets.
