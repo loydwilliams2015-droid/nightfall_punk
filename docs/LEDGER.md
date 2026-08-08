@@ -93,7 +93,7 @@ Two guns. Hitscan. Server truth. Medium TTK. Health/death/respawn. Reload/switch
 
 ## Advancing — graybox combat lab
 
-- [x] two stationary rival target dummies in server world
+- [x] two stationary opposite-faction target dummies in server world so either current faction has a valid target
 - [x] alternating player/rival factions across four network client slots for duel testing
 - [x] remote actors colored ally/opponent in client presentation
 - [x] primitive carbine/pistol viewmodel placeholder
@@ -128,9 +128,12 @@ Two guns. Hitscan. Server truth. Medium TTK. Health/death/respawn. Reload/switch
 - [x] damage/death/respawn test
 - [x] protocol round-trip for combat input/state/events
 - [x] reconciliation test retains authoritative health
-- [x] four automated clients now generate movement + firing + reload/switch inputs
-- [x] combat-smoke requires combat events as well as snapshots
-- [ ] GitHub CI green on exact v0.4 tree
+- [x] four automated clients generate movement + aiming + firing + reload/switch inputs
+- [x] combat-smoke requires authoritative damage events as well as snapshots/combat events
+- [x] GitHub CI full raylib + ENet + libsodium compile green on v0.4 branch
+- [x] GitHub simulation / combat / network contract tests green: 3/3
+- [x] GitHub four-client combat smoke green; authoritative damage and death observed by every bot
+- [x] project-owned C targets compile under `-Wall -Wextra -Wpedantic -Werror`
 - [ ] Pop!_OS clean build/tests/combat-smoke green
 - [ ] recorded human combat demo reviewed
 
@@ -164,10 +167,17 @@ Behavioral targets, not claims about proprietary internals.
 - [x] client does not claim hits/damage/death
 - [x] snapshots are recovery truth; combat events are causal/feedback messages
 - [x] movement and combat states remain separate but live on the same actor/world truth
-- [ ] full compile green
-- [ ] all tests green
-- [ ] four-client combat smoke green
+- [x] GitHub-hosted full compile green
+- [x] all automated tests green
+- [x] four-client combat smoke green with damage/death
+- [ ] target Pop!_OS clean build/tests/combat-smoke green
 - [ ] target Pop!_OS run + recorded demo reviewed
+
+## Current tuning watch
+
+- [ ] inspect larger movement-prediction errors around automated death/respawn transitions (bot max observed up to ~0.82 m) in human footage before deciding whether this is visible or merely a discontinuity diagnostic
+- [ ] tune TTK / recoil / spread / weapon transitions from the recorded human combat pass
+- [ ] tune hitscan rewind policy under impaired-network human combat
 
 # Planned next graybox contracts
 
