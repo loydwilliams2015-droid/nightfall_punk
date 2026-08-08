@@ -6,9 +6,11 @@
 #include "nf_encounter.h"
 #include "nf_net.h"
 #include "nf_prediction.h"
+#include "nf_region.h"
 #include "nf_relations.h"
 #include "nf_security.h"
 #include "nf_semantics.h"
+#include "nf_spatial.h"
 #include "nf_world.h"
 
 #include <float.h>
@@ -228,10 +230,10 @@ static void process_combat_control(NfNetHost *net,NfWorld *world,NfServerClient 
     }
 }
 
-static void process_respawns(NfNetHost *net,NfWorld *world,NfServerClient clients[],NfAiSystem *ai,NfSemanticBus *semantics) {
+static void process_respawns(NfNetHost *net,NfWorld *world,NfServerClient clients[],NfAiSystem *ai,NfSpatialSystem *spatial,NfSemanticBus *semantics) {
     for(size_t i=0;i<NF_MAX_ENTITIES;++i) {
         NfActor *a=&world->actors[i]; if(!a->active||a->combat.alive||a->combat.respawn_timer>0.0f)continue; NfVec3 spawn; if(!respawn_position(clients,ai,a->id,&spawn))continue;
-        NfCombatEvent e={0}; nf_combat_respawn(a,spawn,world->tick,&e); reset_movement_after_respawn(world,a); nf_ai_on_respawn(ai,a->id); broadcast_event(net,clients,semantics,e);
+        NfCombatEvent e={0}; nf_combat_respawn(a,spawn,world->tick,&e); reset_movement_after_respawn(world,a); nf_ai_on_respawn(ai,a->id); nf_spatial_on_respawn(spatial,a->id,world); broadcast_event(net,clients,semantics,e);
     }
 }
 
@@ -256,11 +258,12 @@ int main(int argc,char **argv) {
     if(!nf_security_init()||!nf_net_global_init()) { fprintf(stderr,"nightfall: network/security init failed\n"); return 1; }
     NfNetHost net; if(!nf_net_server_open(&net,port,NF_SERVER_CLIENTS)) { fprintf(stderr,"nightfall: could not open UDP port %u\n",port); nf_net_global_shutdown(); return 1; }
     nf_net_set_simulation(&net,sim_latency,sim_jitter,sim_loss);
-    NfWorld world; nf_world_init(&world,20260807u); nf_world_build_movement_lab(&world); NfServerClient clients[NF_SERVER_CLIENTS]={0}; NfHistoryFrame history[NF_HISTORY_FRAMES]={0}; NfSemanticBus semantics; nf_semantic_bus_init(&semantics); NfAiSystem ai; nf_ai_init(&ai,&world,ai_count,world.seed^0xA105u); nf_ai_set_rival_relationship(&ai,rival_relation); NfEncounterState encounter; nf_encounter_init(&encounter,&ai,&world,pressure_slots,world.seed^0xE06u);
+    NfWorld world; nf_world_init(&world,20260807u); nf_world_build_movement_lab(&world); NfServerClient clients[NF_SERVER_CLIENTS]={0}; NfHistoryFrame history[NF_HISTORY_FRAMES]={0}; NfSemanticBus semantics; nf_semantic_bus_init(&semantics); NfAiSystem ai; nf_ai_init(&ai,&world,ai_count,world.seed^0xA105u); nf_ai_set_rival_relationship(&ai,rival_relation); NfEncounterState encounter; nf_encounter_init(&encounter,&ai,&world,pressure_slots,world.seed^0xE06u); NfSpatialSystem spatial; nf_spatial_init(&spatial,&ai,&world,world.seed^0x507u);
     history_record(history,&world);
-    printf("nightfall!punk dedicated server v0.6 encounter intelligence\n");
+    printf("nightfall!punk dedicated server v0.7 spatial ecology / situated agency\n");
     printf("port=%u tick=%u snapshot=%u max_players=%u ai=%zu pressure_slots=%zu relation=%s crypto=%s friendly_fire=%s sim=%ums +/- %ums %.1f%% loss\n",port,NF_TICK_RATE,NF_NET_SNAPSHOT_HZ,NF_NET_MAX_PLAYERS,ai.count,encounter.pressure_slots,nf_relationship_name(rival_relation),nf_security_is_strong()?"libsodium":"scaffold",friendly_fire?"on":"off",sim_latency,sim_jitter,sim_loss);
     printf("[encounter] bounded pressure + finite tracking + aim settling + damage suppression enabled\n");
+    printf("[spatial] 0.40 km^2 graybox | regions=%zu | local samples=%u | server-side fields and situated tasks enabled\n",spatial.graph.count,NF_SPATIAL_LOCAL_SAMPLES);
     const double fixed_ms=1000.0/(double)NF_TICK_RATE; uint32_t last=nf_net_now_ms(),start=last; double acc=0.0; uint64_t next_ai_log_tick=0u;
     while(g_running) {
         NfNetEvent ev;
@@ -276,15 +279,16 @@ int main(int argc,char **argv) {
         }
         uint32_t now=nf_net_now_ms(); uint32_t elapsed=now-last; last=now; if(elapsed>250u)elapsed=250u; acc+=(double)elapsed; expire_reservations(&world,clients,now);
         while(acc>=fixed_ms) {
-            NfControlFrame ai_controls[NF_AI_MAX_AGENTS]; size_t ai_controls_count=nf_ai_tick(&ai,&world,&semantics,ai_controls,NF_AI_MAX_AGENTS); nf_encounter_filter_controls(&encounter,&ai,&world,ai_controls,ai_controls_count);
+            nf_spatial_tick(&spatial,&ai,&world,&semantics);
+            NfControlFrame ai_controls[NF_AI_MAX_AGENTS]; size_t ai_controls_count=nf_ai_tick(&ai,&world,&semantics,ai_controls,NF_AI_MAX_AGENTS); nf_spatial_filter_controls(&spatial,&ai,&world,ai_controls,ai_controls_count); nf_encounter_filter_controls(&encounter,&ai,&world,ai_controls,ai_controls_count);
             for(size_t i=0;i<NF_SERVER_CLIENTS;++i) {
                 NfServerClient *c=&clients[i]; if(!c->occupied)continue; NfMoveInput move=c->connected?c->current_input:(NfMoveInput){0}; nf_world_set_input(&world,c->entity_id,move);
                 if(c->connected){NfControlFrame control=client_control(c);process_combat_control(&net,&world,clients,&semantics,&control,history,rival_relation,friendly_fire);c->current_input.jump_pressed=false;c->combat_input.fire_pressed=false;c->combat_input.reload_pressed=false;c->combat_input.weapon_slot=0u;}
             }
             for(size_t i=0;i<ai_controls_count;++i){nf_world_set_input(&world,ai_controls[i].actor,ai_controls[i].move);process_combat_control(&net,&world,clients,&semantics,&ai_controls[i],history,rival_relation,friendly_fire);}
-            nf_world_step(&world,1.0f/(float)NF_TICK_RATE); process_respawns(&net,&world,clients,&ai,&semantics); history_record(history,&world);
+            nf_world_step(&world,1.0f/(float)NF_TICK_RATE); process_respawns(&net,&world,clients,&ai,&spatial,&semantics); history_record(history,&world);
             if(world.tick%(NF_TICK_RATE/NF_NET_SNAPSHOT_HZ)==0u) for(size_t i=0;i<NF_SERVER_CLIENTS;++i) if(clients[i].occupied&&clients[i].connected) send_snapshot(&net,&world,&clients[i]);
-            if(world.tick>=next_ai_log_tick){for(size_t i=0;i<ai.count;++i){const NfAiAgent*a=&ai.agents[i];const NfActor*body=nf_world_find_actor_const(&world,a->actor_id);const NfEncounterAgentState*es=nf_encounter_agent_state_const(&encounter,a->actor_id);printf("[ai] id=%u role=%s mode=%s target=%u confidence=%.2f visible=%s health=%.0f cover=%d pressure=%s settle=%.2f suppression=%.2f aimerr=%.3f\n",a->actor_id,nf_squad_role_name(a->role),nf_agent_mode_name(a->mode),a->knowledge.target,a->knowledge.confidence,a->knowledge.visible_now?"yes":"no",body?body->health:0.0f,a->selected_affordance,es&&es->pressure_authorized?"yes":"no",es?es->aim_settle:0.0f,es?es->suppression:0.0f,es?es->last_aim_error:0.0f);}next_ai_log_tick=world.tick+NF_TICK_RATE*2u;}
+            if(world.tick>=next_ai_log_tick){for(size_t i=0;i<ai.count;++i){const NfAiAgent*a=&ai.agents[i];const NfActor*body=nf_world_find_actor_const(&world,a->actor_id);const NfEncounterAgentState*es=nf_encounter_agent_state_const(&encounter,a->actor_id);const NfSpatialAgentState*ss=nf_spatial_agent_state_const(&spatial,a->actor_id);printf("[ai] id=%u role=%s mode=%s target=%u confidence=%.2f visible=%s health=%.0f cover=%d pressure=%s settle=%.2f suppression=%.2f aimerr=%.3f region=%u:%s->%u:%s next=%u task=%s interrupt=%s fields[c=%.2f a=%.2f t=%.2f e=%.2f p=%.2f o=%.2f score=%.2f]\n",a->actor_id,nf_squad_role_name(a->role),nf_agent_mode_name(a->mode),a->knowledge.target,a->knowledge.confidence,a->knowledge.visible_now?"yes":"no",body?body->health:0.0f,a->selected_affordance,es&&es->pressure_authorized?"yes":"no",es?es->aim_settle:0.0f,es?es->suppression:0.0f,es?es->last_aim_error:0.0f,ss?ss->current_region:NF_REGION_INVALID,ss?nf_region_name(ss->current_region):"INVALID",ss?ss->target_region:NF_REGION_INVALID,ss?nf_region_name(ss->target_region):"INVALID",ss?ss->next_region:NF_REGION_INVALID,ss?nf_spatial_task_name(ss->task):"NONE",ss?nf_spatial_interrupt_name(ss->interrupt):"NONE",ss?ss->fields.route_congestion:0.0f,ss?ss->fields.ally_support:0.0f,ss?ss->fields.enemy_threat:0.0f,ss?ss->fields.exposure:0.0f,ss?ss->fields.pressure:0.0f,ss?ss->fields.objective_value:0.0f,ss?ss->fields.preference_score:0.0f);}next_ai_log_tick=world.tick+NF_TICK_RATE*2u;}
             acc-=fixed_ms;
         }
         nf_net_flush(&net); if(duration>0.0&&(double)(now-start)>=duration*1000.0)break; sleep_ms(1);
