@@ -40,7 +40,7 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 - [x] **v0.5 Agent Intelligence Framework** — `archive/v0.5`
 - [x] **v0.6 Encounter Intelligence** — accepted baseline; archived at `archive/v0.6` from merge `a8f52f1c6d91107a0cbe53e255d4bddde1a6a968`
 - [x] **v0.7 Spatial Ecology / Situated Agency** — human accepted from Pop!_OS recordings + server trace; PR #10 merged as `f656fb1731271c496076934ed9e850143021aa2c`; archived at `archive/v0.7`
-- [ ] **v0.8 Dream Cattler Habitat Ecology** — active build candidate on `build/v0.8-dream-cattler-ecology`; do not merge/archive until CI + Pop!_OS human acceptance close
+- [ ] **v0.8 Dream Cattler Habitat Ecology** — compiled CI-green candidate on `build/v0.8-dream-cattler-ecology`; PR #11 remains draft/open; do not merge/archive until Pop!_OS human acceptance closes
 
 # Regression-protected baseline through v0.7
 
@@ -155,7 +155,7 @@ Individual Cattlers may know:
 - firsthand sight
 - audible/semantic evidence
 - last-known prey position
-- coarse region activity
+- coarse region activity only when grounded in personal/pack evidence
 - imperfect secondhand reports
 
 Pack blackboard may share:
@@ -178,6 +178,8 @@ Pack blackboard may **not** share:
 - [x] secondhand pack evidence is confidence-reduced and expires
 - [x] reports can become stale/wrong
 - [x] loners ignore ordinary pack-report coordination
+- [x] authoritative regional `prey_activity` remains available to Director/event eligibility and diagnostics but no longer directly raises an individual Cattler's habitat preference unless that Cattler has personal/pack evidence for the region
+- [x] one lower-commons habitat anchor is placed within normal first-contact perception distance so the human demo can expose the system without injecting hidden knowledge or spawning directly on the player
 
 Maxim: **server truth != individual knowledge != pack report**.
 
@@ -306,7 +308,8 @@ Maxim: **Ghost Static conducts conditions; the ecology performs them.**
 - [x] knee/foot hit zones + locomotor integrity
 - [x] internal ecological ledger + player-facing sense-data boundary
 - [x] Cattlers emit ordinary `NfControlFrame` and use shared combat/movement truth
-- [ ] reciprocal Human Rival perception/response to Cattlers is a readiness discrepancy to close if it can be done coherently before final v0.8 candidate; do not fake it via forced targeting
+- [x] reciprocal Human Rival perception/response now includes Dream Cattlers through the same limited LOS/audible evidence and relationship gate; Human-Rival truce does not neutralize non-negotiable Cattlers
+- [x] reciprocal Rival/Cattler perception behavior has an automated contract test; no forced target injection was introduced
 - [ ] true aerial swoop physics deferred unless human proof shows the graybox proxy is insufficient
 - [ ] true faction-specific tall collision capsule is a watch item after compile/human proof
 
@@ -328,18 +331,18 @@ Synthesis:
 
 - [x] CMake version advanced to 0.8
 - [x] new `nf_cattler.c/.h` source family
-- [x] AI contract extended with Dream Cattler tests
+- [x] AI contract extended with Dream Cattler + reciprocal Rival/Cattler tests
 - [x] old Human Rival combat/encounter/spatial smokes isolate Cattlers so regression evidence stays interpretable
-- [x] new `cattler-smoke` isolates three pack Cattlers
+- [x] `cattler-smoke` isolates server-side three-Cattler pack habitat persistence rather than failing because a passive netbot begins outside prey-sensing range
 - [x] local helper supports `NF_CATTLER_COUNT` + `NF_CATTLER_PROFILE`
 - [x] full client presents tall orange Cattlers and graybox knee/foot bands without exposing ecology score numbers
-- [ ] exact final-head strict graphical compile green
-- [ ] 4/4 CTest green
-- [ ] combat smoke green
-- [ ] encounter smoke green
-- [ ] spatial smoke green
-- [ ] Cattler ecology smoke green
-- [ ] exact final-head GitHub Actions green
+- [x] strict graphical compile green
+- [x] 4/4 CTest green
+- [x] combat smoke green
+- [x] encounter smoke green
+- [x] spatial smoke green
+- [x] Cattler ecology smoke green
+- [x] GitHub Actions candidate gate green; this documentation reconciliation is the final exact-head rerun gate before human testing
 
 ## v0.8 human acceptance checklist
 
@@ -349,10 +352,12 @@ Record roughly **2–3 minutes** if possible. Default run first.
 - [ ] client reaches `AUTHORITATIVE + PREDICTED`
 - [ ] red Human Rivals and tall orange Dream Cattlers are visually distinguishable
 - [ ] ordinary movement/combat/network behavior remains stable
+- [ ] observe the deliberately nearby first-contact Cattler acquiring prey through ordinary perception rather than hidden server knowledge
 - [ ] observe at least one Cattler lingering/infesting rather than constantly beelining to player
 - [ ] observe Cattlers redistributing after prey evidence or LOS changes
 - [ ] look for a situation where visible and unseen Cattlers create ambush uncertainty
 - [ ] aim low at yellow knee/foot graybox bands and compare mobility/commitment afterward
+- [ ] watch whether Human Rivals and Cattlers recognize/attack each other rather than behaving as mutually invisible systems
 - [ ] note whether Cattlers ever look like “Human Rivals, but tall”; that is an explicit failure condition
 - [ ] note whether three Cattlers are frightening because of behavior rather than raw population pressure
 - [ ] kill/escape from at least one Cattler if practical and observe whether regional danger appears to persist
