@@ -2,6 +2,7 @@
 #define NF_AI_H
 
 #include "nf_agent.h"
+#include "nf_combat.h"
 #include "nf_relations.h"
 #include "nf_semantics.h"
 #include "nf_world.h"
