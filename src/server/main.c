@@ -5,6 +5,8 @@
 #include "nf_cattler.h"
 #include "nf_combat.h"
 #include "nf_encounter.h"
+#include "nf_hitbox.h"
+#include "nf_lifeworld.h"
 #include "nf_net.h"
 #include "nf_prediction.h"
 #include "nf_region.h"
@@ -24,8 +26,6 @@
 
 #define NF_SERVER_CLIENTS NF_NET_MAX_PLAYERS
 #define NF_HISTORY_FRAMES 64u
-#define NF_CATTLER_HEIGHT 2.80f
-#define NF_CATTLER_EYE_HEIGHT 2.35f
 
 typedef struct NfServerClient {
     bool occupied;
@@ -92,7 +92,7 @@ static void reset_movement_after_respawn(NfWorld *world,NfActor *actor){
     const bool cattler=actor->faction==NF_FACTION_RANCHER;
     actor->movement=(NfMovementState){0};
     actor->movement.mode=NF_MOVE_AIR;
-    actor->movement.body_height=cattler?NF_CATTLER_HEIGHT:world->movement.stand_height;
+    actor->movement.body_height=cattler?NF_CATTLER_BODY_HEIGHT:world->movement.stand_height;
     actor->movement.eye_height=cattler?NF_CATTLER_EYE_HEIGHT:world->movement.stand_eye_height;
     actor->movement.attached_collider=-1;
     actor->movement.ground_collider=-1;
@@ -199,18 +199,9 @@ static bool hitscan_target(const NfWorld *world,const NfHistoryFrame *frame,NfEn
         const NfActor *current=nf_world_find_actor_const(world,history_actor->id);if(current==NULL)continue;
         NfRelationship relation=nf_relation_between(shooter_faction,current->faction,rival_relation);if(!nf_relation_can_damage(relation,friendly_fire))continue;
         if(current->faction==NF_FACTION_RANCHER){
-            float t_head=FLT_MAX,t_body=FLT_MAX,t_knee=FLT_MAX,t_foot=FLT_MAX;
-            NfVec3 head={history_actor->position.x,history_actor->position.y+2.56f,history_actor->position.z};
-            NfVec3 foot_min={history_actor->position.x-0.34f,history_actor->position.y,history_actor->position.z-0.34f};
-            NfVec3 foot_max={history_actor->position.x+0.34f,history_actor->position.y+0.28f,history_actor->position.z+0.34f};
-            NfVec3 knee_min={history_actor->position.x-0.36f,history_actor->position.y+0.28f,history_actor->position.z-0.36f};
-            NfVec3 knee_max={history_actor->position.x+0.36f,history_actor->position.y+0.86f,history_actor->position.z+0.36f};
-            NfVec3 body_min={history_actor->position.x-0.39f,history_actor->position.y+0.86f,history_actor->position.z-0.39f};
-            NfVec3 body_max={history_actor->position.x+0.39f,history_actor->position.y+2.48f,history_actor->position.z+0.39f};
-            consider_zone(ray_sphere(origin,direction,head,0.31f,&t_head),t_head,NF_HIT_HEAD,&nearest,history_actor->id,&target,&zone);
-            consider_zone(ray_aabb(origin,direction,body_min,body_max,&t_body),t_body,NF_HIT_BODY,&nearest,history_actor->id,&target,&zone);
-            consider_zone(ray_aabb(origin,direction,knee_min,knee_max,&t_knee),t_knee,NF_HIT_KNEE,&nearest,history_actor->id,&target,&zone);
-            consider_zone(ray_aabb(origin,direction,foot_min,foot_max,&t_foot),t_foot,NF_HIT_FOOT,&nearest,history_actor->id,&target,&zone);
+            float cattler_distance=FLT_MAX;
+            NfHitZone cattler_zone=nf_cattler_hit_zone_for_ray(origin,direction,history_actor->position,nearest,&cattler_distance);
+            consider_zone(cattler_zone!=NF_HIT_NONE,cattler_distance,cattler_zone,&nearest,history_actor->id,&target,&zone);
         }else{
             float height=history_actor->crouched?world->movement.crouch_height:world->movement.stand_height;float t_head=FLT_MAX,t_body=FLT_MAX;
             NfVec3 head={history_actor->position.x,history_actor->position.y+height-0.20f,history_actor->position.z};bool head_hit=ray_sphere(origin,direction,head,0.23f,&t_head);
@@ -221,10 +212,7 @@ static bool hitscan_target(const NfWorld *world,const NfHistoryFrame *frame,NfEn
         }
     }
     if(target==0)return false;
-    *target_out=target;
-    *zone_out=zone;
-    *distance_out=nearest;
-    return true;
+    *target_out=target;*zone_out=zone;*distance_out=nearest;return true;
 }
 
 static float damage_for_zone(const NfWeaponSpec *spec,NfHitZone zone){
@@ -282,6 +270,25 @@ static NfCattlerDebugProfile parse_cattler_profile(const char *value){
     return NF_CATTLER_PROFILE_NORMAL;
 }
 
+static void seed_lifeworld_corner(NfCattlerSystem *cattlers,NfWorld *world){
+    if(cattlers==NULL||world==NULL||cattlers->count<2u)return;
+    static const NfVec3 seeded[2]={{-51.0f,0.05f,-12.0f},{-43.0f,0.05f,-7.0f}};
+    for(size_t i=0u;i<2u;++i){
+        NfCattlerAgent *agent=&cattlers->agents[i];
+        NfActor *body=nf_world_find_actor(world,agent->actor_id);
+        if(body==NULL)continue;
+        body->transform.position=seeded[i];
+        body->transform.velocity=(NfVec3){0};
+        agent->spawn=seeded[i];
+        const uint8_t region=nf_region_nearest(&cattlers->graph,seeded[i]);
+        agent->current_region=region;
+        agent->target_region=region;
+        agent->next_region=region;
+        agent->home_region=region;
+        agent->claimed_watch_region=NF_REGION_INVALID;
+    }
+}
+
 int main(int argc,char **argv){
     uint16_t port=NF_NET_DEFAULT_PORT;uint32_t sim_latency=0,sim_jitter=0;float sim_loss=0.0f;double duration=0.0;bool friendly_fire=false;
     size_t ai_count=4u,pressure_slots=2u,cattler_count=NF_CATTLER_DEFAULT_AGENTS;NfRelationship rival_relation=NF_RELATION_HOSTILE;NfCattlerDebugProfile cattler_profile=NF_CATTLER_PROFILE_NORMAL;
@@ -309,13 +316,16 @@ int main(int argc,char **argv){
     NfEncounterState encounter;nf_encounter_init(&encounter,&ai,&world,pressure_slots,world.seed^0xE06u);
     NfSpatialSystem spatial;nf_spatial_init(&spatial,&ai,&world,world.seed^0x507u);
     NfCattlerSystem cattlers;nf_cattler_init(&cattlers,&world,cattler_count,cattler_profile,world.seed^0xCA771Eu);
+    seed_lifeworld_corner(&cattlers,&world);
+    NfLifeworldSystem lifeworld;nf_lifeworld_init(&lifeworld,&spatial.graph,world.seed^0x1F3u);
     history_record(history,&world);
 
-    printf("nightfall!punk dedicated server v0.8 dream cattler habitat ecology\n");
+    printf("nightfall!punk dedicated server v1.0 topographic lifeworld\n");
     printf("port=%u tick=%u snapshot=%u max_players=%u rivals=%zu pressure_slots=%zu cattlers=%zu relation=%s crypto=%s friendly_fire=%s sim=%ums +/- %ums %.1f%% loss\n",port,NF_TICK_RATE,NF_NET_SNAPSHOT_HZ,NF_NET_MAX_PLAYERS,ai.count,encounter.pressure_slots,cattlers.count,nf_relationship_name(rival_relation),nf_security_is_strong()?"libsodium":"scaffold",friendly_fire?"on":"off",sim_latency,sim_jitter,sim_loss);
     printf("[encounter] bounded Human Rival pressure + v0.7 spatial ecology preserved\n");
     printf("[spatial] 0.40 km^2 graybox | regions=%zu | local samples=%u | situated Rival tasks enabled\n",spatial.graph.count,NF_SPATIAL_LOCAL_SAMPLES);
-    printf("[cattler] habitat continuity -> resource -> prey -> disturbance -> territory -> access | default ecology ~90%% pack, ~5%% hunt-surge, ~5%% loner\n");
+    printf("[cattler] habitat continuity -> resource -> prey -> disturbance -> territory -> access | first two seeded into the v1.0 contested-corner proof without hidden target knowledge\n");
+    printf("[lifeworld] ~800 m^2 embodied proof window; boundary is environmental interdependence, not area alone | exact primary causes + disposable predicted surface\n");
 
     const double fixed_ms=1000.0/(double)NF_TICK_RATE;uint32_t last=nf_net_now_ms(),start=last;double accumulator=0.0;uint64_t next_ai_log_tick=0u;
     while(g_running){
@@ -343,7 +353,10 @@ int main(int argc,char **argv){
             for(size_t i=0;i<ai_controls_count;++i){nf_world_set_input(&world,ai_controls[i].actor,ai_controls[i].move);process_combat_control(&net,&world,clients,&semantics,&cattlers,&ai_controls[i],history,rival_relation,friendly_fire);}
             for(size_t i=0;i<cattler_controls_count;++i){nf_world_set_input(&world,cattler_controls[i].actor,cattler_controls[i].move);process_combat_control(&net,&world,clients,&semantics,&cattlers,&cattler_controls[i],history,rival_relation,friendly_fire);}
 
-            nf_world_step(&world,1.0f/(float)NF_TICK_RATE);process_respawns(&net,&world,clients,&ai,&spatial,&cattlers,&semantics);history_record(history,&world);
+            nf_world_step(&world,1.0f/(float)NF_TICK_RATE);
+            process_respawns(&net,&world,clients,&ai,&spatial,&cattlers,&semantics);
+            nf_lifeworld_tick(&lifeworld,&world,&spatial.graph);
+            history_record(history,&world);
             if(world.tick%(NF_TICK_RATE/NF_NET_SNAPSHOT_HZ)==0u)for(size_t i=0;i<NF_SERVER_CLIENTS;++i)if(clients[i].occupied&&clients[i].connected)send_snapshot(&net,&world,&clients[i]);
 
             if(world.tick>=next_ai_log_tick){
@@ -356,6 +369,18 @@ int main(int argc,char **argv){
                     printf("[cattler] id=%u social=%s mode=%s predatory=%s prey=%u confidence=%.2f visible=%s health=%.0f locomotor=%.2f region=%u:%s->%u:%s next=%u infest=%.2f prey_activity=%.2f disturbance=%.2f event=%s score[i=%.2f p=%.2f d=%.2f x=%.2f s=%.2f]\n",agent->actor_id,nf_cattler_social_name(agent->social),nf_cattler_mode_name(agent->mode),agent->profile.disposition==NF_RANCHER_PREDATORY?"yes":"no",agent->knowledge.prey,agent->knowledge.confidence,agent->knowledge.visible_now?"yes":"no",body?body->health:0.0f,agent->locomotor_integrity,agent->current_region,nf_region_name(agent->current_region),agent->target_region,nf_region_name(agent->target_region),agent->next_region,region?region->infestation:0.0f,region?region->prey_activity:0.0f,region?region->disturbance:0.0f,nf_cattler_event_name(cattlers.event_mode),agent->score.infestation,agent->score.prey,agent->score.displacement,agent->score.expansion,agent->score.survival);
                 }
                 printf("[ecology] cattler event=%s internal-ledger infestation=%.2f prey=%.2f displacement=%.2f expansion=%.2f survival=%.2f (player-facing expression remains sense-data, not score HUD)\n",nf_cattler_event_name(cattlers.event_mode),cattlers.ecology_score.infestation,cattlers.ecology_score.prey,cattlers.ecology_score.displacement,cattlers.ecology_score.expansion,cattlers.ecology_score.survival);
+                const NfLifeworldSurface surface=nf_lifeworld_predict_surface(&lifeworld);
+                printf("[lifeworld] region=%u:%s cattlers=%u humans=%u infest=%u human_use=%u maint=%u disturb=%u generator=%u pump=%u hotspots=%zu predicted-darkness=%.2f recovery=%.2f\n",
+                    lifeworld.region,nf_region_name(lifeworld.region),(unsigned)lifeworld.cattlers_present,(unsigned)lifeworld.humans_present,
+                    lifeworld.memory.infestation_q,lifeworld.memory.human_use_q,lifeworld.memory.maintenance_q,lifeworld.memory.disturbance_q,
+                    lifeworld.generator.throughput_q,lifeworld.pump.throughput_q,lifeworld.hotspot_count,surface.darkness,surface.recovery);
+                for(size_t i=0u;i<lifeworld.attention_count;++i){
+                    const NfAttentionChoice *choice=&lifeworld.attention[i];
+                    printf("[attention] rival=%u hotspot=%s activity=%s region=%u explore=%s\n",
+                        choice->actor_id,nf_hotspot_name(choice->hotspot),nf_life_activity_name(choice->activity),choice->region,choice->exploration?"yes":"no");
+                }
+                char primary[512];
+                if(nf_lifeworld_write_primary_json(&lifeworld,world.seed,world.tick,1u,primary,sizeof(primary))>0u)printf("[primary] %s\n",primary);
                 next_ai_log_tick=world.tick+NF_TICK_RATE*2u;
             }
             accumulator-=fixed_ms;
