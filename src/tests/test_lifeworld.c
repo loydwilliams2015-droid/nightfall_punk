@@ -102,7 +102,9 @@ static void contested_corner_and_recovery(void){
     const uint16_t infestation_at_displacement=life.memory.infestation_q;
     assert(nf_world_despawn_actor(&world,c1));
     assert(nf_world_despawn_actor(&world,c2));
-    step_lifeworld(&world,&life,&graph,1u);
+    /* The lifeworld runs at a bounded 10 Hz; advance beyond one cadence so
+       displacement is actually observed before testing immediate recovery. */
+    step_lifeworld(&world,&life,&graph,7u);
     assert(life.memory.infestation_q<infestation_at_displacement);
     assert(life.memory.infestation_q>0u);
     assert(has_hotspot(&life,NF_HOTSPOT_RECOVERY_EDGE));
