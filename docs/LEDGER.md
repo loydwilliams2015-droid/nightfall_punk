@@ -138,7 +138,7 @@ Two guns. Hitscan. Server truth. Medium TTK. Health/death/respawn. Reload/switch
 - [x] GitHub simulation / combat / network contract tests green: 3/3
 - [x] GitHub four-client combat smoke green; authoritative damage and death observed by every bot
 - [x] project-owned C targets compile under `-Wall -Wextra -Wpedantic -Werror`
-- [ ] GitHub CI green on mouse-capture repair tree
+- [x] GitHub CI green on mouse-capture repair tree
 - [ ] Pop!_OS clean build/tests/combat-smoke green
 - [ ] Pop!_OS mouse-look recapture retest green
 - [ ] recorded human combat demo reviewed
@@ -176,7 +176,7 @@ Behavioral targets, not claims about proprietary internals.
 - [x] initial GitHub-hosted full compile green
 - [x] all automated tests green
 - [x] four-client combat smoke green with damage/death
-- [ ] mouse-capture repair exact tree green in CI
+- [x] mouse-capture repair exact tree green in CI
 - [ ] target Pop!_OS clean build/tests/combat-smoke green
 - [ ] target Pop!_OS mouse look confirmed
 - [ ] target Pop!_OS run + recorded combat demo reviewed
