@@ -1,6 +1,7 @@
 #include "nf_combat.h"
 #include "nf_net.h"
 #include "nf_prediction.h"
+#include "nf_relations.h"
 #include "nf_security.h"
 #include "nf_world.h"
 #include "raylib.h"
@@ -45,7 +46,7 @@ static void draw_ramp(const NfRamp *r) { const Color color=(Color){82,119,132,25
 static Color candidate_color(NfTraversalType t) { switch(t){case NF_TRAVERSAL_STEP:return GREEN;case NF_TRAVERSAL_VAULT:return YELLOW;case NF_TRAVERSAL_MANTLE:return SKYBLUE;case NF_TRAVERSAL_LADDER:return ORANGE;default:return RED;} }
 static RemoteActor *remote_slot(RemoteActor remotes[],NfEntityId id) { for(size_t i=0;i<NF_REMOTE_SLOTS;++i)if(remotes[i].active&&remotes[i].id==id)return &remotes[i]; for(size_t i=0;i<NF_REMOTE_SLOTS;++i){if(!remotes[i].active){memset(&remotes[i],0,sizeof(remotes[i]));remotes[i].active=true;remotes[i].id=id;return &remotes[i];}} return NULL; }
 static void send_hello(NfNetHost *net,void *peer,const uint8_t resume[NF_NET_TOKEN_BYTES]) { NfHelloMessage h={0};nf_security_random(h.client_nonce,sizeof(h.client_nonce));memcpy(h.resume_token,resume,NF_NET_TOKEN_BYTES);uint8_t buf[128];size_t n=nf_protocol_encode_hello(buf,sizeof(buf),&h);nf_net_send(net,peer,NF_NET_CHANNEL_RELIABLE,buf,n,true); }
-static Color actor_color(NfFaction local,NfFaction remote,bool alive) { if(!alive)return(Color){70,72,78,255}; if(remote==NF_FACTION_RANCHER)return ORANGE; if(remote==local)return(Color){65,145,235,255}; return(Color){220,72,72,255}; }
+static Color actor_color(NfFaction local,NfFaction remote,bool alive) { if(!alive)return(Color){70,72,78,255}; if(remote==NF_FACTION_RANCHER)return ORANGE; NfRelationship relation=nf_relation_between(local,remote,NF_RELATION_HOSTILE); if(relation==NF_RELATION_COOPERATIVE)return(Color){65,145,235,255}; if(relation==NF_RELATION_TRUCE||relation==NF_RELATION_CONTESTED)return(Color){224,188,70,255}; return(Color){220,72,72,255}; }
 static void draw_weapon_hud(const NfActor *player,int width,int height,bool muzzle) { if(player==NULL)return; Color body=player->combat.weapon==NF_WEAPON_PISTOL?(Color){180,184,193,255}:(Color){118,126,139,255};int w=player->combat.weapon==NF_WEAPON_PISTOL?150:260;int h=player->combat.weapon==NF_WEAPON_PISTOL?40:58;DrawRectangle(width-w-70,height-h-72,w,h,body);DrawRectangleLines(width-w-70,height-h-72,w,h,RAYWHITE);if(muzzle){DrawCircle(width-66,height-h-51,15,YELLOW);DrawCircle(width-66,height-h-51,7,ORANGE);} }
 static void draw_hit_marker(int cx,int cy,Color color) { DrawLine(cx-13,cy-13,cx-5,cy-5,color);DrawLine(cx+13,cy-13,cx+5,cy-5,color);DrawLine(cx-13,cy+13,cx-5,cy+5,color);DrawLine(cx+13,cy+13,cx+5,cy+5,color); }
 

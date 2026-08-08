@@ -2,6 +2,7 @@
 
 #include "nf_net.h"
 #include "nf_prediction.h"
+#include "nf_relations.h"
 #include "nf_security.h"
 #include "nf_world.h"
 
@@ -105,8 +106,11 @@ int main(int argc,char **argv) {
                         have_target=false;
                         for(uint8_t i=0;i<snapshot.actor_count;++i) {
                             const NfActorNetState *actor=&snapshot.actors[i];
+                            const NfRelationship relation=nf_relation_between(
+                                local_faction,actor->faction,NF_RELATION_HOSTILE);
                             if(actor->id!=id&&actor->alive&&
-                                local_faction!=NF_FACTION_NONE&&actor->faction!=local_faction) {
+                                local_faction!=NF_FACTION_NONE&&
+                                nf_relation_can_damage(relation,false)) {
                                 target_position=actor->position;
                                 have_target=true;
                                 break;
