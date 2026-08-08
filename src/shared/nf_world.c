@@ -1,6 +1,7 @@
 #include "nf_world.h"
 #include "nf_movement.h"
 #include "nf_combat.h"
+#include "nf_region.h"
 
 #include <math.h>
 #include <string.h>
@@ -24,6 +25,7 @@ void nf_world_init(NfWorld *world, uint32_t seed) {
     world->seed = seed;
     world->next_entity_id = 1u;
     world->movement = nf_default_movement_config();
+    nf_energy_init(&world->energy, seed ^ 0xE093u);
 }
 
 int nf_world_add_collider(NfWorld *world, NfColliderKind kind, NfVec3 min, NfVec3 max) {
@@ -108,6 +110,10 @@ void nf_world_build_movement_lab(NfWorld *world) {
     nf_world_add_ramp(world,(NfVec3){-95,0,-25},(NfVec3){-80,2.2f,-10},NF_RAMP_POS_Z);
     nf_world_add_ramp(world,(NfVec3){80,0,10},(NfVec3){95,2.8f,25},NF_RAMP_POS_Z);
     nf_world_add_ramp(world,(NfVec3){-15,0,105},(NfVec3){0,2.0f,120},NF_RAMP_POS_X);
+
+    NfRegionGraph energy_graph;
+    nf_region_graph_init_spatial_lab(&energy_graph);
+    nf_energy_bind_spatial_lab(&world->energy, &energy_graph);
 }
 
 static NfActor *nf_world_allocate_actor(NfWorld *world) {
@@ -180,6 +186,7 @@ void nf_world_step(NfWorld *world,float dt){
         else { a->transform.velocity=(NfVec3){0}; a->input=(NfMoveInput){0}; }
         a->input.jump_pressed=false;
     }
+    nf_energy_tick(&world->energy, world, (double)dt);
     ++world->tick;
 }
 size_t nf_world_active_actor_count(const NfWorld *world){if(world==NULL)return 0;size_t n=0;for(size_t i=0;i<NF_MAX_ENTITIES;++i)if(world->actors[i].active)++n;return n;}
