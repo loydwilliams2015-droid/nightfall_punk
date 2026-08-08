@@ -1,8 +1,8 @@
-name: nightfall v0.3 CI
+name: nightfall v0.4 CI
 
 on:
   push:
-    branches: [ main, "build/**" ]
+    branches: [ main, "build/**", "agent/**" ]
   pull_request:
     branches: [ main ]
 
@@ -28,8 +28,8 @@ jobs:
       - name: Full compile
         run: ./nightfall.sh build
 
-      - name: Contract tests
+      - name: Simulation, combat and protocol tests
         run: ./nightfall.sh test
 
-      - name: Four-client network smoke test
-        run: ./nightfall.sh net-smoke
+      - name: Four-client combat smoke test
+        run: ./nightfall.sh combat-smoke
