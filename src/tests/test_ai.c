@@ -1,4 +1,5 @@
 #include "nf_ai.h"
+#include "nf_encounter.h"
 #include "nf_relations.h"
 #include "nf_semantics.h"
 
@@ -71,10 +72,63 @@ static void agent_contract(void) {
     assert(held&&!shot_during_truce);
 }
 
+static void encounter_contract(void) {
+    NfWorld world; nf_world_init(&world,20260807u); nf_world_build_movement_lab(&world);
+    NfEntityId player=nf_world_spawn_actor(&world,NF_FACTION_PLAYER,(NfVec3){-3,0.05f,-18});
+    assert(player!=0u);
+
+    NfAiSystem ai; nf_ai_init(&ai,&world,4u,9876u);
+    NfSemanticBus semantics; nf_semantic_bus_init(&semantics);
+    NfEncounterState encounter;
+    nf_encounter_init(&encounter,&ai,&world,2u,world.seed^0xE06u);
+
+    bool pressure_seen=false;
+    bool filtered_fire_seen=false;
+    float suppression_peak=0.0f;
+
+    for(unsigned step=0;step<360u;++step) {
+        NfControlFrame frames[NF_AI_MAX_AGENTS];
+        size_t count=nf_ai_tick(&ai,&world,&semantics,frames,NF_AI_MAX_AGENTS);
+
+        if(step==150u) {
+            NfActor *victim=nf_world_find_actor(&world,ai.agents[0].actor_id);
+            NfCombatEvent event={0};
+            assert(victim!=NULL);
+            assert(nf_combat_apply_damage(
+                victim,player,NF_WEAPON_CARBINE,NF_HIT_BODY,18.0f,
+                world.tick,&event));
+        }
+
+        nf_encounter_filter_controls(&encounter,&ai,&world,frames,count);
+        const size_t pressure=nf_encounter_pressure_count(&encounter);
+        assert(pressure<=2u);
+        if(pressure>0u) pressure_seen=true;
+
+        for(size_t i=0;i<count;++i) {
+            const NfEncounterAgentState *state=
+                nf_encounter_agent_state_const(&encounter,frames[i].actor);
+            assert(state!=NULL);
+            assert(state->aim_settle>=0.0f&&state->aim_settle<=1.0f);
+            assert(state->suppression>=0.0f&&state->suppression<=1.0f);
+            if(state->suppression>suppression_peak) suppression_peak=state->suppression;
+            if(frames[i].combat.fire_held||frames[i].combat.fire_pressed) {
+                filtered_fire_seen=true;
+            }
+            nf_world_set_input(&world,frames[i].actor,frames[i].move);
+        }
+        nf_world_step(&world,1.0f/(float)NF_TICK_RATE);
+    }
+
+    assert(pressure_seen);
+    assert(filtered_fire_seen);
+    assert(suppression_peak>0.25f);
+}
+
 int main(void) {
     relation_contract();
     semantic_contract();
     agent_contract();
-    puts("nightfall v0.5 agent intelligence tests: PASS");
+    encounter_contract();
+    puts("nightfall v0.6 encounter intelligence tests: PASS");
     return 0;
 }
