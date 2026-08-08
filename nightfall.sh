@@ -7,6 +7,23 @@ HEADLESS_BUILD_DIR="$BUILD_ROOT/headless"
 cmd="${1:-help}"
 if [[ $# -gt 0 ]]; then shift; fi
 
+run_smoke() {
+  test -x "$HEADLESS_BUILD_DIR/nightfall_netbot" || "$0" build-headless
+  "$HEADLESS_BUILD_DIR/nightfall_server" --duration 9 >"$BUILD_ROOT/combat-smoke-server.log" 2>&1 &
+  server_pid=$!
+  trap 'kill "$server_pid" 2>/dev/null || true' EXIT INT TERM
+  sleep 0.35
+  pids=()
+  for pattern in 0 1 2 3; do
+    "$HEADLESS_BUILD_DIR/nightfall_netbot" --duration 6 --pattern "$pattern" &
+    pids+=("$!")
+  done
+  result=0
+  for pid in "${pids[@]}"; do wait "$pid" || result=1; done
+  wait "$server_pid" || true
+  return "$result"
+}
+
 case "$cmd" in
   standard-check)
     command -v cmake >/dev/null
@@ -15,6 +32,7 @@ case "$cmd" in
     test -f "$ROOT_DIR/src/shared/nf_net.c"
     test -f "$ROOT_DIR/src/shared/nf_protocol.c"
     test -f "$ROOT_DIR/src/shared/nf_prediction.c"
+    test -f "$ROOT_DIR/src/shared/nf_combat.c"
     echo "[ok] cmake: $(cmake --version | head -n1)"
     echo "[ok] cc: $(cc --version | head -n1)"
     if command -v pkg-config >/dev/null && pkg-config --exists libsodium 2>/dev/null; then
@@ -22,7 +40,7 @@ case "$cmd" in
     else
       echo "[warn] libsodium-dev not detected; localhost security scaffold will be used"
     fi
-    echo "[ok] v0.3 networked-movement source tree present"
+    echo "[ok] v0.4 authoritative combat source tree present"
     ;;
   build)
     cmake -S "$ROOT_DIR" -B "$FULL_BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=ON
@@ -52,41 +70,30 @@ case "$cmd" in
     sleep 0.35
     "$FULL_BUILD_DIR/nightfall_client" "$@"
     ;;
-  net-smoke)
-    test -x "$HEADLESS_BUILD_DIR/nightfall_netbot" || "$0" build-headless
-    "$HEADLESS_BUILD_DIR/nightfall_server" --duration 8 >"$BUILD_ROOT/net-smoke-server.log" 2>&1 &
-    server_pid=$!
-    trap 'kill "$server_pid" 2>/dev/null || true' EXIT INT TERM
-    sleep 0.35
-    pids=()
-    for pattern in 0 1 2 3; do
-      "$HEADLESS_BUILD_DIR/nightfall_netbot" --duration 5 --pattern "$pattern" &
-      pids+=("$!")
-    done
-    result=0
-    for pid in "${pids[@]}"; do wait "$pid" || result=1; done
-    wait "$server_pid" || true
-    exit "$result"
+  net-smoke|combat-smoke)
+    run_smoke
     ;;
   clean)
     rm -rf "$BUILD_ROOT"
     ;;
   *)
     cat <<'HELP'
-nightfall!punk v0.3 build helper
+nightfall!punk v0.4 build helper
 
   ./nightfall.sh standard-check
   ./nightfall.sh build
   ./nightfall.sh build-headless
   ./nightfall.sh test
   ./nightfall.sh local
+  ./nightfall.sh combat-smoke
   ./nightfall.sh net-smoke
-  ./nightfall.sh server [--sim-latency MS --sim-jitter MS --sim-loss PERCENT]
-  ./nightfall.sh client [--host HOST]
+  ./nightfall.sh server [--friendly-fire --sim-latency MS --sim-jitter MS --sim-loss PERCENT]
+  ./nightfall.sh client [--host HOST --sim-latency MS --sim-jitter MS --sim-loss PERCENT]
   ./nightfall.sh clean
 
-local      = launch dedicated server + graphical client over real ENet localhost
-net-smoke  = launch dedicated server + four automated network clients
+local         = dedicated v0.4 server + graphical combat client over real ENet localhost
+combat-smoke  = dedicated server + four automated movement/combat clients
+net-smoke     = alias retained for continuity
 HELP
     ;;
 esac
