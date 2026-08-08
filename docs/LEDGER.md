@@ -17,6 +17,11 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 - [x] Fuzzy Rail = local geometric traversal intelligence
 - [x] Dynamic Affordance Graph = later utility + affordances + influence + blackboard
 - [x] World Semantic Alerts = explicit server-authored gameplay-event layer, never inferred from raw packets
+- [x] formal genre identity = **Neo-Xennial Shooter / Neo-Xennial FPS**
+- [x] design subtype = **Systemic Arena FPS**
+- [x] genre thesis = continue the late-1990s/early-2000s FPS trajectory rather than merely imitate retro aesthetics: Quake-style immediacy and arena freedom + Deus Ex-style systemic possibility + Halo-style spatial clarity + F.E.A.R.-style encounter intelligence + contemporary simulation/network infrastructure
+- [x] neo-xennial pillars = arena freedom, systemic worlds, autonomous AI, physicality, emergent narrative, and open/moddable dedicated-server infrastructure
+- [x] manifesto = **The neo-xennial shooter continues the FPS future that the early 2000s started: fast, physical, systemic, open, and unpredictable.**
 
 # v0.1 — Foundation — COMPLETE / ARCHIVED
 - [x] `archive/v0.1`
