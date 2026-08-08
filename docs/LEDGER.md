@@ -154,6 +154,7 @@ Four server-controlled Human Rivals should perceive the player through limited e
 - [x] v0.4 prediction ambiguity resolved structurally: `resyncs` counts reconciliation/state rebuild passes; `corrections` counts threshold-crossing positional corrections
 - [x] graphical HUD now labels `visible corrections` separately from `resyncs`
 - [x] server prints each AI actor's id / role / mode / target / confidence / visibility / health / cover selection at a bounded cadence
+- [x] automated AI-smoke server trace demonstrates mode transitions among ENGAGE / INVESTIGATE / RETREAT as line-of-sight/confidence changes
 - [ ] richer in-client per-AI utility/knowledge overlay is deferred until after first human v0.5 behavior recording
 
 ## Automated contracts
@@ -164,11 +165,12 @@ Four server-controlled Human Rivals should perceive the player through limited e
 - [x] AI perception/engage/fire-output test added
 - [x] truce suppresses AI firing in deterministic test
 - [x] legacy simulation/combat/network tests retained
-- [ ] exact v0.5 full compile green in GitHub CI
-- [ ] 4/4 CTest contracts green
-- [ ] four-network-client + four-AI combat smoke green
-- [ ] one-human-shaped-client + four-AI smoke green
-- [ ] Pop!_OS clean build/tests green
+- [x] exact v0.5 implementation full compile green in GitHub CI
+- [x] 4/4 CTest contracts green: simulation / combat / network / agent intelligence
+- [x] four-network-client + four-AI combat smoke green; authoritative combat/damage/death observed
+- [x] passive human-shaped client + four-AI smoke green: AI alone produced 12 incoming damage/death events and killed the client twice in nine seconds
+- [x] libsodium active in GitHub verification environment
+- [ ] Pop!_OS clean build/tests/smokes green
 - [ ] human v0.5 demo reviewed
 
 ## Stable-coherence gate
@@ -182,7 +184,7 @@ Four server-controlled Human Rivals should perceive the player through limited e
 - [x] AI knowledge is not server omniscience
 - [x] Rancher and Human Rival motivational policies remain distinct even though lower layers are shareable
 - [x] no dynamic allocation required in AI tick path
-- [ ] exact branch CI green before merge
+- [x] implementation tree passed full strict-warning CI before merge
 - [ ] target-machine behavior accepted before `archive/v0.5`
 
 ## Par / Compare-10 synthesis
@@ -231,9 +233,11 @@ For the first v0.5 recording, verify visually rather than trying to prove every 
 ## Current tuning watch
 
 - [x] correction diagnostic semantics separated before v0.5 human review
+- [x] automated passive-client smoke proves Human Rival AI can independently damage and kill a player actor through normal server combat truth
 - [ ] inspect whether four Rival default pressure is fun or instantly overwhelming
 - [ ] inspect whether aim jitter/reaction/burst timing reads human rather than robotic
 - [ ] inspect cover-selection usefulness versus direct-goal navigation failures
 - [ ] inspect AI clumping and stuck recovery around ladders/platforms/obstacles
 - [ ] inspect whether semantic hearing/search is visible enough to deserve richer debug overlay
+- [ ] inspect prediction max-error spikes around death/respawn discontinuities; automated passive-client run reached ~1.285 m while ordinary visible correction counts stayed low
 - [ ] use human footage to decide whether v0.6 should deepen navigation/affordances, social/teammate behavior, or broader world semantics first
