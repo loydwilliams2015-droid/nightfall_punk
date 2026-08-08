@@ -11,7 +11,7 @@
 #include <stdint.h>
 
 #define NF_AI_MAX_AGENTS 4u
-#define NF_AI_MAX_AFFORDANCES 32u
+#define NF_AI_MAX_AFFORDANCES 96u
 
 typedef struct NfAiKnowledge {
     NfEntityId target;

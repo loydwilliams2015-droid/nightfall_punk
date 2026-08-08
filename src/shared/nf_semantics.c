@@ -88,6 +88,9 @@ const char *nf_semantic_type_name(NfSemanticType type) {
         case NF_SEMANTIC_SUSPICIOUS_SOUND: return "SUSPICIOUS_SOUND";
         case NF_SEMANTIC_AFFORDANCE_RESERVED: return "AFFORDANCE_RESERVED";
         case NF_SEMANTIC_AFFORDANCE_RELEASED: return "AFFORDANCE_RELEASED";
+        case NF_SEMANTIC_OBJECTIVE_CHANGED: return "OBJECTIVE_CHANGED";
+        case NF_SEMANTIC_ROUTE_CHANGED: return "ROUTE_CHANGED";
+        case NF_SEMANTIC_STORY_PHASE_CHANGED: return "STORY_PHASE_CHANGED";
         default: return "NONE";
     }
 }

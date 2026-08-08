@@ -51,26 +51,63 @@ int nf_world_add_ramp(NfWorld *world, NfVec3 min, NfVec3 max, NfRampAxis axis) {
 
 void nf_world_build_movement_lab(NfWorld *world) {
     if (world == NULL) return;
-    world->collider_count = 0u; world->ramp_count = 0u;
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-30,-0.5f,-30},(NfVec3){30,0,30});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-30,0,-30},(NfVec3){-29.2f,4,30});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){29.2f,0,-30},(NfVec3){30,4,30});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-30,0,-30},(NfVec3){30,4,-29.2f});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-30,0,29.2f},(NfVec3){30,4,30});
-    for(int i=0;i<6;++i){float z0=-8.0f+(float)i;float top=0.25f+(float)i*0.25f;nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-12,0,z0},(NfVec3){-7.5f,top,z0+1});}
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-2.5f,0,-7},(NfVec3){2.5f,0.42f,-6.4f});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-2.5f,0,-2.5f},(NfVec3){2.5f,0.90f,-1.9f});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-2.5f,0,2},(NfVec3){2.5f,1.45f,2.6f});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){7,0,-8},(NfVec3){13,2,-2});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){7,2,-1},(NfVec3){13,2.35f,5});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){10,2,5},(NfVec3){11,2.35f,13});
-    nf_world_add_collider(world,NF_COLLIDER_LADDER,(NfVec3){6.55f,0,-5.6f},(NfVec3){7.05f,2.4f,-4.4f});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-15,1.25f,7},(NfVec3){-8,1.65f,11});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-15,0,6.8f},(NfVec3){-14.5f,1.25f,11.2f});
-    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-8.5f,0,6.8f},(NfVec3){-8,1.25f,11.2f});
-    nf_world_add_moving_platform(world,(NfVec3){1,1,10},(NfVec3){5,1.35f,13},(NfVec3){1,0,0},4,6);
-    nf_world_add_ramp(world,(NfVec3){-20,0,-17},(NfVec3){-14,1.5f,-11},NF_RAMP_POS_Z);
-    nf_world_add_ramp(world,(NfVec3){14,0,-17},(NfVec3){20,3,-11},NF_RAMP_POS_Z);
+    world->collider_count = 0u;
+    world->ramp_count = 0u;
+
+    /* v0.7 spatial-ecology lab: 500m x 800m = 400,000 m^2 = 0.40 km^2. */
+    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-250,-0.5f,-400},(NfVec3){250,0,400});
+    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-250,0,-400},(NfVec3){-249.2f,6,400});
+    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){249.2f,0,-400},(NfVec3){250,6,400});
+    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-250,0,-400},(NfVec3){250,6,-399.2f});
+    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-250,0,399.2f},(NfVec3){250,6,400});
+
+    static const NfVec3 block_centers[] = {
+        {-150,0,-300},{-35,0,-285},{105,0,-310},{175,0,-170},
+        {-155,0,-145},{-20,0,-120},{105,0,-115},{-175,0,15},
+        {-35,0,25},{120,0,5},{180,0,145},{-145,0,160},
+        {-15,0,165},{105,0,185},{-165,0,300},{-25,0,295},
+        {105,0,315},{185,0,285}
+    };
+    for (size_t i = 0u; i < sizeof(block_centers)/sizeof(block_centers[0]); ++i) {
+        const float sx = (i%3u)==0u ? 28.0f : 20.0f;
+        const float sz = (i%2u)==0u ? 18.0f : 26.0f;
+        const float h = 3.0f + (float)(i%4u)*0.8f;
+        const NfVec3 c = block_centers[i];
+        nf_world_add_collider(
+            world,NF_COLLIDER_SOLID,
+            (NfVec3){c.x-sx*0.5f,0,c.z-sz*0.5f},
+            (NfVec3){c.x+sx*0.5f,h,c.z+sz*0.5f});
+    }
+
+    static const NfVec3 cover_centers[] = {
+        {-205,0,-340},{-70,0,-325},{55,0,-340},{205,0,-325},
+        {-180,0,-215},{-45,0,-195},{80,0,-215},{180,0,-195},
+        {-205,0,-80},{-70,0,-55},{55,0,-80},{205,0,-55},
+        {-180,0,55},{-45,0,80},{80,0,55},{180,0,80},
+        {-205,0,195},{-70,0,215},{55,0,195},{205,0,215},
+        {-180,0,325},{-45,0,345},{80,0,325},{180,0,345}
+    };
+    for (size_t i = 0u; i < sizeof(cover_centers)/sizeof(cover_centers[0]); ++i) {
+        const NfVec3 c = cover_centers[i];
+        const float height = (i%3u)==0u ? 1.45f : ((i%3u)==1u ? 0.90f : 1.75f);
+        nf_world_add_collider(
+            world,NF_COLLIDER_SOLID,
+            (NfVec3){c.x-2.4f,0,c.z-1.4f},
+            (NfVec3){c.x+2.4f,height,c.z+1.4f});
+    }
+
+    /* Central traversal landmarks sit outside the initial player/Rival spawn lanes. */
+    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-44,0,-18},(NfVec3){-32,2.2f,-6});
+    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){32,0,-18},(NfVec3){44,2.2f,-6});
+    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){-44,2.2f,7},(NfVec3){-32,2.55f,19});
+    nf_world_add_collider(world,NF_COLLIDER_SOLID,(NfVec3){32,2.2f,7},(NfVec3){44,2.55f,19});
+    nf_world_add_collider(world,NF_COLLIDER_LADDER,(NfVec3){-32.45f,0,-14},(NfVec3){-31.95f,2.6f,-12.8f});
+    nf_world_add_collider(world,NF_COLLIDER_LADDER,(NfVec3){31.95f,0,12},(NfVec3){32.45f,2.6f,13.2f});
+    nf_world_add_moving_platform(world,(NfVec3){-4,1.2f,28},(NfVec3){4,1.55f,34},(NfVec3){1,0,0},8,8);
+
+    nf_world_add_ramp(world,(NfVec3){-95,0,-25},(NfVec3){-80,2.2f,-10},NF_RAMP_POS_Z);
+    nf_world_add_ramp(world,(NfVec3){80,0,10},(NfVec3){95,2.8f,25},NF_RAMP_POS_Z);
+    nf_world_add_ramp(world,(NfVec3){-15,0,105},(NfVec3){0,2.0f,120},NF_RAMP_POS_X);
 }
 
 static NfActor *nf_world_allocate_actor(NfWorld *world) {
