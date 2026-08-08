@@ -37,6 +37,15 @@ run_ai_smoke() {
   return "$result"
 }
 
+run_spatial_smoke() {
+  test -x "$HEADLESS_BUILD_DIR/nightfall_server" || "$0" build-headless
+  "$HEADLESS_BUILD_DIR/nightfall_server" --duration 8 --ai-count 4 --pressure-slots 2 --rival-truce >"$BUILD_ROOT/spatial-smoke-server.log" 2>&1
+  cat "$BUILD_ROOT/spatial-smoke-server.log" || true
+  grep -q "\[spatial\] 0.40 km\^2 graybox" "$BUILD_ROOT/spatial-smoke-server.log"
+  grep -q "task=ROAM" "$BUILD_ROOT/spatial-smoke-server.log"
+  grep -q "fields\[c=" "$BUILD_ROOT/spatial-smoke-server.log"
+}
+
 case "$cmd" in
   standard-check)
     command -v cmake >/dev/null
@@ -49,8 +58,11 @@ case "$cmd" in
     test -f "$ROOT_DIR/src/shared/nf_combat.c"
     test -f "$ROOT_DIR/src/shared/nf_relations.c"
     test -f "$ROOT_DIR/src/shared/nf_semantics.c"
+    test -f "$ROOT_DIR/src/shared/nf_region.c"
     test -f "$ROOT_DIR/src/server/ai/nf_ai.c"
     test -f "$ROOT_DIR/src/server/ai/nf_encounter.c"
+    test -f "$ROOT_DIR/src/server/ai/nf_spatial.c"
+    test -f "$ROOT_DIR/src/server/ai/nf_spatial_filter.c"
     echo "[ok] cmake: $(cmake --version | head -n1)"
     echo "[ok] cc: $(cc --version | head -n1)"
     echo "[ok] nightfall.sh syntax"
@@ -59,7 +71,7 @@ case "$cmd" in
     else
       echo "[warn] libsodium-dev not detected; localhost security scaffold will be used"
     fi
-    echo "[ok] v0.6 encounter intelligence source tree present"
+    echo "[ok] v0.7 spatial ecology / situated agency source tree present"
     ;;
   build)
     cmake -S "$ROOT_DIR" -B "$FULL_BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=ON
@@ -102,7 +114,7 @@ case "$cmd" in
       wait "$candidate_pid" 2>/dev/null || true
     done
     if [[ -z "$server_pid" ]]; then
-      echo "nightfall: local v0.6 server failed to start on five isolated ports" >&2
+      echo "nightfall: local v0.7 server failed to start on five isolated ports" >&2
       echo "nightfall: server log follows" >&2
       cat "$BUILD_ROOT/server.log" >&2 || true
       exit 1
@@ -110,11 +122,11 @@ case "$cmd" in
     trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT INT TERM
     sleep 0.20
     if ! kill -0 "$server_pid" 2>/dev/null; then
-      echo "nightfall: local v0.6 server exited before client launch" >&2
+      echo "nightfall: local v0.7 server exited before client launch" >&2
       cat "$BUILD_ROOT/server.log" >&2 || true
       exit 1
     fi
-    echo "[local] v0.6 dedicated server pid=$server_pid isolated_port=$local_port ai_count=$ai_count pressure_slots=$pressure_slots truce=${NF_RIVAL_TRUCE:-0}"
+    echo "[local] v0.7 dedicated server pid=$server_pid isolated_port=$local_port ai_count=$ai_count pressure_slots=$pressure_slots truce=${NF_RIVAL_TRUCE:-0}"
     "$FULL_BUILD_DIR/nightfall_client" "$@" --port "$local_port"
     ;;
   net-smoke|combat-smoke)
@@ -123,12 +135,15 @@ case "$cmd" in
   ai-smoke|encounter-smoke)
     run_ai_smoke
     ;;
+  spatial-smoke)
+    run_spatial_smoke
+    ;;
   clean)
     rm -rf "$BUILD_ROOT"
     ;;
   *)
     cat <<'HELP'
-nightfall!punk v0.6 build helper
+nightfall!punk v0.7 build helper
 
   ./nightfall.sh standard-check
   ./nightfall.sh build
@@ -136,17 +151,17 @@ nightfall!punk v0.6 build helper
   ./nightfall.sh test
   ./nightfall.sh local
   ./nightfall.sh combat-smoke
-  ./nightfall.sh ai-smoke
   ./nightfall.sh encounter-smoke
-  ./nightfall.sh net-smoke
+  ./nightfall.sh spatial-smoke
   ./nightfall.sh server [--ai-count 0..4 --pressure-slots 0..2 --rival-truce --friendly-fire --sim-latency MS --sim-jitter MS --sim-loss PERCENT]
   ./nightfall.sh client [--host HOST --sim-latency MS --sim-jitter MS --sim-loss PERCENT]
   ./nightfall.sh clean
 
-local            = isolated-port v0.6 server + graphical client; four Human Rival AI and two pressure slots by default
+local            = isolated-port v0.7 server + graphical client; four Human Rival AI and two pressure slots by default
 combat-smoke     = dedicated server + four automated network clients + four server AI rivals
 ai-smoke         = passive automated player; passes only if bounded-pressure AI still damages and kills it
 encounter-smoke  = alias for the passive encounter proof
+spatial-smoke    = headless proof that four Rivals generate situated roaming/tasks/field diagnostics in the 0.40 km^2 lab
 net-smoke        = alias retained for continuity
 
 Local debug environment:
