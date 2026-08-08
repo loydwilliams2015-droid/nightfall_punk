@@ -49,26 +49,31 @@ NfHitZone nf_cattler_hit_zone_for_ray(
     float nearest=max_distance;
     NfHitZone best=NF_HIT_NONE;
     float t=FLT_MAX;
+    bool hit=false;
 
     /* Weak zones are evaluated before adjacent body volumes so an exact shared
        boundary resolves toward the deliberate David-counterplay hit zone. */
     NfVec3 foot_min={actor_base.x-NF_CATTLER_WEAK_HALF_WIDTH,actor_base.y+NF_CATTLER_FOOT_MIN_Y,actor_base.z-NF_CATTLER_WEAK_HALF_WIDTH};
     NfVec3 foot_max={actor_base.x+NF_CATTLER_WEAK_HALF_WIDTH,actor_base.y+NF_CATTLER_FOOT_MAX_Y,actor_base.z+NF_CATTLER_WEAK_HALF_WIDTH};
-    consider(ray_aabb(origin,direction,foot_min,foot_max,&t),t,NF_HIT_FOOT,&nearest,&best);
+    hit=ray_aabb(origin,direction,foot_min,foot_max,&t);
+    consider(hit,t,NF_HIT_FOOT,&nearest,&best);
 
     NfVec3 knee_min={actor_base.x-NF_CATTLER_WEAK_HALF_WIDTH,actor_base.y+NF_CATTLER_KNEE_MIN_Y,actor_base.z-NF_CATTLER_WEAK_HALF_WIDTH};
     NfVec3 knee_max={actor_base.x+NF_CATTLER_WEAK_HALF_WIDTH,actor_base.y+NF_CATTLER_KNEE_MAX_Y,actor_base.z+NF_CATTLER_WEAK_HALF_WIDTH};
     t=FLT_MAX;
-    consider(ray_aabb(origin,direction,knee_min,knee_max,&t),t,NF_HIT_KNEE,&nearest,&best);
+    hit=ray_aabb(origin,direction,knee_min,knee_max,&t);
+    consider(hit,t,NF_HIT_KNEE,&nearest,&best);
 
     NfVec3 body_min={actor_base.x-NF_CATTLER_BODY_HALF_WIDTH,actor_base.y+NF_CATTLER_BODY_MIN_Y,actor_base.z-NF_CATTLER_BODY_HALF_WIDTH};
     NfVec3 body_max={actor_base.x+NF_CATTLER_BODY_HALF_WIDTH,actor_base.y+NF_CATTLER_BODY_MAX_Y,actor_base.z+NF_CATTLER_BODY_HALF_WIDTH};
     t=FLT_MAX;
-    consider(ray_aabb(origin,direction,body_min,body_max,&t),t,NF_HIT_BODY,&nearest,&best);
+    hit=ray_aabb(origin,direction,body_min,body_max,&t);
+    consider(hit,t,NF_HIT_BODY,&nearest,&best);
 
     NfVec3 head={actor_base.x,actor_base.y+NF_CATTLER_HEAD_CENTER_Y,actor_base.z};
     t=FLT_MAX;
-    consider(ray_sphere(origin,direction,head,NF_CATTLER_HEAD_RADIUS,&t),t,NF_HIT_HEAD,&nearest,&best);
+    hit=ray_sphere(origin,direction,head,NF_CATTLER_HEAD_RADIUS,&t);
+    consider(hit,t,NF_HIT_HEAD,&nearest,&best);
 
     if(best!=NF_HIT_NONE&&distance_out!=NULL)*distance_out=nearest;
     return best;
