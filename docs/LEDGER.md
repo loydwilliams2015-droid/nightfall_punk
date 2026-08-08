@@ -213,7 +213,7 @@ Preserve v0.5 agent competence while controlling **when, where and how much** of
 - [x] server trace demonstrates rotating pressure authorization and role changes with no more than two pressure-authorized agents
 - [x] libsodium active in GitHub verification environment
 - [x] client periodic ping request semantics rechecked after v0.6 presentation edit
-- [ ] final exact documentation-closed PR head CI green before merge
+- [x] final exact documentation-closed PR head CI green before merge
 - [ ] Pop!_OS build/tests/smokes checked by human operator
 - [ ] human v0.6 encounter recording reviewed
 - [ ] `archive/v0.6` only after target-machine acceptance
