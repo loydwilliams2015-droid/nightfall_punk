@@ -29,12 +29,14 @@ case "$cmd" in
     command -v cmake >/dev/null
     command -v cc >/dev/null
     command -v git >/dev/null
+    bash -n "$0"
     test -f "$ROOT_DIR/src/shared/nf_net.c"
     test -f "$ROOT_DIR/src/shared/nf_protocol.c"
     test -f "$ROOT_DIR/src/shared/nf_prediction.c"
     test -f "$ROOT_DIR/src/shared/nf_combat.c"
     echo "[ok] cmake: $(cmake --version | head -n1)"
     echo "[ok] cc: $(cc --version | head -n1)"
+    echo "[ok] nightfall.sh syntax"
     if command -v pkg-config >/dev/null && pkg-config --exists libsodium 2>/dev/null; then
       echo "[ok] libsodium: $(pkg-config --modversion libsodium)"
     else
@@ -64,11 +66,35 @@ case "$cmd" in
     ;;
   local)
     test -x "$FULL_BUILD_DIR/nightfall_server" || "$0" build
-    "$FULL_BUILD_DIR/nightfall_server" >"$BUILD_ROOT/server.log" 2>&1 &
-    server_pid=$!
-    trap 'kill "$server_pid" 2>/dev/null || true' EXIT INT TERM
-    sleep 0.35
-    "$FULL_BUILD_DIR/nightfall_client" "$@"
+    mkdir -p "$BUILD_ROOT"
+    server_pid=""
+    local_port=""
+    for attempt in 1 2 3 4 5; do
+      local_port=$((20000 + RANDOM % 20000))
+      "$FULL_BUILD_DIR/nightfall_server" --port "$local_port" >"$BUILD_ROOT/server.log" 2>&1 &
+      candidate_pid=$!
+      sleep 0.20
+      if kill -0 "$candidate_pid" 2>/dev/null; then
+        server_pid="$candidate_pid"
+        break
+      fi
+      wait "$candidate_pid" 2>/dev/null || true
+    done
+    if [[ -z "$server_pid" ]]; then
+      echo "nightfall: local v0.4 server failed to start on five isolated ports" >&2
+      echo "nightfall: server log follows" >&2
+      cat "$BUILD_ROOT/server.log" >&2 || true
+      exit 1
+    fi
+    trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT INT TERM
+    sleep 0.20
+    if ! kill -0 "$server_pid" 2>/dev/null; then
+      echo "nightfall: local v0.4 server exited before client launch" >&2
+      cat "$BUILD_ROOT/server.log" >&2 || true
+      exit 1
+    fi
+    echo "[local] v0.4 dedicated server pid=$server_pid isolated_port=$local_port"
+    "$FULL_BUILD_DIR/nightfall_client" "$@" --port "$local_port"
     ;;
   net-smoke|combat-smoke)
     run_smoke
@@ -91,7 +117,7 @@ nightfall!punk v0.4 build helper
   ./nightfall.sh client [--host HOST --sim-latency MS --sim-jitter MS --sim-loss PERCENT]
   ./nightfall.sh clean
 
-local         = dedicated v0.4 server + graphical combat client over real ENet localhost
+local         = isolated-port dedicated v0.4 server + graphical combat client over real ENet localhost
 combat-smoke  = dedicated server + four automated movement/combat clients
 net-smoke     = alias retained for continuity
 HELP
