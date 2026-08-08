@@ -103,6 +103,9 @@ Two guns. Hitscan. Server truth. Medium TTK. Health/death/respawn. Reload/switch
 - [x] health / weapon / ammo / weapon-state HUD
 - [x] combat event / hit-zone / damage / rewind diagnostics
 - [x] network diagnostics retained
+- [x] focus-aware mouse capture releases on focus loss and reacquires after focus return
+- [x] mouse-look fallback can use absolute-position delta when a backend reports zero relative delta
+- [x] HUD reports mouse focus, capture state, delta and fallback activation
 
 ## Controls
 
@@ -116,6 +119,7 @@ Two guns. Hitscan. Server truth. Medium TTK. Health/death/respawn. Reload/switch
 - [x] R reload
 - [x] 1 carbine
 - [x] 2 pistol
+- [x] F10 toggle / reacquire mouse capture
 
 ## Automated contracts
 
@@ -130,11 +134,13 @@ Two guns. Hitscan. Server truth. Medium TTK. Health/death/respawn. Reload/switch
 - [x] reconciliation test retains authoritative health
 - [x] four automated clients generate movement + aiming + firing + reload/switch inputs
 - [x] combat-smoke requires authoritative damage events as well as snapshots/combat events
-- [x] GitHub CI full raylib + ENet + libsodium compile green on v0.4 branch
+- [x] GitHub CI full raylib + ENet + libsodium compile green on initial v0.4 branch
 - [x] GitHub simulation / combat / network contract tests green: 3/3
 - [x] GitHub four-client combat smoke green; authoritative damage and death observed by every bot
 - [x] project-owned C targets compile under `-Wall -Wextra -Wpedantic -Werror`
+- [ ] GitHub CI green on mouse-capture repair tree
 - [ ] Pop!_OS clean build/tests/combat-smoke green
+- [ ] Pop!_OS mouse-look recapture retest green
 - [ ] recorded human combat demo reviewed
 
 ## Par / Compare-5
@@ -167,14 +173,18 @@ Behavioral targets, not claims about proprietary internals.
 - [x] client does not claim hits/damage/death
 - [x] snapshots are recovery truth; combat events are causal/feedback messages
 - [x] movement and combat states remain separate but live on the same actor/world truth
-- [x] GitHub-hosted full compile green
+- [x] initial GitHub-hosted full compile green
 - [x] all automated tests green
 - [x] four-client combat smoke green with damage/death
+- [ ] mouse-capture repair exact tree green in CI
 - [ ] target Pop!_OS clean build/tests/combat-smoke green
-- [ ] target Pop!_OS run + recorded demo reviewed
+- [ ] target Pop!_OS mouse look confirmed
+- [ ] target Pop!_OS run + recorded combat demo reviewed
 
 ## Current tuning watch
 
+- [ ] verify HUD reports `mouse FOCUSED | capture ON` and non-zero delta while physically moving the mouse on Pop!_OS
+- [ ] if relative delta stays zero but `abs-fallback` rises, keep fallback and investigate raylib/GLFW backend behavior separately
 - [ ] inspect larger movement-prediction errors around automated death/respawn transitions (bot max observed up to ~0.82 m) in human footage before deciding whether this is visible or merely a discontinuity diagnostic
 - [ ] tune TTK / recoil / spread / weapon transitions from the recorded human combat pass
 - [ ] tune hitscan rewind policy under impaired-network human combat
