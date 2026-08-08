@@ -1,6 +1,7 @@
 #ifndef NF_SPATIAL_H
 #define NF_SPATIAL_H
 
+#include "nf_agent.h"
 #include "nf_region.h"
 #include "nf_semantics.h"
 #include "nf_world.h"
@@ -85,6 +86,12 @@ void nf_spatial_tick(
     const struct NfAiSystem *ai,
     const NfWorld *world,
     const NfSemanticBus *semantics);
+void nf_spatial_filter_controls(
+    const NfSpatialSystem *spatial,
+    const struct NfAiSystem *ai,
+    const NfWorld *world,
+    NfControlFrame *controls,
+    size_t control_count);
 void nf_spatial_on_respawn(
     NfSpatialSystem *spatial,
     NfEntityId actor_id,
