@@ -178,8 +178,17 @@ static const NfHistoryFrame *history_find(NfHistoryFrame history[],uint64_t desi
 
 static bool ray_aabb(NfVec3 o,NfVec3 d,NfVec3 mn,NfVec3 mx,float *distance) {
     float tmin=0.0f,tmax=FLT_MAX; const float ov[3]={o.x,o.y,o.z},dv[3]={d.x,d.y,d.z},av[3]={mn.x,mn.y,mn.z},bv[3]={mx.x,mx.y,mx.z};
-    for(int i=0;i<3;++i) { if(fabsf(dv[i])<1e-6f){if(ov[i]<av[i]||ov[i]>bv[i])return false;continue;} float t1=(av[i]-ov[i])/dv[i],t2=(bv[i]-ov[i])/dv[i]; if(t1>t2){float tmp=t1;t1=t2;t2=tmp;} if(t1>tmin)tmin=t1; if(t2<tmax)tmax=t2; if(tmin>tmax)return false; }
-    if(tmax<0.0f)return false; if(distance)*distance=tmin>=0.0f?tmin:tmax; return true;
+    for(int i=0;i<3;++i) {
+        if(fabsf(dv[i])<1e-6f){if(ov[i]<av[i]||ov[i]>bv[i])return false;continue;}
+        float t1=(av[i]-ov[i])/dv[i],t2=(bv[i]-ov[i])/dv[i];
+        if(t1>t2){float tmp=t1;t1=t2;t2=tmp;}
+        if(t1>tmin)tmin=t1;
+        if(t2<tmax)tmax=t2;
+        if(tmin>tmax)return false;
+    }
+    if(tmax<0.0f) return false;
+    if(distance) *distance=tmin>=0.0f?tmin:tmax;
+    return true;
 }
 static bool ray_sphere(NfVec3 o,NfVec3 d,NfVec3 center,float radius,float *distance) {
     NfVec3 oc=vsub(o,center); float b=vdot(oc,d),c=vdot(oc,oc)-radius*radius,disc=b*b-c; if(disc<0.0f)return false; float s=sqrtf(disc),t=-b-s; if(t<0.0f)t=-b+s; if(t<0.0f)return false; if(distance)*distance=t; return true;
