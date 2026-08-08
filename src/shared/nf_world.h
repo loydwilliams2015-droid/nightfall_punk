@@ -52,6 +52,37 @@ typedef enum NfRampAxis {
     NF_RAMP_NEG_Z
 } NfRampAxis;
 
+typedef enum NfWeaponId {
+    NF_WEAPON_NONE = 0,
+    NF_WEAPON_CARBINE = 1,
+    NF_WEAPON_PISTOL = 2,
+    NF_WEAPON_COUNT = 3
+} NfWeaponId;
+
+typedef enum NfWeaponState {
+    NF_WEAPON_READY = 0,
+    NF_WEAPON_RECOVERING,
+    NF_WEAPON_RELOADING,
+    NF_WEAPON_SWITCHING,
+    NF_WEAPON_EMPTY
+} NfWeaponState;
+
+typedef enum NfHitZone {
+    NF_HIT_NONE = 0,
+    NF_HIT_BODY,
+    NF_HIT_HEAD
+} NfHitZone;
+
+typedef enum NfCombatEventType {
+    NF_COMBAT_EVENT_NONE = 0,
+    NF_COMBAT_EVENT_GUNFIRE,
+    NF_COMBAT_EVENT_DAMAGE,
+    NF_COMBAT_EVENT_DEATH,
+    NF_COMBAT_EVENT_RESPAWN,
+    NF_COMBAT_EVENT_RELOAD,
+    NF_COMBAT_EVENT_WEAPON_SWITCH
+} NfCombatEventType;
+
 typedef struct NfVec3 { float x, y, z; } NfVec3;
 typedef struct NfTransform { NfVec3 position; NfVec3 velocity; } NfTransform;
 
@@ -64,6 +95,14 @@ typedef struct NfMoveInput {
     bool sprint_held;
     bool interact_held;
 } NfMoveInput;
+
+typedef struct NfCombatInput {
+    bool fire_held;
+    bool fire_pressed;
+    bool reload_pressed;
+    uint8_t weapon_slot;
+    float aim_pitch_radians;
+} NfCombatInput;
 
 typedef struct NfTraversalCandidate {
     NfTraversalType type;
@@ -87,6 +126,34 @@ typedef struct NfMovementState {
     NfTraversalCandidate candidate;
 } NfMovementState;
 
+typedef struct NfCombatState {
+    bool alive;
+    NfWeaponId weapon;
+    NfWeaponId pending_weapon;
+    NfWeaponState state;
+    uint16_t ammo_mag[NF_WEAPON_COUNT];
+    uint16_t reserve_ammo[NF_WEAPON_COUNT];
+    float action_timer;
+    float reload_total;
+    bool reload_committed;
+    float respawn_timer;
+    uint32_t last_fire_sequence;
+    uint64_t last_fire_tick;
+} NfCombatState;
+
+typedef struct NfCombatEvent {
+    uint32_t sequence;
+    uint64_t server_tick;
+    NfCombatEventType type;
+    NfEntityId source;
+    NfEntityId target;
+    NfWeaponId weapon;
+    NfHitZone hit_zone;
+    float amount;
+    NfVec3 position;
+    uint16_t rewind_ms;
+} NfCombatEvent;
+
 typedef struct NfActor {
     NfEntityId id;
     bool active;
@@ -94,6 +161,7 @@ typedef struct NfActor {
     NfTransform transform;
     NfMoveInput input;
     NfMovementState movement;
+    NfCombatState combat;
     float health;
 } NfActor;
 
