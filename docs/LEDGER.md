@@ -1,6 +1,6 @@
 # nightfall!punk master ledger
 
-Versioning rule: **one flat version = one coherent development contract.** Git commits record fine-grained work. Completed versions are preserved as immutable `archive/v0.X` branches before `main` advances. No nested subversions.
+Versioning rule: **one flat version = one coherent development contract.** Git commits carry fine-grained history. Accepted versions are preserved as immutable `archive/v0.X` branches before `main` advances. No nested subversions.
 
 ## Locked project decisions
 
@@ -9,274 +9,311 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 - [x] server truth + client prediction/reconciliation
 - [x] four-player target for now; possible five later
 - [x] round-based story-oriented systemic arena FPS
-- [x] placeholder/graybox mechanics before original aesthetics
+- [x] graybox mechanics / architecture before original aesthetics
 - [x] direct confrontation remains the gameplay emphasis
-- [x] physical puzzle/mechanism play later creates rewards and route advantages under combat pressure
-- [x] Fuzzy Rail = shared local geometric traversal intelligence, not strategic pathing
-- [x] Dynamic Affordance Graph = utility + bounded affordance queries + spatial pressure + blackboards; selective planning later
-- [x] World Semantic Alerts = explicit server-authored gameplay-event layer; AI never infers critical world truth from packet arrival
-- [x] AI knowledge is perspectival: server truth != individual knowledge != squad report
+- [x] physical puzzle/mechanism play later creates route/reward advantages under combat pressure
+- [x] **Fuzzy Rail** = shared local geometric traversal intelligence, never global strategic pathing
+- [x] **Dynamic Affordance Graph** = utility + bounded affordance queries + spatial fields + blackboards; selective planning only when earned
+- [x] **World Semantic Alerts** = server-authored gameplay meaning above packet semantics; AI never infers critical truth from packet arrival/loss
+- [x] epistemic contract: `server truth != individual knowledge != squad report`
 - [x] faction identity is distinct from relationship state
 - [x] Human Rivals = secondary antagonism / temporary terrain antagonism / negotiable
-- [x] **Dream Cattlers** replace the former Nightmare Ranchers in player-facing lore: primary ecological antagonists / semi-permanent environmental antagonism / always non-negotiable
-- [x] existing `Rancher` identifiers may remain temporarily in implementation/technical notes until a coordinated rename pass; player-facing terminology is **Dream Cattler**
-- [x] Dream Cattler `predatory` and `non-negotiable` are independent axes; a rare seeded hostile/non-predatory Dream Cattler may permit avoidant detente without diplomacy
-- [x] ecological conflict topology for score-play: **Player Crew + teammates contend with Dream Cattlers over ecology/habitat; Player Crew and Rival Crews compete with one another over ecological resources**
-- [x] score-play should reward/measure ecological control, preservation, extraction, access, denial and resource contest alongside direct combat rather than reducing match value to kill count alone
-- [x] player and rival factions are named **“[X] Crew”** from carefully adapted public-domain literary sources with cyberpunk-adjacent, proto-speculative, anti-imperial, colonial/post-colonial or cosmopolitan themes
-- [x] individual crew-member names are similarly derived from characters in those same verified public-domain source texts, transformed enough to belong naturally to the nightfall!punk world
-- [x] commercial-use naming gate: use only source texts and source-character elements verified public domain for the intended market; do not borrow expression, costume, characterization, translations, illustrations or naming innovations unique to later copyrighted adaptations
-- [x] public-domain status and trademark risk are separate checks: before shipping a crew or character name, record source work, author, publication date/edition and public-domain basis, then perform a separate title/name trademark-clearance check
-- [x] formal crew-member naming grammar = **public-domain literary given-name variation + Old English-derived modern surname**; example form: `Zora Ashdown — Silver Fleece Crew`
-- [x] Old English surname layer should favor naturalized modern English surnames descended from landscape, settlement, occupational and place-name vocabulary rather than conspicuously archaic Anglo-Saxon personal names
-- [x] surname vocabulary should subtly reinforce the ecological score-play world through inherited landscape terms such as **wood, field, ford, heath, ash, oak, down, ley/clearing and settlement**
-- [x] naming semiotics = **literary given name = inherited cultural memory; Old English-derived surname = inherited ecology/landscape; Crew name = present social organization**
-- [x] roster naming should balance recognizability and transformation: names must read as plausible contemporary/cosmopolitan people first and literary references second
-- [x] current exemplar naming register includes forms such as **Zora Ashdown, Bles Fenwick, Alwyn Hartley, Wynn Ridley, Sulla Atwood, Radius Langley, Prim Hadley, Alquist Bromley, Jim Beckley, Julia Westwood, Davis Sutton, Jule Easton, Avis Ashford, Ern Woodward, Anna Fordham, Mora Underwood, Vash Oakley, Kuno Whitfield, Vas Alderton and Kunel Radford**; these are working roster examples subject to final public-domain provenance and trademark clearance
+- [x] Dream Cattlers = primary ecological antagonism / semi-permanent environmental antagonism / always non-negotiable
+- [x] Dream Cattler `predatory` and `non-negotiable` are independent axes; rare hostile/non-predatory disposition may permit avoidant detente without diplomacy
+- [x] existing technical `Rancher` identifiers may remain until a coordinated rename; player-facing term is **Dream Cattler**
+- [x] ecological score topology: Player Crew + teammates contend with Dream Cattlers over habitat/ecology; Player Crew and Rival Crews compete over ecological resources
+- [x] score-play eventually measures control, preservation, extraction, access, denial and resource contest as well as direct combat
+- [x] player/rival factions use carefully adapted verified-public-domain literary `[X] Crew` naming
+- [x] crew-member grammar = public-domain literary given-name variation + naturalized Old English-derived modern surname
+- [x] public-domain provenance and trademark clearance are separate shipping gates
 - [x] formal genre identity = **Neo-Xennial Shooter / Neo-Xennial FPS**
-- [x] design subtype = **Systemic Arena FPS**
-- [x] genre thesis = Quake-style immediacy + Deus Ex-style systemic possibility + Halo-style spatial clarity + F.E.A.R.-style encounter intelligence + contemporary simulation/network infrastructure
+- [x] subtype = **Systemic Arena FPS**
+- [x] genre thesis = Quake immediacy + Deus Ex systemic possibility + Halo spatial clarity + F.E.A.R. encounter intelligence + contemporary simulation/network infrastructure
 - [x] manifesto = **The neo-xennial shooter continues the FPS future that the early 2000s started: fast, physical, systemic, open, and unpredictable.**
 - [x] Ghost Static / Apophis replaces Dragon Master lore: Ghost Static is the public pirate-radio arena-conductor identity; Apophis is the deeper mythic/signal layer
-- [x] **aesthetic-engine content target = PG-13 ambient/paranormal/psychological cyberpunk horror, not splatterpunk or uncensored gore horror**
-- [x] visual thesis = **objective realism haunted by the horror of violence, with comic-book comic relief as quiet understatement**; violence should feel consequential and unsettling without becoming visually indulgent
-- [x] comic-book stylization belongs primarily in silhouettes, selective outlines/halftone language, UI, signage, color blocking, impact abstraction and dry visual wit; it must not trivialize suffering or turn combat into slapstick
-- [x] weapon/inventory art direction = materially believable, human-scale, used/repaired, utilitarian and near-term speculative; avoid fetishized real-world firearm replication, excessive tactical glamour, implausible super-weapons and gore-centric presentation
-- [x] inventory should visibly include restorative/ecological tools alongside weapons so the player's carried object-language communicates **survive / repair / heal / interact / contest**, not only kill
-- [x] damage feedback should be subtle and readable: directional cues, desaturation, audio pressure, brief comic-noir abstraction and restrained screen treatment rather than explicit bodily trauma
-- [x] HUD thesis = **diegetic-minimal, information-dense only when needed, comic-noir in graphic language, quiet during ordinary traversal**; primary combat HUD should preserve sightlines and let the world remain the dominant visual field
-- [x] social HUD grammar must reinforce reciprocity rules: **Teammates never intentionally kill Player and may heal; Rivals may kill or heal depending on relationship/context; Dream Cattlers may kill and never heal Player**
-- [x] aesthetic engine remains a later, substantially boxed-off build phase so graybox movement/network/combat/AI truth is preserved underneath visual replacement rather than being rewritten for presentation
+- [x] aesthetic target = PG-13 ambient/paranormal/psychological cyberpunk horror, not splatter/gore-centric horror
+- [x] visual thesis = objective realism haunted by violence, with comic-book comic relief as quiet understatement
+- [x] aesthetic engine remains a later boxed-off phase so presentation does not rewrite movement/network/combat/AI truth
 
-# v0.1 — Foundation — COMPLETE / ARCHIVED
-- [x] fixed-tick C foundation, headless server shell, raylib client shell, smoke test
-- [x] `archive/v0.1`
+## Version / archive status
 
-# v0.2 — Movement — COMPLETE / ARCHIVED
-- [x] shared movement/traversal/Fuzzy Rail contract
-- [x] `archive/v0.2`
+- [x] **v0.1 Foundation** — archived at `archive/v0.1`
+- [x] **v0.2 Movement** — archived at `archive/v0.2`
+- [x] **v0.3 Networked Movement** — archived at `archive/v0.3`
+- [x] **v0.4 Combat** — archived at `archive/v0.4`
+- [x] **v0.5 Agent Intelligence Framework** — archived at `archive/v0.5`
+- [x] **v0.6 Encounter Intelligence** — code/CI baseline merged to `main`
+- [ ] **v0.6 archive remains intentionally pending** because its Pop!_OS human acceptance recording was not separately closed before v0.7 work began
+- [x] **v0.7 Spatial Ecology / Situated Agency** — active candidate on PR #10 / `build/v0.7-spatial-ecology`
+- [ ] do not merge v0.7 or create `archive/v0.6` / `archive/v0.7` until the next human Pop!_OS demo is reviewed
 
-# v0.3 — Networked Movement — COMPLETE / ARCHIVED
-- [x] ENet abstraction + explicit protocol
-- [x] authoritative server, prediction/reconciliation, remote interpolation scaffold
-- [x] reconnect/session tokens, impairment simulation, libsodium readiness
-- [x] four-client network smoke and Pop!_OS recordings accepted
-- [x] `archive/v0.3`
+# v0.6 — Encounter Intelligence — CARRY-FORWARD BASELINE
 
-# v0.4 — Combat — COMPLETE / ARCHIVED
-- [x] two authoritative weapons: carbine + pistol
-- [x] health, ammo, reload/switch state, body/head hitscan, bounded rewind, death/3-second respawn
-- [x] client sends combat intent, never hit/damage truth
-- [x] combat events: GUNFIRE / DAMAGE / DEATH / RESPAWN / RELOAD / WEAPON_SWITCH
-- [x] four-client combat smoke with authoritative damage/death
-- [x] Linux mouse-capture/focus defect fixed and isolated-port local launcher hardened
-- [x] Pop!_OS human combat recording accepted
-- [x] `archive/v0.4`
+The v0.6 contract remains regression-protected under v0.7:
 
-# v0.5 — Agent Intelligence Framework — COMPLETE / ARCHIVED
+- [x] movement + Fuzzy Rail remain the only physical traversal truth
+- [x] ENet / server authority / prediction/reconciliation remain intact
+- [x] weapon/ammo/hitscan/damage/death/respawn remain the only combat truth
+- [x] perception / imperfect memory / semantic hearing / utility / cover affordances remain live
+- [x] finite yaw/pitch tracking + aim-settle remain live
+- [x] default soft pressure budget remains two Rivals
+- [x] contextual PRESSURE / FLANK_LEFT / FLANK_RIGHT / HOLD rebidding remains live
+- [x] damage-driven suppression / retreat remains live
+- [x] AI still emits ordinary `NfControlFrame` intent and cannot teleport, manufacture damage or bypass ammo/reload/collision
+- [x] AI/encounter code remains free of raylib/ENet dependencies
+- [x] strict project warnings remain `-Wall -Wextra -Wpedantic -Werror`
 
-## Accepted thesis
-
-Four server-controlled Human Rivals perceive the player through limited evidence, remember imperfectly, share bounded reports, select tactical intent with utility scoring, query local world affordances, move through the same movement/Fuzzy Rail system, fire through the same combat system, damage/kill the player, die and respawn. The framework remains reusable by teammates and later Dream Cattlers without forcing their motivational policies to become the same.
-
-## v0.5 delivered
-
-- [x] `NfControlFrame` unifies network and AI intent onto `NfMoveInput` + `NfCombatInput`
-- [x] server AI does not impersonate a network client
-- [x] server AI cannot teleport, bypass collision/ammo/reload, manufacture damage or skip authoritative respawn
-- [x] network slot 0 = PLAYER; additional network slots = TEAMMATE; server AI = RIVAL
-- [x] explicit relationship states: NEUTRAL / COOPERATIVE / TRUCE / CONTESTED / HOSTILE / NONNEGOTIABLE_HOSTILE
-- [x] Player <-> Teammate cooperative; Human Rival relation separate from faction identity
-- [x] debug Rival truce suppresses intentional damage without changing faction identity
-- [x] Dream Cattler policy remains always non-negotiable while predation is an independent tunable disposition axis
-- [x] fixed-capacity World Semantic Alert bus maps combat facts into GUNFIRE / DAMAGE / DEATH / RESPAWN semantics
-- [x] Human Rival vision is bounded by range/facing/world occlusion
-- [x] perception is staggered below simulation frequency
-- [x] reaction delay is deterministic/seeded and non-zero
-- [x] last-seen / last-heard positions + confidence decay
-- [x] semantic hearing consumes gameplay alerts, not transport packets
-- [x] no hidden authoritative player transform copied into Rival knowledge
-- [x] squad reports are secondhand lower-confidence knowledge rather than telepathy
-- [x] bounded utility modes: IDLE / INVESTIGATE / ADVANCE / ENGAGE / SEEK_COVER / RETREAT / RELOAD / TRUCE_HOLD
-- [x] utility considers visibility/confidence, range, health and ammo
-- [x] action hysteresis reduces tactical thrashing
-- [x] ordinary decisions avoid general GOAP/planner cost
-- [x] first Dynamic Affordance Graph slice: generated local cover candidates + travel/occlusion scoring + exclusive reservation
-- [x] selected tactical goal feeds ordinary movement/Fuzzy Rail instead of bypassing physics
-- [x] four Human Rivals by default; isolated one-Rival debug mode
-- [x] PRESSURE / FLANK_LEFT / FLANK_RIGHT / HOLD role scaffold + shared blackboard
-- [x] imperfect deterministic aim jitter + reaction delay + role-dependent burst cadence
-- [x] AI reload/fire/hits/damage/death/respawn pass through existing combat truth
-- [x] v0.4 prediction diagnostic ambiguity resolved: visible positional `corrections` separated from internal `resyncs`
-- [x] AI library has no raylib or ENet dependency; no allocation required in AI tick path
-
-## v0.5 verification / closure
-
-- [x] strict-warning full build green in GitHub CI
-- [x] 4/4 CTest contracts green
-- [x] four-network-client + four-Rival combat smoke green
-- [x] passive human-shaped client smoke proved Human Rival AI independently damages and kills the player actor
-- [x] Pop!_OS graphical human recording reviewed: authoritative client, mobile Human Rivals, lethal combat/death/respawn and no obvious foundational movement/network/client crash regression
-- [x] principal human-feedback finding: four individually competent agents created excessive aggregate lethality; this is an encounter-governance problem carried intentionally into v0.6 rather than a v0.5 architecture failure
-- [x] `archive/v0.5` frozen at accepted v0.5 tree
-
-# v0.6 — Encounter Intelligence — CURRENT BUILD
+# v0.7 — Spatial Ecology / Situated Agency — ACTIVE CANDIDATE
 
 ## Contract thesis
 
-Preserve v0.5 agent competence while controlling **when, where and how much** of that competence becomes simultaneous lethal pressure. Four Human Rivals should remain dangerous, but movement, line-of-sight loss, target motion, damage, suppression and squad role allocation must create meaningful counterplay. Encounter governance must remain a separate bounded layer over AI intent rather than turning the v0.5 utility system into a giant monolith.
+**Agents can traverse the whole arena, choose meaningful regions, temporarily inhabit local tasks, coordinate occupation with their squad, remember recent spatial history, and respond to authoritative events without continuously solving the entire world.**
+
+The hierarchy is:
+
+`region chooses context -> local task chooses purpose -> action chooses behavior -> Fuzzy Rail handles physical execution -> server validates truth`
+
+Global mobility does not mean global continuous thought. **Large world != large per-agent thought.**
 
 ## Existing / regression protection
 
-- [x] v0.2 movement + Fuzzy Rail remain the only physical traversal truth
-- [x] v0.3 ENet / server authority / prediction remain intact
-- [x] v0.4 weapon/ammo/hitscan/damage/death/respawn remain the only combat truth
-- [x] v0.5 perception / memory / semantic hearing / utility / affordance architecture remains intact beneath v0.6
-- [x] faction identity / relationship semantics remain distinct
-- [x] network Player/Teammate and server Human Rival topology preserved
-- [x] AI still emits ordinary shared control intent before movement/combat
-- [x] no direct AI damage path added
-- [x] no new raylib/ENet dependency introduced into AI layer
-- [x] no dynamic allocation required in encounter tick path
-- [x] project-owned C remains compiled with `-Wall -Wextra -Wpedantic -Werror`
+- [x] v0.1 fixed simulation and headless/graphical split preserved
+- [x] v0.2 movement/Fuzzy Rail still owns step/vault/mantle/ladder/physical traversal
+- [x] v0.3 networking still owns validated client intent, snapshots and reconciliation
+- [x] v0.4 combat authority unchanged
+- [x] v0.5 epistemic AI / utility / local cover architecture retained
+- [x] v0.6 encounter-governance layer remains downstream of raw AI intent
+- [x] spatial intelligence is server-side tactical scratchwork; normal clients receive consequences, not complete AI field state
+- [x] no whole-map high-resolution influence grid
+- [x] no general GOAP introduced
 
-## Advancing — encounter-governance layer
+## A1 — spatial-field priority
 
-- [x] new `nf_encounter` module sits between v0.5 AI control generation and authoritative movement/combat execution
-- [x] encounter state is fixed-capacity and per-agent
-- [x] finite angular yaw/pitch tracking prevents instantaneous aim rotation
-- [x] explicit aim-settle value separates target awareness from firing readiness
-- [x] target motion raises firing-readiness requirements
-- [x] own movement modestly raises firing-readiness requirements
-- [x] line-of-sight loss causes aim settling to decay rather than retaining a ready firing solution
-- [x] target changes reset aim settling
-- [x] existing v0.5 deterministic reaction delay remains in force underneath aim settling
+Default local spatial preference order is locked:
 
-## Advancing — squad pressure economy
+1. **route congestion**
+2. **ally support**
+3. **enemy threat**
+4. **exposure**
+5. **pressure**
+6. **objective value**
 
-- [x] default squad pressure budget = **two pressure-authorized Rivals**
-- [x] pressure authorization is a soft tactical budget, not a hard one-enemy-at-a-time shooter token
-- [x] non-pressure agents may still take rare opportunistic shots or defend themselves at close range
-- [x] pressure bids consider confidence, visibility, health, ammo and range
-- [x] pressure authorization rotates as bids change
-- [x] pressure authorization is distinct from immediate `ENGAGE` mode; an authorized actor may be investigating/repositioning until it has a viable firing solution
-- [x] `--pressure-slots 0..2` server flag
-- [x] `NF_AI_PRESSURE_SLOTS=1` local-debug path
+- [x] all six fields exist in `NfSpatialFields`
+- [x] field values are bounded `[0,1]`
+- [x] current local preference score weights those fields in the locked descending order
+- [ ] if footage shows lower-priority fields overturning tactically obvious congestion/support decisions, promote the score from ordered weighted refinement to a quantized lexicographic/tier comparison
+- [x] objectives select the **problem**; spatial intelligence selects a sensible way to solve it
 
-## Advancing — contextual squad roles
+## A2 — representation
 
-- [x] role allocation is no longer permanently tied to actor index
-- [x] role rebidding occurs at bounded cadence rather than every simulation tick
-- [x] strongest tactical bid becomes PRESSURE
-- [x] other viable agents distribute into FLANK_LEFT / FLANK_RIGHT / HOLD
-- [x] role rebidding uses existing partial knowledge rather than authoritative hidden player state
-- [ ] sophisticated formation / negotiated multi-agent planning remains later
+- [x] hybrid representation = **coarse region graph + bounded local samples**
+- [x] shared `nf_region` module defines deterministic graph topology usable by server logic and client diagnostics
+- [x] v0.7 lab graph contains **24 coarse regions**
+- [x] local tactical selection considers **5 bounded samples** around the active region/next-hop center
+- [x] global route selection and local movement remain separate from Fuzzy Rail
 
-## Advancing — suppression / damage response
+## A3 — temporal / bandwidth model
 
-- [x] recent authoritative health loss raises a bounded suppression value
-- [x] suppression decays over time
-- [x] suppression slows tracking modestly
-- [x] suppression raises required aim settling before fire
-- [x] high suppression + reduced health can force a retreat response
-- [x] respawn / major health reset clears stale suppression/settling behavior
-- [ ] near-miss / incoming-fire suppression without actual damage is deliberately deferred until weapon/projectile/spatial-fire semantics justify it
+- [x] event-driven semantic changes feed activity / incident / objective-dynamic memory
+- [x] region selection runs at a slow bounded cadence (~2 Hz baseline)
+- [x] local sampling runs at ~5 Hz staggered cadence
+- [x] spatial activity/incident fields decay at bounded sub-rate
+- [x] structural exposure is cached on regions and refined locally against known threat LOS
+- [x] tactical spatial state is not replicated as ordinary snapshot state
+- [x] client F4 overlay draws shared region topology only; authoritative per-agent task/field reasoning remains in server diagnostics for this build
 
-## Advancing — Dynamic Affordance Graph / spatial reasoning
+## A4 — bias vs veto
 
-- [x] v0.5 cover generation/reservation remains active
-- [x] v0.6 role/pressure decisions now provide additional context for how existing affordances are used
-- [ ] global/local influence-map stack (threat / ally support / Dream Cattler pressure / objective value) deferred pending v0.6 footage
-- [ ] coarse region graph / A* routing deferred pending evidence of navigation failure in v0.6 footage
-- [ ] full route-congestion field deferred; existing exclusive cover reservations remain the first occupancy primitive
+- [x] spatial fields **bias** choices by default
+- [x] hard vetoes are reserved for physical/logical impossibilities: invalid/unreachable region, occupied exclusive affordance, relationship/combat prohibition, dead/unavailable actor, etc.
+- [x] high threat or low objective value alone never makes a physically valid region impossible
 
-## Advancing — teammate / social AI
+## A5–A9 — global wandering / local habitation / individuality
 
-- [x] Player/Teammate relationship substrate remains cooperative and generic control architecture remains compatible with a future teammate policy
-- [ ] live autonomous Teammate controller deliberately deferred: implementing one cleanly requires shared ally-target/support semantics rather than copying the Rival controller and inverting hostility
-- [ ] polished Human Rival negotiation UX remains later; debug truce still proves relationship policy
-- [ ] live Dream Cattler ecological brain remains later and must not be built as a renamed Human Rival policy
+- [x] agents are globally mobile through the region graph
+- [x] agents pick a region, then adopt a bounded local task to **inhabit** that situation
+- [x] local-first movement escalates through region routing when relocation is required
+- [x] flank/objective-style relocation may consult regional context proactively
+- [x] local task families implemented: ROAM / WATCH / INVESTIGATE / OCCUPY / PRESSURE / FLANK / REGROUP / CONTEST
+- [x] task commitment/hysteresis prevents 2% utility differences from causing constant thrash
+- [x] low-activity residency eventually loses value through novelty / visitation logic
+- [x] region choice considers novelty, semantic activity, distribution, role relation, objective value, congestion, incident cost and travel steps
+- [x] recent visits are remembered per agent
+- [x] top regional candidates are bounded to four deep candidates; deterministic seeded selection prevents all agents collapsing onto one exact optimum
+- [x] modest seeded personality envelopes (~0.90–1.10) vary support/risk/residency tendency without overriding faction policy or server truth
+- [x] Human Rival policy uses temporary tactical residency
+- [ ] teammate residency policy remains later
+- [ ] Dream Cattler habitat persistence/infestation policy remains later and must not be a renamed Rival policy
 
-## Advancing — diagnostics / tuning
+## A10–A12 — claims / memory / bounded adaptation
 
-- [x] server prints role / mode / target / confidence / visibility / health / cover
-- [x] v0.6 server diagnostics add pressure authorization / aim settle / suppression / aim error
-- [x] graphical lab title/footer identify v0.6 Encounter Intelligence
-- [x] HUD retains visible-correction vs resync distinction
-- [ ] richer in-client per-Rival reasoning overlay remains a later ergonomics pass; current authoritative server trace is sufficient for first v0.6 human recording
+- [x] existing cover nodes retain hard exclusive reservation
+- [x] local tactical tasks use soft claim pressure so duplicate WATCH/OCCUPY work is discouraged rather than globally forbidden
+- [x] short tactical target memory remains in v0.5 `NfAiKnowledge`
+- [x] individual regional visitation memory lives in `NfSpatialAgentState`
+- [x] slower crew-level regional incident memory lives in `NfSpatialSystem`
+- [x] damage/death activity raises temporary incident cost
+- [x] incident memory decays, preventing permanent cowardice / map blacklisting
+- [x] respawn clears individual spatial visitation/task state while retaining shared crew-level incident history
+- [ ] no cross-match persistent adaptation / invisible ML counterstrategy
+
+## A13 — interruption hierarchy
+
+Interrupt severities are intentionally small and generic:
+
+`NONE -> REEVALUATE -> TASK_BREAK -> EMERGENCY -> AUTHORITATIVE`
+
+- [x] route invalidation may force AUTHORITATIVE interruption
+- [x] direct damage may force EMERGENCY interruption
+- [x] nearby gunfire/death/suspicious sound may trigger REEVALUATE
+- [x] objective/story phase change may trigger TASK_BREAK
+- [x] interruption means **reconsider now**, not “execute this hidden script,” except where physics/server truth leaves no choice
+- [x] semantic vocabulary now includes `OBJECTIVE_CHANGED`, `ROUTE_CHANGED`, `STORY_PHASE_CHANGED` for future authored producers
+
+## A14 — story authority
+
+Story-mode authoring contract is locked even though producers are not yet live:
+
+1. **CONTEXT** — normal: raise/lower relevance of region/objective/person
+2. **CONSTRAINT** — occasional: actor must reach/remain/defend a broad region
+3. **DIRECT ACTION** — rare synchronization/cinematic escape hatch
+
+- [x] v0.7 interruption semantics are compatible with the three-level model
+- [ ] no story campaign logic is added merely to exercise the hook
+
+## A15 — diagnostics
+
+- [x] server diagnostics now report region current->target, next hop, local task, interrupt severity and six field values + aggregate preference score
+- [x] graphical client title/footer identify v0.7 Spatial Ecology / Situated Agency
+- [x] **F4** toggles a visual 24-region graph overlay in the graybox client
+- [x] HUD shows local player region/name, graph count and 0.40 km² lab scale
+- [ ] per-Rival task/field values are deliberately not network-replicated into the client in v0.7; use `build/server.log` for authoritative reasoning traces
+
+## A16 — determinism
+
+- [x] region selection / personality variation / tie variation derive from authoritative seed + actor id + bounded epoch
+- [x] no new uncontrolled gameplay `rand()` path
+- [x] same relevant state + seed should produce reproducible spatial decisions suitable for bug reproduction
+
+## A17 — computational boundaries
+
+- [x] 24 regions in this demo; architecture supports a larger bounded graph later
+- [x] 5 local candidate samples per local query
+- [x] top 4 regional candidates retained for deep choice
+- [x] region path search is bounded by `NF_REGION_MAX`
+- [x] region decisions ~2 Hz, local samples ~5 Hz, event-driven semantic impulses, simulation-rate physical execution
+- [x] fixed-capacity hot-path state; no per-tick allocation
+- [x] cover-affordance capacity expanded from 32 to 96 to remain locally useful across the larger graybox
+
+## A18 — v0.7 map / milestone scale
+
+Ultimate map-area target remains **8 km²**. v0.7 deliberately tests only **5%** of that area:
+
+- [x] demo area = **0.40 km² / 400,000 m²**
+- [x] graybox dimensions = **500 m x 800 m**
+- [x] sparse connective territory is intentional so roaming/relocation can be observed rather than every square meter becoming a combat toy
+- [x] map includes distributed solid structures, local cover objects, vertical landmarks, ladders, ramps and a moving platform while retaining open regional corridors
+
+## Build pipeline / implementation order
+
+Current authoritative flow:
+
+`semantic/world state -> spatial region/task update -> v0.5 AI control intent -> spatial situated movement filter -> v0.6 encounter governance -> shared movement/combat -> server truth`
+
+The spatial filter only supplies situated movement when ordinary tactical AI is free to roam/watch; live combat/investigation/cover/retreat modes retain their existing authority.
 
 ## Automated contracts / compile gate
 
-- [x] CMake project version advanced to 0.6
-- [x] v0.1–v0.5 simulation/combat/network/relation/semantic/truce contracts retained
-- [x] encounter test asserts pressure authorization never exceeds two
-- [x] encounter test proves pressure authorization becomes active when targets are viable
-- [x] encounter test bounds aim-settle and suppression values to [0,1]
-- [x] direct-damage test proves suppression rises meaningfully
-- [x] filtered encounter AI still eventually fires
-- [x] first exact v0.6 CI compile green
-- [x] 4/4 CTest contracts green: simulation_v06 / combat_contract_v06 / network_contract_v06 / encounter_intelligence_v06
-- [x] four-network-client + four-Rival bounded-pressure combat smoke green: ~210 snapshots/client, 157 combat events, 50 damage events, 8 deaths; max prediction error ~0.095–0.107 m
-- [x] passive-player encounter smoke green: 360 snapshots, 38 combat events, 18 incoming damage/death events and 3 incoming deaths in 12 seconds
-- [x] passive smoke proves encounter governance did **not** make Rivals harmless
-- [x] server trace demonstrates rotating pressure authorization and role changes with no more than two pressure-authorized agents
-- [x] libsodium active in GitHub verification environment
-- [x] client periodic ping request semantics rechecked after v0.6 presentation edit
-- [x] final exact documentation-closed PR head CI green before merge
-- [ ] Pop!_OS build/tests/smokes checked by human operator
-- [ ] human v0.6 encounter recording reviewed
-- [ ] `archive/v0.6` only after target-machine acceptance
+- [x] CMake project version advanced to 0.7
+- [x] shared `nf_region.c/.h` added
+- [x] server AI `nf_spatial.c/.h` added
+- [x] situated control adapter `nf_spatial_filter.c` added
+- [x] 0.40 km² graybox integrated through the existing shared world builder so client prediction and server collision see identical geometry
+- [x] 24-region graph connectivity/path contracts added
+- [x] spatial field bounds/order contract added
+- [x] deterministic roaming/control contract added
+- [x] existing simulation/combat/network/encounter contracts retained
+- [x] first v0.7 PR CI attempt: strict full graphical compile green; new spatial test exposed a real central-spawn geometry collision and failed intentionally
+- [x] central spawn lanes subsequently cleared in the graybox instead of weakening the roaming test
+- [ ] exact final-head 4/4 CTest green
+- [ ] combat smoke green on final head
+- [ ] encounter smoke green on final head
+- [ ] spatial smoke green on final head
+- [ ] exact final-head GitHub CI green before human demo handoff
 
-## Par / Compare-5 synthesis for v0.6
+## Par / Compare-5 for v0.7
 
 Behavioral/design references, not claims about proprietary internals.
 
-- [x] **F.E.A.R.** — preserve legible tactical intention while role/pressure allocation makes squad behavior more coherent than four independent shooters
-- [x] **Halo 3** — pressure/repose and readable opportunities; dangerous opponents need not output maximum lethality every instant
-- [x] **Left 4 Dead** — distinguish individual capability from encounter-level intensity; v0.6 applies that principle locally to a Human Rival squad rather than implementing a global Director
-- [x] **The Last of Us** — believable human limitation: acquisition, tracking, uncertainty, damage response and recovery contribute to perceived intelligence
-- [x] **Quake III / Unreal Tournament lineage** — preserve player movement as genuine combat counterplay rather than letting AI perfect tracking invalidate strafing/jumping/traversal
+- [x] **Dishonored 2** — bounded shared knowledge, search/coordination and systemic local context
+- [x] **F.E.A.R.** — local tactical behavior should read as purposeful without requiring a giant planner
+- [x] **Halo 3** — map-scale spatial clarity and readable encounter geography
+- [x] **The Last of Us** — believable search, uncertainty, spatial mistakes and human-scale reacquisition
+- [x] **Left 4 Dead** — distinguish individual agent competence from higher-order encounter/spatial intensity; do not bake a Director into every actor
 
-## Deliberate v0.6 boundaries
+## Deliberate v0.7 boundaries
 
-- [ ] no global AI Director / Ghost Static pacing controller yet
-- [ ] no full tactical influence-map stack yet
-- [ ] no coarse region/A* navigation rewrite yet
-- [ ] no autonomous teammate combat brain yet
-- [ ] no live Dream Cattler ecological behavior yet
-- [ ] no general GOAP planner yet
-- [ ] no polished negotiation/dialogue interface yet
-- [ ] no rounds/objectives/ecological score system yet
-- [ ] no final original art/audio requirement
-- [ ] no difficulty menu yet; future difficulty should tune behavioral competence without granting psychic knowledge or bypassing physical rules
+- [ ] no full Ghost Static / global AI Director yet
+- [ ] no live autonomous teammate combat brain yet
+- [ ] no live Dream Cattler ecological brain yet
+- [ ] no giant continuous influence-map texture/grid
+- [ ] no general GOAP planner
+- [ ] no full objective/ecological scoring implementation
+- [ ] no polished negotiation UI
+- [ ] no final art/audio pass
+- [ ] no cross-match adaptive AI
+- [ ] no 8 km² production map yet
 
-## Human v0.6 demo acceptance checklist
+## Human v0.7 demo acceptance checklist
 
-For the first v0.6 Pop!_OS recording:
+Record roughly **90–150 seconds** if possible.
 
-- [ ] graphical title reads `v0.6 - ENCOUNTER INTELLIGENCE LAB`
+- [ ] title reads `v0.7 - SPATIAL ECOLOGY / SITUATED AGENCY LAB`
 - [ ] client reaches `AUTHORITATIVE + PREDICTED`
-- [ ] movement/mouse/combat from v0.4–v0.5 remain functional
-- [ ] four red Human Rivals remain active and capable of killing the player
-- [ ] standing exposed is punished severely
-- [ ] lateral movement / direction changes / jumping produce visibly better survival opportunities than standing still
-- [ ] pressure feels less like four simultaneous perfect guns; look for 1–2 serious pressure sources while others move/hold/investigate
-- [ ] hiding behind substantial solid geometry interrupts direct fire and causes investigation/search behavior
-- [ ] reappearing requires reacquisition rather than apparent wall tracking
-- [ ] shoot one Rival for meaningful damage without immediately killing it; look for reduced firing / retreat / reposition behavior
-- [ ] player can kill a Rival and see normal Rival respawn
-- [ ] a Rival can still kill player and normal 3-second player respawn remains intact
-- [ ] no obvious teleportation / wall shooting / collision bypass
-- [ ] note whether encounter rhythm now feels fair, too passive, still overwhelming, or unexpectedly good
+- [ ] movement/mouse/combat remain functional
+- [ ] use **F4** at least once to show the coarse region graph
+- [ ] move far enough to make the 0.40 km² scale legible; the whole map does not need to be traversed
+- [ ] observe whether Rivals actually leave the immediate spawn neighborhood when combat evidence goes stale
+- [ ] break LOS and note whether Rivals investigate/reposition rather than magically track
+- [ ] look for Rivals distributing rather than four bodies choosing the same region/cover/task
+- [ ] look for temporary local habitation: watch / occupy / investigate / flank / pressure before relocation
+- [ ] standing exposed should still be dangerous; v0.7 must not erase v0.6 encounter competence
+- [ ] strafe/reverse/jump should still buy counterplay against finite tracking
+- [ ] kill at least one Rival and allow at least one player death/respawn if practical
+- [ ] traverse at least one ramp/ladder/obstacle so larger-map geometry does not hide a movement regression
+- [ ] note any AI repeatedly walking into the same obstacle, ping-ponging between two regions, freezing, or clustering
+- [ ] note anything that is **extremely right** as well as anything obviously wrong
+
+After closing the demo, capture:
+
+```bash
+tail -n 160 build/server.log
+```
+
+The recording shows outward behavior; the log shows region/task/field reasoning.
 
 ## Current tuning watch
 
-- [x] v0.5 excessive aggregate lethality is explicitly addressed by v0.6 encounter governance rather than a uniform accuracy/damage nerf
-- [ ] inspect whether two default pressure slots are still too aggressive or have become too permissive
-- [ ] inspect whether finite tracking is perceptible enough when the player reverses direction or changes elevation
-- [ ] inspect whether non-pressure opportunistic fire reads as believable support rather than violating the pressure economy
-- [ ] inspect whether suppression/retreat is visible during ordinary human fire, not only deterministic test injection
-- [ ] inspect cover-selection usefulness and clumping around ladders/platforms/obstacles
-- [ ] inspect whether stale-knowledge investigation is spatially convincing enough before investing in coarse routing
-- [ ] prediction max-error spikes around death/respawn remain a watch item; automated passive encounter run reached ~1.263 m while ordinary visible correction counts remained low
-- [ ] use v0.6 human footage to choose v0.7 emphasis among spatial influence/navigation, teammate/social intelligence, or ecological/director systems
+- [ ] verify regional goals actually produce visible cross-region travel at human timescale
+- [ ] verify region centers/corridors do not create straight-line obstacle traps
+- [ ] verify route-congestion preference meaningfully reduces clumping
+- [ ] verify ally-support preference does not recreate clumping through another route
+- [ ] verify objective value remains subordinate to spatial coherence until hard objective semantics exist
+- [ ] verify novelty/boredom does not make agents wander during an obviously meaningful local fight
+- [ ] verify local task commitment reads as intention rather than hesitation
+- [ ] verify incident memory changes repeated approaches without making the squad permanently timid
+- [ ] verify F4 graph overlay is useful without becoming ordinary HUD clutter
+- [ ] verify 96 cover affordances remain a bounded useful cost at this map scale
+- [ ] keep v0.6 pressure-slot / finite-tracking / suppression tuning on watch
+- [ ] prediction max-error spikes around death/respawn remain a watch item
+
+## Pre-v0.8 decision gate
+
+The v0.7 human recording chooses the next emphasis. Do **not** lock v0.8 before that evidence. Candidate branches are:
+
+1. teammate / crew social intelligence
+2. Dream Cattler habitat ecology
+3. Ghost Static / director-level pacing and story context
+4. a spatial/navigation refinement pass if v0.7 exposes region-routing or local-obstacle failures
+
+Viewing for v0.8 should be processed through the standing **question subroutine**: `WATCH -> QUESTION -> COMPARE WITH CURRENT CODE -> KEEP / ADAPT / DEFER / REJECT -> CODING CONTRACT -> COMPILE -> HUMAN VIDEO`.
