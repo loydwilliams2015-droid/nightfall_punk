@@ -68,6 +68,8 @@ Four server-controlled Human Rivals should perceive the player through limited e
 - [x] server AI does not impersonate a network client
 - [x] shared `NfControlFrame` converges network and AI control onto `NfMoveInput` + `NfCombatInput`
 - [x] server AI cannot teleport, bypass collision, bypass ammo, bypass reload, manufacture damage, or skip authoritative respawn
+- [x] v0.4 alternating duel-faction scaffold removed: network slot 0 is PLAYER, additional network slots are TEAMMATE, and RIVAL is reserved for server-controlled Human Rival agents
+- [x] remote actor presentation now colors by relationship semantics rather than simple faction inequality
 - [x] project-owned code remains under `-Wall -Wextra -Wpedantic -Werror`
 
 ## Advancing — relationships / antagonism
@@ -167,7 +169,8 @@ Four server-controlled Human Rivals should perceive the player through limited e
 - [x] legacy simulation/combat/network tests retained
 - [x] exact v0.5 implementation full compile green in GitHub CI
 - [x] 4/4 CTest contracts green: simulation / combat / network / agent intelligence
-- [x] four-network-client + four-AI combat smoke green; authoritative combat/damage/death observed
+- [x] four-network-client + four-AI combat smoke green; automated network actors now choose targets through relationship permissions rather than `different faction`
+- [x] corrected Player/Teammate/Rival topology passed the full compile, 4/4 tests, combined combat smoke and passive AI-kill smoke
 - [x] passive human-shaped client + four-AI smoke green: AI alone produced 12 incoming damage/death events and killed the client twice in nine seconds
 - [x] libsodium active in GitHub verification environment
 - [ ] Pop!_OS clean build/tests/smokes green
@@ -183,6 +186,7 @@ Four server-controlled Human Rivals should perceive the player through limited e
 - [x] AI and network actors converge at shared control intent before movement/combat
 - [x] AI knowledge is not server omniscience
 - [x] Rancher and Human Rival motivational policies remain distinct even though lower layers are shareable
+- [x] network-controlled teammates and server-controlled Human Rivals now have distinct faction identities consistent with their relationship semantics
 - [x] no dynamic allocation required in AI tick path
 - [x] implementation tree passed full strict-warning CI before merge
 - [ ] target-machine behavior accepted before `archive/v0.5`
