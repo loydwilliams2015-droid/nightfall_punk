@@ -94,7 +94,7 @@ int main(int argc,char **argv) {
         }
         now=nf_net_now_ms();
         if(!connected&&peer==NULL&&(int32_t)(now-next_reconnect_ms)>=0){peer=nf_net_connect(&net,host,port);next_reconnect_ms=now+1500u;}
-        if(connected&&welcomed&&now-last_ping_ms>1000u){NfPingMessage p={.stamp_ms=now};uint8_t buf[32];size_t n=nf_protocol_encode_ping(buf,sizeof(buf),NF_MSG_PONG,&p);nf_net_send(&net,peer,NF_NET_CHANNEL_RELIABLE,buf,n,true);last_ping_ms=now;}
+        if(connected&&welcomed&&now-last_ping_ms>1000u){NfPingMessage p={.stamp_ms=now};uint8_t buf[32];size_t n=nf_protocol_encode_ping(buf,sizeof(buf),NF_MSG_PING,&p);nf_net_send(&net,peer,NF_NET_CHANNEL_RELIABLE,buf,n,true);last_ping_ms=now;}
         Vector2 mouse=update_mouse_capture(&mouse_capture,now);yaw-=mouse.x*0.0022f;pitch=clampf_local(pitch-mouse.y*0.0022f,-1.45f,1.45f);
         NfMoveInput input={0};input.forward=(IsKeyDown(KEY_W)?1.0f:0.0f)-(IsKeyDown(KEY_S)?1.0f:0.0f);input.strafe=(IsKeyDown(KEY_A)?1.0f:0.0f)-(IsKeyDown(KEY_D)?1.0f:0.0f);input.yaw_radians=yaw;if(IsKeyPressed(KEY_SPACE))jump_latched=true;input.jump_pressed=jump_latched;input.crouch_held=IsKeyDown(KEY_LEFT_CONTROL);input.sprint_held=IsKeyDown(KEY_LEFT_SHIFT);input.interact_held=IsKeyDown(KEY_E);
         if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){fire_latched=true;muzzle_until=now+55u;} if(IsKeyPressed(KEY_R))reload_latched=true; if(IsKeyPressed(KEY_ONE))weapon_latched=1u; if(IsKeyPressed(KEY_TWO))weapon_latched=2u;
