@@ -49,6 +49,7 @@ Two guns. Hitscan. Server truth. Medium TTK. Health/death/respawn. Reload/switch
 - [x] 60 Hz server/input/prediction and 30 Hz snapshots retained
 - [x] reconnect/session-token and network impairment scaffolding retained
 - [x] raylib remains presentation-only
+- [x] `./nightfall.sh local` now isolates each graphical demo on a random localhost port and verifies the just-launched server survives before starting the client
 
 ## Advancing — combat simulation
 
@@ -106,6 +107,7 @@ Two guns. Hitscan. Server truth. Medium TTK. Health/death/respawn. Reload/switch
 - [x] focus-aware mouse capture releases on focus loss and reacquires after focus return
 - [x] mouse-look fallback can use absolute-position delta when a backend reports zero relative delta
 - [x] HUD reports mouse focus, capture state, delta and fallback activation
+- [x] Pop!_OS retest recording confirms `FOCUSED`, `capture ON`, and non-zero mouse deltas; mouse input delivery itself is working
 
 ## Controls
 
@@ -139,8 +141,10 @@ Two guns. Hitscan. Server truth. Medium TTK. Health/death/respawn. Reload/switch
 - [x] GitHub four-client combat smoke green; authoritative damage and death observed by every bot
 - [x] project-owned C targets compile under `-Wall -Wextra -Wpedantic -Werror`
 - [x] GitHub CI green on mouse-capture repair tree
+- [x] GitHub CI green on isolated-port local-handshake launcher repair
 - [ ] Pop!_OS clean build/tests/combat-smoke green
-- [ ] Pop!_OS mouse-look recapture retest green
+- [ ] Pop!_OS isolated local handshake reaches `AUTHORITATIVE + PREDICTED`
+- [ ] Pop!_OS mouse-look / camera rotation retest green
 - [ ] recorded human combat demo reviewed
 
 ## Par / Compare-5
@@ -177,14 +181,19 @@ Behavioral targets, not claims about proprietary internals.
 - [x] all automated tests green
 - [x] four-client combat smoke green with damage/death
 - [x] mouse-capture repair exact tree green in CI
+- [x] isolated local-launch repair exact tree green in CI
 - [ ] target Pop!_OS clean build/tests/combat-smoke green
+- [ ] target Pop!_OS local handshake confirmed
 - [ ] target Pop!_OS mouse look confirmed
 - [ ] target Pop!_OS run + recorded combat demo reviewed
 
 ## Current tuning watch
 
-- [ ] verify HUD reports `mouse FOCUSED | capture ON` and non-zero delta while physically moving the mouse on Pop!_OS
-- [ ] if relative delta stays zero but `abs-fallback` rises, keep fallback and investigate raylib/GLFW backend behavior separately
+- [x] HUD reports `mouse FOCUSED | capture ON` and non-zero delta while physically moving the mouse on Pop!_OS
+- [x] fixed-camera symptom in second recording traced to `NET HANDSHAKE`: server/client ticks remained zero, no local actor existed, and the current camera only consumes yaw/pitch once the local actor exists
+- [x] local launcher hardened against stale/orphan port-7777 servers by using an isolated per-run localhost port and verifying server liveness
+- [ ] retest isolated local launch and confirm HUD advances from `NET HANDSHAKE` to `AUTHORITATIVE + PREDICTED`
+- [ ] once authoritative player state exists, confirm the already-observed non-zero mouse delta rotates the camera
 - [ ] inspect larger movement-prediction errors around automated death/respawn transitions (bot max observed up to ~0.82 m) in human footage before deciding whether this is visible or merely a discontinuity diagnostic
 - [ ] tune TTK / recoil / spread / weapon transitions from the recorded human combat pass
 - [ ] tune hitscan rewind policy under impaired-network human combat
