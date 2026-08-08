@@ -52,14 +52,8 @@ typedef enum NfRampAxis {
     NF_RAMP_NEG_Z
 } NfRampAxis;
 
-typedef struct NfVec3 {
-    float x, y, z;
-} NfVec3;
-
-typedef struct NfTransform {
-    NfVec3 position;
-    NfVec3 velocity;
-} NfTransform;
+typedef struct NfVec3 { float x, y, z; } NfVec3;
+typedef struct NfTransform { NfVec3 position; NfVec3 velocity; } NfTransform;
 
 typedef struct NfMoveInput {
     float forward;
@@ -116,11 +110,7 @@ typedef struct NfCollider {
     float motion_period;
 } NfCollider;
 
-typedef struct NfRamp {
-    NfVec3 min;
-    NfVec3 max;
-    NfRampAxis axis;
-} NfRamp;
+typedef struct NfRamp { NfVec3 min; NfVec3 max; NfRampAxis axis; } NfRamp;
 
 typedef struct NfMovementConfig {
     float walk_speed;
@@ -161,16 +151,17 @@ typedef struct NfWorld {
 void nf_world_init(NfWorld *world, uint32_t seed);
 void nf_world_build_movement_lab(NfWorld *world);
 NfEntityId nf_world_spawn_actor(NfWorld *world, NfFaction faction, NfVec3 position);
+NfEntityId nf_world_spawn_actor_with_id(NfWorld *world, NfEntityId id, NfFaction faction, NfVec3 position);
+bool nf_world_despawn_actor(NfWorld *world, NfEntityId id);
 NfActor *nf_world_find_actor(NfWorld *world, NfEntityId id);
 const NfActor *nf_world_find_actor_const(const NfWorld *world, NfEntityId id);
 void nf_world_set_input(NfWorld *world, NfEntityId id, NfMoveInput input);
 void nf_world_step(NfWorld *world, float dt);
+void nf_world_sync_dynamic_geometry(NfWorld *world);
 size_t nf_world_active_actor_count(const NfWorld *world);
 
 int nf_world_add_collider(NfWorld *world, NfColliderKind kind, NfVec3 min, NfVec3 max);
-int nf_world_add_moving_platform(
-    NfWorld *world, NfVec3 min, NfVec3 max, NfVec3 velocity_axis,
-    float amplitude, float period);
+int nf_world_add_moving_platform(NfWorld *world, NfVec3 min, NfVec3 max, NfVec3 velocity_axis, float amplitude, float period);
 int nf_world_add_ramp(NfWorld *world, NfVec3 min, NfVec3 max, NfRampAxis axis);
 
 const char *nf_movement_mode_name(NfMovementMode mode);

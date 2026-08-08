@@ -5,35 +5,52 @@
 - C + raylib
 - Linux-first
 - fixed 60 Hz simulation
-- authoritative dedicated server as eventual gameplay truth
+- authoritative dedicated server
 - data-oriented ECS-lite direction
 - presentation observes simulation; it does not own gameplay state
+- ENet is a transport dependency hidden behind `nf_net`, not a gameplay API
 
-## v0.2 movement contract
+## Simulation ownership
 
-The player camera is presentation. The actor body is simulation.
+The player camera is presentation. The actor body is simulation. Movement input is local forward/strafe intent plus yaw and action buttons. The same `NfWorld` and movement functions execute on both client prediction and server authority.
 
-Movement input is expressed as local forward/strafe intent plus yaw and action buttons. This shape is intentionally suitable for later network command serialization.
+Movement states: GROUND, SPRINT, CROUCH, AIR, LADDER, VAULT, MANTLE and PLATFORM.
 
-The movement state machine currently exposes GROUND, SPRINT, CROUCH, AIR, LADDER, VAULT, MANTLE and PLATFORM.
+## v0.3 network truth contract
+
+The client sends **intent**, not outcome.
+
+`input -> local prediction -> ENet input packet -> authoritative server simulation -> snapshot -> reconciliation -> presentation`
+
+- server simulation: 60 Hz
+- client input/prediction: 60 Hz
+- snapshot publication: 30 Hz
+- reliable channel: handshake/control
+- unreliable channel: high-frequency input/snapshots
+- input history: 256 commands
+- redundant input bundle: latest 3 commands
+- current player cap: 4
+
+Snapshots include authoritative position, velocity, movement mode, grounded/crouched state, jump count, attached traversal feature and current Fuzzy Rail feature. The client rewinds to an acknowledged authoritative state and replays pending commands when error exceeds tolerance.
 
 ## Fuzzy Rail
 
-Fuzzy Rail is local geometric movement intelligence, not a global AI route. It detects nearby steps, edges, vaults, mantles and ladders and scores possible local transitions from distance + approach alignment. Candidate retention uses hysteresis so a usable edge feels crisp without becoming a hard rail.
+Fuzzy Rail is local geometric movement intelligence, not a global AI route. It detects nearby steps, edges, vaults, mantles and ladders and scores possible local transitions from distance + approach alignment. Candidate retention uses hysteresis so usable geometry feels crisp without becoming a hard track.
 
-Constraints:
-1. It never chooses the global destination.
-2. It only assists the next local geometric transition.
-3. Player and AI should query the same physical affordances.
-4. Assistance is bounded and momentum-preserving.
-5. Multiple routes remain viable so AI does not carve deterministic ruts.
+Network rule: **the client's selected Fuzzy Rail feature is predictive only.** The server independently evaluates geometry and sends authoritative traversal state. A divergence counter makes disagreements visible during graybox development.
 
 ## Dynamic Affordance Graph
 
-This is a later semantic/tactical layer and is distinct from Fuzzy Rail.
+This remains a later semantic/tactical layer and is distinct from Fuzzy Rail.
 
-Planned composition: world affordances -> influence/pressure fields -> faction-specific utility -> squad blackboard -> desired action/destination -> Fuzzy Rail local traversal -> physics authority.
+Planned composition:
+
+`world affordances -> influence/pressure fields -> faction utility -> squad blackboard -> desired action/destination -> Fuzzy Rail local traversal -> physics/server authority`
+
+## Security boundary
+
+v0.3 introduces session nonces/tokens and optional libsodium-backed token derivation/comparison. This is scaffolding for public servers; encrypted gameplay payloads are intentionally deferred until the transport/movement contract is proven.
 
 ## Scope discipline
 
-v0.2 does not implement network transport, combat AI, round objectives, or aesthetic assets. Those systems may rely on movement later; movement may not depend on them.
+v0.3 does not add combat, faction AI, round objectives, or aesthetic assets. Networking may replicate movement; movement remains independent from networking and rendering.

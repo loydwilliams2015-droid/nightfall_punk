@@ -1,45 +1,102 @@
 cmake_minimum_required(VERSION 3.20)
-project(nightfall_punk VERSION 0.2 LANGUAGES C)
+project(nightfall_punk VERSION 0.3 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
 option(NF_BUILD_CLIENT "Build the raylib client" ON)
-option(NF_BUILD_SERVER "Build the headless dedicated server" ON)
+option(NF_BUILD_SERVER "Build the dedicated server" ON)
+option(NF_BUILD_NETBOT "Build automated network test client" ON)
 option(NF_BUILD_TESTS "Build tests" ON)
 option(NF_FETCH_RAYLIB "Fetch raylib when no system package is found" ON)
+option(NF_FETCH_ENET "Fetch ENet 1.3.18 when no system package is found" ON)
+
+include(FetchContent)
+find_package(PkgConfig QUIET)
+
+set(NF_ENET_TARGET "")
+if(PkgConfig_FOUND)
+    pkg_check_modules(ENET QUIET IMPORTED_TARGET libenet)
+endif()
+if(TARGET PkgConfig::ENET)
+    set(NF_ENET_TARGET PkgConfig::ENET)
+elseif(NF_FETCH_ENET)
+    FetchContent_Declare(enet
+        GIT_REPOSITORY https://github.com/lsalzman/enet.git
+        GIT_TAG v1.3.18
+        GIT_SHALLOW TRUE)
+    FetchContent_MakeAvailable(enet)
+    set(NF_ENET_TARGET enet)
+    set(NF_ENET_FETCH_INCLUDE "${enet_SOURCE_DIR}/include")
+else()
+    message(FATAL_ERROR "ENet was not found. Install libenet-dev or configure with -DNF_FETCH_ENET=ON.")
+endif()
+
+set(NF_SODIUM_TARGET "")
+if(PkgConfig_FOUND)
+    pkg_check_modules(SODIUM QUIET IMPORTED_TARGET libsodium)
+endif()
+if(TARGET PkgConfig::SODIUM)
+    set(NF_SODIUM_TARGET PkgConfig::SODIUM)
+    message(STATUS "nightfall: libsodium enabled")
+else()
+    message(WARNING "nightfall: libsodium not found; v0.3 security API will use non-cryptographic localhost scaffolding. Install libsodium-dev for authenticated token derivation.")
+endif()
 
 add_library(nightfall_shared STATIC
     src/shared/nf_world.c
-    src/shared/nf_movement.c
-)
+    src/shared/nf_movement.c)
 target_include_directories(nightfall_shared PUBLIC src/shared)
 target_compile_options(nightfall_shared PRIVATE -Wall -Wextra -Wpedantic)
 if(UNIX)
     target_link_libraries(nightfall_shared PUBLIC m)
 endif()
 
+add_library(nightfall_network STATIC
+    src/shared/nf_protocol.c
+    src/shared/nf_prediction.c
+    src/shared/nf_security.c
+    src/shared/nf_net.c)
+target_include_directories(nightfall_network PUBLIC src/shared)
+if(NF_ENET_FETCH_INCLUDE)
+    target_include_directories(nightfall_network PRIVATE "${NF_ENET_FETCH_INCLUDE}")
+endif()
+target_link_libraries(nightfall_network PUBLIC nightfall_shared ${NF_ENET_TARGET})
+target_compile_options(nightfall_network PRIVATE -Wall -Wextra -Wpedantic)
+if(NF_SODIUM_TARGET)
+    target_link_libraries(nightfall_network PUBLIC ${NF_SODIUM_TARGET})
+    target_compile_definitions(nightfall_network PUBLIC NF_HAVE_SODIUM=1)
+endif()
+
 if(NF_BUILD_SERVER)
     add_executable(nightfall_server src/server/main.c)
-    target_link_libraries(nightfall_server PRIVATE nightfall_shared)
+    target_link_libraries(nightfall_server PRIVATE nightfall_network)
     target_compile_options(nightfall_server PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+if(NF_BUILD_NETBOT)
+    add_executable(nightfall_netbot src/tools/netbot.c)
+    target_link_libraries(nightfall_netbot PRIVATE nightfall_network)
+    target_compile_options(nightfall_netbot PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 if(NF_BUILD_CLIENT)
     find_package(raylib 5.5 QUIET)
     if(NOT raylib_FOUND AND NF_FETCH_RAYLIB)
-        include(FetchContent)
         set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
         set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
-        FetchContent_Declare(raylib GIT_REPOSITORY https://github.com/raysan5/raylib.git GIT_TAG 5.5 GIT_SHALLOW TRUE)
+        FetchContent_Declare(raylib
+            GIT_REPOSITORY https://github.com/raysan5/raylib.git
+            GIT_TAG 5.5
+            GIT_SHALLOW TRUE)
         FetchContent_MakeAvailable(raylib)
     endif()
     if(NOT TARGET raylib)
         message(FATAL_ERROR "raylib 5.5 was not found. Install raylib or configure with -DNF_FETCH_RAYLIB=ON.")
     endif()
     add_executable(nightfall_client src/client/main.c)
-    target_link_libraries(nightfall_client PRIVATE nightfall_shared raylib)
+    target_link_libraries(nightfall_client PRIVATE nightfall_network raylib)
     target_compile_options(nightfall_client PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
@@ -48,5 +105,10 @@ if(NF_BUILD_TESTS)
     add_executable(nightfall_world_test src/tests/test_world.c)
     target_link_libraries(nightfall_world_test PRIVATE nightfall_shared)
     target_compile_options(nightfall_world_test PRIVATE -Wall -Wextra -Wpedantic)
-    add_test(NAME simulation_v02 COMMAND nightfall_world_test)
+    add_test(NAME simulation_v03 COMMAND nightfall_world_test)
+
+    add_executable(nightfall_network_test src/tests/test_network.c)
+    target_link_libraries(nightfall_network_test PRIVATE nightfall_network)
+    target_compile_options(nightfall_network_test PRIVATE -Wall -Wextra -Wpedantic)
+    add_test(NAME network_contract_v03 COMMAND nightfall_network_test)
 endif()
