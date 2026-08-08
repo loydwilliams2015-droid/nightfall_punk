@@ -20,8 +20,8 @@ int main(void) {
     NfWorld world; nf_world_init(&world,20260807u); nf_world_build_movement_lab(&world); const NfEntityId player_id=nf_world_spawn_actor(&world,NF_FACTION_PLAYER,(NfVec3){0.0f,0.05f,-18.0f});
     float yaw=0.0f,pitch=0.0f; double accumulator=0.0; const double fixed_dt=1.0/(double)NF_TICK_RATE; bool jump_latched=false;
     while(!WindowShouldClose()) {
-        Vector2 mouse=GetMouseDelta(); yaw+=mouse.x*0.0022f; pitch=clampf_local(pitch-mouse.y*0.0022f,-1.45f,1.45f);
-        NfMoveInput input={0}; input.forward=(IsKeyDown(KEY_W)?1.0f:0.0f)-(IsKeyDown(KEY_S)?1.0f:0.0f); input.strafe=(IsKeyDown(KEY_D)?1.0f:0.0f)-(IsKeyDown(KEY_A)?1.0f:0.0f); input.yaw_radians=yaw; if(IsKeyPressed(KEY_SPACE)) jump_latched=true; input.jump_pressed=jump_latched; input.crouch_held=IsKeyDown(KEY_LEFT_CONTROL); input.sprint_held=IsKeyDown(KEY_LEFT_SHIFT); input.interact_held=IsKeyDown(KEY_E);
+        Vector2 mouse=GetMouseDelta(); yaw-=mouse.x*0.0022f; pitch=clampf_local(pitch-mouse.y*0.0022f,-1.45f,1.45f);
+        NfMoveInput input={0}; input.forward=(IsKeyDown(KEY_W)?1.0f:0.0f)-(IsKeyDown(KEY_S)?1.0f:0.0f); input.strafe=(IsKeyDown(KEY_A)?1.0f:0.0f)-(IsKeyDown(KEY_D)?1.0f:0.0f); input.yaw_radians=yaw; if(IsKeyPressed(KEY_SPACE)) jump_latched=true; input.jump_pressed=jump_latched; input.crouch_held=IsKeyDown(KEY_LEFT_CONTROL); input.sprint_held=IsKeyDown(KEY_LEFT_SHIFT); input.interact_held=IsKeyDown(KEY_E);
         double frame_dt=GetFrameTime(); if(frame_dt>0.10) frame_dt=0.10; accumulator+=frame_dt; bool first_tick=true;
         while(accumulator>=fixed_dt){ if(!first_tick) input.jump_pressed=false; nf_world_set_input(&world,player_id,input); nf_world_step(&world,(float)fixed_dt); if(first_tick&&input.jump_pressed) jump_latched=false; accumulator-=fixed_dt; first_tick=false; }
         const NfActor *player=nf_world_find_actor_const(&world,player_id); if(player==NULL) break;
