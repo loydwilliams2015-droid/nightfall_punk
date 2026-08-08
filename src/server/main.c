@@ -129,7 +129,8 @@ static void handle_hello(NfNetHost *net,NfWorld *world,NfServerClient clients[],
     NfHelloMessage hello;if(!nf_protocol_decode_hello(data,size,&hello)){send_reject(net,peer,1);return;}
     uint32_t now=nf_net_now_ms();NfServerClient *c=NULL;bool resumed=false;
     if(!nf_security_token_is_zero(hello.resume_token)){c=by_token(clients,hello.resume_token,now);resumed=c!=NULL;}
-    if(c==NULL)c=free_slot(clients);if(c==NULL){send_reject(net,peer,2);return;}
+    if(c==NULL)c=free_slot(clients);
+    if(c==NULL){send_reject(net,peer,2);return;}
     if(!resumed){
         size_t idx=slot_index(clients,c);memset(c,0,sizeof(*c));c->occupied=true;c->entity_id=nf_world_spawn_actor(world,faction_for_slot(idx),spawn_for_slot(idx));
         uint8_t server_nonce[NF_NET_NONCE_BYTES];nf_security_random(server_nonce,sizeof(server_nonce));nf_security_derive_token(hello.client_nonce,server_nonce,c->session_token);
@@ -149,7 +150,10 @@ static void handle_input(NfServerClient *c,const uint8_t *data,size_t size){
         jump=jump||cmd->move.jump_pressed;fire_pressed=fire_pressed||cmd->combat.fire_pressed;reload_pressed=reload_pressed||cmd->combat.reload_pressed;if(cmd->combat.weapon_slot)weapon_slot=cmd->combat.weapon_slot;
         c->current_input=cmd->move;c->combat_input=cmd->combat;c->current_client_tick=cmd->client_tick;c->last_input_sequence=cmd->sequence;
     }
-    if(jump)c->current_input.jump_pressed=true;if(fire_pressed)c->combat_input.fire_pressed=true;if(reload_pressed)c->combat_input.reload_pressed=true;if(weapon_slot)c->combat_input.weapon_slot=weapon_slot;
+    if(jump)c->current_input.jump_pressed=true;
+    if(fire_pressed)c->combat_input.fire_pressed=true;
+    if(reload_pressed)c->combat_input.reload_pressed=true;
+    if(weapon_slot)c->combat_input.weapon_slot=weapon_slot;
 }
 
 static void send_snapshot(NfNetHost *net,const NfWorld *world,NfServerClient *recipient){
@@ -173,7 +177,9 @@ static const NfHistoryFrame *history_find(NfHistoryFrame history[],uint64_t desi
 static bool ray_aabb(NfVec3 origin,NfVec3 direction,NfVec3 minimum,NfVec3 maximum,float *distance){
     float tmin=0.0f,tmax=FLT_MAX;const float ov[3]={origin.x,origin.y,origin.z},dv[3]={direction.x,direction.y,direction.z},av[3]={minimum.x,minimum.y,minimum.z},bv[3]={maximum.x,maximum.y,maximum.z};
     for(int i=0;i<3;++i){if(fabsf(dv[i])<1e-6f){if(ov[i]<av[i]||ov[i]>bv[i])return false;continue;}float t1=(av[i]-ov[i])/dv[i],t2=(bv[i]-ov[i])/dv[i];if(t1>t2){float tmp=t1;t1=t2;t2=tmp;}if(t1>tmin)tmin=t1;if(t2<tmax)tmax=t2;if(tmin>tmax)return false;}
-    if(tmax<0.0f)return false;if(distance)*distance=tmin>=0.0f?tmin:tmax;return true;
+    if(tmax<0.0f)return false;
+    if(distance)*distance=tmin>=0.0f?tmin:tmax;
+    return true;
 }
 static bool ray_sphere(NfVec3 origin,NfVec3 direction,NfVec3 center,float radius,float *distance){
     NfVec3 oc=vsub(origin,center);float b=vdot(oc,direction),c=vdot(oc,oc)-radius*radius,disc=b*b-c;if(disc<0.0f)return false;float s=sqrtf(disc),t=-b-s;if(t<0.0f)t=-b+s;if(t<0.0f)return false;if(distance)*distance=t;return true;
@@ -214,7 +220,11 @@ static bool hitscan_target(const NfWorld *world,const NfHistoryFrame *frame,NfEn
             consider_zone(head_hit,t_head,NF_HIT_HEAD,&nearest,history_actor->id,&target,&zone);consider_zone(body_hit,t_body,NF_HIT_BODY,&nearest,history_actor->id,&target,&zone);
         }
     }
-    if(target==0)return false;*target_out=target;*zone_out=zone;*distance_out=nearest;return true;
+    if(target==0)return false;
+    *target_out=target;
+    *zone_out=zone;
+    *distance_out=nearest;
+    return true;
 }
 
 static float damage_for_zone(const NfWeaponSpec *spec,NfHitZone zone){
