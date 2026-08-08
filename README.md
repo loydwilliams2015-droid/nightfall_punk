@@ -2,44 +2,46 @@
 
 Open-source copy-left arena FPS developed in C + raylib.
 
-**Completed milestone: v0.3 — Networked Movement. Next: v0.4 — Combat.**
+**Current milestone: v0.4 — Combat.** Completed v0.3 Networked Movement is preserved at `archive/v0.3`.
 
-nightfall!punk is being rebuilt graybox-first: gameplay, physics, networking and AI architecture must become coherent before original aesthetics return.
+nightfall!punk is being rebuilt graybox-first: gameplay, physics, networking, combat and AI architecture must become coherent before original aesthetics return.
 
-v0.3 preserves the v0.2 traversal/Fuzzy Rail simulation and proves it through an authoritative networking path: ENet transport, a versioned binary protocol, 60 Hz input/prediction/server simulation, 30 Hz snapshots, reconciliation, remote interpolation scaffolding, reconnect/session-token machinery, network impairment simulation, libsodium-backed token derivation when available, and automated four-client smoke testing.
+v0.4 keeps the v0.3 authoritative movement/network substrate and adds a server-authored graybox combat loop: carbine + pistol, health, ammo, reload/switch states, body/head hitscan, bounded lag compensation, death/respawn, faction damage rules, combat events, primitive weapon/target presentation, combat diagnostics and four-client combat smoke testing.
 
-The accepted v0.3 tree is preserved at `archive/v0.3`.
+Combat events are the first concrete producers for the future World Semantic Alerts layer. The full semantic routing/AI/objective consumer system is intentionally later.
 
-World Semantic Alerts are **not** part of v0.3. They are planned as a later server-authored gameplay-event layer for combat, AI, objectives, mechanisms and the Dynamic Affordance Graph.
-
-## Build and test the archived network milestone
+## Build and test
 
 ```bash
 chmod +x nightfall.sh
 ./nightfall.sh standard-check
 ./nightfall.sh build
 ./nightfall.sh test
-./nightfall.sh net-smoke
+./nightfall.sh combat-smoke
 ```
 
-## Demo: server + client
+## Demo: server + graphical combat client
 
 ```bash
 ./nightfall.sh local
 ```
 
-This launches the dedicated server in the background and the raylib client over the real ENet localhost transport.
+Controls: WASD move, mouse look, Shift sprint, Ctrl crouch, Space jump, E interact/ladder, left mouse fire, R reload, 1 carbine, 2 pistol.
+
+The server spawns simple rival target dummies so the combat loop can be tested with one graphical client. Additional clients receive alternating PLAYER/RIVAL factions for human duel testing while friendly fire remains off by default.
 
 ## Impairment testing
 
-```bash
-./nightfall.sh server --sim-latency 80 --sim-jitter 15 --sim-loss 2
-```
-
-Then in another terminal:
+Terminal 1:
 
 ```bash
-./nightfall.sh client
+./nightfall.sh server --sim-latency 40 --sim-jitter 8 --sim-loss 1
 ```
 
-Completed versions are preserved as `archive/v0.X` branches. See `docs/LEDGER.md` and `docs/ARCHITECTURE.md`.
+Terminal 2:
+
+```bash
+./nightfall.sh client --sim-latency 40 --sim-jitter 8 --sim-loss 1
+```
+
+Completed versions are preserved as immutable `archive/v0.X` branches. See `docs/LEDGER.md` and `docs/ARCHITECTURE.md`.
