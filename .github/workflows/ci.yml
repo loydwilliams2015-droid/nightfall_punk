@@ -1,0 +1,35 @@
+name: nightfall v0.3 CI
+
+on:
+  push:
+    branches: [ main, "build/**" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake git pkg-config libsodium-dev \
+            libasound2-dev libx11-dev libxrandr-dev libxi-dev \
+            libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev
+
+      - name: Standard check
+        run: ./nightfall.sh standard-check
+
+      - name: Full compile
+        run: ./nightfall.sh build
+
+      - name: Contract tests
+        run: ./nightfall.sh test
+
+      - name: Four-client network smoke test
+        run: ./nightfall.sh net-smoke
