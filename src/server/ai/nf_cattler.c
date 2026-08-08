@@ -126,13 +126,21 @@ static bool actor_is_cattler(const NfCattlerSystem *system,NfEntityId actor_id) 
 }
 
 static NfVec3 spawn_for_index(const NfRegionGraph *graph,size_t index) {
-    static const uint8_t anchors[NF_CATTLER_MAX_AGENTS]={23u,3u,12u,20u,7u};
+    static const uint8_t anchors[NF_CATTLER_MAX_AGENTS]={9u,3u,12u,20u,7u};
     uint8_t region=anchors[index%NF_CATTLER_MAX_AGENTS];
     if(graph==NULL||region>=graph->count)return (NfVec3){0.0f,0.05f,0.0f};
     NfVec3 p=graph->regions[region].center;
     p.y=0.05f;
-    p.x += (index&1u)?-8.0f:8.0f;
-    p.z += (index&1u)?5.0f:-5.0f;
+    if(index==0u) {
+        /* Put one habitat anchor within ordinary first-contact distance of the
+           player without granting any hidden knowledge. The Cattler still has
+           to see/hear prey through the normal epistemic path. */
+        p.x+=30.0f;
+        p.z+=25.0f;
+    } else {
+        p.x += (index&1u)?-8.0f:8.0f;
+        p.z += (index&1u)?5.0f:-5.0f;
+    }
     return p;
 }
 
@@ -186,7 +194,11 @@ float nf_cattler_habitat_score(
 
     const float continuity=continuity_score(system,agent,region);
     const float resource=state->resource_value;
-    const float prey=state->prey_activity;
+    /* The authoritative ecology may record prey activity for Director/event
+       eligibility, but an individual Cattler may only value prey in a region
+       it knows through its own evidence or a decayed pack report. */
+    const float prey=(agent->knowledge.region==region)
+        ? clamp01(agent->knowledge.confidence):0.0f;
     const float disturbance=agent->profile.disposition==NF_RANCHER_PREDATORY
         ? clamp01(1.0f-absf_local(state->disturbance-0.55f)/0.65f)
         : 1.0f-state->disturbance;
