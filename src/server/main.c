@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "nf_net.h"
 #include "nf_prediction.h"
 #include "nf_security.h"
