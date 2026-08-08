@@ -5,160 +5,180 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 ## Locked project decisions
 
 - [x] C + raylib; Linux-first
-- [x] fixed 60 Hz simulation
-- [x] authoritative dedicated server from day one
-- [x] data-oriented ECS-lite direction
+- [x] fixed 60 Hz simulation; authoritative dedicated server
 - [x] four-player target for now; possible five later
-- [x] round-based matches
+- [x] round-based story-oriented arena FPS
 - [x] mixed authored + seeded physical/temple mechanisms
 - [x] placeholder assets before original aesthetics
 - [x] direct confrontation is the gameplay emphasis
 - [x] rewards come from simple physical puzzles under combat pressure
-- [x] moderate tactical walk + fast sprint
-- [x] infinite sprint for now; contextual fatigue later
+- [x] moderate tactical walk + fast sprint; contextual fatigue later
 - [x] crouch-jump enables a second jump
-- [x] waist/chest mantle; higher mantle needs momentum
-- [x] mild fall damage later for major drops only
 - [x] Fuzzy Rail = local geometric traversal intelligence
 - [x] Dynamic Affordance Graph = later utility + affordances + influence + blackboard
-- [x] World Semantic Alerts = later authoritative gameplay-event layer; not part of v0.3 transport
+- [x] World Semantic Alerts = explicit server-authored gameplay-event layer, never inferred from raw packets
 
-# v0.1 — Foundation — COMPLETE
-
-- [x] repository / CMake / raylib client
-- [x] shared simulation and headless server
-- [x] fixed-tick world and basic tests
-- [x] archived as `archive/v0.1`
+# v0.1 — Foundation — COMPLETE / ARCHIVED
+- [x] `archive/v0.1`
 
 # v0.2 — Movement — COMPLETE / ARCHIVED
-
-## Existing / regression protection
-- [x] simulation-owned actor body independent of camera
-- [x] walk / sprint / crouch / jump / crouch-gated second jump
-- [x] gravity, ground, stairs, ramps and moving platforms
-- [x] ladder / vault / mantle states
-- [x] Fuzzy Rail candidate scoring + hysteresis
-- [x] horizontal camera/strafe basis corrected after human playtest
-- [x] preserved as `archive/v0.2`
+- [x] movement/traversal/Fuzzy Rail contract
+- [x] `archive/v0.2`
 
 # v0.3 — Networked Movement — COMPLETE / ARCHIVED
+- [x] ENet abstraction + protocol v3
+- [x] 60 Hz server/input/prediction + 30 Hz snapshots
+- [x] reconciliation, remote interpolation scaffold, reconnect/session tokens
+- [x] latency/jitter/loss simulation + four-netbot smoke
+- [x] libsodium token derivation on target machine
+- [x] normal/impaired-network recording reviewed
+- [x] `archive/v0.3`
 
-- [x] preserved as `archive/v0.3`
+# v0.4 — Combat — CURRENT BUILD
 
-## Existing features retained and unified
-- [x] v0.2 movement code remains the single movement implementation
-- [x] client sends input intent, never authoritative transforms
-- [x] server and client use the same `NfWorld` / `nf_movement` simulation
-- [x] deterministic map collider indices serve as initial stable traversal feature IDs
-- [x] Fuzzy Rail remains local geometry intelligence; networking does not turn it into a path rail
-- [x] headless server remains independent of raylib
-- [x] presentation remains replaceable
+## Contract thesis
 
-## Advancing features
+Two guns. Hitscan. Server truth. Medium TTK. Health/death/respawn. Reload/switch. Lag-compensated target history. Four networked combatants. Combat events become the first concrete producers for the later World Semantic Alerts system.
 
-### Transport and protocol
-- [x] ENet transport isolated behind `nf_net`
-- [x] ENet pinned to v1.3.18 when fetched
-- [x] reliable control channel + unreliable state/input channel
-- [x] protocol magic + version 3 header
-- [x] HELLO / WELCOME / REJECT / INPUT / SNAPSHOT / PING / PONG message contracts
-- [x] explicit little-endian hot-path serialization; no raw struct-on-wire dependency
-- [x] packet size cap (1200 bytes)
-- [x] four-player server cap for current design target
+## Existing / regression protection
 
-### Server truth
-- [x] persistent dedicated-server loop
-- [x] 60 Hz authoritative simulation
-- [x] 30 Hz snapshot publication
-- [x] per-peer input sequence validation
-- [x] input range / finite-value validation
-- [x] server performs collision, Fuzzy Rail and traversal independently
-- [x] snapshot-driven remote actor spawn/presence
+- [x] v0.2 movement remains the single movement implementation
+- [x] v0.3 ENet transport remains behind `nf_net`
+- [x] client still sends intent, never authoritative transforms or hit claims
+- [x] server still owns movement, collision, Fuzzy Rail and snapshots
+- [x] 60 Hz server/input/prediction and 30 Hz snapshots retained
+- [x] reconnect/session-token and network impairment scaffolding retained
+- [x] raylib remains presentation-only
 
-### Client prediction / reconciliation
-- [x] 60 Hz predicted local movement
-- [x] 256-slot command/state history
-- [x] last three inputs redundantly transmitted
-- [x] authoritative acknowledgement sequence
-- [x] rewind to authoritative state + replay unacknowledged inputs
-- [x] small-error tolerance before correction
-- [x] prediction error / max error / correction counters
-- [x] client-vs-server Fuzzy Rail feature disagreement diagnostic
-- [x] moving-platform geometry resync hook for reconciliation
+## Advancing — combat simulation
 
-### Remote actors
-- [x] snapshot-fed remote actor presentation
-- [x] basic interpolation between received samples
-- [ ] deliberate 2–3-snapshot interpolation buffer tuning deferred until combat-era multi-client playtesting
+- [x] `nf_combat` shared simulation module
+- [x] explicit weapon state: READY / RECOVERING / RELOADING / SWITCHING / EMPTY
+- [x] two weapon slots: carbine + pistol
+- [x] carbine: automatic, 30-round magazine, medium damage
+- [x] pistol: semi-automatic, 12-round magazine, higher per-shot damage
+- [x] 100-health baseline
+- [x] body + head hit zones; head multiplier
+- [x] server-side damage/death
+- [x] 3-second graybox respawn
+- [x] faction damage rule with friendly fire off by default
+- [x] reload timing with late commit point
+- [x] sprint/interact/weapon switch can interrupt reload
+- [x] weapon switching is timed and authoritative
+- [x] server rate-of-fire and ammo enforcement
+- [x] dead actors cannot move/fire
 
-### Network impairment and automated testing
-- [x] application-level simulated latency
-- [x] simulated jitter
-- [x] simulated unreliable-packet loss
-- [x] `nightfall_netbot` automated network client
-- [x] four-client `./nightfall.sh net-smoke` harness
-- [x] protocol round-trip tests
-- [x] prediction/reconciliation regression test
-- [x] GitHub Actions full compile + contract tests + four-client smoke test
+## Advancing — network combat
 
-### Reconnect / security readiness
-- [x] 20-second server-side entity reservation on disconnect
-- [x] resume-token reconnect path
-- [x] client automatic reconnect attempts
-- [x] libsodium integration when `libsodium-dev` is available
-- [x] nonce + session-token derivation abstraction
-- [x] constant-time token comparison when libsodium is present
-- [ ] authenticated encryption of gameplay payloads deferred to public-server hardening
+- [x] protocol v4 / `NF04`
+- [x] combat input travels with sequenced input commands
+- [x] client sends fire/reload/switch/aim intent, never hit outcome
+- [x] combat state included in snapshots: faction, health, alive, weapon, state, ammo
+- [x] explicit `COMBAT_EVENT` network message
+- [x] server-authored GUNFIRE / DAMAGE / DEATH / RESPAWN / RELOAD / WEAPON_SWITCH events
+- [x] transient gunfire/damage events use state channel; important discrete transitions use reliable control channel
+- [x] authoritative combat state applies even when movement reconciliation is unnecessary
+- [x] first World Semantic Alert producers exist as combat events; full semantic routing is intentionally later
 
-### Diagnostics
-- [x] RTT / application ping / snapshot age
-- [x] server tick / client tick
-- [x] command / acknowledgement / pending command count
-- [x] prediction error / corrections
-- [x] Fuzzy Rail candidate disagreement diagnostic
-- [x] movement mode / speed / local Fuzzy Rail feature
-- [x] crypto mode + impairment preset display
+## Advancing — hitscan and latency safety
 
-## Par / Compare-5 targets
+- [x] server reconstructs shot from authoritative actor + submitted yaw/pitch intent
+- [x] 64-frame server actor-history ring
+- [x] rewind limited to 12 ticks (~200 ms)
+- [x] historical actor target test for hitscan
+- [x] world-solid occlusion check
+- [x] rewind duration carried on damage/death combat event for diagnostics
+- [x] client never submits target/damage
+- [ ] tune rewind policy from human impaired-network combat footage
 
-These are behavioral targets, not claims about proprietary internal implementations.
+## Advancing — graybox combat lab
 
-- [x] Quake III lineage: command-oriented prediction + authoritative snapshots architecture
-- [x] Source / Counter-Strike lineage: explicit local prediction vs remote interpolation separation
-- [x] Unreal Tournament lineage: authoritative movement-state correction model
-- [x] Titanfall 2 target: vault/mantle/ladder transitions represented in authoritative state
-- [x] Overwatch target: diagnostics + graceful correction under imperfect network conditions
-- [x] human normal-network and impaired-network recording reviewed; architecture accepted for next contract
+- [x] two stationary opposite-faction target dummies in server world so either current faction has a valid target
+- [x] alternating player/rival factions across four network client slots for duel testing
+- [x] remote actors colored ally/opponent in client presentation
+- [x] primitive carbine/pistol viewmodel placeholder
+- [x] immediate local muzzle-flash presentation
+- [x] server-confirmed hit marker
+- [x] incoming-damage screen border
+- [x] health / weapon / ammo / weapon-state HUD
+- [x] combat event / hit-zone / damage / rewind diagnostics
+- [x] network diagnostics retained
+
+## Controls
+
+- [x] WASD move
+- [x] mouse look
+- [x] Shift sprint
+- [x] Ctrl crouch
+- [x] Space jump / crouch-gated second jump
+- [x] E interact / ladder
+- [x] Left Mouse fire
+- [x] R reload
+- [x] 1 carbine
+- [x] 2 pistol
+
+## Automated contracts
+
+- [x] weapon state / rate-of-fire test
+- [x] ammo consumption test
+- [x] reload commit/cancel test
+- [x] weapon-switch test
+- [x] semi-auto pistol test
+- [x] faction-damage rule test
+- [x] damage/death/respawn test
+- [x] protocol round-trip for combat input/state/events
+- [x] reconciliation test retains authoritative health
+- [x] four automated clients generate movement + aiming + firing + reload/switch inputs
+- [x] combat-smoke requires authoritative damage events as well as snapshots/combat events
+- [x] GitHub CI full raylib + ENet + libsodium compile green on v0.4 branch
+- [x] GitHub simulation / combat / network contract tests green: 3/3
+- [x] GitHub four-client combat smoke green; authoritative damage and death observed by every bot
+- [x] project-owned C targets compile under `-Wall -Wextra -Wpedantic -Werror`
+- [ ] Pop!_OS clean build/tests/combat-smoke green
+- [ ] recorded human combat demo reviewed
+
+## Par / Compare-5
+
+Behavioral targets, not claims about proprietary internals.
+
+- [x] Quake III lineage — shooting remains compatible with expressive movement
+- [x] Urban Terror — grounded readable gunfight scale
+- [x] Source / Counter-Strike lineage — server-authoritative hitscan + bounded lag-compensation philosophy
+- [x] Halo 3 — medium-TTK counterplay rather than one-tap lethality
+- [x] Titanfall 2 — traversal states remain valid while weapons are active
+- [ ] human tuning of TTK, recoil/spread feel and movement/fire transition from recorded demo
+
+## Deliberate v0.4 boundaries
+
+- [ ] no ADS yet
+- [ ] no projectile weapons yet
+- [ ] no final weapon art/assets required
+- [ ] no full inventory/pickup economy yet; two authoritative weapon slots and reserve ammo are the inventory substrate
+- [ ] no AI combat behavior yet
+- [ ] no full World Semantic Alert routing/consumers yet
+- [ ] no rounds/objectives/reward mechanisms yet
+- [ ] recoil/spread sophistication follows the first human gunfeel review rather than preceding it
 
 ## Stable-coherence gate
 
-- [x] movement has no ENet dependency
-- [x] transport has no raylib dependency
-- [x] wire protocol is explicit and versioned
-- [x] client does not submit position/traversal success as truth
-- [x] server performs Fuzzy Rail candidate evaluation itself
-- [x] local and headless build directories remain separate
-- [x] contract/syntax validation passes in development environment
-- [x] GitHub-hosted Ubuntu full ENet + raylib compile passes
-- [x] GitHub-hosted four-client `net-smoke` passes
-- [x] Pop!_OS full target build, simulation tests and network contract tests pass
-- [x] Pop!_OS four-netbot smoke test passes
-- [x] libsodium enabled on target machine
-- [x] recorded v0.3 normal/impaired-network demo reviewed
-- [x] POSIX `nanosleep` declaration warning fixed in closeout
+- [x] combat simulation has no raylib dependency
+- [x] combat simulation has no ENet dependency
+- [x] transport does not decide damage/hits
+- [x] client does not claim hits/damage/death
+- [x] snapshots are recovery truth; combat events are causal/feedback messages
+- [x] movement and combat states remain separate but live on the same actor/world truth
+- [x] GitHub-hosted full compile green
+- [x] all automated tests green
+- [x] four-client combat smoke green with damage/death
+- [ ] target Pop!_OS clean build/tests/combat-smoke green
+- [ ] target Pop!_OS run + recorded demo reviewed
 
-## Accepted v0.3 deferrals
+## Current tuning watch
 
-- [ ] world semantic alerts are **not implemented**; introduce with combat/AI/objective semantics, not as a transport-layer retrofit
-- [ ] remote interpolation buffer tuning awaits richer multi-client combat movement
-- [ ] live reconnect UX/human multi-client soak remains a hardening task even though reconnect/session machinery and automated multi-client networking are present
-- [ ] authenticated encryption of gameplay payloads remains a later public-server hardening contract
-- [ ] current Fuzzy Rail counter may include harmless short-lived candidate disagreement; refine when traversal events become semantically meaningful
+- [ ] inspect larger movement-prediction errors around automated death/respawn transitions (bot max observed up to ~0.82 m) in human footage before deciding whether this is visible or merely a discontinuity diagnostic
+- [ ] tune TTK / recoil / spread / weapon transitions from the recorded human combat pass
+- [ ] tune hitscan rewind policy under impaired-network human combat
 
-# Next contract
+# Planned next graybox contracts
 
-## v0.4 — Combat
-Authoritative hits/damage, weapon state, ammo/reload, simple pickup inventory, combat diagnostics and latency-safe fire semantics. Combat should begin the first useful producers of future World Semantic Alerts (gunfire, damage, death, reload/weapon events), but the semantic event layer itself should remain explicit and server-authored rather than inferred from raw network packets.
-
-## Later graybox contracts
-Faction AI/game theory, Dynamic Affordance Graph, World Semantic Alerts expansion, rounds/objectives, physical reward puzzles, then the graphics/aesthetic engine phase.
+After v0.4 is accepted and archived, prioritize faction AI/game theory + Dynamic Affordance Graph, then broaden World Semantic Alerts, rounds/objectives and physical reward puzzles before the graphics/aesthetic engine phase.

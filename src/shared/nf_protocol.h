@@ -7,8 +7,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define NF_PROTOCOL_MAGIC 0x3330464eu /* "NF03" little-endian */
-#define NF_PROTOCOL_VERSION 3u
+#define NF_PROTOCOL_MAGIC 0x3430464eu /* "NF04" little-endian */
+#define NF_PROTOCOL_VERSION 4u
 #define NF_NET_DEFAULT_PORT 7777u
 #define NF_NET_MAX_PACKET_BYTES 1200u
 #define NF_NET_MAX_PLAYERS 4u
@@ -19,6 +19,7 @@
 #define NF_NET_NONCE_BYTES 16u
 #define NF_NET_SNAPSHOT_HZ 30u
 #define NF_NET_RECONNECT_WINDOW_MS 20000u
+#define NF_NET_MAX_REWIND_TICKS 12u
 
 typedef enum NfMessageType {
     NF_MSG_NONE = 0,
@@ -29,7 +30,8 @@ typedef enum NfMessageType {
     NF_MSG_SNAPSHOT = 5,
     NF_MSG_PING = 6,
     NF_MSG_PONG = 7,
-    NF_MSG_DISCONNECT = 8
+    NF_MSG_DISCONNECT = 8,
+    NF_MSG_COMBAT_EVENT = 9
 } NfMessageType;
 
 typedef struct NfHelloMessage {
@@ -49,6 +51,7 @@ typedef struct NfInputCommand {
     uint32_t sequence;
     uint64_t client_tick;
     NfMoveInput move;
+    NfCombatInput combat;
 } NfInputCommand;
 
 typedef struct NfInputBundle {
@@ -59,6 +62,7 @@ typedef struct NfInputBundle {
 
 typedef struct NfActorNetState {
     NfEntityId id;
+    NfFaction faction;
     NfVec3 position;
     NfVec3 velocity;
     NfMovementMode mode;
@@ -68,6 +72,12 @@ typedef struct NfActorNetState {
     int32_t attached_collider;
     NfTraversalType candidate_type;
     int32_t candidate_feature;
+    float health;
+    bool alive;
+    NfWeaponId weapon;
+    NfWeaponState weapon_state;
+    uint16_t ammo_mag;
+    uint16_t reserve_ammo;
 } NfActorNetState;
 
 typedef struct NfSnapshotMessage {
@@ -78,6 +88,7 @@ typedef struct NfSnapshotMessage {
 } NfSnapshotMessage;
 
 typedef struct NfPingMessage { uint32_t stamp_ms; } NfPingMessage;
+typedef struct NfCombatEventMessage { NfCombatEvent event; } NfCombatEventMessage;
 
 NfMessageType nf_protocol_peek_type(const uint8_t *data, size_t size);
 size_t nf_protocol_encode_hello(uint8_t *out, size_t cap, const NfHelloMessage *msg);
@@ -92,8 +103,11 @@ size_t nf_protocol_encode_snapshot(uint8_t *out, size_t cap, const NfSnapshotMes
 bool nf_protocol_decode_snapshot(const uint8_t *data, size_t size, NfSnapshotMessage *out);
 size_t nf_protocol_encode_ping(uint8_t *out, size_t cap, NfMessageType type, const NfPingMessage *msg);
 bool nf_protocol_decode_ping(const uint8_t *data, size_t size, NfMessageType expected, NfPingMessage *out);
+size_t nf_protocol_encode_combat_event(uint8_t *out, size_t cap, const NfCombatEventMessage *msg);
+bool nf_protocol_decode_combat_event(const uint8_t *data, size_t size, NfCombatEventMessage *out);
 
 void nf_actor_to_net_state(const NfActor *actor, NfActorNetState *out);
 void nf_actor_apply_net_state(NfActor *actor, const NfActorNetState *state, const NfMovementConfig *config);
+void nf_actor_apply_combat_net_state(NfActor *actor, const NfActorNetState *state);
 
 #endif
