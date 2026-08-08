@@ -21,6 +21,7 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 - [x] mild fall damage later for major drops only
 - [x] Fuzzy Rail = local geometric traversal intelligence
 - [x] Dynamic Affordance Graph = later utility + affordances + influence + blackboard
+- [x] World Semantic Alerts = later authoritative gameplay-event layer; not part of v0.3 transport
 
 # v0.1 — Foundation — COMPLETE
 
@@ -40,7 +41,7 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 - [x] horizontal camera/strafe basis corrected after human playtest
 - [x] preserved as `archive/v0.2`
 
-# v0.3 — Networked Movement — CURRENT BUILD
+# v0.3 — Networked Movement — COMPLETE
 
 ## Existing features retained and unified
 - [x] v0.2 movement code remains the single movement implementation
@@ -80,13 +81,13 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 - [x] rewind to authoritative state + replay unacknowledged inputs
 - [x] small-error tolerance before correction
 - [x] prediction error / max error / correction counters
-- [x] client-vs-server Fuzzy Rail feature divergence counter
+- [x] client-vs-server Fuzzy Rail feature disagreement diagnostic
 - [x] moving-platform geometry resync hook for reconciliation
 
 ### Remote actors
 - [x] snapshot-fed remote actor presentation
 - [x] basic interpolation between received samples
-- [ ] tune a deliberate 2–3-snapshot interpolation buffer after recorded playtest
+- [ ] deliberate 2–3-snapshot interpolation buffer tuning deferred until combat-era multi-client playtesting
 
 ### Network impairment and automated testing
 - [x] application-level simulated latency
@@ -105,14 +106,14 @@ Versioning rule: **one flat version = one coherent development contract.** Git c
 - [x] libsodium integration when `libsodium-dev` is available
 - [x] nonce + session-token derivation abstraction
 - [x] constant-time token comparison when libsodium is present
-- [ ] authenticated encryption of gameplay payloads (later public-server hardening contract)
+- [ ] authenticated encryption of gameplay payloads deferred to public-server hardening
 
 ### Diagnostics
-- [x] RTT / ping / snapshot age
+- [x] RTT / application ping / snapshot age
 - [x] server tick / client tick
 - [x] command / acknowledgement / pending command count
 - [x] prediction error / corrections
-- [x] Fuzzy Rail divergence count
+- [x] Fuzzy Rail candidate disagreement diagnostic
 - [x] movement mode / speed / local Fuzzy Rail feature
 - [x] crypto mode + impairment preset display
 
@@ -125,7 +126,7 @@ These are behavioral targets, not claims about proprietary internal implementati
 - [x] Unreal Tournament lineage: authoritative movement-state correction model
 - [x] Titanfall 2 target: vault/mantle/ladder transitions represented in authoritative state
 - [x] Overwatch target: diagnostics + graceful correction under imperfect network conditions
-- [ ] tune perceived responsiveness/rubber-banding after human network playtest
+- [x] human normal-network and impaired-network recording reviewed; architecture accepted for next contract
 
 ## Stable-coherence gate
 
@@ -138,13 +139,24 @@ These are behavioral targets, not claims about proprietary internal implementati
 - [x] contract/syntax validation passes in development environment
 - [x] GitHub-hosted Ubuntu full ENet + raylib compile passes
 - [x] GitHub-hosted four-client `net-smoke` passes
-- [ ] full target build verified on Pop!_OS
-- [ ] recorded v0.3 demo reviewed
+- [x] Pop!_OS full target build, simulation tests and network contract tests pass
+- [x] Pop!_OS four-netbot smoke test passes
+- [x] libsodium enabled on target machine
+- [x] recorded v0.3 normal/impaired-network demo reviewed
+- [x] POSIX `nanosleep` declaration warning fixed in closeout
+
+## Accepted v0.3 deferrals
+
+- [ ] world semantic alerts are **not implemented**; introduce with combat/AI/objective semantics, not as a transport-layer retrofit
+- [ ] remote interpolation buffer tuning awaits richer multi-client combat movement
+- [ ] live reconnect UX/human multi-client soak remains a hardening task even though reconnect/session machinery and automated multi-client networking are present
+- [ ] authenticated encryption of gameplay payloads remains a later public-server hardening contract
+- [ ] current Fuzzy Rail counter may include harmless short-lived candidate disagreement; refine when traversal events become semantically meaningful
 
 # Planned next contracts
 
 ## v0.4 — Combat
-Authoritative hits/damage, weapon state, ammo/reload, simple pickup inventory, combat diagnostics and latency-safe fire semantics.
+Authoritative hits/damage, weapon state, ammo/reload, simple pickup inventory, combat diagnostics and latency-safe fire semantics. Combat should begin the first useful producers of future World Semantic Alerts (gunfire, damage, death, reload/weapon events), but the semantic event layer itself should remain explicit and server-authored rather than inferred from raw network packets.
 
 ## Later graybox contracts
-Faction AI/game theory, Dynamic Affordance Graph, rounds/objectives, physical reward puzzles, then the graphics/aesthetic engine phase.
+Faction AI/game theory, Dynamic Affordance Graph, World Semantic Alerts expansion, rounds/objectives, physical reward puzzles, then the graphics/aesthetic engine phase.
