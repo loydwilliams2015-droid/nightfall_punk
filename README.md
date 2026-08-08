@@ -26,7 +26,9 @@ chmod +x nightfall.sh
 ./nightfall.sh local
 ```
 
-Controls: WASD move, mouse look, Shift sprint, Ctrl crouch, Space jump, E interact/ladder, left mouse fire, R reload, 1 carbine, 2 pistol.
+Controls: WASD move, mouse look, Shift sprint, Ctrl crouch, Space jump, E interact/ladder, left mouse fire, R reload, 1 carbine, 2 pistol, F10 toggle/reacquire mouse capture.
+
+The v0.4 client uses focus-aware mouse capture: it releases the cursor when the game loses focus and automatically reacquires relative input shortly after focus returns. The HUD reports `mouse FOCUSED`, capture state, mouse delta and absolute-delta fallback use so Linux/X11/XWayland input failures are visible in recordings instead of silent.
 
 The server spawns simple rival target dummies so the combat loop can be tested with one graphical client. Additional clients receive alternating PLAYER/RIVAL factions for human duel testing while friendly fire remains off by default.
 
