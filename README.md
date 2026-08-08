@@ -2,22 +2,25 @@
 
 Open-source copy-left arena FPS developed in C + raylib.
 
-**Current milestone: v0.3 — Networked Movement.**
+**Completed milestone: v0.3 — Networked Movement. Next: v0.4 — Combat.**
 
 nightfall!punk is being rebuilt graybox-first: gameplay, physics, networking and AI architecture must become coherent before original aesthetics return.
 
-v0.3 keeps the v0.2 traversal/Fuzzy Rail simulation and puts it through a real authoritative networking path: ENet transport, a versioned binary protocol, 60 Hz input/prediction/server simulation, 30 Hz snapshots, reconciliation, remote interpolation scaffolding, reconnect, network impairment simulation, and automated clients.
+v0.3 preserves the v0.2 traversal/Fuzzy Rail simulation and proves it through an authoritative networking path: ENet transport, a versioned binary protocol, 60 Hz input/prediction/server simulation, 30 Hz snapshots, reconciliation, remote interpolation scaffolding, reconnect/session-token machinery, network impairment simulation, libsodium-backed token derivation when available, and automated four-client smoke testing.
 
-## Build and test
+The accepted v0.3 tree is preserved at `archive/v0.3`.
+
+World Semantic Alerts are **not** part of v0.3. They are planned as a later server-authored gameplay-event layer for combat, AI, objectives, mechanisms and the Dynamic Affordance Graph.
+
+## Build and test the archived network milestone
 
 ```bash
 chmod +x nightfall.sh
 ./nightfall.sh standard-check
 ./nightfall.sh build
 ./nightfall.sh test
+./nightfall.sh net-smoke
 ```
-
-ENet 1.3.18 is fetched automatically when a system ENet package is unavailable. For strong session-token derivation on Pop!_OS/Ubuntu, install `libsodium-dev`; the build remains usable for localhost testing without it.
 
 ## Demo: server + client
 
@@ -26,13 +29,6 @@ ENet 1.3.18 is fetched automatically when a system ENet package is unavailable. 
 ```
 
 This launches the dedicated server in the background and the raylib client over the real ENet localhost transport.
-
-## Four-client network smoke test
-
-```bash
-./nightfall.sh build-headless
-./nightfall.sh net-smoke
-```
 
 ## Impairment testing
 
