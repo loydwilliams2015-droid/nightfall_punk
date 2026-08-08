@@ -1,5 +1,6 @@
 #include "nf_world.h"
 #include "nf_movement.h"
+#include "nf_combat.h"
 
 #include <math.h>
 #include <string.h>
@@ -81,8 +82,9 @@ static NfActor *nf_world_allocate_actor(NfWorld *world) {
 NfEntityId nf_world_spawn_actor_with_id(NfWorld *world, NfEntityId id, NfFaction faction, NfVec3 position) {
     if (world == NULL || id == 0u || nf_world_find_actor(world,id) != NULL) return 0u;
     NfActor *actor = nf_world_allocate_actor(world); if(actor==NULL) return 0u;
-    memset(actor,0,sizeof(*actor)); actor->active=true; actor->id=id; actor->faction=faction; actor->transform.position=position; actor->health=100.0f;
+    memset(actor,0,sizeof(*actor)); actor->active=true; actor->id=id; actor->faction=faction; actor->transform.position=position;
     actor->movement.mode=NF_MOVE_AIR; actor->movement.body_height=world->movement.stand_height; actor->movement.eye_height=world->movement.stand_eye_height; actor->movement.attached_collider=-1; actor->movement.ground_collider=-1; actor->movement.candidate.feature_index=-1;
+    nf_combat_init_actor(actor);
     if(id>=world->next_entity_id) world->next_entity_id=id+1u;
     return id;
 }
@@ -130,7 +132,19 @@ static void nf_world_update_moving_colliders(NfWorld *world) {
     for(size_t i=0;i<world->collider_count;++i){NfCollider *c=&world->colliders[i];c->previous_min=c->min;c->previous_max=c->max;nf_world_place_moving_collider(c,time);}
 }
 
-void nf_world_step(NfWorld *world,float dt){if(world==NULL||dt<=0)return;nf_world_update_moving_colliders(world);for(size_t i=0;i<NF_MAX_ENTITIES;++i){NfActor *a=&world->actors[i];if(!a->active)continue;nf_movement_step_actor(world,a,dt);a->input.jump_pressed=false;}++world->tick;}
+void nf_world_step(NfWorld *world,float dt){
+    if(world==NULL||dt<=0)return;
+    nf_world_update_moving_colliders(world);
+    for(size_t i=0;i<NF_MAX_ENTITIES;++i){
+        NfActor *a=&world->actors[i];
+        if(!a->active)continue;
+        nf_combat_step_actor(a,dt);
+        if(a->combat.alive) nf_movement_step_actor(world,a,dt);
+        else { a->transform.velocity=(NfVec3){0}; a->input=(NfMoveInput){0}; }
+        a->input.jump_pressed=false;
+    }
+    ++world->tick;
+}
 size_t nf_world_active_actor_count(const NfWorld *world){if(world==NULL)return 0;size_t n=0;for(size_t i=0;i<NF_MAX_ENTITIES;++i)if(world->actors[i].active)++n;return n;}
 const char *nf_movement_mode_name(NfMovementMode mode){switch(mode){case NF_MOVE_GROUND:return"GROUND";case NF_MOVE_SPRINT:return"SPRINT";case NF_MOVE_CROUCH:return"CROUCH";case NF_MOVE_AIR:return"AIR";case NF_MOVE_LADDER:return"LADDER";case NF_MOVE_VAULT:return"VAULT";case NF_MOVE_MANTLE:return"MANTLE";case NF_MOVE_PLATFORM:return"PLATFORM";default:return"UNKNOWN";}}
 const char *nf_traversal_type_name(NfTraversalType type){switch(type){case NF_TRAVERSAL_NONE:return"NONE";case NF_TRAVERSAL_STEP:return"STEP";case NF_TRAVERSAL_VAULT:return"VAULT";case NF_TRAVERSAL_MANTLE:return"MANTLE";case NF_TRAVERSAL_LADDER:return"LADDER";default:return"UNKNOWN";}}
