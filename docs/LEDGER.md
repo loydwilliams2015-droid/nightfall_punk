@@ -496,3 +496,519 @@ Before any major compile ask:
 3. What is attractive but premature?
 4. What adds complexity without proportionate value?
 5. What is the smallest implementation the next human recording can prove or disprove?
+
+# 2026-08-08 superseding human-proof status + C23–C30 lifeworld coding ledger
+
+This section **supersedes the unchecked human-proof status above** without rewriting historical checklist text.
+
+## Human-proof disposition after the v0.9 recording + server trace
+
+- [x] v0.9 graphical regression proof: PASS — authoritative/predicted play, movement, combat, Human Rival behavior and Dream Cattler behavior remain coherent enough to advance design.
+- [x] v0.9 server trace corroborates Rival↔Cattler reciprocal targeting and imperfect pack evidence.
+- [x] v0.9 topographical-energy smoke remains the authoritative proof of C20–C22.
+- [x] targeted v0.8 lower-body weak-point test was actually performed in the recording.
+- [ ] **v0.8 weak-point truth boundary remains FAILED/OPEN:** the player visibly aimed at the yellow lower-body/foot bands, while the end-of-video locomotor diagnostic remained `locomotor=1.00` and displayed Cattler health remained `100`. Treat this as an implementation discrepancy, not missing human effort.
+- [ ] do not merge/archive v0.8 until authoritative hit classification and locomotor consequence are proven.
+- [ ] v0.9 may be human-accepted on its own behavioral/energy evidence but remains dependency-ordered behind closure of v0.8.
+
+Weak-point repair chain to instrument:
+
+```text
+VISIBLE YELLOW KNEE/FOOT BAND
+        ↓
+authoritative hitscan intersection
+        ↓
+NF_HIT_KNEE / NF_HIT_FOOT
+        ↓
+combat event reaches nf_cattler_on_combat_event()
+        ↓
+locomotor_integrity < 1.00
+        ↓
+reduced relocation / swoop / geographic dominance
+```
+
+Required deterministic proof sketch:
+
+```c
+NfCombatEvent hit = {0};
+hit.type = NF_COMBAT_EVENT_DAMAGE;
+hit.target = cattler_id;
+hit.hit_zone = NF_HIT_FOOT;
+hit.amount = 10.0f;
+
+nf_cattler_on_combat_event(&cattlers, &world, &hit);
+
+const NfCattlerAgent *c = nf_cattler_find_const(&cattlers, cattler_id);
+assert(c != NULL);
+assert(c->locomotor_integrity < 1.0f);
+```
+
+## C23 — situated topographical energy rationality — LOCKED / next-build coding contract
+
+Core contract:
+
+> **Energy accounting is universal; its application is situated. Local topography determines the application of universal currency.**
+
+- [x] shared physical world and shared universal energy accounting remain authoritative.
+- [x] actor conclusions need not converge because actors do not occupy the same local topography.
+- [x] actor position, embodiment, route access, elevation, terrain, exposure, infrastructure, social access, history and legitimate knowledge alter realized energetic cost/return.
+- [x] world accountant may use authoritative `NfEnergySystem`; actor strategy may only use legitimate `NfEnergyBelief` + actor-local costs.
+- [x] same energy currency must not become a shared omniscient utility map.
+- [ ] add actor-facing situated valuation wrapper around existing `nf_energy_belief_search()`.
+- [ ] keep Human Rival and Cattler strategy grammars distinct even when both ultimately conserve/grow energy accounts.
+- [ ] convergence should arise only when a genuinely strong focal opportunity overcomes topographical differences.
+
+Current infrastructure to reuse: `NfEnergyBelief`, `NfEnergyOpportunity`, `nf_energy_belief_decay()`, `nf_energy_belief_search()`.
+
+Coding sketch:
+
+```c
+typedef struct NfSituatedEnergyCost {
+    double embodiment;
+    double access;
+    double exposure;
+    double social_friction;
+    double habitat_fit;
+} NfSituatedEnergyCost;
+
+double nf_actor_energy_value(
+    const NfActor *actor,
+    const NfEnergyOpportunity *op,
+    const NfSituatedEnergyCost *local)
+{
+    (void)actor;
+    return op->score
+         - local->embodiment
+         - local->access
+         - local->exposure
+         - local->social_friction
+         + local->habitat_fit;
+}
+```
+
+Actor-search wrapper sketch:
+
+```c
+size_t nf_actor_energy_candidates(
+    const NfEnergyBelief *belief,
+    const NfEnergySystem *energy,
+    const NfRegionGraph *graph,
+    uint8_t origin_region,
+    NfEnergyHorizon horizon,
+    NfEnergyOpportunity *out,
+    size_t cap)
+{
+    return nf_energy_belief_search(
+        belief, energy, graph, origin_region, horizon, out, cap);
+}
+```
+
+Maxims:
+
+- **Energy is universal; its price is situated.**
+- **Same world does not mean same energetic landscape.**
+- **Reality supplies the bill; belief supplies the estimate.**
+
+## C24 — ecological waterline / hidden but not secret — LOCKED
+
+Core contract:
+
+> **The ecological waterline is the locally embodied perceptual foreground through which a much larger ecology becomes intelligible. The player sees a sample, not a summary.**
+
+- [x] imitate a forest walk: nearby living motion, trails, wind, water, sound, organisms/actors and material traces imply a deeper ecology beyond immediate vision.
+- [x] deep simulation may remain hidden; strategically meaningful hidden states must have causal paths to observable consequences.
+- [x] no raw infestation/energy/ecology meter as the primary expression.
+- [x] waterline channels = living motion / metabolic motion / traces / traffic-flows / ambient fields.
+- [x] foreground samples may be partial and stochastic but cannot contradict authoritative ecology.
+- [x] proxy manifestations are legitimate when they derive from real lower-resolution causes.
+- [ ] create a bounded ecological surface-expression layer after causal life activity exists.
+- [ ] classify visible effects internally as CAUSAL / DIAGNOSTIC / DECORATIVE so decoration does not masquerade as evidence.
+
+Coding sketch:
+
+```c
+typedef struct NfEcologySurface {
+    float actor_activity;
+    float infrastructure_activity;
+    float traffic;
+    float environmental_motion;
+    float historical_trace;
+    float ambient_intensity;
+} NfEcologySurface;
+
+typedef enum NfSurfaceRole {
+    NF_SURFACE_CAUSAL = 0,
+    NF_SURFACE_DIAGNOSTIC,
+    NF_SURFACE_DECORATIVE
+} NfSurfaceRole;
+```
+
+Sense-data rule:
+
+```text
+AUTHORITATIVE STATE
+       ↓
+WORLD CONSEQUENCE
+       ↓
+PERCEPTIBLE EVIDENCE
+       ↓
+PLAYER / ACTOR INFERENCE
+```
+
+Maxims:
+
+- **The waterline shows life; the iceberg explains it.**
+- **Hidden is acceptable. Secret is not.**
+- **We simulate the cause and economize the manifestation.**
+
+## C25 — structural ecological memory — LOCKED
+
+Core contract:
+
+> **Persistence is a relation, not a timer. A trace persists, accumulates, disappears or transforms according to the structures acting upon it.**
+
+- [x] reject one universal trace TTL/decay variable.
+- [x] trace evolution depends on trace type + substrate + water/weather + traffic + occupation + maintenance + destruction + reuse + later history.
+- [x] repetition can transform trace -> pattern -> route -> corridor -> expectation -> institution/habitat.
+- [x] disappearance of an individual trace may coincide with strengthening of a higher-order trail/structure.
+- [x] maintenance materially edits history; succession often transforms rather than deletes evidence.
+- [x] traces can become affordances/resources: salvage, cover, information, route value, habitat value.
+- [ ] implement small structural trace substrate only after the next build has actual life activities worth tracing.
+
+Coding sketch:
+
+```c
+typedef struct NfTraceMaterial {
+    float water_sensitivity;
+    float wind_sensitivity;
+    float traffic_sensitivity;
+    float repair_sensitivity;
+    float reuse_sensitivity;
+    float ecological_sensitivity;
+} NfTraceMaterial;
+
+typedef struct NfTraceContext {
+    float water;
+    float wind;
+    float traffic;
+    float maintenance;
+    float disturbance;
+    float occupation;
+    float ecological_change;
+} NfTraceContext;
+
+void nf_trace_step(NfTrace *trace,
+                   const NfTraceMaterial *material,
+                   const NfTraceContext *context,
+                   float dt);
+```
+
+Maxims:
+
+- **The trace does not contain its own destiny.**
+- **Repeated traces can become topography.**
+- **History is transformed more often than it is deleted.**
+
+## C26 — evental difference / structural tipping — LOCKED
+
+Core formulation:
+
+> **A difference becomes evental when consequence becomes cause.**
+>
+> **The evental tipping point occurs when a difference changes not merely the state of the world, but the structure governing the world's next possible states.**
+
+- [x] eventality is not proportional to spectacle or perturbation magnitude.
+- [x] tipping belongs to structural susceptibility, not a universal scalar threshold.
+- [x] evental transition requires a difference to alter future affordances/costs/expectations/relations/ecological processes and feed back into later causation.
+- [x] eventality may be objectively real before actors name or commonly know it.
+- [x] composition and decomposition are symmetrical; promoted structures remain reversible.
+- [ ] do **not** add one `event_score > threshold` mechanism.
+- [ ] later diagnostics should inspect structural predicates/feedback relationships.
+
+Coding sketch:
+
+```c
+bool nf_difference_is_evental(
+    const NfWorldState *before,
+    const NfWorldState *after)
+{
+    return nf_future_possibility_structure_changed(before, after)
+        && nf_consequence_feeds_back(after)
+        && nf_historical_residue_remains(before, after);
+}
+```
+
+Diagnostic dimensions are relational predicates, not an additive score:
+
+```text
+DIFFERENCE
++ STRUCTURAL CONSEQUENCE
++ RECURSIVE RESPONSE
++ HISTORICAL RESIDUE
+→ EVENTAL TRANSITION
+```
+
+## C27 — resilience — LOCKED
+
+Core contract:
+
+> **Resilience is the capacity of a structure to undergo disturbance while continuing to reproduce the generative relations that make it the kind of structure it is.**
+
+- [x] resilience preserves organization, not exact state.
+- [x] substantial state change can occur without regime change if the core causal organization reforms.
+- [x] do not make `region.resilience` a magic authoritative scalar.
+- [ ] derive resilience from access recovery + metabolism recovery + actor-network reformation + survival of core feedback relations.
+
+Coding sketch:
+
+```c
+bool nf_structure_can_reproduce_after(
+    const NfRegion *region,
+    const NfDisturbance *disturbance)
+{
+    return nf_access_can_recover(region, disturbance)
+        && nf_metabolism_can_recover(region, disturbance)
+        && nf_actor_network_can_reform(region, disturbance)
+        && nf_core_feedbacks_remain_viable(region, disturbance);
+}
+```
+
+Maxim: **Resilience means persistence of organization, not preservation of state.**
+
+## C28 — hysteresis — LOCKED
+
+Core contract:
+
+> **Hysteresis is history embedded in the conditions of return. Removing the initiating cause does not necessarily remove the resulting structure.**
+
+- [x] collapse and recovery need not follow the same path.
+- [x] historical consequences may become current causes: lost routes, altered norms, broken infrastructure, depleted stocks, new habitat, changed traffic.
+- [x] do not use a universal hysteresis coefficient as truth.
+- [ ] determine recoverability from current material/social/ecological conditions, not from whether the original disturbance has ended.
+
+Coding sketch:
+
+```c
+bool nf_previous_regime_can_return(const NfRegion *region)
+{
+    return nf_routes_support_prior_flows(region)
+        && nf_required_capacity_exists(region)
+        && nf_social_expectations_support_return(region)
+        && nf_ecological_feedback_allows_return(region)
+        && nf_energy_metabolism_supports_return(region);
+}
+```
+
+## C29 — succession — LOCKED
+
+Core contract:
+
+> **Succession is the historically conditioned reorganization of structures as one configuration alters the possibilities available to whatever comes next.**
+
+- [x] reject a scripted `ABANDONED -> INFESTED -> RECOVERING -> NORMAL` stage ladder.
+- [x] each configuration leaves stocks, traces, damage, access, habits, actors and affordances that constrain successors.
+- [x] same disturbance may produce different succession depending on local topography/history.
+- [x] succession is C25 history recursively reorganizing both waterline and deeper ecology.
+- [ ] later succession step should update opportunities/pressures/metabolism/history/affordances rather than increment a stage enum.
+
+Coding sketch:
+
+```c
+void nf_region_succession_step(NfRegion *region)
+{
+    NfAffordanceSet available = nf_current_affordances(region);
+    NfPressureSet pressures = nf_current_pressures(region);
+
+    nf_update_actor_opportunities(region, &available, &pressures);
+    nf_resolve_world_metabolism(region);
+    nf_apply_historical_transformations(region);
+    nf_rebuild_emergent_affordances(region);
+}
+```
+
+Maxim: **Each historical configuration prepares, constrains or prevents its successors.**
+
+## C30 — regime change — LOCKED
+
+Core contract:
+
+> **Regime change occurs when an evental difference reorganizes enough mutually reinforcing relations that subsequent states are generated according to a different structural logic.**
+
+- [x] a regime is a relatively self-reproducing configuration of generative relations, not a biome label.
+- [x] dominant causal loop matters more than population count or appearance.
+- [x] `NF_REGIME_CATTLER`-style enum may be useful as derived debug description but must not cause the ecology it describes.
+- [x] regime change follows C26 at larger scale: the structure producing the future changes.
+- [ ] derive compact debug signatures from metabolic / habitat / social / logistics / restorative feedbacks.
+
+Coding sketch:
+
+```c
+typedef struct NfRegimeSignature {
+    float metabolic_loop;
+    float habitat_loop;
+    float social_loop;
+    float logistics_loop;
+    float restorative_loop;
+} NfRegimeSignature;
+
+NfRegimeSignature nf_derive_regime_signature(const NfRegion *region);
+```
+
+Maxim: **Regime change occurs when the structure producing the future changes.**
+
+# Lifeworld synthesis — topographic biopower / life-activity
+
+Governing development contract:
+
+> **nightfall!punk models a lifeworld rather than a collection of systems. Universal energetic accounting becomes concrete only through local topography, embodiment, knowledge and history. Actors convert energy into life-activity—movement, work, maintenance, occupation, predation, cooperation and conflict—and thereby alter the material and social landscape that conditions subsequent activity. Real ecological processes provide the principal model: flows, patch heterogeneity, niche construction, disturbance, carrying capacity, succession, resilience and regime change. The deep simulation remains largely beneath perception, while its dynamic waterline appears as organisms, traffic, mechanisms, traces, sound, weather, water and changing patterns of use. Formal variables are infrastructure for the lived world, not substitutes for it.**
+
+Topographic biopower working definition:
+
+> **The situated capacity of an actor or ecology to sustain, reproduce and project life-activity through a particular material landscape.**
+
+Do not make `biopower` one master stat. Derive it through relationships among energy, access, embodiment, infrastructure, knowledge, organization, habitat, maintenance and history.
+
+Primary life-activity rule:
+
+- [x] combat belongs inside life activity; life activity is not filler between combat encounters.
+- [x] actors should perform ordinary activity that would make sense even if the player were absent.
+- [ ] first bounded Human/Rival life-activity slice: TRAVEL / WORK / MAINTAIN / OCCUPY.
+- [ ] Cattlers continue distinct LURK / STALK / SNIPE / SWOOP / INFEST / EXPAND / WITHDRAW grammar rather than inheriting Human work behaviors.
+- [ ] connect life activity to existing energy postings, spatial tasks, semantic events and material consequences rather than creating a parallel ecosystem administrator.
+
+Coding sketch:
+
+```c
+typedef enum NfLifeActivity {
+    NF_LIFE_TRAVEL = 0,
+    NF_LIFE_WORK,
+    NF_LIFE_MAINTAIN,
+    NF_LIFE_OCCUPY
+} NfLifeActivity;
+
+void nf_lifeworld_tick(NfWorld *world, float dt)
+{
+    nf_energy_tick(&world->energy, world, dt);
+    nf_update_actor_beliefs(world);
+    nf_update_life_activity(world);
+    nf_apply_material_consequences(world);
+    nf_update_affordances(world);
+}
+```
+
+Metabolic object slice — start with **generator + water/pump** rather than a general crafting/economy framework:
+
+```c
+typedef struct NfProcessObject {
+    NfEntityId id;
+    double input_energy;
+    double throughput;
+    double efficiency;
+    float condition;
+    float accessibility;
+    NfAffordanceMask outputs;
+} NfProcessObject;
+```
+
+Object principle:
+
+```text
+PROCESS OBJECT
+    ↓
+changes local throughput / access / water / light / transport
+    ↓
+changes actor costs and opportunities
+    ↓
+changes traffic / work / occupation / predation
+    ↓
+leaves material and informational traces
+```
+
+Maxim: **Do not simulate ecology as numbers that occasionally produce life. Simulate life whose continuing relations can be accounted for ecologically.**
+
+# Next-build itinerary — candidate v1.0 Topographic Lifeworld
+
+Do **not** branch/compile v1.0 until the v0.8 weak-point discrepancy is repaired and v0.8 -> v0.9 dependency order can close cleanly.
+
+## Phase 0 — repair/close existing truth boundary
+
+- [ ] instrument authoritative Cattler knee/foot hit classification.
+- [ ] add deterministic `NF_HIT_KNEE` / `NF_HIT_FOOT` -> `locomotor_integrity < 1.0f` test.
+- [ ] ensure yellow lower-body presentation matches authoritative hit geometry.
+- [ ] prove reduced locomotor integrity alters swoop/relocation behavior rather than merely logging a number.
+- [ ] human retest only after deterministic test is green.
+- [ ] then accept/merge/archive v0.8; rebase/retarget/close v0.9 in dependency order; preserve flat-version archive history.
+
+## Phase 1 — Compare-5 before new architecture
+
+Compare five ecological/systemic references specifically for **how activity becomes visible world structure**, not for feature imitation:
+
+1. **Rain World** — off-screen creature continuity, food-chain pressure, local embodiment.
+2. **S.T.A.L.K.E.R. / A-Life** — regional simulation, actor travel, encounter emergence, world continuation outside player focus.
+3. **Red Dead Redemption 2** — environmental/life-activity waterline and readable ordinary routines; selectively adapt, do not imitate content scale.
+4. **Dwarf Fortress** — consequence-rich material history and emergent regime/succession logic; adapt low-resolution causality, reject universal high-detail simulation.
+5. **The Long Dark** (or equivalent survival ecology reference) — patch scarcity, weather/topography changing local energetic cost, readable resource ecology.
+
+For each comparison classify: `KEEP / ADAPT / DEFER / REJECT`, then map only accepted lessons to existing `nf_energy`, spatial, AI, semantics and world structures.
+
+## Phase 2 — first questions before coding
+
+1. **What are the smallest two or three actual life processes that can visibly change a place within one 2–3 minute human recording?** Recommendation: generator throughput + water/pump state + recurring Rival traffic/work.
+2. **What evidence can Human Rivals legitimately perceive to build/update `NfEnergyBelief` without receiving `NfEnergySystem` truth?** Recommendation: nearby process-object state, observed traffic/work, direct resource condition, semantic reports; confidence and staleness remain bounded.
+3. **How should the same local energy opportunity differ for a Human Rival and a Dream Cattler because their embodied topographies differ?** Recommendation: Human access/infrastructure/cover/work cost versus Cattler habitat/verticality/prey/disturbance/locomotor fit.
+4. **Which consequence should become our first deliberately observable C26 evental transition?** Recommendation: a generator/pump or route change redirects recurring activity; redirected activity then changes future opportunity enough to reinforce or oppose the new pattern.
+5. **What must remain below the waterline in v1.0?** Recommendation: exact energy scores, derived regime signatures, most trace bookkeeping and deep ecological accounting; expose only causal world consequences.
+
+## Phase 3 — v1.0 bounded coding contract
+
+- [ ] add actor-situated energy candidate valuation on top of existing belief search; never pass raw world energy truth into cognition.
+- [ ] add four Human/Rival life activities: TRAVEL / WORK / MAINTAIN / OCCUPY.
+- [ ] add two process objects: generator + water/pump with real local energetic/topographical consequences.
+- [ ] route life activities through existing `NfControlFrame`, spatial routing/Fuzzy Rail and authoritative world interactions.
+- [ ] produce first ecological waterline: process-object motion/state + recurring traffic + one or two persistent/diagnostic traces + ambient response.
+- [ ] add minimal C26 structural-transition diagnostics sufficient to tell whether consequence has become cause; no general regime engine yet.
+- [ ] retain Cattler ontology/strategy distinction; Cattlers respond to changed prey/habitat conditions through existing Cattler grammar.
+- [ ] keep C27–C30 mostly as derived tests/diagnostics until the v1.0 slice produces enough history to justify richer succession machinery.
+
+## Phase 4 — explicit v1.0 non-goals
+
+- [x] no giant new ecosystem subsystem.
+- [x] no universal GOAP/economic planner.
+- [x] no omniscient actor energy map.
+- [x] no universal trace TTL.
+- [x] no single resilience/hysteresis/eventality/regime scalar as authoritative truth.
+- [x] no final fauna/art/audio pass yet.
+- [x] no 8 km² expansion yet.
+- [x] no final Ghost Static economy yet.
+- [x] no arbitrary scripted succession ladder.
+- [x] no HUD energy/ecology meter as the proof of the system.
+
+## Phase 5 — smallest human proof for v1.0
+
+Target one readable local ecological story:
+
+```text
+PLAYER ENTERS ACTIVE PLACE
+      ↓
+Rivals visibly travel/work around functioning process objects
+      ↓
+player/world changes generator, pump or access condition
+      ↓
+actor beliefs and local energetic costs update through legitimate evidence
+      ↓
+traffic/work/occupation pattern changes
+      ↓
+Cattlers respond to changed prey/habitat geography through their own grammar
+      ↓
+player returns / observes consequence
+      ↓
+place visibly bears history without an ecology HUD
+```
+
+Acceptance questions:
+
+- [ ] can a player infer that a place is active, degraded or reorganizing without seeing raw energy numbers?
+- [ ] do Human Rivals and Cattlers reach different situated conclusions from the same universal energetic world?
+- [ ] does at least one consequence feed back into future opportunity strongly enough to qualify as an evental transition?
+- [ ] does the world remain an FPS first: movement/combat/networking remain stable and readable?
+- [ ] can every visible ecological claim be traced back to authoritative world causation rather than decorative scripting?
