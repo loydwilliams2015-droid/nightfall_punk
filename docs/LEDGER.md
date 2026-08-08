@@ -107,7 +107,7 @@ Two guns. Hitscan. Server truth. Medium TTK. Health/death/respawn. Reload/switch
 - [x] focus-aware mouse capture releases on focus loss and reacquires after focus return
 - [x] mouse-look fallback can use absolute-position delta when a backend reports zero relative delta
 - [x] HUD reports mouse focus, capture state, delta and fallback activation
-- [x] Pop!_OS retest recording confirms `FOCUSED`, `capture ON`, and non-zero mouse deltas; mouse input delivery itself is working
+- [x] Pop!_OS final retest confirms `FOCUSED`, `capture ON`, non-zero mouse deltas and visible camera rotation after authoritative handshake
 
 ## Controls
 
@@ -143,9 +143,10 @@ Two guns. Hitscan. Server truth. Medium TTK. Health/death/respawn. Reload/switch
 - [x] GitHub CI green on mouse-capture repair tree
 - [x] GitHub CI green on isolated-port local-handshake launcher repair
 - [ ] Pop!_OS clean build/tests/combat-smoke green
-- [ ] Pop!_OS isolated local handshake reaches `AUTHORITATIVE + PREDICTED`
-- [ ] Pop!_OS mouse-look / camera rotation retest green
-- [ ] recorded human combat demo reviewed
+- [x] Pop!_OS isolated local handshake reaches `AUTHORITATIVE + PREDICTED` with advancing server/client ticks
+- [x] Pop!_OS mouse-look / camera rotation retest green
+- [x] human recording confirms live gunfire, ammo consumption, weapon switching and authoritative pistol damage (30 body damage with 16 ms rewind observed)
+- [ ] final human combat closeout pass reviewed: explicit reload completion/interruption plus death/3-second respawn
 
 ## Par / Compare-5
 
@@ -183,17 +184,20 @@ Behavioral targets, not claims about proprietary internals.
 - [x] mouse-capture repair exact tree green in CI
 - [x] isolated local-launch repair exact tree green in CI
 - [ ] target Pop!_OS clean build/tests/combat-smoke green
-- [ ] target Pop!_OS local handshake confirmed
-- [ ] target Pop!_OS mouse look confirmed
-- [ ] target Pop!_OS run + recorded combat demo reviewed
+- [x] target Pop!_OS local handshake confirmed
+- [x] target Pop!_OS mouse look confirmed
+- [ ] target Pop!_OS run + final combat closeout demo reviewed
 
 ## Current tuning watch
 
 - [x] HUD reports `mouse FOCUSED | capture ON` and non-zero delta while physically moving the mouse on Pop!_OS
 - [x] fixed-camera symptom in second recording traced to `NET HANDSHAKE`: server/client ticks remained zero, no local actor existed, and the current camera only consumes yaw/pitch once the local actor exists
 - [x] local launcher hardened against stale/orphan port-7777 servers by using an isolated per-run localhost port and verifying server liveness
-- [ ] retest isolated local launch and confirm HUD advances from `NET HANDSHAKE` to `AUTHORITATIVE + PREDICTED`
-- [ ] once authoritative player state exists, confirm the already-observed non-zero mouse delta rotates the camera
+- [x] isolated local launch now reaches `NET AUTHORITATIVE + PREDICTED`; server/client ticks advance normally
+- [x] already-observed non-zero mouse delta now visibly rotates the camera
+- [x] normal localhost human combat demonstrates low instantaneous prediction error (about 0.002 m late in the recording) and max observed error about 0.218 m
+- [ ] reconcile diagnostic semantics before archive: the displayed correction count reached about 480 by ~88 seconds despite tiny instantaneous error and no obvious large rubber-banding; distinguish reconciliation/state-resync passes from player-visible corrections rather than treating the raw count as gunfeel failure
+- [ ] explicitly capture reload completion/interruption and target death/3-second respawn in the final closeout pass
 - [ ] inspect larger movement-prediction errors around automated death/respawn transitions (bot max observed up to ~0.82 m) in human footage before deciding whether this is visible or merely a discontinuity diagnostic
 - [ ] tune TTK / recoil / spread / weapon transitions from the recorded human combat pass
 - [ ] tune hitscan rewind policy under impaired-network human combat
