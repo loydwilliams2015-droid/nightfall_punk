@@ -1,10 +1,10 @@
-name: nightfall v0.8 CI
+name: nightfall v0.9 CI
 
 on:
   push:
     branches: [ main, "build/**", "agent/**" ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, "build/v0.8-dream-cattler-ecology" ]
 
 jobs:
   build-test:
@@ -28,7 +28,7 @@ jobs:
       - name: Full compile
         run: ./nightfall.sh build
 
-      - name: Simulation combat network spatial and Dream Cattler tests
+      - name: Simulation combat network spatial Dream Cattler and energy tests
         run: ./nightfall.sh test
 
       - name: Four-client plus bounded-pressure Human Rival combat smoke
@@ -42,3 +42,6 @@ jobs:
 
       - name: Dream Cattler habitat and pack ecology smoke
         run: ./nightfall.sh cattler-smoke
+
+      - name: Topographical energy accounting smoke
+        run: ./nightfall.sh energy-smoke

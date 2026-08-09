@@ -58,6 +58,16 @@ run_cattler_smoke() {
   grep -Eq "expansion=[1-9]" "$BUILD_ROOT/cattler-smoke-server.log"
 }
 
+run_energy_smoke() {
+  test -x "$HEADLESS_BUILD_DIR/nightfall_energy_test" || "$0" build-headless
+  mkdir -p "$BUILD_ROOT"
+  "$HEADLESS_BUILD_DIR/nightfall_energy_test" | tee "$BUILD_ROOT/energy-smoke.log"
+  grep -q "nightfall v0.9 topographical energy accounting tests: PASS" "$BUILD_ROOT/energy-smoke.log"
+  grep -q "\[energy\] South Works" "$BUILD_ROOT/energy-smoke.log"
+  grep -q "\[belief\]" "$BUILD_ROOT/energy-smoke.log"
+  grep -q "\[helicopter\] rank=1" "$BUILD_ROOT/energy-smoke.log"
+}
+
 case "$cmd" in
   standard-check)
     command -v cmake >/dev/null
@@ -71,6 +81,7 @@ case "$cmd" in
     test -f "$ROOT_DIR/src/shared/nf_relations.c"
     test -f "$ROOT_DIR/src/shared/nf_semantics.c"
     test -f "$ROOT_DIR/src/shared/nf_region.c"
+    test -f "$ROOT_DIR/src/shared/nf_energy.c"
     test -f "$ROOT_DIR/src/server/ai/nf_ai.c"
     test -f "$ROOT_DIR/src/server/ai/nf_encounter.c"
     test -f "$ROOT_DIR/src/server/ai/nf_spatial.c"
@@ -84,7 +95,7 @@ case "$cmd" in
     else
       echo "[warn] libsodium-dev not detected; localhost security scaffold will be used"
     fi
-    echo "[ok] v0.8 Dream Cattler habitat ecology source tree present"
+    echo "[ok] v0.9 topographical energy accounting source tree present"
     ;;
   build)
     cmake -S "$ROOT_DIR" -B "$FULL_BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=ON
@@ -129,7 +140,7 @@ case "$cmd" in
       wait "$candidate_pid" 2>/dev/null || true
     done
     if [[ -z "$server_pid" ]]; then
-      echo "nightfall: local v0.8 server failed to start on five isolated ports" >&2
+      echo "nightfall: local v0.9 server failed to start on five isolated ports" >&2
       echo "nightfall: server log follows" >&2
       cat "$BUILD_ROOT/server.log" >&2 || true
       exit 1
@@ -137,11 +148,11 @@ case "$cmd" in
     trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT INT TERM
     sleep 0.20
     if ! kill -0 "$server_pid" 2>/dev/null; then
-      echo "nightfall: local v0.8 server exited before client launch" >&2
+      echo "nightfall: local v0.9 server exited before client launch" >&2
       cat "$BUILD_ROOT/server.log" >&2 || true
       exit 1
     fi
-    echo "[local] v0.8 dedicated server pid=$server_pid isolated_port=$local_port rivals=$ai_count pressure_slots=$pressure_slots cattlers=$cattler_count profile=$cattler_profile truce=${NF_RIVAL_TRUCE:-0}"
+    echo "[local] v0.9 dedicated server pid=$server_pid isolated_port=$local_port rivals=$ai_count pressure_slots=$pressure_slots cattlers=$cattler_count profile=$cattler_profile truce=${NF_RIVAL_TRUCE:-0}"
     "$FULL_BUILD_DIR/nightfall_client" "$@" --port "$local_port"
     ;;
   net-smoke|combat-smoke)
@@ -156,12 +167,15 @@ case "$cmd" in
   cattler-smoke)
     run_cattler_smoke
     ;;
+  energy-smoke)
+    run_energy_smoke
+    ;;
   clean)
     rm -rf "$BUILD_ROOT"
     ;;
   *)
     cat <<'HELP'
-nightfall!punk v0.8 build helper
+nightfall!punk v0.9 build helper
 
   ./nightfall.sh standard-check
   ./nightfall.sh build
@@ -172,15 +186,17 @@ nightfall!punk v0.8 build helper
   ./nightfall.sh encounter-smoke
   ./nightfall.sh spatial-smoke
   ./nightfall.sh cattler-smoke
+  ./nightfall.sh energy-smoke
   ./nightfall.sh server [--ai-count 0..4 --pressure-slots 0..2 --cattler-count 0..5 --cattler-profile normal|pack|loner|horde --rival-truce --friendly-fire --sim-latency MS --sim-jitter MS --sim-loss PERCENT]
   ./nightfall.sh client [--host HOST --sim-latency MS --sim-jitter MS --sim-loss PERCENT]
   ./nightfall.sh clean
 
-local            = isolated-port v0.8 server + graphical client; 4 Human Rivals + 3 Dream Cattlers by default
-combat-smoke     = v0.4-v0.7 combat/network regression proof with Cattlers disabled
-encounter-smoke  = passive player versus v0.6 bounded-pressure Human Rivals with Cattlers disabled
-spatial-smoke    = v0.7 situated Rival roaming proof with Cattlers disabled
-cattler-smoke    = server-only 3-Cattler pack habitat proof: LURK/INFEST persistence, physical occupation and internal ecology accounting
+local            = isolated-port v0.9 server + graphical client; 4 Human Rivals + 3 Dream Cattlers by default
+combat-smoke     = combat/network regression proof with Cattlers disabled
+encounter-smoke  = passive player versus bounded-pressure Human Rivals with Cattlers disabled
+spatial-smoke    = situated Rival roaming proof with Cattlers disabled
+cattler-smoke    = server-only 3-Cattler pack habitat proof
+energy-smoke     = v0.9 C20-C22 proof: universal ledger invariants, topographical cost, historical depletion/regeneration, Bayesian helicopter ranking, stale-vs-fresh beliefs
 net-smoke        = alias retained for continuity
 
 Local debug environment:
