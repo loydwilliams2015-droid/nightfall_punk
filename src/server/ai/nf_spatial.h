@@ -60,6 +60,14 @@ typedef struct NfSpatialAgentState {
     float support_bias;
     float risk_bias;
     float residency_bias;
+
+    /* Bounded epistemic hint. This is not a second planner: it may bias the
+       existing region/task machinery only while ordinary tactical cognition is
+       free to attend to it. Immediate combat and safety retain precedence. */
+    bool attention_hint_active;
+    uint8_t attention_region;
+    NfSpatialTask attention_task;
+    uint64_t attention_until_tick;
 } NfSpatialAgentState;
 
 typedef struct NfSpatialSystem {
@@ -96,6 +104,17 @@ void nf_spatial_on_respawn(
     NfSpatialSystem *spatial,
     NfEntityId actor_id,
     const NfWorld *world);
+
+void nf_spatial_set_attention_hint(
+    NfSpatialSystem *spatial,
+    NfEntityId actor_id,
+    uint8_t region,
+    NfSpatialTask task,
+    uint64_t until_tick);
+void nf_spatial_clear_attention_hint(
+    NfSpatialSystem *spatial,
+    NfEntityId actor_id);
+
 const NfSpatialAgentState *nf_spatial_agent_state_const(
     const NfSpatialSystem *spatial,
     NfEntityId actor_id);
