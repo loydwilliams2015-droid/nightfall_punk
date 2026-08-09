@@ -75,7 +75,10 @@ add_library(nightfall_ai STATIC
     src/server/ai/nf_encounter.c
     src/server/ai/nf_spatial.c
     src/server/ai/nf_spatial_filter.c
-    src/server/ai/nf_cattler.c)
+    src/server/ai/nf_spatial_attention.c
+    src/server/ai/nf_cattler.c
+    src/server/ai/nf_cattler_recurrence.c
+    src/server/ai/nf_lifeworld_spatial.c)
 target_include_directories(nightfall_ai PUBLIC src/server/ai src/shared)
 target_link_libraries(nightfall_ai PUBLIC nightfall_shared)
 nf_project_warnings(nightfall_ai)
@@ -166,4 +169,10 @@ if(NF_BUILD_TESTS)
     target_link_libraries(nightfall_lifeworld_test PRIVATE nightfall_shared)
     nf_project_warnings(nightfall_lifeworld_test)
     add_test(NAME topographic_lifeworld_v10 COMMAND nightfall_lifeworld_test)
+
+    add_executable(nightfall_lifeworld_runtime_test src/tests/test_lifeworld_runtime.c)
+    target_link_libraries(nightfall_lifeworld_runtime_test PRIVATE nightfall_ai)
+    target_include_directories(nightfall_lifeworld_runtime_test PRIVATE src/server/ai)
+    nf_project_warnings(nightfall_lifeworld_runtime_test)
+    add_test(NAME lifeworld_runtime_v10 COMMAND nightfall_lifeworld_runtime_test)
 endif()
