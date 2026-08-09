@@ -70,7 +70,9 @@ typedef enum NfWeaponState {
 typedef enum NfHitZone {
     NF_HIT_NONE = 0,
     NF_HIT_BODY,
-    NF_HIT_HEAD
+    NF_HIT_HEAD,
+    NF_HIT_KNEE,
+    NF_HIT_FOOT
 } NfHitZone;
 
 typedef enum NfCombatEventType {

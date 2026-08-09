@@ -1,4 +1,4 @@
-name: nightfall v0.7 CI
+name: nightfall v0.8 CI
 
 on:
   push:
@@ -28,14 +28,17 @@ jobs:
       - name: Full compile
         run: ./nightfall.sh build
 
-      - name: Simulation combat network encounter and spatial tests
+      - name: Simulation combat network spatial and Dream Cattler tests
         run: ./nightfall.sh test
 
-      - name: Four-client plus bounded-pressure AI combat smoke
+      - name: Four-client plus bounded-pressure Human Rival combat smoke
         run: ./nightfall.sh combat-smoke
 
-      - name: Passive player versus encounter AI smoke
+      - name: Passive player versus Human Rival encounter smoke
         run: ./nightfall.sh encounter-smoke
 
-      - name: Situated spatial ecology smoke
+      - name: Situated Human Rival spatial ecology smoke
         run: ./nightfall.sh spatial-smoke
+
+      - name: Dream Cattler habitat and pack ecology smoke
+        run: ./nightfall.sh cattler-smoke
