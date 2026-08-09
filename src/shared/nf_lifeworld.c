@@ -55,15 +55,20 @@ static void update_processes(NfLifeworldSystem *system,bool contested){
     system->pump.flags=system->pump.throughput_q>100u?1u:0u;
 }
 
+static int epistemic_gain_q(unsigned already_covered){
+    static const int gain_q[4]={1000,650,300,120};
+    return gain_q[already_covered<4u?already_covered:3u];
+}
+
 static int attention_score(
     const NfActor *actor,const NfEpistemicHotspot *hotspot,
     unsigned already_covered){
     if(actor==NULL||hotspot==NULL)return -100000;
     const float distance=dist_xz(actor->transform.position,hotspot->position);
     const int proximity=(int)(clamp01f(1.0f-distance/120.0f)*300.0f);
-    const int coverage_penalty=(int)already_covered*220;
-    return(int)hotspot->consequence_q+(int)hotspot->uncertainty_q/2+
-        (int)hotspot->evidence_change_q/2+proximity-coverage_penalty;
+    const int informational=(int)hotspot->consequence_q+
+        (int)hotspot->uncertainty_q/2+(int)hotspot->evidence_change_q/2;
+    return informational*epistemic_gain_q(already_covered)/1000+proximity;
 }
 
 static NfLifeActivity activity_for(
