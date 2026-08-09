@@ -149,6 +149,66 @@ Primary JSON deliberately contains schema/seed/tick/round/region, these structur
 - [x] no opaque reinforcement-learning system or convergent global optimizer.
 - [ ] persistent short situated success/failure memory beyond current bounded attention coverage remains future work.
 
+# v1.0 addendum — stochastic life-world causality
+
+> **The clock supplies opportunity. Randomness supplies contingency. History and topography load the dice.**
+
+The scatter-plot vocabulary is now interpreted causally rather than as three peer distributions:
+
+- [x] **Uniform = WHEN.** The authoritative fixed simulation tick is the regular substrate: `t_n = n * dt`. Uniformity belongs primarily to opportunity/time, not to actor behavior.
+- [x] **Random = MAYBE.** A seeded deterministic PRNG supplies dice-roll contingency among otherwise plausible outcomes.
+- [x] **Cluster = BECAUSE.** Clustering should normally be an emergent conditional distribution produced by prior occupation, resource gradients, local reinforcement, depletion, hazard, social evidence or memory; it is not a third independent RNG sampler.
+- [x] **Field = BECAUSE OF WHAT IS HERE.** Local gradients give material meaning to stochastic variation without granting actors omniscient target coordinates.
+- [x] **Memory = BECAUSE OF WHAT WAS HERE.** Persistent or decaying traces alter later probability while remaining bounded, causal and inspectable.
+
+Canonical conceptual stack:
+
+`clock -> chance -> field -> feedback -> history -> emergent life-world`
+
+Compact world recurrence:
+
+`W(t + dt) = Phi(W(t), xi(t))`
+
+where `W` is the authoritative world state plus bounded historical relations and `xi(t)` is seeded stochastic realization. This extends Q10's maxim: randomness proposes, but situated world-history selects what becomes likely, viable or recurrent.
+
+For stochastic events that should remain approximately stable across fixed-step cadence changes, prefer a rate model where appropriate:
+
+`p(event in dt) = 1 - exp(-lambda * dt)`
+
+with `lambda` derived from bounded local evidence rather than a universal per-tick magic percentage. Candidate terms may include resource opportunity, hazard, memory, social evidence, disturbance and actor-local energetic state.
+
+A minimal situated movement/attention form is:
+
+`v_next = persistence*v + wR*grad(resource) - wH*grad(hazard) + wM*grad(memory) + wS*grad(social) + sigma*noise`
+
+This is a design relation, not a mandate for one monolithic vector field. Existing `nf_energy`, spatial, Cattler, attention and semantics systems should own their present truths; new terms are integrated only where an evidence-backed gap exists.
+
+World/actor causality must be reciprocal:
+
+`world -> actor -> world -> actor`
+
+Consumption can deplete a resource; maintenance can restore capacity; occupation can deepen infestation; traffic can leave evidence; displacement can change later access; those changed relations then alter subsequent behavior. The intended ecological rhythm may therefore emerge as:
+
+`explore -> seek -> cluster/feed -> deplete/displace -> explore/reorganize`
+
+rather than being hard-coded as a universal behavior-state chain.
+
+### C implementation consequences
+
+- [x] reuse the authoritative fixed-step clock; never create a separate ecology wall clock.
+- [x] preserve the existing seed/server-truth contract: stochastic realization must remain replayable and authority-owned.
+- [ ] make authoritative PRNG ownership explicit per world/system/actor where stochastic lifeworld choices advance; do not depend on ambient global `rand()` state.
+- [ ] introduce rate-to-timestep conversion (`1 - expf(-lambda * dt)`) only for events whose semantics are genuinely rates; do not mechanically rewrite every existing deterministic timer or bounded choice.
+- [ ] where simultaneous field updates require it, use current/next buffering and deterministic update order so iteration order cannot become hidden ecology truth.
+- [ ] separate resource, hazard, memory/social evidence and stochastic-noise contributions in diagnostics rather than collapsing them into an opaque utility scalar.
+- [ ] distinguish diagnostics for **tick opportunity**, **random realization**, **conditional clustering**, **field bias** and **historical memory**.
+- [ ] connect short situated success/failure memory only after current Q10 attention coverage is human-proven; do not create a parallel learning system.
+- [ ] test identical seed + identical authoritative inputs = identical stochastic lifeworld result before any presentation layer is allowed to imply richer biology.
+
+### Biological-model boundary
+
+The slime-mold / sugar comparison is supporting biological pattern evidence, not a claim that nightfall simulates *Physarum* or biological life literally. The transferable lesson is narrower: exploratory variation can become conditionally biased by local resource gradients and prior environmental interaction, while successful occupation can reorganize future probability. Keep the mechanism; reject literal organism imitation.
+
 # v1.0 EXISTING — regression-protected checklist
 
 - [x] fixed 60 Hz authoritative simulation.
