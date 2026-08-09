@@ -60,7 +60,8 @@ add_library(nightfall_shared STATIC
     src/shared/nf_relations.c
     src/shared/nf_semantics.c
     src/shared/nf_region.c
-    src/shared/nf_energy.c)
+    src/shared/nf_energy.c
+    src/shared/nf_hitbox.c)
 target_include_directories(nightfall_shared PUBLIC src/shared)
 nf_project_warnings(nightfall_shared)
 if(UNIX)
@@ -152,4 +153,10 @@ if(NF_BUILD_TESTS)
     target_link_libraries(nightfall_energy_test PRIVATE nightfall_shared)
     nf_project_warnings(nightfall_energy_test)
     add_test(NAME topographical_energy_v09 COMMAND nightfall_energy_test)
+
+    add_executable(nightfall_cattler_weakpoint_test src/tests/test_cattler_weakpoint.c)
+    target_link_libraries(nightfall_cattler_weakpoint_test PRIVATE nightfall_ai)
+    target_include_directories(nightfall_cattler_weakpoint_test PRIVATE src/server/ai)
+    nf_project_warnings(nightfall_cattler_weakpoint_test)
+    add_test(NAME cattler_weakpoint_truth_v09 COMMAND nightfall_cattler_weakpoint_test)
 endif()
