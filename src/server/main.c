@@ -208,7 +208,8 @@ static bool hitscan_target(const NfWorld *world,const NfHistoryFrame *frame,NfEn
             consider_zone(head_hit,t_head,NF_HIT_HEAD,&nearest,history_actor->id,&target,&zone);consider_zone(body_hit,t_body,NF_HIT_BODY,&nearest,history_actor->id,&target,&zone);
         }
     }
-    if(target==0)return false;*target_out=target;*zone_out=zone;*distance_out=nearest;return true;
+    if(target==0)return false;
+    *target_out=target;*zone_out=zone;*distance_out=nearest;return true;
 }
 
 static float damage_for_zone(const NfWeaponSpec *spec,NfHitZone zone){
@@ -273,7 +274,8 @@ static NfControlFrame client_control(const NfServerClient *c){return(NfControlFr
 static NfCattlerDebugProfile parse_cattler_profile(const char *value){if(value==NULL)return NF_CATTLER_PROFILE_NORMAL;if(strcmp(value,"pack")==0)return NF_CATTLER_PROFILE_PACK;if(strcmp(value,"loner")==0)return NF_CATTLER_PROFILE_LONER;if(strcmp(value,"horde")==0)return NF_CATTLER_PROFILE_HORDE;return NF_CATTLER_PROFILE_NORMAL;}
 
 static void seed_lifeworld_corner(NfCattlerSystem *cattlers,NfWorld *world){
-    if(cattlers==NULL||world==NULL||cattlers->count<2u)return;static const NfVec3 seeded[2]={{-51.0f,0.05f,-12.0f},{-43.0f,0.05f,-7.0f}};
+    if(cattlers==NULL||world==NULL||cattlers->count<2u)return;
+    static const NfVec3 seeded[2]={{-51.0f,0.05f,-12.0f},{-43.0f,0.05f,-7.0f}};
     for(size_t i=0u;i<2u;++i){NfCattlerAgent *agent=&cattlers->agents[i];NfActor *body=nf_world_find_actor(world,agent->actor_id);if(body==NULL)continue;body->transform.position=seeded[i];body->transform.velocity=(NfVec3){0};agent->spawn=seeded[i];const uint8_t region=nf_region_nearest(&cattlers->graph,seeded[i]);agent->current_region=region;agent->target_region=region;agent->next_region=region;agent->home_region=region;agent->claimed_watch_region=NF_REGION_INVALID;}
 }
 
