@@ -46,6 +46,27 @@ Secondary aesthetic shorthand, not default Compare-5 owners:
 
 Use secondary refs only when they add a visual delta not already owned by `AI`, `PR`, or `PX`.
 
+## Supporting non-game evidence
+
+Supporting evidence may confirm or sharpen a mechanism without becoming a sixth Compare-5 owner. Record it as `SUP:<REF>/<MECH>/<DISPOSITION>` and map it back to an existing C5 mechanism or current ledger contract.
+
+- `SUP:PHYS/FIELD/K` — *Physarum* / slime-mold + sugar chemotaxis supports the distinction between uniform opportunity, stochastic exploration, and **conditional field-biased movement**. Keep the mechanism; do not imitate the organism literally.
+- `SUP:PHYS/TRACE/A` — slime-mold environmental history supports the idea that prior occupation or residue can alter later probability. Adapt only as bounded, causal, decaying world history already compatible with `TRACE`, Q8 primary/secondary persistence, Q10 situated selection, and the v1.0 stochastic-lifeworld addendum.
+
+Supporting biological abstraction:
+
+`uniform tick -> stochastic proposal -> local gradient bias -> feedback -> historical trace -> conditional recurrence`
+
+Interpretation for nightfall:
+
+- **Uniform is WHEN:** authoritative fixed-step opportunity.
+- **Random is MAYBE:** seeded contingency among plausible alternatives.
+- **Cluster is BECAUSE:** conditional recurrence produced by prior world/actor relations, not a third independent random sampler.
+- **Gradient is WHAT IS HERE:** local resources/hazards/social evidence bias behavior without omniscience.
+- **Memory is WHAT WAS HERE:** bounded history changes future probability.
+
+Do not create a general slime-mold simulation, cellular automaton, pheromone field, or universal behavior vector merely because the analogy exists. Any coding consequence must remain the smallest evidence-backed change to current nightfall systems.
+
 ## Mechanism tags
 
 | Tag | Mechanism |
@@ -64,6 +85,7 @@ Use secondary refs only when they add a visual delta not already owned by `AI`, 
 | `SOC` | cooperation/competition/social ecology |
 | `PERSIST` | exact primary history / round or offscreen continuity |
 | `PRES` | presentation-only lesson; must remain downstream of causal state |
+| `FIELD` | local environmental gradient biases otherwise stochastic behavior |
 
 ## Redundancy rule
 
