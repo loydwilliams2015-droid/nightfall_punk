@@ -5,6 +5,7 @@
 #include "nf_cattler.h"
 #include "nf_combat.h"
 #include "nf_encounter.h"
+#include "nf_hitbox.h"
 #include "nf_net.h"
 #include "nf_prediction.h"
 #include "nf_region.h"
@@ -24,8 +25,6 @@
 
 #define NF_SERVER_CLIENTS NF_NET_MAX_PLAYERS
 #define NF_HISTORY_FRAMES 64u
-#define NF_CATTLER_HEIGHT 2.80f
-#define NF_CATTLER_EYE_HEIGHT 2.35f
 
 typedef struct NfServerClient {
     bool occupied;
@@ -92,7 +91,7 @@ static void reset_movement_after_respawn(NfWorld *world,NfActor *actor){
     const bool cattler=actor->faction==NF_FACTION_RANCHER;
     actor->movement=(NfMovementState){0};
     actor->movement.mode=NF_MOVE_AIR;
-    actor->movement.body_height=cattler?NF_CATTLER_HEIGHT:world->movement.stand_height;
+    actor->movement.body_height=cattler?NF_CATTLER_BODY_HEIGHT:world->movement.stand_height;
     actor->movement.eye_height=cattler?NF_CATTLER_EYE_HEIGHT:world->movement.stand_eye_height;
     actor->movement.attached_collider=-1;
     actor->movement.ground_collider=-1;
@@ -199,18 +198,10 @@ static bool hitscan_target(const NfWorld *world,const NfHistoryFrame *frame,NfEn
         const NfActor *current=nf_world_find_actor_const(world,history_actor->id);if(current==NULL)continue;
         NfRelationship relation=nf_relation_between(shooter_faction,current->faction,rival_relation);if(!nf_relation_can_damage(relation,friendly_fire))continue;
         if(current->faction==NF_FACTION_RANCHER){
-            float t_head=FLT_MAX,t_body=FLT_MAX,t_knee=FLT_MAX,t_foot=FLT_MAX;
-            NfVec3 head={history_actor->position.x,history_actor->position.y+2.56f,history_actor->position.z};
-            NfVec3 foot_min={history_actor->position.x-0.34f,history_actor->position.y,history_actor->position.z-0.34f};
-            NfVec3 foot_max={history_actor->position.x+0.34f,history_actor->position.y+0.28f,history_actor->position.z+0.34f};
-            NfVec3 knee_min={history_actor->position.x-0.36f,history_actor->position.y+0.28f,history_actor->position.z-0.36f};
-            NfVec3 knee_max={history_actor->position.x+0.36f,history_actor->position.y+0.86f,history_actor->position.z+0.36f};
-            NfVec3 body_min={history_actor->position.x-0.39f,history_actor->position.y+0.86f,history_actor->position.z-0.39f};
-            NfVec3 body_max={history_actor->position.x+0.39f,history_actor->position.y+2.48f,history_actor->position.z+0.39f};
-            consider_zone(ray_sphere(origin,direction,head,0.31f,&t_head),t_head,NF_HIT_HEAD,&nearest,history_actor->id,&target,&zone);
-            consider_zone(ray_aabb(origin,direction,body_min,body_max,&t_body),t_body,NF_HIT_BODY,&nearest,history_actor->id,&target,&zone);
-            consider_zone(ray_aabb(origin,direction,knee_min,knee_max,&t_knee),t_knee,NF_HIT_KNEE,&nearest,history_actor->id,&target,&zone);
-            consider_zone(ray_aabb(origin,direction,foot_min,foot_max,&t_foot),t_foot,NF_HIT_FOOT,&nearest,history_actor->id,&target,&zone);
+            float cattler_distance=FLT_MAX;
+            NfHitZone cattler_zone=nf_cattler_hit_zone_for_ray(
+                origin,direction,history_actor->position,nearest,&cattler_distance);
+            consider_zone(cattler_zone!=NF_HIT_NONE,cattler_distance,cattler_zone,&nearest,history_actor->id,&target,&zone);
         }else{
             float height=history_actor->crouched?world->movement.crouch_height:world->movement.stand_height;float t_head=FLT_MAX,t_body=FLT_MAX;
             NfVec3 head={history_actor->position.x,history_actor->position.y+height-0.20f,history_actor->position.z};bool head_hit=ray_sphere(origin,direction,head,0.23f,&t_head);
