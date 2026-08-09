@@ -62,25 +62,56 @@ static bool in_lifeworld_window(Vector3 p){
 
 static unsigned replicated_cattlers_in_window(const RemoteActor remotes[]){
     unsigned count=0u;
-    for(size_t i=0u;i<NF_REMOTE_SLOTS;++i){
-        const RemoteActor *r=&remotes[i];
-        if(r->active&&r->alive&&r->faction==NF_FACTION_RANCHER&&in_lifeworld_window(r->to))++count;
-    }
+    for(size_t i=0u;i<NF_REMOTE_SLOTS;++i){const RemoteActor *r=&remotes[i];if(r->active&&r->alive&&r->faction==NF_FACTION_RANCHER&&in_lifeworld_window(r->to))++count;}
     return count;
 }
 
 static void draw_lifeworld_surface(float darkness){
     const float d=clampf_local(darkness,0.0f,1.0f);
-    const unsigned char stain_alpha=(unsigned char)(28.0f+d*175.0f);
-    const unsigned char filament_alpha=(unsigned char)(20.0f+d*155.0f);
+    const unsigned char stain_alpha=(unsigned char)(22.0f+d*164.0f);
+    const unsigned char violet_alpha=(unsigned char)(8.0f+d*72.0f);
+    const unsigned char smoke_alpha=(unsigned char)(6.0f+d*72.0f);
+    const unsigned char filament_alpha=(unsigned char)(10.0f+d*112.0f);
+
+    /* The locality is darkened by occupation; it is not an actor-centered aura.
+       Blue-black/petroleum violet keeps infestation distinct from ordinary void. */
     DrawCube((Vector3){NF_LIFEWORLD_DEMO_CENTER_X,0.025f,NF_LIFEWORLD_DEMO_CENTER_Z},
         NF_LIFEWORLD_DEMO_HALF_X*2.0f,0.05f,NF_LIFEWORLD_DEMO_HALF_Z*2.0f,
-        (Color){4,4,11,stain_alpha});
+        (Color){8,10,28,stain_alpha});
+    DrawCube((Vector3){-51.0f,0.055f,-11.0f},17.0f,0.035f,10.0f,
+        (Color){28,10,38,violet_alpha});
+
     if(d>0.02f){
-        DrawCube((Vector3){-64.0f,1.10f,-18.7f},0.18f,2.20f,2.20f,(Color){7,4,13,filament_alpha});
-        DrawCube((Vector3){-57.0f,1.35f,-0.9f},0.16f,2.70f,1.60f,(Color){5,3,11,filament_alpha});
-        DrawCube((Vector3){-28.0f,0.85f,-8.0f},0.12f,1.70f,2.60f,(Color){6,3,12,filament_alpha});
+        const double time=GetTime();
+        static const Vector3 anchors[6]={
+            {-61.0f,0.55f,-17.0f},{-56.0f,0.85f,-8.0f},{-49.0f,0.45f,-14.0f},
+            {-43.0f,0.72f,-5.0f},{-35.0f,0.52f,-12.0f},{-29.0f,0.88f,-4.0f}
+        };
+        for(int i=0;i<6;++i){
+            const float phase=(float)time*(0.18f+0.025f*(float)i)+(float)i*1.37f;
+            Vector3 p=anchors[i];
+            p.x+=sinf(phase)*1.2f;
+            p.z+=cosf(phase*0.73f)*0.9f;
+            p.y+=0.18f+sinf(phase*0.51f)*0.16f;
+            const float radius=(0.55f+0.10f*(float)(i%3))*d;
+            DrawSphere(p,radius,(Color){18,15,34,smoke_alpha});
+        }
+
+        /* Geometry-clinging filaments and gore-free synthetic splatter traces. */
+        DrawCube((Vector3){-64.0f,1.10f,-18.7f},0.18f,2.20f,2.20f,(Color){23,10,32,filament_alpha});
+        DrawCube((Vector3){-57.0f,1.35f,-0.9f},0.16f,2.70f,1.60f,(Color){18,9,30,filament_alpha});
+        DrawCube((Vector3){-28.0f,0.85f,-8.0f},0.12f,1.70f,2.60f,(Color){20,10,34,filament_alpha});
+        DrawCube((Vector3){-51.5f,0.075f,-14.2f},2.3f,0.035f,0.42f,(Color){38,16,51,(unsigned char)(d*126.0f)});
+        DrawCube((Vector3){-45.0f,0.078f,-7.0f},0.55f,0.04f,2.0f,(Color){19,35,48,(unsigned char)(d*112.0f)});
+        DrawCube((Vector3){-36.0f,0.076f,-11.0f},1.5f,0.035f,0.35f,(Color){46,18,54,(unsigned char)(d*98.0f)});
+
+        /* Tiny cold-static anomaly: enough cosmic wrongness to read, not enough
+           to compromise target silhouettes or turn the graybox into spectacle. */
+        const float anomaly=sinf((float)time*0.63f)*0.35f*d;
+        DrawLine3D((Vector3){-58.0f,1.9f,-13.0f},(Vector3){-48.0f+anomaly,2.05f,-8.0f},(Color){70,150,168,(unsigned char)(d*72.0f)});
+        DrawLine3D((Vector3){-48.0f,2.05f,-8.0f},(Vector3){-39.0f-anomaly,1.75f,-5.5f},(Color){65,130,160,(unsigned char)(d*58.0f)});
     }
+
     const float activity=1.0f-d*0.62f;
     const unsigned char green=(unsigned char)(80.0f+activity*150.0f);
     DrawCube((Vector3){-54.0f,0.65f,-16.0f},1.6f,1.3f,1.6f,(Color){40,green,105,255});
@@ -98,15 +129,11 @@ static Vector2 update_mouse_capture(NfMouseCapture *state,uint32_t now) {
     if(!state->captured&&(int32_t)(now-state->capture_after_ms)>=0){DisableCursor();state->captured=true;state->position_valid=false;}
     Vector2 delta={0};
     if(state->captured){
-        delta=GetMouseDelta();
-        Vector2 position=GetMousePosition();
+        delta=GetMouseDelta();Vector2 position=GetMousePosition();
         if(state->position_valid){Vector2 absolute_delta={position.x-state->previous_position.x,position.y-state->previous_position.y};bool relative_zero=fabsf(delta.x)<0.001f&&fabsf(delta.y)<0.001f;bool absolute_moved=fabsf(absolute_delta.x)>=0.001f||fabsf(absolute_delta.y)>=0.001f;if(relative_zero&&absolute_moved){delta=absolute_delta;++state->absolute_fallback_frames;}}
-        state->previous_position=position;
-        state->position_valid=true;
+        state->previous_position=position;state->position_valid=true;
     }
-    state->last_delta=delta;
-    state->was_focused=focused;
-    return delta;
+    state->last_delta=delta;state->was_focused=focused;return delta;
 }
 
 int main(int argc,char **argv) {
@@ -154,7 +181,7 @@ int main(int argc,char **argv) {
         BeginDrawing();ClearBackground((Color){18,20,24,255});BeginMode3D(camera);DrawGrid(60,1);draw_lifeworld_surface(predicted_darkness);if(spatial_debug)draw_region_graph(&region_graph);for(size_t i=0;i<world.collider_count;++i)draw_collider(&world.colliders[i]);for(size_t i=0;i<world.ramp_count;++i)draw_ramp(&world.ramps[i]);NfFaction local_faction=player?player->faction:NF_FACTION_PLAYER;for(size_t i=0;i<NF_REMOTE_SLOTS;++i){if(!remotes[i].active)continue;float a=clampf_local((float)(now-remotes[i].received_ms)/(1000.0f/(float)NF_NET_SNAPSHOT_HZ),0,1);Vector3 p={remotes[i].from.x+(remotes[i].to.x-remotes[i].from.x)*a,remotes[i].from.y+(remotes[i].to.y-remotes[i].from.y)*a,remotes[i].from.z+(remotes[i].to.z-remotes[i].from.z)*a};draw_remote_actor(p,&remotes[i],local_faction);}if(player!=NULL&&player->movement.candidate.active){const NfTraversalCandidate *c=&player->movement.candidate;Vector3 p={c->point.x,c->point.y+0.15f,c->point.z};DrawSphere(p,0.14f,candidate_color(c->type));}EndMode3D();
         DrawText("nightfall!punk v1.0 - TOPOGRAPHIC LIFEWORLD LAB",24,18,23,RAYWHITE);DrawText("red = Human Rivals | tall orange = Dream Cattlers | yellow = authoritative knee/foot weakness | F4 regions",24,47,15,GRAY);const char *status=welcomed?"AUTHORITATIVE + PREDICTED":(connected?"HANDSHAKE":"RECONNECTING");DrawText(TextFormat("NET %s | ENet RTT %u ms | effective ping %u ms | snapshot age %u ms",status,peer?nf_net_peer_rtt_ms(peer):0,last_pong_ms,last_snapshot_ms?now-last_snapshot_ms:0),24,79,16,welcomed?GREEN:YELLOW);DrawText(TextFormat("server tick %llu | client tick %llu | cmd %u ack %u pending %u",(unsigned long long)last_server_tick,(unsigned long long)world.tick,prediction.next_sequence?prediction.next_sequence-1:0,prediction.last_acknowledged,(prediction.next_sequence-1)-prediction.last_acknowledged),24,101,16,RAYWHITE);DrawText(TextFormat("prediction %.3fm | max %.3fm | visible corrections %u | resyncs %u | traversal disagreements %u",prediction.last_error,prediction.max_error,prediction.corrections,prediction.resyncs,candidate_disagreements),24,123,16,RAYWHITE);
         if(player!=NULL){float speed=sqrtf(player->transform.velocity.x*player->transform.velocity.x+player->transform.velocity.z*player->transform.velocity.z);DrawText(TextFormat("MOVE %s %.2f m/s | health %.0f | %s %u/%u | %s",nf_movement_mode_name(player->movement.mode),speed,player->health,nf_weapon_name(player->combat.weapon),player->combat.ammo_mag[player->combat.weapon],player->combat.reserve_ammo[player->combat.weapon],nf_weapon_state_name(player->combat.state)),24,145,16,RAYWHITE);if(!player->combat.alive)DrawText("DEAD - authoritative respawn pending",width/2-190,height/2+45,20,RED);}
-        DrawText(TextFormat("combat events %u | last %s src %u tgt %u zone %u dmg %.0f rewind %ums",combat_events,nf_combat_event_name(last_event.type),last_event.source,last_event.target,(unsigned)last_event.hit_zone,last_event.amount,last_event.rewind_ms),24,167,16,last_event_ms&&now-last_event_ms<1500u?YELLOW:GRAY);DrawText(TextFormat("crypto %s | sim %ums +/- %ums %.1f%% loss",strong_crypto?"libsodium":"scaffold",sim_latency,sim_jitter,sim_loss),24,189,16,strong_crypto?SKYBLUE:ORANGE);DrawText(TextFormat("mouse %s | capture %s | delta %.1f %.1f | abs-fallback %u | F10 toggle",IsWindowFocused()?"FOCUSED":"UNFOCUSED",mouse_capture.captured?"ON":(mouse_capture.requested?"WAIT":"OFF"),mouse_capture.last_delta.x,mouse_capture.last_delta.y,mouse_capture.absolute_fallback_frames),24,211,16,mouse_capture.captured?GREEN:YELLOW);uint8_t local_region=player?nf_region_nearest(&region_graph,player->transform.position):NF_REGION_INVALID;DrawText(TextFormat("SPATIAL F4 %s | local region %u %s | graph %zu | graybox 0.40 km^2",spatial_debug?"ON":"OFF",local_region,nf_region_name(local_region),region_graph.count),24,233,16,spatial_debug?SKYBLUE:GRAY);DrawCircle(width/2,height/2,2,RAYWHITE);if(now<hit_marker_until)draw_hit_marker(width/2,height/2,GREEN);draw_weapon_hud(player,width,height,now<muzzle_until);if(now<damage_flash_until)DrawRectangleLinesEx((Rectangle){4,4,width-8,height-8},8,RED);DrawText("v1.0: darkness is a disposable client prediction of replicated Cattler occupation; authoritative ecology and private beliefs stay server-side",24,height-32,15,(Color){160,166,178,255});EndDrawing();
+        DrawText(TextFormat("combat events %u | last %s src %u tgt %u zone %u dmg %.0f rewind %ums",combat_events,nf_combat_event_name(last_event.type),last_event.source,last_event.target,(unsigned)last_event.hit_zone,last_event.amount,last_event.rewind_ms),24,167,16,last_event_ms&&now-last_event_ms<1500u?YELLOW:GRAY);DrawText(TextFormat("crypto %s | sim %ums +/- %ums %.1f%% loss",strong_crypto?"libsodium":"scaffold",sim_latency,sim_jitter,sim_loss),24,189,16,strong_crypto?SKYBLUE:ORANGE);DrawText(TextFormat("mouse %s | capture %s | delta %.1f %.1f | abs-fallback %u | F10 toggle",IsWindowFocused()?"FOCUSED":"UNFOCUSED",mouse_capture.captured?"ON":(mouse_capture.requested?"WAIT":"OFF"),mouse_capture.last_delta.x,mouse_capture.last_delta.y,mouse_capture.absolute_fallback_frames),24,211,16,mouse_capture.captured?GREEN:YELLOW);uint8_t local_region=player?nf_region_nearest(&region_graph,player->transform.position):NF_REGION_INVALID;DrawText(TextFormat("SPATIAL F4 %s | local region %u %s | graph %zu | graybox 0.40 km^2",spatial_debug?"ON":"OFF",local_region,nf_region_name(local_region),region_graph.count),24,233,16,spatial_debug?SKYBLUE:GRAY);DrawCircle(width/2,height/2,2,RAYWHITE);if(now<hit_marker_until)draw_hit_marker(width/2,height/2,GREEN);draw_weapon_hud(player,width,height,now<muzzle_until);if(now<damage_flash_until)DrawRectangleLinesEx((Rectangle){4,4,width-8,height-8},8,RED);DrawText("v1.0: haunted habitat is predicted from replicated occupation; dark smoke/residue are waterline, not hidden ecology truth",24,height-32,15,(Color){160,166,178,255});EndDrawing();
     }
     if(peer!=NULL) nf_net_disconnect(peer,0);
     nf_net_flush(&net);
