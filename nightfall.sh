@@ -50,11 +50,11 @@ run_cattler_smoke() {
   test -x "$HEADLESS_BUILD_DIR/nightfall_server" || "$0" build-headless
   "$HEADLESS_BUILD_DIR/nightfall_server" --duration 8 --ai-count 0 --pressure-slots 0 --cattler-count 3 --cattler-profile pack >"$BUILD_ROOT/cattler-smoke-server.log" 2>&1
   cat "$BUILD_ROOT/cattler-smoke-server.log" || true
-  grep -q "\[cattler\] habitat continuity" "$BUILD_ROOT/cattler-smoke-server.log"
+  grep -q "\[cattler\] habitat return is ecological" "$BUILD_ROOT/cattler-smoke-server.log"
   grep -q "social=PACK" "$BUILD_ROOT/cattler-smoke-server.log"
   grep -q "mode=INFEST" "$BUILD_ROOT/cattler-smoke-server.log"
   grep -q "infest=" "$BUILD_ROOT/cattler-smoke-server.log"
-  grep -q "\[ecology\]" "$BUILD_ROOT/cattler-smoke-server.log"
+  grep -q "\[ecology\] cattler living=3/3" "$BUILD_ROOT/cattler-smoke-server.log"
   grep -Eq "expansion=[1-9]" "$BUILD_ROOT/cattler-smoke-server.log"
 }
 
@@ -70,9 +70,14 @@ run_energy_smoke() {
 
 run_lifeworld_smoke() {
   test -x "$HEADLESS_BUILD_DIR/nightfall_lifeworld_test" || "$0" build-headless
+  test -x "$HEADLESS_BUILD_DIR/nightfall_lifeworld_runtime_test" || "$0" build-headless
   mkdir -p "$BUILD_ROOT"
-  "$HEADLESS_BUILD_DIR/nightfall_lifeworld_test" | tee "$BUILD_ROOT/lifeworld-smoke.log"
+  {
+    "$HEADLESS_BUILD_DIR/nightfall_lifeworld_test"
+    "$HEADLESS_BUILD_DIR/nightfall_lifeworld_runtime_test"
+  } | tee "$BUILD_ROOT/lifeworld-smoke.log"
   grep -q "nightfall v1.0 topographic lifeworld tests: PASS" "$BUILD_ROOT/lifeworld-smoke.log"
+  grep -q "nightfall v1.0 lifeworld runtime tests: PASS" "$BUILD_ROOT/lifeworld-smoke.log"
   grep -q "\[lifeworld\] contested infestation=" "$BUILD_ROOT/lifeworld-smoke.log"
   grep -q "\[primary\]" "$BUILD_ROOT/lifeworld-smoke.log"
   ! grep -q '"darkness"' "$BUILD_ROOT/lifeworld-smoke.log"
@@ -99,7 +104,12 @@ case "$cmd" in
     test -f "$ROOT_DIR/src/server/ai/nf_encounter.c"
     test -f "$ROOT_DIR/src/server/ai/nf_spatial.c"
     test -f "$ROOT_DIR/src/server/ai/nf_spatial_filter.c"
+    test -f "$ROOT_DIR/src/server/ai/nf_spatial_attention.c"
     test -f "$ROOT_DIR/src/server/ai/nf_cattler.c"
+    test -f "$ROOT_DIR/src/server/ai/nf_cattler_recurrence.c"
+    test -f "$ROOT_DIR/src/server/ai/nf_lifeworld_spatial.c"
+    test -f "$ROOT_DIR/src/tests/test_lifeworld_runtime.c"
+    test -f "$ROOT_DIR/docs/COMPARE5_LEDGER.md"
     echo "[ok] cmake: $(cmake --version | head -n1)"
     echo "[ok] cc: $(cc --version | head -n1)"
     echo "[ok] nightfall.sh syntax"
@@ -108,7 +118,7 @@ case "$cmd" in
     else
       echo "[warn] libsodium-dev not detected; localhost security scaffold will be used"
     fi
-    echo "[ok] v1.0 topographic lifeworld source tree present"
+    echo "[ok] v1.0 topographic lifeworld completion tree present"
     ;;
   build)
     cmake -S "$ROOT_DIR" -B "$FULL_BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=ON
@@ -212,9 +222,9 @@ local            = isolated-port v1.0 server + graphical client; 4 Human Rivals 
 combat-smoke     = combat/network regression proof with Cattlers disabled
 encounter-smoke  = passive player versus bounded-pressure Human Rivals with Cattlers disabled
 spatial-smoke    = situated Rival roaming proof with Cattlers disabled
-cattler-smoke    = server-only 3-Cattler pack habitat proof
+cattler-smoke    = server-only 3-Cattler pack habitat proof; validates ecological-return contract banner and live ecology
 energy-smoke     = inherited v0.9 C20-C22 universal-ledger/topography/history proof
-lifeworld-smoke  = v1.0 exact-primary-memory, mobile-hotspot, recovery, darkening-prediction and no-hidden-energy-leak proof
+lifeworld-smoke  = v1.0 exact-primary-memory + ecological recurrence/reseed + embodied-attention + recovery + no-hidden-energy-leak proof
 net-smoke        = alias retained for continuity
 
 Local debug environment:
