@@ -537,7 +537,6 @@ hit.hit_zone = NF_HIT_FOOT;
 hit.amount = 10.0f;
 
 nf_cattler_on_combat_event(&cattlers, &world, &hit);
-
 const NfCattlerAgent *c = nf_cattler_find_const(&cattlers, cattler_id);
 assert(c != NULL);
 assert(c->locomotor_integrity < 1.0f);
@@ -1012,3 +1011,33 @@ Acceptance questions:
 - [ ] does at least one consequence feed back into future opportunity strongly enough to qualify as an evental transition?
 - [ ] does the world remain an FPS first: movement/combat/networking remain stable and readable?
 - [ ] can every visible ecological claim be traced back to authoritative world causation rather than decorative scripting?
+
+## C31 — 15-minute possibility envelope / session dramaturgy — LOCKED
+
+Core design principle:
+
+> **As a general design target rather than a hard-written rule, almost any fifteen-minute segment of nightfall!punk should contain or plausibly offer the possibility of several interlocking modes of play: ordinary habitat life, traversal, environmental reading, casual physical challenge, social or Rival interaction, Quake-style arena fire, Dream Cattler stalking/ambush pressure, and an artifact/Temple-Run-like escalation.**
+
+- [x] this is a **possibility envelope**, not a mandatory checklist, timer, encounter quota or scripted sequence.
+- [x] a given fifteen-minute segment may remain calm, become overwhelmingly violent, or never instantiate one or more modes; the design target is that the local world has enough connected affordances for these possibilities to coexist.
+- [x] desired session grammar may include: **wander -> notice -> learn -> traverse -> play/work -> socialize/contest -> investigate -> become uneasy -> evade/fight -> recover**, with ordering, omission and repetition determined by world state and player action.
+- [x] **Legends of the Hidden Temple** contributes the loose progression grammar of traversal -> knowledge -> playful physical challenge -> high-pressure artifact expedition.
+- [x] **Tomb Raider / Myst / Peripeteia** contribute environmental interpretation, physical puzzles, alternate routes, secrets and embodied navigation.
+- [x] **Echo Point Nova / Quake / Urban Terror** contribute movement pleasure, spatial freedom, arena fire and readable direct confrontation.
+- [x] **Alien: Isolation** contributes the possibility that exploration or casual activity can be interrupted by stalking/ambush pressure without requiring continuous combat.
+- [x] casual play should primarily reuse the same movement, physics, objects, world interaction and social systems as combat rather than becoming a disconnected collection of minigames.
+- [x] combat remains part of the lifeworld rather than a separate mode; likewise, habitat life is not filler between fights.
+- [x] uncertainty is valuable: evidence of a Cattler or Rival may alter how the player reads an otherwise ordinary traversal/puzzle/habitat activity before any attack actually occurs.
+- [x] Ghost Static may modulate transitions among these states through music, broadcast, salience and presentation, but must not force every local session into the same dramatic arc.
+- [x] artifact runs should function as compositional peaks where traversal, learned environmental knowledge, route choice, social contest and predatory uncertainty can converge.
+- [x] a mature session should support the player choosing to remain in low-intensity activity when conditions allow; the world should not automatically escalate merely because a pacing timer elapsed.
+
+Session-design test:
+
+> **Could the same local fifteen-minute window plausibly support helping someone repair an antenna, discovering environmental information, crossing the district through skilled movement, encountering or negotiating with Rivals, surviving Quake-style fire, noticing Cattler evidence, and deciding whether to risk an artifact run—without any of those activities feeling like they belong to a different game?**
+
+Maxims:
+
+- **The life of the habitat is what gives the gunfire something to interrupt.**
+- **The possibility of interruption makes peaceful exploration suspenseful; the possibility of peace makes violence consequential.**
+- **One world, many intensities.**
