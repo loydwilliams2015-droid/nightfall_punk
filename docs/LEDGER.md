@@ -1041,3 +1041,120 @@ Maxims:
 - **The life of the habitat is what gives the gunfire something to interrupt.**
 - **The possibility of interruption makes peaceful exploration suspenseful; the possibility of peace makes violence consequential.**
 - **One world, many intensities.**
+
+## C32 — post-scarcity horror / multidimensional difficulty architecture — LOCKED
+
+Core thesis:
+
+> **nightfall!punk is not primarily scarcity horror. It uses selective scarcity, but its distinctive horror is post-scarcity ecological infestation: a socially lively, materially capable world is threatened by colonizing structures that reorganize access, habitat, safety, meaning and reciprocity rather than merely making ammunition or food rare.**
+
+Antagonistic value axis:
+
+- [x] Human Rivals occupy a **multidimensional semi-cooperative rivalry space**: they may compete, trade, cooperate, heal, negotiate, contest resources and fight without collapsing into a single good/evil or ally/enemy scalar.
+- [x] Dream Cattlers occupy the colonizing end of the antagonistic spectrum: increasingly non-reciprocal ecological domination, infestation and conversion of living relations into predatory infrastructure.
+- [x] rare/major **Cattler Goliath** encounters may express a Hexxus-like concentration of that colonizing logic, while ordinary Cattlers remain its diffuse distributed form.
+- [x] Goliath difficulty should come primarily from **structural persistence, changing phases, ecological control and topographical consequences**, not merely an inflated health bar.
+- [x] Human Rivals should remain comparatively human-scale and lethal; difficulty comes from intelligence, positioning, coordination, uncertainty and social context rather than sponge durability.
+
+Post-scarcity horror rule:
+
+- [x] abundance must be allowed to exist: social spaces, music, repair, food, ordinary tools, shared infrastructure, recreation, fashion, traversal pleasure and Crew life can be enjoyable in themselves.
+- [x] horror should therefore threaten **relations and conditions of flourishing**, not depend on making every ordinary resource miserable to obtain.
+- [x] infestation may make an abundant thing dangerous, inaccessible, captured, redirected, contaminated, surveilled or socially costly without implying universal material shortage.
+- [x] this supports the Chambers/Bookchin/Anthropocene direction: the question is not merely “can we survive scarcity?” but **“what kind of social ecology can continue flourishing when colonizing systems reorganize the commons?”**
+
+Scarcity-budget reallocation:
+
+- [x] reduce dependence on chronic ammo/food/med scarcity as the principal difficulty lever.
+- [x] spend more of the difficulty budget on **lethality**: mistakes can matter quickly and opponents need not be bullet sponges.
+- [x] spend more on **endurance**: dangerous expeditions, long pursuit arcs, Goliath phases, contested artifact runs and ecological recovery can demand sustained composure.
+- [x] spend more on **productive recurrence / grinding**: repeated play may deepen mastery, relationships, habitat condition, route knowledge, reputation, equipment familiarity and ecological history.
+- [x] grind should normally reproduce the lifeworld rather than function as an arbitrary stat wall; repetition should change knowledge, place, social possibility or player competence.
+- [x] avoid “do the solved action 40 more times” padding. Repetition earns its place when the world, relationship, route, pressure or player understanding meaningfully changes.
+
+Social/fun baseline:
+
+- [x] desired broad accessibility = **Destiny / Cyberpunk 2077-style social density, build/play expression, wandering pleasure and immediate fun**, adapted to nightfall!punk rather than copied literally.
+- [x] ordinary movement, shooting, social interaction and exploration should be pleasurable before the player engages the hardest systems.
+- [x] psychological difficulty may be high without requiring academic expertise; the player should often feel challenged by uncertainty, intuition, spatial reasoning, timing, pressure and interpretation.
+- [x] mastery may be demanding; basic intelligibility must remain generous.
+
+### Four-layer difficulty precedence
+
+Difficulty should generally compound in this order:
+
+1. **Embodied arena difficulty — Tomb Raider inside Quake**
+   - [x] first difficulty layer = read physical space, traverse it, manipulate mechanisms, discover routes and solve embodied spatial problems while retaining Quake-style movement freedom.
+   - [x] difficulty comes from geometry, timing, orientation, route memory, momentum, affordance recognition and physical sequencing before abstract puzzle logic.
+   - [x] skill floor should remain approachable; skill ceiling may be very high through route optimization and movement mastery.
+
+2. **Predatory interruption — Tomb Raider while stalked like Alien: Isolation**
+   - [x] second layer = preserve the same traversal/puzzle problem while stalking, ambush risk, sound uncertainty, Cattler evidence or Rival pressure changes the cost of attention and hesitation.
+   - [x] the puzzle should usually remain valid under pressure rather than disappear into a separate combat mode.
+   - [x] predatory difficulty is driven by uncertainty, persistence, route denial, sensory interpretation and forced improvisation more than raw HP.
+
+3. **Psychological / intuitive physical puzzle difficulty**
+   - [x] third layer = problems solvable primarily through embodied intuition, pattern recognition, environmental reading, analogy, memory, timing, perspective, cause/effect and “this feels physically right” reasoning.
+   - [x] this is the preferred high-difficulty puzzle layer because it preserves first-person embodiment and does not require specialist academic knowledge.
+   - [x] clues should exist materially in the environment; difficulty may come from noticing and interpreting them, not from withholding all evidence.
+
+4. **Cognitive / formal physical puzzle difficulty**
+   - [x] fourth layer = optional or higher-tier problems using explicit logic, arithmetic, spatial combinatorics, sequencing, Sudoku-like constraint satisfaction, code-breaking or other formal reasoning embedded into physical mechanisms.
+   - [x] cognitive puzzles should remain materially grounded and diegetic rather than becoming detached worksheet screens.
+   - [x] these may guard optional shortcuts, secrets, artifact advantages, high-value knowledge or specialist routes more often than mandatory basic progression.
+
+Difficulty principle:
+
+> **Embodiment first; predation second; intuition third; formal cognition fourth.**
+
+### Difficulty settings recommendation
+
+- [x] use **presets plus advanced custom axes**, rather than one global “enemy HP” slider.
+- [x] preset names may be thematic, but every preset must resolve to transparent underlying variables.
+- [x] custom difficulty should independently expose at least:
+  - traversal forgiveness / movement assistance
+  - player and enemy lethality
+  - Rival coordination/aim/perception pressure
+  - Cattler stalking persistence / sensory acuity / ambush pressure
+  - encounter endurance / recovery generosity
+  - intuitive-puzzle hint cadence
+  - formal-puzzle hint/simplification level
+  - recurrence/grind pacing where progression systems exist
+- [x] difficulty must not secretly change faction morality, world truth or core causal rules.
+- [x] accessibility options are not “easy mode penalties”; control assistance, readable clues, puzzle hints and sensory accommodations should remain separable from combat challenge.
+
+Recommended preset philosophy:
+
+- [x] **Explorer / Story:** broad traversal forgiveness, lower lethality and stalker pressure, generous intuitive/formal hints; preserves systemic world and story.
+- [x] **Street / Standard:** intended baseline; Tomb Raider-style traversal and Quake fire remain readable, Cattler stalking matters, puzzle hints are restrained.
+- [x] **Temple / Hunter:** higher lethality, more persistent stalking, tighter traversal forgiveness, fewer intuitive hints, longer sustained encounter pressure.
+- [x] **Apophis / Expert:** severe but legible; high lethality/endurance/stalker pressure, minimal automatic hints, formal puzzles remain unsimplified; never relies on arbitrary HP inflation as the main difficulty mechanism.
+
+### Endurance / boss rule
+
+- [x] long encounters are legitimate when the **problem changes while duration accumulates**.
+- [x] Cattler Goliaths may require dismantling infestation supports, changing topography, exploiting locomotor/ecological weaknesses, solving mechanisms under pursuit, coordinating with Rivals or surviving multiple behavioral phases.
+- [x] “effective HP” may therefore be distributed across structures, access conditions, phases and ecological dependencies rather than stored entirely in one health number.
+- [x] if the player has already solved the encounter and only repetition remains, shorten it or introduce a genuinely new state.
+
+### Grind / recurrence rule
+
+- [x] preferred grind = **mastery grind + social grind + ecological grind + route/knowledge grind**, with statistical gear grind secondary.
+- [x] repeated Crew work can strengthen relationships and local habitat; repeated Rival contact can alter trust/compact history; repeated routes can build player mastery and world traces; repeated Cattler pressure can reshape ecology.
+- [x] progression should reward continued inhabitation of the world rather than make the world feel like a resource treadmill.
+- [x] avoid mandatory low-information repetition merely to reach a numerical gate.
+
+### Psychological difficulty rule
+
+- [x] psychological difficulty should often arise from **attention competition**: moving while listening, solving while hunted, deciding whether a Rival can be trusted, reading incomplete evidence, remembering routes, judging whether a habitat is safe and choosing when to disengage.
+- [x] the player should frequently know enough to make a reasoned choice without knowing enough to feel certain.
+- [x] uncertainty must remain fair: hidden information should have legitimate evidence channels even when those channels are incomplete.
+
+Maxims:
+
+- **Post-scarcity does not mean post-danger.**
+- **The horror is not that there is nothing; the horror is that something is converting what already exists into a predatory order.**
+- **Lethality over sponge HP; endurance through changing problems; grind through meaningful recurrence.**
+- **Embodiment first; predation second; intuition third; formal cognition fourth.**
+- **Make mastery difficult; make the world intelligible.**
+- **A Goliath should be hard to uproot, not merely slow to subtract.**
