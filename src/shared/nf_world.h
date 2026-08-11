@@ -10,6 +10,7 @@
 #define NF_MAX_ENTITIES 1024u
 #define NF_MAX_COLLIDERS 128u
 #define NF_MAX_RAMPS 16u
+#define NF_MAX_CONTAMINATION_TRACES 64u
 #define NF_TICK_RATE 60u
 
 typedef uint32_t NfEntityId;
@@ -77,18 +78,94 @@ typedef enum NfHitZone {
     NF_HIT_FOOT
 } NfHitZone;
 
+typedef enum NfAgencyState {
+    NF_AGENCY_ACTIVE = 0,
+    NF_AGENCY_CRITICAL,
+    NF_AGENCY_STASIS,
+    NF_AGENCY_REVIVING,
+    NF_AGENCY_RETURNING
+} NfAgencyState;
+
+typedef enum NfContaminationPhenotype {
+    NF_CONTAM_PHENOTYPE_NONE = 0,
+    NF_CONTAM_PHENOTYPE_SURFACE = 1u << 0,
+    NF_CONTAM_PHENOTYPE_DISSOLVED = 1u << 1,
+    NF_CONTAM_PHENOTYPE_AIRBORNE = 1u << 2,
+    NF_CONTAM_PHENOTYPE_FILAMENTOUS = 1u << 3,
+    NF_CONTAM_PHENOTYPE_SIGNAL = 1u << 4
+} NfContaminationPhenotype;
+
+typedef enum NfInventoryFate {
+    NF_INVENTORY_FATE_NONE = 0,
+    NF_INVENTORY_FATE_BASE_RESTOCK,
+    NF_INVENTORY_FATE_SITE_PERSIST,
+    NF_INVENTORY_FATE_ECO_ABSORB
+} NfInventoryFate;
+
 typedef enum NfCombatEventType {
     NF_COMBAT_EVENT_NONE = 0,
     NF_COMBAT_EVENT_GUNFIRE,
     NF_COMBAT_EVENT_DAMAGE,
-    NF_COMBAT_EVENT_DEATH,
-    NF_COMBAT_EVENT_RESPAWN,
+    NF_COMBAT_EVENT_STASIS,
+    NF_COMBAT_EVENT_REVIVAL,
     NF_COMBAT_EVENT_RELOAD,
-    NF_COMBAT_EVENT_WEAPON_SWITCH
+    NF_COMBAT_EVENT_WEAPON_SWITCH,
+    /* Compatibility aliases: v1.1 player-facing semantics are STASIS/REVIVAL. */
+    NF_COMBAT_EVENT_DEATH = NF_COMBAT_EVENT_STASIS,
+    NF_COMBAT_EVENT_RESPAWN = NF_COMBAT_EVENT_REVIVAL
 } NfCombatEventType;
 
 typedef struct NfVec3 { float x, y, z; } NfVec3;
 typedef struct NfTransform { NfVec3 position; NfVec3 velocity; } NfTransform;
+
+typedef struct NfBodyContamination {
+    float systemic;
+    float locomotor;
+    float manipulator;
+    float sensory;
+    float surface;
+    float dissolved;
+    float airborne;
+    uint32_t phenotype_mask;
+    uint64_t last_change_tick;
+    uint64_t stasis_tick;
+    float agency_timer;
+    bool trace_pending;
+} NfBodyContamination;
+
+typedef struct NfStasisInventoryDisposition {
+    bool valid;
+    NfWeaponId site_weapon;
+    NfWeaponId restock_weapon;
+    uint16_t absorbed_ammo_units;
+    NfInventoryFate site_fate;
+    NfInventoryFate restock_fate;
+    NfInventoryFate ammo_fate;
+} NfStasisInventoryDisposition;
+
+typedef struct NfContaminationTrace {
+    bool active;
+    uint32_t id;
+    NfEntityId source;
+    NfFaction source_faction;
+    NfVec3 position;
+    float surface;
+    float dissolved;
+    float airborne;
+    uint32_t phenotype_mask;
+    uint64_t created_tick;
+    uint64_t last_change_tick;
+    NfWeaponId site_weapon;
+    uint16_t absorbed_ammo_units;
+} NfContaminationTrace;
+
+typedef struct NfContaminationSystem {
+    uint32_t next_trace_id;
+    float drained_sink;
+    float decayed_sink;
+    float absorbed_inventory_sink;
+    NfContaminationTrace traces[NF_MAX_CONTAMINATION_TRACES];
+} NfContaminationSystem;
 
 typedef struct NfMoveInput {
     float forward;
@@ -131,6 +208,7 @@ typedef struct NfMovementState {
 } NfMovementState;
 
 typedef struct NfCombatState {
+    /* v1.1 compatibility projection: true means ordinary gameplay agency is available. */
     bool alive;
     NfWeaponId weapon;
     NfWeaponId pending_weapon;
@@ -166,6 +244,10 @@ typedef struct NfActor {
     NfMoveInput input;
     NfMovementState movement;
     NfCombatState combat;
+    NfAgencyState agency;
+    NfBodyContamination contamination;
+    NfStasisInventoryDisposition stasis_inventory;
+    /* Temporary protocol/debug projection: 100 * (1 - systemic contamination). */
     float health;
 } NfActor;
 
@@ -219,6 +301,7 @@ typedef struct NfWorld {
     size_t ramp_count;
     NfMovementConfig movement;
     NfEnergySystem energy;
+    NfContaminationSystem contamination;
 } NfWorld;
 
 void nf_world_init(NfWorld *world, uint32_t seed);
