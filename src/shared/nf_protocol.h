@@ -7,8 +7,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define NF_PROTOCOL_MAGIC 0x3430464eu /* "NF04" little-endian */
-#define NF_PROTOCOL_VERSION 4u
+#define NF_PROTOCOL_MAGIC 0x3430464eu /* "NF04" little-endian; stable family magic */
+#define NF_PROTOCOL_VERSION 5u
 #define NF_NET_DEFAULT_PORT 7777u
 #define NF_NET_MAX_PACKET_BYTES 1200u
 #define NF_NET_MAX_PLAYERS 4u
@@ -74,6 +74,11 @@ typedef struct NfActorNetState {
     int32_t candidate_feature;
     float health;
     bool alive;
+    NfAgencyState agency;
+    float contamination_systemic;
+    float contamination_locomotor;
+    float contamination_manipulator;
+    float contamination_sensory;
     NfWeaponId weapon;
     NfWeaponState weapon_state;
     uint16_t ammo_mag;
