@@ -3,9 +3,12 @@
 #include "nf_agent.h"
 #include "nf_ai.h"
 #include "nf_cattler.h"
+#include "nf_cattler_recurrence.h"
 #include "nf_combat.h"
 #include "nf_encounter.h"
 #include "nf_hitbox.h"
+#include "nf_lifeworld.h"
+#include "nf_lifeworld_spatial.h"
 #include "nf_net.h"
 #include "nf_prediction.h"
 #include "nf_region.h"
@@ -98,12 +101,11 @@ static void reset_movement_after_respawn(NfWorld *world,NfActor *actor){
     actor->movement.candidate.feature_index=-1;
 }
 
-static bool respawn_position(
-    const NfServerClient clients[],const NfAiSystem *ai,const NfCattlerSystem *cattlers,
+static bool ordinary_respawn_position(
+    const NfServerClient clients[],const NfAiSystem *ai,
     NfEntityId id,NfVec3 *out){
     for(size_t i=0;i<NF_SERVER_CLIENTS;++i)if(clients[i].occupied&&clients[i].entity_id==id){*out=spawn_for_slot(i);return true;}
-    if(nf_ai_spawn_for(ai,id,out))return true;
-    return nf_cattler_spawn_for(cattlers,id,out);
+    return nf_ai_spawn_for(ai,id,out);
 }
 
 static void expire_reservations(NfWorld *world,NfServerClient clients[],uint32_t now){
@@ -186,10 +188,7 @@ static bool ray_sphere(NfVec3 origin,NfVec3 direction,NfVec3 center,float radius
 static float world_block_distance(const NfWorld *world,NfVec3 origin,NfVec3 direction,float range){
     float nearest=range;for(size_t i=0;i<world->collider_count;++i){const NfCollider *collider=&world->colliders[i];if(collider->kind==NF_COLLIDER_LADDER)continue;float t;if(ray_aabb(origin,direction,collider->min,collider->max,&t)&&t>0.01f&&t<nearest)nearest=t;}return nearest;
 }
-
-static void consider_zone(bool hit,float distance,NfHitZone candidate,float *nearest,NfEntityId id,NfEntityId *target,NfHitZone *zone){
-    if(hit&&distance<*nearest){*nearest=distance;*target=id;*zone=candidate;}
-}
+static void consider_zone(bool hit,float distance,NfHitZone candidate,float *nearest,NfEntityId id,NfEntityId *target,NfHitZone *zone){if(hit&&distance<*nearest){*nearest=distance;*target=id;*zone=candidate;}}
 
 static bool hitscan_target(const NfWorld *world,const NfHistoryFrame *frame,NfEntityId shooter,NfFaction shooter_faction,NfVec3 origin,NfVec3 direction,float range,NfRelationship rival_relation,bool friendly_fire,NfEntityId *target_out,NfHitZone *zone_out,float *distance_out){
     float nearest=world_block_distance(world,origin,direction,range);NfEntityId target=0;NfHitZone zone=NF_HIT_NONE;if(frame==NULL)return false;
@@ -198,9 +197,7 @@ static bool hitscan_target(const NfWorld *world,const NfHistoryFrame *frame,NfEn
         const NfActor *current=nf_world_find_actor_const(world,history_actor->id);if(current==NULL)continue;
         NfRelationship relation=nf_relation_between(shooter_faction,current->faction,rival_relation);if(!nf_relation_can_damage(relation,friendly_fire))continue;
         if(current->faction==NF_FACTION_RANCHER){
-            float cattler_distance=FLT_MAX;
-            NfHitZone cattler_zone=nf_cattler_hit_zone_for_ray(
-                origin,direction,history_actor->position,nearest,&cattler_distance);
+            float cattler_distance=FLT_MAX;NfHitZone cattler_zone=nf_cattler_hit_zone_for_ray(origin,direction,history_actor->position,nearest,&cattler_distance);
             consider_zone(cattler_zone!=NF_HIT_NONE,cattler_distance,cattler_zone,&nearest,history_actor->id,&target,&zone);
         }else{
             float height=history_actor->crouched?world->movement.crouch_height:world->movement.stand_height;float t_head=FLT_MAX,t_body=FLT_MAX;
@@ -212,10 +209,7 @@ static bool hitscan_target(const NfWorld *world,const NfHistoryFrame *frame,NfEn
         }
     }
     if(target==0)return false;
-    *target_out=target;
-    *zone_out=zone;
-    *distance_out=nearest;
-    return true;
+    *target_out=target;*zone_out=zone;*distance_out=nearest;return true;
 }
 
 static float damage_for_zone(const NfWeaponSpec *spec,NfHitZone zone){
@@ -224,10 +218,7 @@ static float damage_for_zone(const NfWeaponSpec *spec,NfHitZone zone){
     if(zone==NF_HIT_FOOT)return spec->damage*1.10f;
     return spec->damage;
 }
-
-static void publish_cattler_event(NfCattlerSystem *cattlers,NfWorld *world,NfCombatEvent *event){
-    if(cattlers!=NULL&&event!=NULL)nf_cattler_on_combat_event(cattlers,world,event);
-}
+static void publish_cattler_event(NfCattlerSystem *cattlers,NfWorld *world,NfCombatEvent *event){if(cattlers!=NULL&&event!=NULL)nf_cattler_on_combat_event(cattlers,world,event);}
 
 static void process_combat_control(NfNetHost *net,NfWorld *world,NfServerClient clients[],NfSemanticBus *semantics,NfCattlerSystem *cattlers,const NfControlFrame *control,NfHistoryFrame history[],NfRelationship rival_relation,bool friendly_fire){
     NfActor *actor=nf_world_find_actor(world,control->actor);if(actor==NULL||!actor->combat.alive)return;
@@ -254,23 +245,38 @@ static void process_combat_control(NfNetHost *net,NfWorld *world,NfServerClient 
     }
 }
 
-static void process_respawns(NfNetHost *net,NfWorld *world,NfServerClient clients[],NfAiSystem *ai,NfSpatialSystem *spatial,NfCattlerSystem *cattlers,NfSemanticBus *semantics){
+static void process_respawns(
+    NfNetHost *net,NfWorld *world,NfServerClient clients[],NfAiSystem *ai,
+    NfSpatialSystem *spatial,NfCattlerSystem *cattlers,
+    NfCattlerRecurrenceSystem *recurrence,NfSemanticBus *semantics){
     for(size_t i=0;i<NF_MAX_ENTITIES;++i){
-        NfActor *actor=&world->actors[i];if(!actor->active||actor->combat.alive||actor->combat.respawn_timer>0.0f)continue;NfVec3 spawn;if(!respawn_position(clients,ai,cattlers,actor->id,&spawn))continue;
-        NfCombatEvent event={0};nf_combat_respawn(actor,spawn,world->tick,&event);reset_movement_after_respawn(world,actor);nf_ai_on_respawn(ai,actor->id);nf_spatial_on_respawn(spatial,actor->id,world);nf_cattler_on_respawn(cattlers,actor->id,world);publish_cattler_event(cattlers,world,&event);broadcast_event(net,clients,semantics,event);
+        NfActor *actor=&world->actors[i];if(!actor->active||actor->combat.alive||actor->combat.respawn_timer>0.0f)continue;
+        NfVec3 spawn={0};NfCattlerReturnKind return_kind=NF_CATTLER_RETURN_NONE;uint8_t return_region=NF_REGION_INVALID;
+        const bool is_cattler=actor->faction==NF_FACTION_RANCHER;
+        if(is_cattler){
+            if(!nf_cattler_recurrence_spawn_for(recurrence,cattlers,world,actor->id,&spawn,&return_kind,&return_region))continue;
+        }else if(!ordinary_respawn_position(clients,ai,actor->id,&spawn))continue;
+
+        NfCombatEvent event={0};nf_combat_respawn(actor,spawn,world->tick,&event);reset_movement_after_respawn(world,actor);
+        if(is_cattler){
+            nf_cattler_recurrence_commit(recurrence,cattlers,actor->id,spawn,return_region);
+            nf_cattler_on_respawn(cattlers,actor->id,world);
+            printf("[cattler-return] kind=%s actor=%u source_region=%u:%s tick=%llu\n",
+                nf_cattler_return_name(return_kind),actor->id,return_region,nf_region_name(return_region),(unsigned long long)world->tick);
+        }else{
+            nf_ai_on_respawn(ai,actor->id);nf_spatial_on_respawn(spatial,actor->id,world);
+        }
+        publish_cattler_event(cattlers,world,&event);broadcast_event(net,clients,semantics,event);
     }
 }
 
-static NfControlFrame client_control(const NfServerClient *c){
-    return(NfControlFrame){.actor=c->entity_id,.source=NF_CONTROL_NETWORK,.move=c->current_input,.combat=c->combat_input,.perceived_tick=c->current_client_tick,.sequence=c->last_input_sequence};
-}
+static NfControlFrame client_control(const NfServerClient *c){return(NfControlFrame){.actor=c->entity_id,.source=NF_CONTROL_NETWORK,.move=c->current_input,.combat=c->combat_input,.perceived_tick=c->current_client_tick,.sequence=c->last_input_sequence};}
+static NfCattlerDebugProfile parse_cattler_profile(const char *value){if(value==NULL)return NF_CATTLER_PROFILE_NORMAL;if(strcmp(value,"pack")==0)return NF_CATTLER_PROFILE_PACK;if(strcmp(value,"loner")==0)return NF_CATTLER_PROFILE_LONER;if(strcmp(value,"horde")==0)return NF_CATTLER_PROFILE_HORDE;return NF_CATTLER_PROFILE_NORMAL;}
 
-static NfCattlerDebugProfile parse_cattler_profile(const char *value){
-    if(value==NULL)return NF_CATTLER_PROFILE_NORMAL;
-    if(strcmp(value,"pack")==0)return NF_CATTLER_PROFILE_PACK;
-    if(strcmp(value,"loner")==0)return NF_CATTLER_PROFILE_LONER;
-    if(strcmp(value,"horde")==0)return NF_CATTLER_PROFILE_HORDE;
-    return NF_CATTLER_PROFILE_NORMAL;
+static void seed_lifeworld_corner(NfCattlerSystem *cattlers,NfWorld *world){
+    if(cattlers==NULL||world==NULL||cattlers->count<2u)return;
+    static const NfVec3 seeded[2]={{-51.0f,0.05f,-12.0f},{-43.0f,0.05f,-7.0f}};
+    for(size_t i=0u;i<2u;++i){NfCattlerAgent *agent=&cattlers->agents[i];NfActor *body=nf_world_find_actor(world,agent->actor_id);if(body==NULL)continue;body->transform.position=seeded[i];body->transform.velocity=(NfVec3){0};agent->spawn=seeded[i];const uint8_t region=nf_region_nearest(&cattlers->graph,seeded[i]);agent->current_region=region;agent->target_region=region;agent->next_region=region;agent->home_region=region;agent->claimed_watch_region=NF_REGION_INVALID;}
 }
 
 int main(int argc,char **argv){
@@ -299,42 +305,41 @@ int main(int argc,char **argv){
     NfAiSystem ai;nf_ai_init(&ai,&world,ai_count,world.seed^0xA105u);nf_ai_set_rival_relationship(&ai,rival_relation);
     NfEncounterState encounter;nf_encounter_init(&encounter,&ai,&world,pressure_slots,world.seed^0xE06u);
     NfSpatialSystem spatial;nf_spatial_init(&spatial,&ai,&world,world.seed^0x507u);
-    NfCattlerSystem cattlers;nf_cattler_init(&cattlers,&world,cattler_count,cattler_profile,world.seed^0xCA771Eu);
+    NfCattlerSystem cattlers;nf_cattler_init(&cattlers,&world,cattler_count,cattler_profile,world.seed^0xCA771Eu);seed_lifeworld_corner(&cattlers,&world);
+    NfCattlerRecurrenceSystem recurrence;nf_cattler_recurrence_init(&recurrence,world.seed^0xEC0106u);
+    NfLifeworldSystem lifeworld;nf_lifeworld_init(&lifeworld,&spatial.graph,world.seed^0x1F3u);
     history_record(history,&world);
 
-    printf("nightfall!punk dedicated server v0.8 dream cattler habitat ecology\n");
+    printf("nightfall!punk dedicated server v1.0 topographic lifeworld\n");
     printf("port=%u tick=%u snapshot=%u max_players=%u rivals=%zu pressure_slots=%zu cattlers=%zu relation=%s crypto=%s friendly_fire=%s sim=%ums +/- %ums %.1f%% loss\n",port,NF_TICK_RATE,NF_NET_SNAPSHOT_HZ,NF_NET_MAX_PLAYERS,ai.count,encounter.pressure_slots,cattlers.count,nf_relationship_name(rival_relation),nf_security_is_strong()?"libsodium":"scaffold",friendly_fire?"on":"off",sim_latency,sim_jitter,sim_loss);
     printf("[encounter] bounded Human Rival pressure + v0.7 spatial ecology preserved\n");
-    printf("[spatial] 0.40 km^2 graybox | regions=%zu | local samples=%u | situated Rival tasks enabled\n",spatial.graph.count,NF_SPATIAL_LOCAL_SAMPLES);
-    printf("[cattler] habitat continuity -> resource -> prey -> disturbance -> territory -> access | default ecology ~90%% pack, ~5%% hunt-surge, ~5%% loner\n");
+    printf("[spatial] 0.40 km^2 graybox | regions=%zu | local samples=%u | situated Rival tasks + bounded lifeworld attention bias enabled\n",spatial.graph.count,NF_SPATIAL_LOCAL_SAMPLES);
+    printf("[cattler] habitat return is ecological: local death creates absence; ordinary return uses a living source; global-zero uses prolonged offscreen reseed only\n");
+    printf("[lifeworld] ~800 m^2 embodied proof window; boundary is environmental interdependence, not area alone | exact primary causes + disposable predicted surface\n");
 
     const double fixed_ms=1000.0/(double)NF_TICK_RATE;uint32_t last=nf_net_now_ms(),start=last;double accumulator=0.0;uint64_t next_ai_log_tick=0u;
     while(g_running){
         NfNetEvent event;
         while(nf_net_service(&net,&event,0)>0){
-            if(event.type==NF_NET_EVENT_RECEIVE){
-                NfMessageType type=nf_protocol_peek_type(event.data,event.size);NfServerClient *client=by_peer(clients,event.peer);
-                if(type==NF_MSG_HELLO)handle_hello(&net,&world,clients,event.peer,event.data,event.size);
-                else if(type==NF_MSG_INPUT)handle_input(client,event.data,event.size);
-                else if(type==NF_MSG_PING&&client!=NULL){NfPingMessage ping;if(nf_protocol_decode_ping(event.data,event.size,NF_MSG_PING,&ping)){uint8_t buffer[32];size_t n=nf_protocol_encode_ping(buffer,sizeof(buffer),NF_MSG_PONG,&ping);nf_net_send(&net,client->peer,NF_NET_CHANNEL_RELIABLE,buffer,n,true);}}
-            }else if(event.type==NF_NET_EVENT_DISCONNECT){
-                NfServerClient *client=by_peer(clients,event.peer);if(client!=NULL){client->connected=false;client->peer=NULL;client->current_input=(NfMoveInput){0};client->combat_input=(NfCombatInput){0};client->reserved_until_ms=nf_net_now_ms()+NF_NET_RECONNECT_WINDOW_MS;printf("[server] reserved entity=%u for reconnect\n",client->entity_id);}
-            }
+            if(event.type==NF_NET_EVENT_RECEIVE){NfMessageType type=nf_protocol_peek_type(event.data,event.size);NfServerClient *client=by_peer(clients,event.peer);if(type==NF_MSG_HELLO)handle_hello(&net,&world,clients,event.peer,event.data,event.size);else if(type==NF_MSG_INPUT)handle_input(client,event.data,event.size);else if(type==NF_MSG_PING&&client!=NULL){NfPingMessage ping;if(nf_protocol_decode_ping(event.data,event.size,NF_MSG_PING,&ping)){uint8_t buffer[32];size_t n=nf_protocol_encode_ping(buffer,sizeof(buffer),NF_MSG_PONG,&ping);nf_net_send(&net,client->peer,NF_NET_CHANNEL_RELIABLE,buffer,n,true);}}}
+            else if(event.type==NF_NET_EVENT_DISCONNECT){NfServerClient *client=by_peer(clients,event.peer);if(client!=NULL){client->connected=false;client->peer=NULL;client->current_input=(NfMoveInput){0};client->combat_input=(NfCombatInput){0};client->reserved_until_ms=nf_net_now_ms()+NF_NET_RECONNECT_WINDOW_MS;printf("[server] reserved entity=%u for reconnect\n",client->entity_id);}}
         }
         uint32_t now=nf_net_now_ms();uint32_t elapsed=now-last;last=now;if(elapsed>250u)elapsed=250u;accumulator+=(double)elapsed;expire_reservations(&world,clients,now);
         while(accumulator>=fixed_ms){
             nf_spatial_tick(&spatial,&ai,&world,&semantics);
+            nf_lifeworld_apply_attention_bias(&spatial,&lifeworld,&ai,&world);
             NfControlFrame ai_controls[NF_AI_MAX_AGENTS];size_t ai_controls_count=nf_ai_tick(&ai,&world,&semantics,ai_controls,NF_AI_MAX_AGENTS);nf_spatial_filter_controls(&spatial,&ai,&world,ai_controls,ai_controls_count);nf_encounter_filter_controls(&encounter,&ai,&world,ai_controls,ai_controls_count);
             NfControlFrame cattler_controls[NF_CATTLER_MAX_AGENTS];size_t cattler_controls_count=nf_cattler_tick(&cattlers,&world,&semantics,cattler_controls,NF_CATTLER_MAX_AGENTS);
 
-            for(size_t i=0;i<NF_SERVER_CLIENTS;++i){
-                NfServerClient *client=&clients[i];if(!client->occupied)continue;NfMoveInput move=client->connected?client->current_input:(NfMoveInput){0};nf_world_set_input(&world,client->entity_id,move);
-                if(client->connected){NfControlFrame control=client_control(client);process_combat_control(&net,&world,clients,&semantics,&cattlers,&control,history,rival_relation,friendly_fire);client->current_input.jump_pressed=false;client->combat_input.fire_pressed=false;client->combat_input.reload_pressed=false;client->combat_input.weapon_slot=0u;}
-            }
+            for(size_t i=0;i<NF_SERVER_CLIENTS;++i){NfServerClient *client=&clients[i];if(!client->occupied)continue;NfMoveInput move=client->connected?client->current_input:(NfMoveInput){0};nf_world_set_input(&world,client->entity_id,move);if(client->connected){NfControlFrame control=client_control(client);process_combat_control(&net,&world,clients,&semantics,&cattlers,&control,history,rival_relation,friendly_fire);client->current_input.jump_pressed=false;client->combat_input.fire_pressed=false;client->combat_input.reload_pressed=false;client->combat_input.weapon_slot=0u;}}
             for(size_t i=0;i<ai_controls_count;++i){nf_world_set_input(&world,ai_controls[i].actor,ai_controls[i].move);process_combat_control(&net,&world,clients,&semantics,&cattlers,&ai_controls[i],history,rival_relation,friendly_fire);}
             for(size_t i=0;i<cattler_controls_count;++i){nf_world_set_input(&world,cattler_controls[i].actor,cattler_controls[i].move);process_combat_control(&net,&world,clients,&semantics,&cattlers,&cattler_controls[i],history,rival_relation,friendly_fire);}
 
-            nf_world_step(&world,1.0f/(float)NF_TICK_RATE);process_respawns(&net,&world,clients,&ai,&spatial,&cattlers,&semantics);history_record(history,&world);
+            nf_world_step(&world,1.0f/(float)NF_TICK_RATE);
+            nf_cattler_recurrence_tick(&recurrence,&cattlers,&world);
+            process_respawns(&net,&world,clients,&ai,&spatial,&cattlers,&recurrence,&semantics);
+            nf_lifeworld_tick(&lifeworld,&world,&spatial.graph);
+            history_record(history,&world);
             if(world.tick%(NF_TICK_RATE/NF_NET_SNAPSHOT_HZ)==0u)for(size_t i=0;i<NF_SERVER_CLIENTS;++i)if(clients[i].occupied&&clients[i].connected)send_snapshot(&net,&world,&clients[i]);
 
             if(world.tick>=next_ai_log_tick){
@@ -342,11 +347,12 @@ int main(int argc,char **argv){
                     const NfAiAgent *agent=&ai.agents[i];const NfActor *body=nf_world_find_actor_const(&world,agent->actor_id);const NfEncounterAgentState *encounter_state=nf_encounter_agent_state_const(&encounter,agent->actor_id);const NfSpatialAgentState *spatial_state=nf_spatial_agent_state_const(&spatial,agent->actor_id);
                     printf("[ai] id=%u role=%s mode=%s target=%u confidence=%.2f visible=%s health=%.0f cover=%d pressure=%s settle=%.2f suppression=%.2f aimerr=%.3f region=%u:%s->%u:%s next=%u task=%s interrupt=%s fields[c=%.2f a=%.2f t=%.2f e=%.2f p=%.2f o=%.2f score=%.2f]\n",agent->actor_id,nf_squad_role_name(agent->role),nf_agent_mode_name(agent->mode),agent->knowledge.target,agent->knowledge.confidence,agent->knowledge.visible_now?"yes":"no",body?body->health:0.0f,agent->selected_affordance,encounter_state&&encounter_state->pressure_authorized?"yes":"no",encounter_state?encounter_state->aim_settle:0.0f,encounter_state?encounter_state->suppression:0.0f,encounter_state?encounter_state->last_aim_error:0.0f,spatial_state?spatial_state->current_region:NF_REGION_INVALID,spatial_state?nf_region_name(spatial_state->current_region):"INVALID",spatial_state?spatial_state->target_region:NF_REGION_INVALID,spatial_state?nf_region_name(spatial_state->target_region):"INVALID",spatial_state?spatial_state->next_region:NF_REGION_INVALID,spatial_state?nf_spatial_task_name(spatial_state->task):"NONE",spatial_state?nf_spatial_interrupt_name(spatial_state->interrupt):"NONE",spatial_state?spatial_state->fields.route_congestion:0.0f,spatial_state?spatial_state->fields.ally_support:0.0f,spatial_state?spatial_state->fields.enemy_threat:0.0f,spatial_state?spatial_state->fields.exposure:0.0f,spatial_state?spatial_state->fields.pressure:0.0f,spatial_state?spatial_state->fields.objective_value:0.0f,spatial_state?spatial_state->fields.preference_score:0.0f);
                 }
-                for(size_t i=0;i<cattlers.count;++i){
-                    const NfCattlerAgent *agent=&cattlers.agents[i];const NfActor *body=nf_world_find_actor_const(&world,agent->actor_id);const NfCattlerRegionState *region=nf_cattler_region_state_const(&cattlers,agent->current_region);
-                    printf("[cattler] id=%u social=%s mode=%s predatory=%s prey=%u confidence=%.2f visible=%s health=%.0f locomotor=%.2f region=%u:%s->%u:%s next=%u infest=%.2f prey_activity=%.2f disturbance=%.2f event=%s score[i=%.2f p=%.2f d=%.2f x=%.2f s=%.2f]\n",agent->actor_id,nf_cattler_social_name(agent->social),nf_cattler_mode_name(agent->mode),agent->profile.disposition==NF_RANCHER_PREDATORY?"yes":"no",agent->knowledge.prey,agent->knowledge.confidence,agent->knowledge.visible_now?"yes":"no",body?body->health:0.0f,agent->locomotor_integrity,agent->current_region,nf_region_name(agent->current_region),agent->target_region,nf_region_name(agent->target_region),agent->next_region,region?region->infestation:0.0f,region?region->prey_activity:0.0f,region?region->disturbance:0.0f,nf_cattler_event_name(cattlers.event_mode),agent->score.infestation,agent->score.prey,agent->score.displacement,agent->score.expansion,agent->score.survival);
-                }
-                printf("[ecology] cattler event=%s internal-ledger infestation=%.2f prey=%.2f displacement=%.2f expansion=%.2f survival=%.2f (player-facing expression remains sense-data, not score HUD)\n",nf_cattler_event_name(cattlers.event_mode),cattlers.ecology_score.infestation,cattlers.ecology_score.prey,cattlers.ecology_score.displacement,cattlers.ecology_score.expansion,cattlers.ecology_score.survival);
+                for(size_t i=0;i<cattlers.count;++i){const NfCattlerAgent *agent=&cattlers.agents[i];const NfActor *body=nf_world_find_actor_const(&world,agent->actor_id);const NfCattlerRegionState *region=nf_cattler_region_state_const(&cattlers,agent->current_region);printf("[cattler] id=%u social=%s mode=%s predatory=%s prey=%u confidence=%.2f visible=%s health=%.0f locomotor=%.2f region=%u:%s->%u:%s next=%u infest=%.2f prey_activity=%.2f disturbance=%.2f event=%s score[i=%.2f p=%.2f d=%.2f x=%.2f s=%.2f]\n",agent->actor_id,nf_cattler_social_name(agent->social),nf_cattler_mode_name(agent->mode),agent->profile.disposition==NF_RANCHER_PREDATORY?"yes":"no",agent->knowledge.prey,agent->knowledge.confidence,agent->knowledge.visible_now?"yes":"no",body?body->health:0.0f,agent->locomotor_integrity,agent->current_region,nf_region_name(agent->current_region),agent->target_region,nf_region_name(agent->target_region),agent->next_region,region?region->infestation:0.0f,region?region->prey_activity:0.0f,region?region->disturbance:0.0f,nf_cattler_event_name(cattlers.event_mode),agent->score.infestation,agent->score.prey,agent->score.displacement,agent->score.expansion,agent->score.survival);}
+                printf("[ecology] cattler living=%zu/%zu event=%s internal-ledger infestation=%.2f prey=%.2f displacement=%.2f expansion=%.2f survival=%.2f (player-facing expression remains sense-data, not score HUD)\n",nf_cattler_living_count(&cattlers,&world),cattlers.count,nf_cattler_event_name(cattlers.event_mode),cattlers.ecology_score.infestation,cattlers.ecology_score.prey,cattlers.ecology_score.displacement,cattlers.ecology_score.expansion,cattlers.ecology_score.survival);
+                const NfLifeworldSurface surface=nf_lifeworld_predict_surface(&lifeworld);
+                printf("[lifeworld] region=%u:%s cattlers=%u humans=%u infest=%u human_use=%u maint=%u disturb=%u generator=%u pump=%u hotspots=%zu predicted-darkness=%.2f recovery=%.2f\n",lifeworld.region,nf_region_name(lifeworld.region),(unsigned)lifeworld.cattlers_present,(unsigned)lifeworld.humans_present,lifeworld.memory.infestation_q,lifeworld.memory.human_use_q,lifeworld.memory.maintenance_q,lifeworld.memory.disturbance_q,lifeworld.generator.throughput_q,lifeworld.pump.throughput_q,lifeworld.hotspot_count,surface.darkness,surface.recovery);
+                for(size_t i=0u;i<lifeworld.attention_count;++i){const NfAttentionChoice *choice=&lifeworld.attention[i];printf("[attention] rival=%u hotspot=%s activity=%s region=%u explore=%s\n",choice->actor_id,nf_hotspot_name(choice->hotspot),nf_life_activity_name(choice->activity),choice->region,choice->exploration?"yes":"no");}
+                char primary[512];if(nf_lifeworld_write_primary_json(&lifeworld,world.seed,world.tick,1u,primary,sizeof(primary))>0u)printf("[primary] %s\n",primary);
                 next_ai_log_tick=world.tick+NF_TICK_RATE*2u;
             }
             accumulator-=fixed_ms;

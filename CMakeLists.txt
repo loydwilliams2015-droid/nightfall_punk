@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(nightfall_punk VERSION 0.9 LANGUAGES C)
+project(nightfall_punk VERSION 1.0 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -49,7 +49,7 @@ if(TARGET PkgConfig::SODIUM)
     set(NF_SODIUM_TARGET PkgConfig::SODIUM)
     message(STATUS "nightfall: libsodium enabled")
 else()
-    message(WARNING "nightfall: libsodium not found; v0.9 localhost testing will use non-cryptographic session-token scaffolding. Install libsodium-dev for authenticated token derivation.")
+    message(WARNING "nightfall: libsodium not found; v1.0 localhost testing will use non-cryptographic session-token scaffolding. Install libsodium-dev for authenticated token derivation.")
 endif()
 
 add_library(nightfall_shared STATIC
@@ -61,7 +61,9 @@ add_library(nightfall_shared STATIC
     src/shared/nf_semantics.c
     src/shared/nf_region.c
     src/shared/nf_energy.c
-    src/shared/nf_hitbox.c)
+    src/shared/nf_energy_actor.c
+    src/shared/nf_hitbox.c
+    src/shared/nf_lifeworld.c)
 target_include_directories(nightfall_shared PUBLIC src/shared)
 nf_project_warnings(nightfall_shared)
 if(UNIX)
@@ -73,7 +75,10 @@ add_library(nightfall_ai STATIC
     src/server/ai/nf_encounter.c
     src/server/ai/nf_spatial.c
     src/server/ai/nf_spatial_filter.c
-    src/server/ai/nf_cattler.c)
+    src/server/ai/nf_spatial_attention.c
+    src/server/ai/nf_cattler.c
+    src/server/ai/nf_cattler_recurrence.c
+    src/server/ai/nf_lifeworld_spatial.c)
 target_include_directories(nightfall_ai PUBLIC src/server/ai src/shared)
 target_link_libraries(nightfall_ai PUBLIC nightfall_shared)
 nf_project_warnings(nightfall_ai)
@@ -131,32 +136,43 @@ if(NF_BUILD_TESTS)
     add_executable(nightfall_world_test src/tests/test_world.c)
     target_link_libraries(nightfall_world_test PRIVATE nightfall_shared)
     nf_project_warnings(nightfall_world_test)
-    add_test(NAME simulation_v09 COMMAND nightfall_world_test)
+    add_test(NAME simulation_v10 COMMAND nightfall_world_test)
 
     add_executable(nightfall_combat_test src/tests/test_combat.c)
     target_link_libraries(nightfall_combat_test PRIVATE nightfall_shared)
     nf_project_warnings(nightfall_combat_test)
-    add_test(NAME combat_contract_v09 COMMAND nightfall_combat_test)
+    add_test(NAME combat_contract_v10 COMMAND nightfall_combat_test)
 
     add_executable(nightfall_network_test src/tests/test_network.c)
     target_link_libraries(nightfall_network_test PRIVATE nightfall_network)
     nf_project_warnings(nightfall_network_test)
-    add_test(NAME network_contract_v09 COMMAND nightfall_network_test)
+    add_test(NAME network_contract_v10 COMMAND nightfall_network_test)
 
     add_executable(nightfall_ai_test src/tests/test_ai.c)
     target_link_libraries(nightfall_ai_test PRIVATE nightfall_ai)
     target_include_directories(nightfall_ai_test PRIVATE src/server/ai)
     nf_project_warnings(nightfall_ai_test)
-    add_test(NAME dream_cattler_ecology_v09 COMMAND nightfall_ai_test)
+    add_test(NAME dream_cattler_ecology_v10 COMMAND nightfall_ai_test)
 
     add_executable(nightfall_energy_test src/tests/test_energy.c)
     target_link_libraries(nightfall_energy_test PRIVATE nightfall_shared)
     nf_project_warnings(nightfall_energy_test)
-    add_test(NAME topographical_energy_v09 COMMAND nightfall_energy_test)
+    add_test(NAME topographical_energy_v10 COMMAND nightfall_energy_test)
 
     add_executable(nightfall_cattler_weakpoint_test src/tests/test_cattler_weakpoint.c)
     target_link_libraries(nightfall_cattler_weakpoint_test PRIVATE nightfall_ai)
     target_include_directories(nightfall_cattler_weakpoint_test PRIVATE src/server/ai)
     nf_project_warnings(nightfall_cattler_weakpoint_test)
-    add_test(NAME cattler_weakpoint_truth_v09 COMMAND nightfall_cattler_weakpoint_test)
+    add_test(NAME cattler_weakpoint_truth_v10 COMMAND nightfall_cattler_weakpoint_test)
+
+    add_executable(nightfall_lifeworld_test src/tests/test_lifeworld.c)
+    target_link_libraries(nightfall_lifeworld_test PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_lifeworld_test)
+    add_test(NAME topographic_lifeworld_v10 COMMAND nightfall_lifeworld_test)
+
+    add_executable(nightfall_lifeworld_runtime_test src/tests/test_lifeworld_runtime.c)
+    target_link_libraries(nightfall_lifeworld_runtime_test PRIVATE nightfall_ai)
+    target_include_directories(nightfall_lifeworld_runtime_test PRIVATE src/server/ai)
+    nf_project_warnings(nightfall_lifeworld_runtime_test)
+    add_test(NAME lifeworld_runtime_v10 COMMAND nightfall_lifeworld_runtime_test)
 endif()

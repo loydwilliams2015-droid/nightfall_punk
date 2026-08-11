@@ -5,8 +5,6 @@
 
 #include <stdbool.h>
 
-/* Shared Dream Cattler combat/presentation dimensions. Keep the temporary
-   yellow weak-point bands and authoritative hit geometry on one contract. */
 #define NF_CATTLER_BODY_HEIGHT 2.80f
 #define NF_CATTLER_EYE_HEIGHT 2.35f
 #define NF_CATTLER_BODY_WIDTH 0.84f
@@ -26,8 +24,6 @@
 #define NF_CATTLER_KNEE_BAND_CENTER_Y 0.60f
 #define NF_CATTLER_KNEE_BAND_HEIGHT 0.10f
 
-/* Classify the nearest authoritative Dream Cattler hit zone for a unit ray.
-   max_distance should already reflect nearer world occlusion. */
 NfHitZone nf_cattler_hit_zone_for_ray(
     NfVec3 origin, NfVec3 direction, NfVec3 actor_base,
     float max_distance, float *distance_out);
