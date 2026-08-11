@@ -365,7 +365,13 @@ int main(int argc,char **argv) {
 
         Vector2 mouse=update_mouse_capture(&mouse_capture,now);yaw-=mouse.x*0.0022f;pitch=clampf_local(pitch-mouse.y*0.0022f,-1.45f,1.45f);
         NfMoveInput input={0};input.forward=(IsKeyDown(KEY_W)?1.0f:0.0f)-(IsKeyDown(KEY_S)?1.0f:0.0f);input.strafe=(IsKeyDown(KEY_A)?1.0f:0.0f)-(IsKeyDown(KEY_D)?1.0f:0.0f);input.yaw_radians=yaw;
-        if(IsKeyPressed(KEY_SPACE))jump_latched=true;input.jump_pressed=jump_latched;input.crouch_held=IsKeyDown(KEY_LEFT_CONTROL);input.sprint_held=IsKeyDown(KEY_LEFT_SHIFT);input.interact_held=IsKeyDown(KEY_E);
+        if(IsKeyPressed(KEY_SPACE)){
+            jump_latched=true;
+        }
+        input.jump_pressed=jump_latched;
+        input.crouch_held=IsKeyDown(KEY_LEFT_CONTROL);
+        input.sprint_held=IsKeyDown(KEY_LEFT_SHIFT);
+        input.interact_held=IsKeyDown(KEY_E);
         if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){fire_latched=true;muzzle_until=now+55u;}if(IsKeyPressed(KEY_R))reload_latched=true;if(IsKeyPressed(KEY_ONE))weapon_latched=1u;if(IsKeyPressed(KEY_TWO))weapon_latched=2u;
         const NfActor *pre_player=player_id?nf_world_find_actor_const(&world,player_id):NULL;
         if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)&&pre_player!=NULL&&pre_player->combat.weapon==NF_WEAPON_CARBINE&&now-last_auto_flash>95u){muzzle_until=now+45u;last_auto_flash=now;}
@@ -401,7 +407,10 @@ int main(int argc,char **argv) {
         for(size_t i=0;i<world.collider_count;++i)draw_collider(&world.colliders[i]);
         for(size_t i=0;i<world.ramp_count;++i)draw_ramp(&world.ramps[i]);
         for(size_t i=0;i<NF_REMOTE_SLOTS;++i){
-            if(!remotes[i].active)continue;float a=clampf_local((float)(now-remotes[i].received_ms)/(1000.0f/(float)NF_NET_SNAPSHOT_HZ),0,1);
+            if(!remotes[i].active){
+                continue;
+            }
+            float a=clampf_local((float)(now-remotes[i].received_ms)/(1000.0f/(float)NF_NET_SNAPSHOT_HZ),0,1);
             Vector3 p={remotes[i].from.x+(remotes[i].to.x-remotes[i].from.x)*a,remotes[i].from.y+(remotes[i].to.y-remotes[i].from.y)*a,remotes[i].from.z+(remotes[i].to.z-remotes[i].from.z)*a};draw_remote_actor(p,&remotes[i]);
         }
         if(player!=NULL&&player->movement.candidate.active){const NfTraversalCandidate *c=&player->movement.candidate;Vector3 p={c->point.x,c->point.y+0.15f,c->point.z};DrawSphere(p,0.14f,candidate_color(c->type));}
@@ -437,5 +446,13 @@ int main(int argc,char **argv) {
         EndDrawing();
     }
 
-    if(peer!=NULL)nf_net_disconnect(peer,0);nf_net_flush(&net);EnableCursor();CloseWindow();nf_net_close(&net);nf_net_global_shutdown();return 0;
+    if(peer!=NULL){
+        nf_net_disconnect(peer,0);
+    }
+    nf_net_flush(&net);
+    EnableCursor();
+    CloseWindow();
+    nf_net_close(&net);
+    nf_net_global_shutdown();
+    return 0;
 }
