@@ -269,3 +269,70 @@ Do not introduce for this slice:
 - silent hidden ordinary-system cheating that should instead be explicitly labeled Apophis intervention.
 
 Prefer small inspectable expressions over one opaque master scalar. Diagnostics should expose meaningful input contributions where useful.
+
+## Cross-system social/economic parametric rule
+
+The accepted social-economy closeout is recorded in `docs/LEDGER_SOCIAL_ECONOMY_CLOSEOUT.md`, with implementation-facing shapes in `docs/LEDGER_SOCIAL_ECOLOGY_CODE_SKETCH.md`.
+
+The governing parametric rule extends to social and economic relations:
+
+`observable world/account facts -> situated evidence/belief -> disagreement alternatives -> action/bargain -> material consequence -> trace/memory -> changed gradient`
+
+Examples of suspicious fixed social/economic outcome constants now include:
+
+- universal `trust_score`;
+- permanent class assignment from Crew membership;
+- authoritative structural-violence score;
+- automatic Rawlsian/non-Rawlsian truth flag;
+- universal property/commons ownership state that substitutes for access/stewardship relations;
+- fixed exploitation/rent/debt morality thresholds independent of alternatives, contribution, risk, reproduction costs and contestability.
+
+Prefer decomposed relations over master scalars.
+
+### Gradient / memory bridge
+
+Social and economic reproduction uses the same accepted stochastic-Lifeworld logic:
+
+`action -> consequence -> memory -> changed gradient -> future action`
+
+A present gradient conditions practical likelihood and cost; memory records what prior relations materially changed. Neither implies deterministic behavior.
+
+### Surplus value bridge
+
+Surplus is accepted as **surplus value of energy accounting**:
+
+`surplus value = productive output - reproduction/maintenance/repair costs`
+
+Distribution, claims and reinvestment then alter future reserves, access, infrastructure, disagreement points and gradients.
+
+Do not create a second incompatible universal economy currency merely to represent surplus.
+
+### Crew / class boundary
+
+Human factions are Crews: pirate/maroon/union/guild/club/gang/sports-team/cultural-worker/mercenary-like social formations. Crew identity is not class identity.
+
+Working design shorthand:
+
+- equality or Rawlsian inequality on a relation -> no class struggle on that relation;
+- non-Rawlsian inequality for a situated person -> micro-economic class struggle;
+- reproduced materially similar non-Rawlsian relations across a structural position -> macro-economic class struggle.
+
+This is a design/analysis contract, not an authoritative gameplay classifier.
+
+### Commons boundary
+
+A commons may be spontaneous/self-existing through its own ecological/material recurrence or methodically stewarded by an interested union, guild, Crew, cooperative or local association responsible for that segment of the commons.
+
+Restriction is not automatically enclosure; evaluate whether stewardship reproduces common sustainable availability or primarily reproduces controller leverage/exclusion.
+
+## SIGNAL pause marker
+
+This question round is complete and paused. Do not reopen accepted contracts on resume unless a contradiction appears.
+
+Next three questions are frozen in `docs/LEDGER_SOCIAL_ECONOMY_CLOSEOUT.md`:
+
+1. money relative to universal energy accounting;
+2. dues/taxes/levies as stewardship versus extraction;
+3. bankruptcy/restructuring/debt forgiveness versus strict repayment.
+
+No compile is authorized by this docs-only closeout.
