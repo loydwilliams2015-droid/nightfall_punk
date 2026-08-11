@@ -1,6 +1,6 @@
 # nightfall!punk — v1.1 Contamination / Relational Physics ledger
 
-Status: **active build contract**. This ledger supersedes v1.0 only for v1.1 work; accepted v1.0 remains immutable at `archive/v1.0`.
+Status: **code-complete demo candidate; Pop!_OS human-video proof pending**. This ledger supersedes v1.0 only for v1.1 work; accepted v1.0 remains immutable at `archive/v1.0`.
 
 ## Governing engine thesis
 
@@ -90,7 +90,7 @@ Universal contamination body-horror vocabulary may include dark ooze, staining, 
 
 `despawn` should normally mean a change of representation, not erasure of causality.
 
-First greybox fate mapping may be provisional and diagnostic; final item taxonomy is not locked by v1.1.
+First greybox fate mapping is provisional and diagnostic: carbine=`SITE_PERSIST` metadata, pistol=`BASE_RESTOCK`, reserve-ammo units=`ECO_ABSORB`. Final item taxonomy and replicated pickup entities are not locked by v1.1.
 
 ### Q6 — functional localization
 
@@ -109,17 +109,21 @@ First greybox fate mapping may be provisional and diagnostic; final item taxonom
 
 **LOCKED:** contamination may transfer through bounded material relations: body/surface contact, water, limited airborne transport and appropriate body-to-body contact. Transfer depends on phenotype, concentration, exposure, susceptibility and time; not every puddle is automatically infectious.
 
+v1.1 proves the first bounded subset: stasis body -> surface trace -> dissolved demo-water component -> explicit drainage/decay sinks. General contact and ventilation transfer remain later implementations.
+
 ### Q9 — affordance consequence
 
 **LOCKED:** contamination becomes mechanically important when it changes a material relation or affordance.
 
-Examples: locomotor contamination modifies movement; manipulator contamination modifies handling; sensory contamination modifies perceptual reliability; surface contamination changes evidence/maintenance/traction where implemented; machine contamination may alter throughput where implemented.
+Current v1.1 proof: locomotor contamination reduces bounded movement input and can suppress sprint; manipulator contamination lengthens handling/reload/fire-recovery timing. Sensory contamination is authoritative and replicated but does not yet modify perception.
 
 > **Damage is degradation of relationships the body can maintain with the world.**
 
 ### Q10 — equipment / armor
 
 **LOCKED:** equipment mediates contamination/exposure; it is not a second HP bar. Equipment can itself become contaminated or damaged.
+
+The contract is locked; a general armor/equipment exposure graph is intentionally not introduced in this bounded v1.1 proof.
 
 ### Q11 — accounting conservation
 
@@ -128,6 +132,8 @@ Examples: locomotor contamination modifies movement; manipulator contamination m
 ### Q12 — environmental cleaning
 
 **LOCKED:** ordinary environmental processes can redistribute/remove contamination: water/drainage, ventilation, maintenance and bounded decay. Avoid a monotonically dirtier world.
+
+v1.1 implements surface decay plus demo-water dissolution/drainage accounting. Ventilation and generalized maintenance/decontamination remain later owners.
 
 ### Q13 — contamination vs infestation
 
@@ -143,7 +149,7 @@ First bounded human/automated proof:
 
 `combat -> localized contamination -> functional consequence -> STASIS -> inventory fate accounting -> persistent trace -> revival without rewind -> bounded environmental transport/decay -> continued world history`
 
-Do not claim a semantic/social behavioral response until the relevant actor evidence path is actually wired and demonstrated.
+Automated proof is implemented. Do not claim a semantic/social behavioral response to defeat traces until the relevant actor evidence path is separately wired and demonstrated.
 
 ## Greybox color contract
 
@@ -172,48 +178,56 @@ Sacrosanct identity rule:
 
 `WHITE = PLAYER | BLUE = ALLY | RED = RIVAL | ORANGE = CATTLER | YELLOW BANDS = CATTLER WEAK POINT`
 
-Faction identity must survive stasis/damage. Contamination overlays identity; it never recolors a Rival into a Cattler-like body. Infestation is environmental and must not use orange actor-body color.
+Faction identity survives stasis/damage. Contamination overlays identity; it never recolors a Rival into a Cattler-like body. Infestation is environmental and does not use orange actor-body color. Traversal debug colors were moved away from red/orange/yellow and ladders no longer use Cattler orange.
 
 ## v1.1 implementation boundary for the next demo
 
 ### EXISTING — regression protected
 
-- [ ] fixed 60 Hz server truth;
-- [ ] ENet + prediction/reconciliation;
-- [ ] movement / Fuzzy Rail / traversal;
-- [ ] authoritative hitscan/reload/weapon switching;
-- [ ] Human Rival limited perception + encounter/spatial layers;
-- [ ] Dream Cattler distinct AI + weak-point truth + ecological recurrence;
-- [ ] topographical energy/lifeworld systems;
-- [ ] v1.0 tests/smokes remain green.
+- [x] fixed 60 Hz server truth;
+- [x] ENet + prediction/reconciliation;
+- [x] movement / Fuzzy Rail / traversal;
+- [x] authoritative hitscan/reload/weapon switching;
+- [x] Human Rival limited perception + encounter/spatial layers;
+- [x] Dream Cattler distinct AI + weak-point truth + ecological recurrence;
+- [x] topographical energy/lifeworld systems;
+- [x] inherited v1.0 tests/smokes remain green under v1.1.
 
-### ADVANCING — implement now where stable
+### ADVANCING — implemented for the bounded v1.1 demo
 
-- [ ] contamination module owns functional body damage;
-- [ ] legacy `health` becomes a compatibility projection of systemic contamination;
-- [ ] STASIS/REVIVAL naming replaces player-facing DEAD/RESPAWN semantics while legacy enum aliases preserve compatibility;
-- [ ] four functional contamination domains;
-- [ ] locomotor/manipulator contamination has bounded gameplay consequence;
-- [ ] authoritative persistent stasis traces with explicit decay/transfer sinks;
-- [ ] first bounded water-contact transfer proof;
-- [ ] inventory fate accounting scaffold for restock/site/absorb;
-- [ ] network snapshot carries agency + contamination domains so prediction does not invent hidden damage state;
-- [ ] greybox identity palette corrected; damage shown as black-violet overlay, not faction recolor;
-- [ ] client uses psychological stasis/revival language, not literal death language;
-- [ ] dedicated v1.1 contamination contract test and smoke;
-- [ ] v1.1 exact-head CI compile/test/smoke green.
+- [x] contamination module owns functional body damage;
+- [x] legacy `health` is a compatibility/debug projection of systemic contamination;
+- [x] STASIS/REVIVAL naming replaces player-facing DEAD/RESPAWN semantics while legacy internal aliases preserve compatibility;
+- [x] four functional contamination domains;
+- [x] locomotor/manipulator contamination has bounded gameplay consequence;
+- [x] authoritative persistent stasis traces with explicit decay/transfer sinks;
+- [x] first bounded water-contact transfer proof;
+- [x] inventory fate accounting scaffold for restock/site/absorb;
+- [x] network protocol v5 carries agency + four contamination domains so prediction reconciles damage truth;
+- [x] greybox identity palette corrected; damage appears as black-violet overlay instead of faction recolor;
+- [x] client uses psychological STASIS/RETURNING language rather than literal death language;
+- [x] reliable STASIS event drives a secondary client trace visualization while server owns authoritative trace accounting;
+- [x] dedicated v1.1 contamination contract test and smoke;
+- [x] full Linux client/server compile, all CTests, combat/encounter/spatial/Cattler/energy/lifeworld/contamination smokes green on the latest code-bearing head.
 
 ### PAR — explicitly not claimed by this build
 
 - [ ] full fluid dynamics / chemistry;
 - [ ] universal voxel material simulation;
 - [ ] finalized inventory pickup/replication/economy;
+- [ ] site-persistent weapon as a replicated pickup entity rather than trace provenance metadata;
 - [ ] complete armor/equipment contamination graph;
+- [ ] generalized contact/airborne/ventilation contamination transport;
+- [ ] sensory contamination changing AI/player perception;
 - [ ] full machine contamination/repair network;
 - [ ] final audiovisual near-death sequence;
 - [ ] final body art or gore/splatter presentation;
 - [ ] semantic/social AI response to defeat traces unless separately proven;
 - [ ] Cattler infestation rewrite: existing infestation remains separate and protected.
+
+## Compile / proof status
+
+The latest code-bearing head passed the strict Linux CI sequence: standard-check, full graphical compile, all CTests, four-client combat smoke, passive encounter smoke, spatial ecology smoke, Dream Cattler habitat smoke, energy smoke, inherited lifeworld smoke, and the new contamination/stasis/transport smoke. PR #17 remains **draft** for human-video review; do not merge or archive v1.1 yet.
 
 ## Human video proof checklist
 
@@ -221,16 +235,26 @@ For the next recording, try to capture:
 
 1. a red Human Rival and an orange Dream Cattler in the same general view if convenient;
 2. visible black-violet contamination accumulating on a damaged actor without changing faction color;
-3. at least one Human entering STASIS;
-4. the stasis trace remaining after the actor revives/returns;
-5. player HUD showing contamination/agency rather than literal death language;
-6. F4 once, briefly, to preserve spatial context;
-7. ordinary combat/movement for long enough to reveal regressions.
+3. at least one Human entering **STASIS**;
+4. the black-violet stasis trace remaining after the actor returns;
+5. the HUD showing `AGENCY` and four contamination domains rather than literal death language;
+6. inventory after return: pistol restock / no automatic carbine restoration in this provisional proof;
+7. the muted-blue demo-water patch if convenient; automated tests, not the video, own the exact dissolved/drainage proof;
+8. F4 once, briefly, to preserve spatial context;
+9. ordinary combat/movement for long enough to reveal regressions.
 
-Also save `build/server.log`; the automated contamination test covers the exact accounting path, while the video judges readability and coherence.
+Also save `build/server.log`. The automated contamination test owns exact accounting; the video judges readability, behavior and coherence.
 
 ## Research/questions subroutine
 
 Use: `WATCH/READ -> QUESTION -> C5 TAG -> CURRENT EQUIVALENT -> GAP -> K/A/D/R -> SMALLEST CODE CONSEQUENCE -> COMPILE -> VIDEO -> REASSESS`.
+
+Priority v1.1/v1.2 research questions:
+
+1. **Rain World / situated ecology:** how much ecological consequence can remain local and creature-situated without a global AI administrator?
+2. **Oxygen Not Included / transport:** what is the smallest room/locality stock-flow representation that can alter FPS affordances without CFD?
+3. **Prototype / territorial phenotype:** what environmental transformation remains readable as occupation history without making contamination synonymous with Cattler infestation?
+4. **Tomb Raider / mechanism readability:** how should pump/valve/power/water causal chains announce themselves spatially while Rivals apply pressure?
+5. **SWAT/immersive-sim combat:** how much functional contamination should alter handling/movement before tactical readability suffers?
 
 For v1.1, prioritize source material only when it changes a contract or human-proof question. Compare mechanisms, not feature inventories.
