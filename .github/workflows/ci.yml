@@ -1,4 +1,4 @@
-name: nightfall v1.0 CI
+name: nightfall v1.1 CI
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
       - name: Full compile
         run: ./nightfall.sh build
 
-      - name: Simulation combat network spatial Dream Cattler energy and lifeworld tests
+      - name: Simulation combat network spatial Dream Cattler energy lifeworld and contamination tests
         run: ./nightfall.sh test
 
       - name: Four-client plus bounded-pressure Human Rival combat smoke
@@ -48,3 +48,6 @@ jobs:
 
       - name: Topographic lifeworld and epistemic-boundary smoke
         run: ./nightfall.sh lifeworld-smoke
+
+      - name: Contamination stasis inventory and transport smoke
+        run: ./nightfall.sh contamination-smoke
