@@ -83,6 +83,15 @@ run_lifeworld_smoke() {
   ! grep -q '"darkness"' "$BUILD_ROOT/lifeworld-smoke.log"
 }
 
+run_contamination_smoke() {
+  test -x "$HEADLESS_BUILD_DIR/nightfall_contamination_test" || "$0" build-headless
+  mkdir -p "$BUILD_ROOT"
+  "$HEADLESS_BUILD_DIR/nightfall_contamination_test" | tee "$BUILD_ROOT/contamination-smoke.log"
+  grep -q "nightfall v1.1 contamination / stasis / transport tests: PASS" "$BUILD_ROOT/contamination-smoke.log"
+  grep -q "inventory=SITE_PERSIST/BASE_RESTOCK/ECO_ABSORB" "$BUILD_ROOT/contamination-smoke.log"
+  grep -q "infestation=SEPARATE" "$BUILD_ROOT/contamination-smoke.log"
+}
+
 case "$cmd" in
   standard-check)
     command -v cmake >/dev/null
@@ -93,6 +102,8 @@ case "$cmd" in
     test -f "$ROOT_DIR/src/shared/nf_protocol.c"
     test -f "$ROOT_DIR/src/shared/nf_prediction.c"
     test -f "$ROOT_DIR/src/shared/nf_combat.c"
+    test -f "$ROOT_DIR/src/shared/nf_contamination.c"
+    test -f "$ROOT_DIR/src/shared/nf_contamination.h"
     test -f "$ROOT_DIR/src/shared/nf_relations.c"
     test -f "$ROOT_DIR/src/shared/nf_semantics.c"
     test -f "$ROOT_DIR/src/shared/nf_region.c"
@@ -109,7 +120,9 @@ case "$cmd" in
     test -f "$ROOT_DIR/src/server/ai/nf_cattler_recurrence.c"
     test -f "$ROOT_DIR/src/server/ai/nf_lifeworld_spatial.c"
     test -f "$ROOT_DIR/src/tests/test_lifeworld_runtime.c"
+    test -f "$ROOT_DIR/src/tests/test_contamination.c"
     test -f "$ROOT_DIR/docs/COMPARE5_LEDGER.md"
+    test -f "$ROOT_DIR/docs/LEDGER_V1.1.md"
     echo "[ok] cmake: $(cmake --version | head -n1)"
     echo "[ok] cc: $(cc --version | head -n1)"
     echo "[ok] nightfall.sh syntax"
@@ -118,7 +131,7 @@ case "$cmd" in
     else
       echo "[warn] libsodium-dev not detected; localhost security scaffold will be used"
     fi
-    echo "[ok] v1.0 topographic lifeworld completion tree present"
+    echo "[ok] v1.1 contamination / relational-physics source tree present"
     ;;
   build)
     cmake -S "$ROOT_DIR" -B "$FULL_BUILD_DIR" -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=ON
@@ -163,7 +176,7 @@ case "$cmd" in
       wait "$candidate_pid" 2>/dev/null || true
     done
     if [[ -z "$server_pid" ]]; then
-      echo "nightfall: local v1.0 server failed to start on five isolated ports" >&2
+      echo "nightfall: local v1.1 server failed to start on five isolated ports" >&2
       echo "nightfall: server log follows" >&2
       cat "$BUILD_ROOT/server.log" >&2 || true
       exit 1
@@ -171,11 +184,11 @@ case "$cmd" in
     trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT INT TERM
     sleep 0.20
     if ! kill -0 "$server_pid" 2>/dev/null; then
-      echo "nightfall: local v1.0 server exited before client launch" >&2
+      echo "nightfall: local v1.1 server exited before client launch" >&2
       cat "$BUILD_ROOT/server.log" >&2 || true
       exit 1
     fi
-    echo "[local] v1.0 dedicated server pid=$server_pid isolated_port=$local_port rivals=$ai_count pressure_slots=$pressure_slots cattlers=$cattler_count profile=$cattler_profile truce=${NF_RIVAL_TRUCE:-0}"
+    echo "[local] v1.1 dedicated server pid=$server_pid isolated_port=$local_port rivals=$ai_count pressure_slots=$pressure_slots cattlers=$cattler_count profile=$cattler_profile truce=${NF_RIVAL_TRUCE:-0}"
     "$FULL_BUILD_DIR/nightfall_client" "$@" --port "$local_port"
     ;;
   net-smoke|combat-smoke)
@@ -196,12 +209,15 @@ case "$cmd" in
   lifeworld-smoke)
     run_lifeworld_smoke
     ;;
+  contamination-smoke)
+    run_contamination_smoke
+    ;;
   clean)
     rm -rf "$BUILD_ROOT"
     ;;
   *)
     cat <<'HELP'
-nightfall!punk v1.0 build helper
+nightfall!punk v1.1 build helper
 
   ./nightfall.sh standard-check
   ./nightfall.sh build
@@ -214,18 +230,20 @@ nightfall!punk v1.0 build helper
   ./nightfall.sh cattler-smoke
   ./nightfall.sh energy-smoke
   ./nightfall.sh lifeworld-smoke
+  ./nightfall.sh contamination-smoke
   ./nightfall.sh server [--ai-count 0..4 --pressure-slots 0..2 --cattler-count 0..5 --cattler-profile normal|pack|loner|horde --rival-truce --friendly-fire --sim-latency MS --sim-jitter MS --sim-loss PERCENT]
   ./nightfall.sh client [--host HOST --sim-latency MS --sim-jitter MS --sim-loss PERCENT]
   ./nightfall.sh clean
 
-local            = isolated-port v1.0 server + graphical client; 4 Human Rivals + 3 Dream Cattlers by default
-combat-smoke     = combat/network regression proof with Cattlers disabled
-encounter-smoke  = passive player versus bounded-pressure Human Rivals with Cattlers disabled
-spatial-smoke    = situated Rival roaming proof with Cattlers disabled
-cattler-smoke    = server-only 3-Cattler pack habitat proof; validates ecological-return contract banner and live ecology
-energy-smoke     = inherited v0.9 C20-C22 universal-ledger/topography/history proof
-lifeworld-smoke  = v1.0 exact-primary-memory + ecological recurrence/reseed + embodied-attention + recovery + no-hidden-energy-leak proof
-net-smoke        = alias retained for continuity
+local                = isolated-port v1.1 server + graphical client; 4 Human Rivals + 3 Dream Cattlers by default
+combat-smoke         = combat/network regression proof with Cattlers disabled
+encounter-smoke      = passive player versus bounded-pressure Human Rivals with Cattlers disabled
+spatial-smoke        = situated Rival roaming proof with Cattlers disabled
+cattler-smoke        = server-only 3-Cattler pack habitat proof; validates ecological-return contract banner and live ecology
+energy-smoke         = inherited v0.9 C20-C22 universal-ledger/topography/history proof
+lifeworld-smoke      = inherited v1.0 primary-memory + recurrence/reseed + embodied-attention + recovery proof
+contamination-smoke  = v1.1 damage=contamination + stasis + inventory fate + persistent trace + water transport proof
+net-smoke            = alias retained for continuity
 
 Local debug environment:
   NF_AI_COUNT=1 ./nightfall.sh local
