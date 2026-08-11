@@ -1,8 +1,12 @@
 # nightfall!punk — v1.1 Build Readiness / Demo Gate
 
-Status: **code-complete demo candidate; compile/CI and Pop!_OS video gate required before acceptance.**
+Status: **code-complete demo candidate; final exact-head compile/CI and Pop!_OS video gate required before acceptance.**
 
 This readiness ledger supplements `docs/LEDGER_V1.1.md`. It does not replace the accepted v1.0 archive or broaden v1.1 beyond its bounded contamination/relational-physics proof.
+
+Governing development rule:
+
+> **Simple complexity, not over-complexity simplicity: use small trustworthy relations whose composition can produce rich consequence.**
 
 ## Reconciliation
 
@@ -10,9 +14,23 @@ This readiness ledger supplements `docs/LEDGER_V1.1.md`. It does not replace the
 - [x] v1.1 branch: `build/v1.1-contamination-relational-physics`.
 - [x] current `main` ancestry reconciled into v1.1 before this readiness pass.
 - [x] master-ledger C33 politics-informed-art contract retained without changing v1.1 mechanics.
+- [x] accepted parametric-event / Ghost Static / Apophis contract reconciled into this branch as `docs/LEDGER_V1.0_PARAMETRIC_EVENTS.md`.
+- [x] accepted social-ecology / structural-constraint code sketch reconciled as `docs/LEDGER_SOCIAL_ECOLOGY_CODE_SKETCH.md`.
+- [x] accepted social/political-economy closeout reconciled as `docs/LEDGER_SOCIAL_ECONOMY_CLOSEOUT.md`.
+- [x] accepted ethics/consequence/spectacle contract reconciled as `docs/LEDGER_ETHICS_CONSEQUENCE_SPECTACLE.md`.
 - [x] no faction-color ambiguity is permitted in the demo.
 - [x] contamination remains the universal authoritative damage/body-horror system.
 - [x] infestation remains Dream-Cattler-specific ecological organization.
+- [x] ethics remains consequence-based and non-propagandistic: no morality meter, karma layer or Director-authored ethical punishment.
+- [x] PG-13 gore-free body-horror presentation remains authoritative: goo, residue, filament, static, contamination, deformation and loss of agency rather than explicit viscera.
+
+### Nomenclature migration note
+
+- [x] player-facing/current design term is **Dream Cattler / Cattler**.
+- [x] legacy `Rancher` C identifiers are compatibility-only implementation debt and may not define lore, UI or new APIs.
+- [ ] remove/alias-migrate the remaining legacy technical identifiers after the v1.1 human gate, when protocol/demo churn cannot invalidate this acceptance candidate.
+
+This is an intentional compatibility boundary, not permission to reintroduce retired nomenclature.
 
 ## Existing — regression protected
 
@@ -42,6 +60,7 @@ This readiness ledger supplements `docs/LEDGER_V1.1.md`. It does not replace the
 - [x] protocol carries agency + four contamination domains for reconciliation.
 - [x] psychological near-death / return language avoids realistic death ontology and gore dependence.
 - [x] PG-13 splatterpunk may punctuate presentation, but dark ooze/residue/filament/static contamination is the primary damage vocabulary.
+- [x] the world-history chain remains `action -> consequence -> trace/memory -> changed future relation`; no morality or ecology master scalar is added.
 
 ## Greybox color contract — authoritative legend
 
@@ -74,6 +93,8 @@ Rules:
 
 ## Par — intentionally deferred / not claimed
 
+These are **not failures** of the v1.1 build. They are complexity boundaries deliberately held out of this demo:
+
 - [ ] full CFD / chemistry / voxel-material simulation.
 - [ ] generalized airborne and ventilation transport.
 - [ ] finalized replicated site-persistent inventory pickups/economy.
@@ -83,10 +104,15 @@ Rules:
 - [ ] semantic/social AI reaction to defeat traces until separately wired and proven.
 - [ ] Cattler infestation rewrite.
 - [ ] final audiovisual stasis/revival sequence and final body art.
+- [ ] general political-economy simulator, class-power meter, morality meter or institutional manager.
+- [ ] Ghost Static Panic/Crescendo implementation beyond the accepted design contract.
+- [ ] one-teammate squad-cognition implementation beyond inherited/current AI systems.
+- [ ] Kinetic Stigmergy Alpha world-write -> actor-read -> changed-action loop; this is the preferred **post-v1.1 / v1.2** playable thesis, not a hidden v1.1 requirement.
+- [ ] full removal of legacy technical `Rancher` compatibility identifiers.
 
 ## Compile gate
 
-The candidate is acceptable for the next demo only if the exact head passes:
+The candidate is acceptable for the next demo only if the **exact final head** passes:
 
 - [ ] standard-check;
 - [ ] strict Linux graphical client/server compile;
@@ -99,6 +125,8 @@ The candidate is acceptable for the next demo only if the exact head passes:
 - [ ] inherited topographic-lifeworld/runtime smoke;
 - [ ] v1.1 contamination/stasis/transport smoke.
 
+Do not mark these green from an earlier code-bearing SHA after a ledger/reconciliation commit. The exact demo head owns the gate.
+
 ## Human Pop!_OS video gate
 
 Record ordinary play long enough to reveal regressions. If convenient, capture:
@@ -110,9 +138,15 @@ Record ordinary play long enough to reveal regressions. If convenient, capture:
 5. HUD/diagnostic state showing agency + contamination domains rather than literal death language;
 6. provisional inventory fate behavior after return;
 7. muted-blue demo-water patch if encountered (exact transfer accounting belongs to automated proof);
-8. one brief F4 view for spatial context.
+8. one brief F4 view for spatial context;
+9. ordinary movement, traversal, weapon switching, reload and combat long enough to reveal regressions;
+10. say aloud anything that feels extremely right, confusing, underwhelming or overcomplicated.
 
 Also save `build/server.log`.
+
+Human acceptance question:
+
+> **Does the contamination/stasis system make damage feel like a material change in what an actor and locality can do, while preserving the immediate readability and speed of the arena FPS?**
 
 ## Analysis safeguard
 
@@ -133,6 +167,8 @@ Priority questions after the human demo:
 3. **Prototype / territorial phenotype:** how can occupation materially alter place while contamination remains universal and infestation stays Cattler-specific?
 4. **Tomb Raider / mechanism readability:** how should pump/valve/power/water chains announce causality under combat pressure?
 5. **SWAT/systemic FPS / functional damage:** how much contamination-mediated movement/handling change preserves tactical clarity and arena-FPS responsiveness?
+6. **Arkane / kinetic affordances:** what single momentum-preserving world-write verb can become the first v1.2 Kinetic Stigmergy proof?
+7. **S.T.A.L.K.E.R. / persistent consequence:** what is the smallest off-screen/local persistence needed for an actor to encounter a changed world rather than a reset encounter?
 
 Maxims:
 
@@ -143,3 +179,5 @@ Maxims:
 > **Contamination is universal body horror; infestation is Dream Cattler-specific ecology.**
 
 > **Faction color identifies who something is; material color identifies what is happening to it; ecological phenotype identifies what has happened to the place.**
+
+> **The game may teach through consequence without preaching through compulsory moral scripting.**
