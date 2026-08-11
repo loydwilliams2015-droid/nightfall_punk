@@ -1158,3 +1158,40 @@ Maxims:
 - **Embodiment first; predation second; intuition third; formal cognition fourth.**
 - **Make mastery difficult; make the world intelligible.**
 - **A Goliath should be hard to uproot, not merely slow to subtract.**
+
+## C33 — politics-informed art / broad-audience cultural contract — LOCKED
+
+Core principle:
+
+> **nightfall!punk is politics-informed video-game art, not propaganda. Art and play are the governing forms; politics is one of the materials from which the world is made.**
+
+- [x] the project rejects both **politics abstracted from culture** and an **art-for-art's-sake** posture that pretends social, ecological, economic and historical conditions are irrelevant to artistic form.
+- [x] politics may inform setting, factions, infrastructure, ecology, structural violence, labor, abundance, inequality, technology, community, extraction, pollution, conflict and institutional history without becoming a compulsory ideological lesson.
+- [x] the game should present political contradiction primarily through **situations, characters, systems, consequences, environments and competing interpretations**, not through slogans or didactic exposition.
+- [x] no faction should function merely as a mouthpiece for a predetermined authorial thesis; Human Rivals in particular must retain genuine plural motives, internal contradiction and capacity for cooperation, conflict and change.
+- [x] the simulation must not secretly rig every outcome to reward agreement with one political conclusion; systemic causation and world truth remain governed by established gameplay contracts.
+- [x] ambiguity, beauty, humor, pleasure, horror, style, contradiction and character are allowed to complicate or exceed any political reading.
+- [x] the project may possess clear ethical and political sympathies without requiring the player to endorse them as a condition of belonging to the audience.
+- [x] intended audience is broad: a player may value nightfall!punk primarily for movement, firefights, traversal, puzzles, music, aesthetics, social play, exploration, modding or systemic depth.
+- [x] the project's **niche is its style and systemic identity, not ideological agreement**.
+- [x] public communication should avoid selling the project primarily as a political tract; communicate the game, world, art direction, play and open/copy-left community first, with political depth available through the work itself.
+- [x] SIGNAL may research and articulate political/cultural context; PRAXIS determines how accepted ideas become game systems; STEWARD checks that public language, mechanics and canonical documentation do not drift into reductive propaganda framing.
+
+Creative hierarchy:
+
+```text
+ART / PLAY
+   ↓
+WORLD / CULTURE
+   ↓
+CHARACTER / SYSTEM / CONFLICT
+   ↓
+POLITICAL MEANING EMERGES THROUGH EXPERIENCE
+```
+
+Maxims:
+
+- **Not POLITICAL art, but political ART.**
+- **We do not hide the politics of the world, and we do not reduce the world to its politics.**
+- **The player should encounter arguments as situations, not slogans.**
+- **The niche is our style, not our politics.**
