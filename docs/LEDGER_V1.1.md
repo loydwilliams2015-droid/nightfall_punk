@@ -258,3 +258,27 @@ Priority v1.1/v1.2 research questions:
 5. **SWAT/immersive-sim combat:** how much functional contamination should alter handling/movement before tactical readability suffers?
 
 For v1.1, prioritize source material only when it changes a contract or human-proof question. Compare mechanisms, not feature inventories.
+
+## Long-horizon seeded multiverse compatibility
+
+Canonical contract: `docs/SEEDED_MULTIVERSE_WORLD_ARCHITECTURE.md`.
+
+The current v1.1 arena remains a bounded local proof. It does **not** claim thousands-player concurrency, distributed cell authority, inter-seed travel or a production 8 km x 8 km seed world.
+
+Prospective architecture should preserve compatible seams where cheap and non-disruptive:
+
+- stable seed identity and deterministic sub-seeds;
+- local coordinates rather than dependence on one unbounded global plane;
+- bounded regional/cell state;
+- authoritative local simulation;
+- causal persistence as generated baseline + durable delta;
+- simulation LOD that may reduce precision without rewriting history;
+- eventual authority transfer across localities rather than conceptual respawn.
+
+Long-horizon hierarchy:
+
+`MULTIVERSE -> SEED WORLD -> REGION/CELL -> LOCAL SIMULATION -> ACTOR`
+
+Design status: **committed architecture / future scale; not implemented v1.1 functionality.**
+
+Maxim: **Large multiplayer population != large local simulation population.**
