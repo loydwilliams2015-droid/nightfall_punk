@@ -133,6 +133,24 @@ Before accepting a Compare-5 lesson ask:
 5. Can the next recording prove/disprove that gap?
 6. What would we delete or avoid if the source merely confirms existing architecture?
 
+## Dialectical epistemic gate
+
+All consequential Compare-5 work also inherits `docs/DIALECTICAL_EPISTEMIC_PROMPTING.md`.
+
+Use `DEP:0-INF-A-N-S` before promoting a comparison into a design contract:
+
+1. **0 / ZERO:** state the underlying problem without assuming FPS convention.
+2. **INF / MAX-PRECEDENT:** reconstruct the strongest relevant genre/subgenre precedent and alternatives.
+3. **A / ACTUAL:** identify the present nightfall implementation/evidence, not the desired one.
+4. **N / NEGATE:** challenge the premise, analogy, terminology and novelty claim.
+5. **S / SYNTHESIZE:** accept only the smallest testable delta.
+
+Every comparison should explicitly preserve both similarity and difference. Similarity-only comparison risks imitation; difference-only comparison risks novelty theater.
+
+Dependency rule: when a reference identity, premise or interpretation is corrected, re-evaluate downstream `EQ`, `GAP`, disposition and CODE consequences. A corrected premise cannot be repaired by word substitution alone.
+
+Status rule: `ANALOGY != OBSERVED`, `ASPIRATION != IMPLEMENTED`, and `COHERENT PROSE != PROOF`.
+
 ## v1.1 start rule
 
 v1.1 begins as a research/question branch, not a feature dump.
