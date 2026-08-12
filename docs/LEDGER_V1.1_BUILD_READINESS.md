@@ -109,6 +109,26 @@ These are **not failures** of the v1.1 build. They are complexity boundaries del
 - [ ] one-teammate squad-cognition implementation beyond inherited/current AI systems.
 - [ ] Kinetic Stigmergy Alpha world-write -> actor-read -> changed-action loop; this is the preferred **post-v1.1 / v1.2** playable thesis, not a hidden v1.1 requirement.
 - [ ] full removal of legacy technical `Rancher` compatibility identifiers.
+- [ ] distributed seed/cell authority, thousands-player concurrency, inter-seed travel, production-scale 8 km x 8 km seed worlds, hotspot splitting or orchestration infrastructure; these belong to the long-horizon seeded-multiverse architecture, not the v1.1 acceptance gate.
+
+## Long-horizon world-scale compatibility
+
+Canonical contract: `docs/SEEDED_MULTIVERSE_WORLD_ARCHITECTURE.md`.
+
+The current map/build should remain compatible, where cheap, with the future hierarchy:
+
+`MULTIVERSE -> SEED WORLD -> REGION/CELL -> LOCAL SIMULATION -> ACTOR`
+
+Readiness implication: no v1.1 acceptance criterion may require MMO-scale systems, but current work should avoid unnecessary assumptions that make future locality impossible. Preserve stable seed identity, bounded regional state, local coordinates, authoritative local truth, causal persistence and simulation-resolution continuity when those seams are already natural to the present design.
+
+The key distinction is status discipline:
+
+- **implemented now:** current fixed-rate local authoritative simulation and current persistence/trace systems;
+- **design commitment:** hierarchical seeded locality and generated-baseline + causal-delta thinking;
+- **aspiration:** thousands of players diffuse across dozens/hundreds of seed worlds;
+- **open engineering:** final cell size, orchestration, authority handoff, persistence topology and hotspot management.
+
+> **Large multiplayer population != large local simulation population.**
 
 ## Compile gate
 
@@ -169,6 +189,7 @@ Priority questions after the human demo:
 5. **SWAT/systemic FPS / functional damage:** how much contamination-mediated movement/handling change preserves tactical clarity and arena-FPS responsiveness?
 6. **Arkane / kinetic affordances:** what single momentum-preserving world-write verb can become the first v1.2 Kinetic Stigmergy proof?
 7. **S.T.A.L.K.E.R. / persistent consequence:** what is the smallest off-screen/local persistence needed for an actor to encounter a changed world rather than a reset encounter?
+8. **Distributed seeded worlds:** what is the smallest future proof of `seed -> cell -> local authority -> causal persistence` that teaches us something without pulling MMO infrastructure into an arena-scale build too early?
 
 Maxims:
 
@@ -181,3 +202,5 @@ Maxims:
 > **Faction color identifies who something is; material color identifies what is happening to it; ecological phenotype identifies what has happened to the place.**
 
 > **The game may teach through consequence without preaching through compulsory moral scripting.**
+
+> **When nobody is looking, compress the world; do not erase it.**
