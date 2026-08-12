@@ -86,6 +86,10 @@ Do not create a general slime-mold simulation, cellular automaton, pheromone fie
 | `PERSIST` | exact primary history / round or offscreen continuity |
 | `PRES` | presentation-only lesson; must remain downstream of causal state |
 | `FIELD` | local environmental gradient biases otherwise stochastic behavior |
+| `LOCALITY` | bounded seed/cell locality as world and authority unit |
+| `HANDOFF` | causal actor/world authority transfer across locality boundaries |
+| `DELTA` | generated baseline + persistent causal change |
+| `HOTSPOT` | concentrated population/compute inside otherwise diffuse global population |
 
 ## Redundancy rule
 
@@ -119,6 +123,22 @@ Otherwise mark it `CONFIRM` in notes and do not create work.
 | `C5:AI/HAUNT/A` | threat is legible through absence and environmental anticipation | v1.0 haunted Cattler habitat | calibrate tension vs combat clarity | `A` | tune only evidence-supported waterline channels | player infers habitat before seeing Cattler | owner of `HAUNT` |
 | `C5:PR/WATER/A` | hostile materiality makes architecture uncertain | blue-black smoke/static/synthetic residue | graybox phenotype needs human read | `A` | preserve geometry-bound, causal presentation | infestation distinct from ordinary black geometry | owner of uncanny materiality |
 | `C5:PX/PRES/A` | takeover is readable immediately at territorial scale | infestation darkening | avoid gore/arcade spectacle | `A` | increase legibility without aura/HUD | player points out occupied locality at first glance | owner of strong takeover legibility |
+
+## Seeded-multiverse research extension
+
+Canonical architecture: `docs/SEEDED_MULTIVERSE_WORLD_ARCHITECTURE.md`.
+
+This is a **future research lane**, not a v1.1 feature mandate. When we later compare MMO/shard/server architectures, compare transferable mechanisms rather than copying product-scale stacks.
+
+Research questions:
+
+1. Which systems demonstrate convincing **local authority handoff** without treating travel as death/respawn?
+2. Which persistent-world architectures separate **generated baseline from durable causal delta** cleanly enough to keep storage proportional to meaningful change?
+3. Which large multiplayer games successfully let global population remain **diffuse**, while dynamically spending more compute on hotspots?
+4. What failure-recovery and migration mechanisms preserve **history** when a locality/server process moves or restarts?
+5. How small can the first proof of `SEED -> CELL -> LOCAL AUTHORITY -> PERSISTENT DELTA` be before distributed infrastructure adds more complexity than knowledge?
+
+Disposition rule: default these comparisons to `D` until they identify a bounded seam that improves the current architecture without forcing premature MMO implementation.
 
 ## Compare-5 subroutine
 
