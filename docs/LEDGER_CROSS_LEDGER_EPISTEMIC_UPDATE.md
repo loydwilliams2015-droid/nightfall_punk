@@ -144,9 +144,24 @@ The build/video/test loop remains the final corrective mechanism:
 
 > Good development produces better ignorance as well as better knowledge.
 
+## Organizational pace inheritance — 2026-08-13
+
+All living ledgers now also inherit the canonical pacing contract in `docs/LEDGER_CROSS_LEDGER_ORGANIZATIONAL_PACE.md`.
+
+This is a `DESIGN COMMITMENT`, not a claim that a complete runtime pacing governor is already implemented.
+
+The inherited rule is:
+
+`PLAY / CALM -> BUILD -> PEAK -> RESOLVE -> REOPEN`
+
+with an elastic ~15-minute organizational unit, explicit permission for spike/rush/crescendo events, intensity debt after sustained peaks, and a governing objective of long-horizon play value rather than stimulation per minute.
+
+Pacing claims must obey the same epistemic discipline as every other project claim: distinguish intended governor behavior, implemented variables, observed playtest behavior and comparative precedent.
+
 ## Ledger action summary
 
 - `DIALECTICAL_EPISTEMIC_PROMPTING.md` = canonical method contract.
 - `COMPARE5_LEDGER.md` = directly integrated with DEP gate.
-- This file = cross-ledger propagation contract for master design, architecture, AI/social ecology, philosophy/PRAXIS, STEWARD, SIGNAL, business/community, and build-readiness work.
-- Historical/archive ledgers remain immutable; future living-ledger edits inherit this contract by reference.
+- `LEDGER_CROSS_LEDGER_ORGANIZATIONAL_PACE.md` = canonical 15-minute Sustainable Crescendo / organizational pace contract.
+- This file = cross-ledger propagation contract for master design, architecture, AI/social ecology, philosophy/PRAXIS, STEWARD, SIGNAL, business/community, build-readiness and organizational pace work.
+- Historical/archive ledgers remain immutable; future living-ledger edits inherit these contracts by reference.
