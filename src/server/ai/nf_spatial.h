@@ -100,6 +100,14 @@ void nf_spatial_filter_controls(
     const NfWorld *world,
     NfControlFrame *controls,
     size_t control_count);
+/* Shared local-goal steering seam. Existing spatial AI and v1.2 teammate
+   causality both use this; it remains downstream of decision/route selection. */
+void nf_spatial_apply_local_goal_control(
+    const NfWorld *world,
+    NfEntityId actor_id,
+    NfVec3 local_goal,
+    NfSpatialTask task,
+    NfControlFrame *control);
 void nf_spatial_on_respawn(
     NfSpatialSystem *spatial,
     NfEntityId actor_id,

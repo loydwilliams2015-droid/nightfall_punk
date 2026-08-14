@@ -90,6 +90,8 @@ Do not create a general slime-mold simulation, cellular automaton, pheromone fie
 | `HANDOFF` | causal actor/world authority transfer across locality boundaries |
 | `DELTA` | generated baseline + persistent causal change |
 | `HOTSPOT` | concentrated population/compute inside otherwise diffuse global population |
+| `EPISTEMIC` | world truth vs actor evidence/belief/report distinction |
+| `PLURAL` | different inference forms for different relation types; no master truth calculus |
 
 ## Redundancy rule
 
@@ -103,7 +105,7 @@ Example:
 
 Likewise:
 
-`PX/WATER = PR/WATER; delta = stronger at-a-glance territorial legibility; reject gore/arcade exaggeration.`
+`PX/WATER = PR/WATER; delta = stronger at-a-glance territorial legibility; reject gore/arcade spectacle.`
 
 A Compare-5 row is useful only if it changes one of:
 
@@ -139,6 +141,39 @@ Research questions:
 5. How small can the first proof of `SEED -> CELL -> LOCAL AUTHORITY -> PERSISTENT DELTA` be before distributed infrastructure adds more complexity than knowledge?
 
 Disposition rule: default these comparisons to `D` until they identify a bounded seam that improves the current architecture without forcing premature MMO implementation.
+
+## Pac-Man compare/contrast probe — v1.2
+
+Use `PAC` as a **supporting comparator**, not a new permanent Compare-5 owner.
+
+The comparison target is classic Pac-Man-style pursuit logic compressed to its useful abstraction:
+
+`GLOBAL PLAYER STATE -> CHASE/FLEE POLICY`
+
+The current nightfall comparison target is:
+
+`WORLD -> LEGITIMATE EVIDENCE -> BELIEF/MEMORY -> RELATIONAL VALUE -> STRATEGY -> ACTION -> WORLD CHANGE`
+
+Status: **ANALYTIC / INTERPRETIVE TEXT TEST**, not compiled code, CI benchmark, or proof of a Pac-Man game mode.
+
+Supporting rows:
+
+- `SUP:PAC/EPISTEMIC/K` — perfect-state chase is a useful negative baseline; protect nightfall's `world truth != actor knowledge != group report` distinction.
+- `SUP:PAC/PLURAL/A` — simple maze comparison shows why attack/chase should remain one strategic option rather than the universal ontology of an agent; adapt only through bounded situated reasoning.
+- `SUP:PAC/INFO/K` — v1.2 direct/report/encounter evidence + confidence/memory produce a meaningful difference even in a stripped-down maze abstraction.
+- `SUP:PAC/HOTSPOT/K` — v1.2 route hotspot/utility/commitment chain demonstrates changed world possibility without granting instantaneous hidden knowledge.
+
+Protected conclusion:
+
+> **Do not turn nightfall actors into more sophisticated Pac-Man ghosts.**
+
+The useful distinction is not complexity for its own sake. It is situated participation under shared material authority.
+
+Smallest next CODE consequence after v1.2 human acceptance:
+
+`REPORT(A) + LATER_DIRECT_NOT(A) -> CONTRADICTION_RETAINED -> MATERIAL_NOT(A) BLOCKS ACTION -> BELIEF/CONFIDENCE MAY REVISE -> NO EXPLOSION / NO MAGIC KNOWLEDGE`
+
+This belongs to the provisional next handoff in `docs/LEDGER_V1.2_PRAXIS_SIGNAL_STEWARD_HANDOFF.md`; it is **not** an accepted v1.2 requirement.
 
 ## Compare-5 subroutine
 
