@@ -1,4 +1,4 @@
-name: nightfall v1.1 CI
+name: nightfall v1.2 CI
 
 on:
   push:
@@ -22,14 +22,14 @@ jobs:
             libasound2-dev libx11-dev libxrandr-dev libxi-dev \
             libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev
 
-      - name: Standard check
-        run: ./nightfall.sh standard-check
+      - name: v1.2 standard check
+        run: ./v12.sh standard-check
 
-      - name: Full compile
-        run: ./nightfall.sh build
+      - name: Full compile including causal greybox
+        run: ./v12.sh build
 
-      - name: Simulation combat network spatial Dream Cattler energy lifeworld and contamination tests
-        run: ./nightfall.sh test
+      - name: All inherited plus teammate causal CTests
+        run: ./v12.sh test
 
       - name: Four-client plus bounded-pressure Human Rival combat smoke
         run: ./nightfall.sh combat-smoke
@@ -51,3 +51,6 @@ jobs:
 
       - name: Contamination stasis inventory and transport smoke
         run: ./nightfall.sh contamination-smoke
+
+      - name: Named teammate causality positive and negative proof
+        run: ./v12.sh teammate-smoke
