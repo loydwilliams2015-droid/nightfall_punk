@@ -1,4 +1,4 @@
-name: nightfall v1.2b CI
+name: nightfall v1.2c CI
 
 on:
   push:
@@ -22,14 +22,14 @@ jobs:
             libasound2-dev libx11-dev libxrandr-dev libxi-dev \
             libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev
 
-      - name: v1.2b standard check
-        run: bash ./v12b.sh standard-check
+      - name: v1.2c standard check
+        run: bash ./v12c.sh standard-check
 
-      - name: Full compile including first-person causal greybox
-        run: bash ./v12b.sh build
+      - name: Strict graphical compile including integrated causal greybox
+        run: bash ./v12c.sh build
 
-      - name: All inherited plus camera and teammate causal CTests
-        run: bash ./v12b.sh test
+      - name: All inherited plus camera and embodied population CTests
+        run: bash ./v12c.sh test
 
       - name: Four-client plus bounded-pressure Human Rival combat smoke
         run: ./nightfall.sh combat-smoke
@@ -52,8 +52,8 @@ jobs:
       - name: Contamination stasis inventory and transport smoke
         run: ./nightfall.sh contamination-smoke
 
-      - name: Named v1.2b camera causal proof
-        run: bash ./v12b.sh camera-smoke
+      - name: Named relational camera proof
+        run: bash ./v12c.sh camera-smoke
 
-      - name: Named teammate causality positive and negative proof
-        run: ./v12.sh teammate-smoke
+      - name: Named integrated population and embodied action proof
+        run: bash ./v12c.sh integration-smoke
