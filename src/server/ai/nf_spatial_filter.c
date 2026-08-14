@@ -10,6 +10,42 @@ static float distance_xz(NfVec3 a, NfVec3 b) {
     return sqrtf(dx*dx+dz*dz);
 }
 
+void nf_spatial_apply_local_goal_control(
+    const NfWorld *world,
+    NfEntityId actor_id,
+    NfVec3 local_goal,
+    NfSpatialTask task,
+    NfControlFrame *control) {
+    if (world == NULL || control == NULL) return;
+    const NfActor *body = nf_world_find_actor_const(world,actor_id);
+    if (body == NULL || !body->combat.alive) return;
+
+    const float distance = distance_xz(body->transform.position,local_goal);
+    if (distance <= 1.8f) {
+        control->move.forward = 0.0f;
+        control->move.strafe = 0.0f;
+        control->move.sprint_held = false;
+        return;
+    }
+
+    const float yaw = atan2f(
+        local_goal.x-body->transform.position.x,
+        local_goal.z-body->transform.position.z);
+    control->move.yaw_radians = yaw;
+    control->move.forward = task == NF_SPATIAL_TASK_WATCH ? 0.55f : 0.90f;
+    control->move.strafe = 0.0f;
+    control->move.sprint_held = distance > 16.0f;
+
+    if (body->movement.candidate.active) {
+        if (body->movement.candidate.type == NF_TRAVERSAL_LADDER) {
+            control->move.interact_held = true;
+        } else if (body->movement.candidate.type == NF_TRAVERSAL_VAULT ||
+                   body->movement.candidate.type == NF_TRAVERSAL_MANTLE) {
+            control->move.jump_pressed = true;
+        }
+    }
+}
+
 void nf_spatial_filter_controls(
     const NfSpatialSystem *spatial,
     const struct NfAiSystem *ai,
@@ -33,29 +69,7 @@ void nf_spatial_filter_controls(
             (agent->mode == NF_AGENT_INVESTIGATE && agent->knowledge.confidence < 0.20f);
         if (!spatially_free) continue;
 
-        const float distance = distance_xz(body->transform.position,state->local_goal);
-        if (distance <= 1.8f) {
-            controls[i].move.forward = 0.0f;
-            controls[i].move.strafe = 0.0f;
-            controls[i].move.sprint_held = false;
-            continue;
-        }
-
-        const float yaw = atan2f(
-            state->local_goal.x-body->transform.position.x,
-            state->local_goal.z-body->transform.position.z);
-        controls[i].move.yaw_radians = yaw;
-        controls[i].move.forward = state->task == NF_SPATIAL_TASK_WATCH ? 0.55f : 0.90f;
-        controls[i].move.strafe = 0.0f;
-        controls[i].move.sprint_held = distance > 16.0f;
-
-        if (body->movement.candidate.active) {
-            if (body->movement.candidate.type == NF_TRAVERSAL_LADDER) {
-                controls[i].move.interact_held = true;
-            } else if (body->movement.candidate.type == NF_TRAVERSAL_VAULT ||
-                       body->movement.candidate.type == NF_TRAVERSAL_MANTLE) {
-                controls[i].move.jump_pressed = true;
-            }
-        }
+        nf_spatial_apply_local_goal_control(
+            world,controls[i].actor,state->local_goal,state->task,&controls[i]);
     }
 }

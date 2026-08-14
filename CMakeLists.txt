@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(nightfall_punk VERSION 1.1 LANGUAGES C)
+project(nightfall_punk VERSION 1.2 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -49,7 +49,7 @@ if(TARGET PkgConfig::SODIUM)
     set(NF_SODIUM_TARGET PkgConfig::SODIUM)
     message(STATUS "nightfall: libsodium enabled")
 else()
-    message(WARNING "nightfall: libsodium not found; v1.1 localhost testing will use non-cryptographic session-token scaffolding. Install libsodium-dev for authenticated token derivation.")
+    message(WARNING "nightfall: libsodium not found; localhost testing will use non-cryptographic session-token scaffolding. Install libsodium-dev for authenticated token derivation.")
 endif()
 
 add_library(nightfall_shared STATIC
@@ -64,7 +64,8 @@ add_library(nightfall_shared STATIC
     src/shared/nf_energy.c
     src/shared/nf_energy_actor.c
     src/shared/nf_hitbox.c
-    src/shared/nf_lifeworld.c)
+    src/shared/nf_lifeworld.c
+    src/shared/nf_route.c)
 target_include_directories(nightfall_shared PUBLIC src/shared)
 nf_project_warnings(nightfall_shared)
 if(UNIX)
@@ -79,7 +80,8 @@ add_library(nightfall_ai STATIC
     src/server/ai/nf_spatial_attention.c
     src/server/ai/nf_cattler.c
     src/server/ai/nf_cattler_recurrence.c
-    src/server/ai/nf_lifeworld_spatial.c)
+    src/server/ai/nf_lifeworld_spatial.c
+    src/server/ai/nf_teammate.c)
 target_include_directories(nightfall_ai PUBLIC src/server/ai src/shared)
 target_link_libraries(nightfall_ai PUBLIC nightfall_shared)
 nf_project_warnings(nightfall_ai)
@@ -130,6 +132,11 @@ if(NF_BUILD_CLIENT)
     add_executable(nightfall_client src/client/main.c)
     target_link_libraries(nightfall_client PRIVATE nightfall_network raylib)
     nf_project_warnings(nightfall_client)
+
+    add_executable(nightfall_v12_demo src/demo/v12_greybox.c)
+    target_link_libraries(nightfall_v12_demo PRIVATE nightfall_ai raylib)
+    target_include_directories(nightfall_v12_demo PRIVATE src/server/ai src/shared)
+    nf_project_warnings(nightfall_v12_demo)
 endif()
 
 if(NF_BUILD_TESTS)
@@ -181,4 +188,10 @@ if(NF_BUILD_TESTS)
     target_include_directories(nightfall_lifeworld_runtime_test PRIVATE src/server/ai)
     nf_project_warnings(nightfall_lifeworld_runtime_test)
     add_test(NAME lifeworld_runtime_v11 COMMAND nightfall_lifeworld_runtime_test)
+
+    add_executable(nightfall_teammate_test src/tests/test_teammate.c)
+    target_link_libraries(nightfall_teammate_test PRIVATE nightfall_ai)
+    target_include_directories(nightfall_teammate_test PRIVATE src/server/ai src/shared)
+    nf_project_warnings(nightfall_teammate_test)
+    add_test(NAME teammate_causality_v12 COMMAND nightfall_teammate_test)
 endif()
