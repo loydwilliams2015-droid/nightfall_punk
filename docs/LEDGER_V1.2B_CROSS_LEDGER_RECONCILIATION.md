@@ -32,7 +32,7 @@ INTENTION
   ↓
 LOCAL AFFORDANCE QUERY
   ↓
-SNAP_LOC0MOTION / BOUNDED AFFORDANCE CAPTURE
+SNAP_LOCOMOTION / BOUNDED AFFORDANCE CAPTURE
   ↓
 AUTHORITATIVE MOVEMENT / PHYSICS
   ↓
@@ -73,7 +73,7 @@ The following remain current implemented/proven v1.2/v1.2b contracts:
 - FIRST_PERSON canonical gameplay proof; observer/top modes remain diagnostics;
 - camera presentation does not author body truth;
 - blocked route utility presents semantically as `BLOCKED` rather than exposing numerical sentinel state;
-- v1.2b named CI proof is green at branch head `edf645ab7e434679d78be88708bddbe9789419c4`.
+- v1.2b named CI proof is green at code/CI proof head `edf645ab7e434679d78be88708bddbe9789419c4`; later documentation-only reconciliation commits do not themselves constitute a new gameplay proof.
 
 Do not promote future/partial seams to implemented status merely because this file accepts a design recommendation.
 
