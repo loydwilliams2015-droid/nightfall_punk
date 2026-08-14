@@ -121,6 +121,30 @@ The v1.2b 100-question sweep Q147–Q246 is fully dispositioned. Key decisions c
 - viewmodel: one authoritative weapon cause with separate legitimate world/first-person presentations;
 - first-person body: materially whole body with selectively visible first-person presentation when implemented.
 
+## Cross-ledger terminology / accepted-recommendation reconciliation
+
+Canonical current locomotion term: **Snap Locomotion / `snap_locomotion`**.
+
+`Fuzzy Rail` is a legacy/historical conceptual alias and should not be used as the canonical term in new records. Historical version ledgers retain older language as provenance.
+
+The accepted recommendations from the subsequent high-degree terminology audit are recorded in:
+
+`docs/LEDGER_V1.2B_CROSS_LEDGER_RECONCILIATION.md`
+
+That reconciliation locks the current design dispositions for:
+
+1. hybrid/evidence-gated local navigation; conventional navmesh only when earned;
+2. implicit player occupancy/intention claims with AI yielding, never player control loss;
+3. slide/slide-hop deferred as a later side-grade prototype;
+4. coarse AI reports with bounded latency/confidence degradation;
+5. mixed designed + systemic resource recurrence;
+6. world-first ecology/energy legibility with diegetic cues and occasional Ghost Static interpretation;
+7. variable local encounter rhythm rather than a universal encounter timer;
+8. region -> distance/visibility -> semantic relevance for future production replication;
+9. bundled performance + route/AI + network + encounter-diversity + human-proof scale-up gate.
+
+These are accepted **design policies**, not blanket claims that every item is already implemented.
+
 ## Build acceptance
 
 Automated camera proof must show:
