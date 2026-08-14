@@ -72,6 +72,13 @@ if(UNIX)
     target_link_libraries(nightfall_shared PUBLIC m)
 endif()
 
+# Presentation-only camera math. It consumes body/world truth but cannot mutate simulation.
+add_library(nightfall_camera STATIC
+    src/client/nf_camera.c)
+target_include_directories(nightfall_camera PUBLIC src/client src/shared)
+target_link_libraries(nightfall_camera PUBLIC nightfall_shared)
+nf_project_warnings(nightfall_camera)
+
 add_library(nightfall_ai STATIC
     src/server/ai/nf_ai.c
     src/server/ai/nf_encounter.c
@@ -130,12 +137,13 @@ if(NF_BUILD_CLIENT)
         message(FATAL_ERROR "raylib 5.5 was not found. Install raylib or configure with -DNF_FETCH_RAYLIB=ON.")
     endif()
     add_executable(nightfall_client src/client/main.c)
-    target_link_libraries(nightfall_client PRIVATE nightfall_network raylib)
+    target_link_libraries(nightfall_client PRIVATE nightfall_camera nightfall_network raylib)
+    target_include_directories(nightfall_client PRIVATE src/client)
     nf_project_warnings(nightfall_client)
 
     add_executable(nightfall_v12_demo src/demo/v12_greybox.c)
-    target_link_libraries(nightfall_v12_demo PRIVATE nightfall_ai raylib)
-    target_include_directories(nightfall_v12_demo PRIVATE src/server/ai src/shared)
+    target_link_libraries(nightfall_v12_demo PRIVATE nightfall_camera nightfall_ai raylib)
+    target_include_directories(nightfall_v12_demo PRIVATE src/client src/server/ai src/shared)
     nf_project_warnings(nightfall_v12_demo)
 endif()
 
@@ -194,4 +202,10 @@ if(NF_BUILD_TESTS)
     target_include_directories(nightfall_teammate_test PRIVATE src/server/ai src/shared)
     nf_project_warnings(nightfall_teammate_test)
     add_test(NAME teammate_causality_v12 COMMAND nightfall_teammate_test)
+
+    add_executable(nightfall_camera_test src/tests/test_camera.c)
+    target_link_libraries(nightfall_camera_test PRIVATE nightfall_camera)
+    target_include_directories(nightfall_camera_test PRIVATE src/client src/shared)
+    nf_project_warnings(nightfall_camera_test)
+    add_test(NAME relational_camera_v12b COMMAND nightfall_camera_test)
 endif()
