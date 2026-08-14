@@ -4,7 +4,7 @@
 
 #define NF_HEADER_BYTES 8u
 #define NF_COMMAND_BYTES 31u
-#define NF_ACTOR_BYTES 52u
+#define NF_ACTOR_BYTES 69u
 #define NF_COMBAT_EVENT_BYTES 49u
 
 static void put_u16(uint8_t *p, uint16_t v) { p[0]=(uint8_t)v; p[1]=(uint8_t)(v>>8); }
@@ -182,6 +182,11 @@ static size_t encode_actor(uint8_t *out,size_t cap,const NfActorNetState *a) {
     put_u32(out+o,(uint32_t)a->candidate_feature); o+=4;
     put_f32(out+o,a->health); o+=4;
     out[o++]=a->alive?1u:0u;
+    out[o++]=(uint8_t)a->agency;
+    put_f32(out+o,a->contamination_systemic); o+=4;
+    put_f32(out+o,a->contamination_locomotor); o+=4;
+    put_f32(out+o,a->contamination_manipulator); o+=4;
+    put_f32(out+o,a->contamination_sensory); o+=4;
     out[o++]=(uint8_t)a->weapon;
     out[o++]=(uint8_t)a->weapon_state;
     put_u16(out+o,a->ammo_mag); o+=2;
@@ -211,6 +216,11 @@ static bool decode_actor(const uint8_t *data,size_t size,NfActorNetState *a) {
     a->candidate_feature=(int32_t)get_u32(data+o); o+=4;
     a->health=get_f32(data+o); o+=4;
     a->alive=data[o++]!=0;
+    a->agency=(NfAgencyState)data[o++];
+    a->contamination_systemic=get_f32(data+o); o+=4;
+    a->contamination_locomotor=get_f32(data+o); o+=4;
+    a->contamination_manipulator=get_f32(data+o); o+=4;
+    a->contamination_sensory=get_f32(data+o); o+=4;
     a->weapon=(NfWeaponId)data[o++];
     a->weapon_state=(NfWeaponState)data[o++];
     a->ammo_mag=get_u16(data+o); o+=2;
@@ -227,9 +237,7 @@ size_t nf_protocol_encode_snapshot(uint8_t *out,size_t cap,const NfSnapshotMessa
     put_u64(out+o,msg->server_tick); o+=8;
     put_u32(out+o,msg->acknowledged_input); o+=4;
     out[o++]=msg->actor_count;
-    for(uint8_t i=0;i<msg->actor_count;++i) {
-        o+=encode_actor(out+o,cap-o,&msg->actors[i]);
-    }
+    for(uint8_t i=0;i<msg->actor_count;++i) o+=encode_actor(out+o,cap-o,&msg->actors[i]);
     return o;
 }
 
@@ -309,6 +317,8 @@ void nf_actor_to_net_state(const NfActor *actor,NfActorNetState *out) {
         .mode=actor->movement.mode,.grounded=actor->movement.grounded,.crouched=actor->movement.crouched,.jumps_used=actor->movement.jumps_used,
         .attached_collider=actor->movement.attached_collider,.candidate_type=actor->movement.candidate.active?actor->movement.candidate.type:NF_TRAVERSAL_NONE,
         .candidate_feature=actor->movement.candidate.active?actor->movement.candidate.feature_index:-1,.health=actor->health,.alive=actor->combat.alive,
+        .agency=actor->agency,.contamination_systemic=actor->contamination.systemic,.contamination_locomotor=actor->contamination.locomotor,
+        .contamination_manipulator=actor->contamination.manipulator,.contamination_sensory=actor->contamination.sensory,
         .weapon=actor->combat.weapon,.weapon_state=actor->combat.state,.ammo_mag=actor->combat.ammo_mag[actor->combat.weapon],.reserve_ammo=actor->combat.reserve_ammo[actor->combat.weapon]
     };
 }
@@ -318,6 +328,11 @@ void nf_actor_apply_combat_net_state(NfActor *actor,const NfActorNetState *s) {
     actor->faction=s->faction;
     actor->health=s->health;
     actor->combat.alive=s->alive;
+    actor->agency=s->agency;
+    actor->contamination.systemic=s->contamination_systemic;
+    actor->contamination.locomotor=s->contamination_locomotor;
+    actor->contamination.manipulator=s->contamination_manipulator;
+    actor->contamination.sensory=s->contamination_sensory;
     actor->combat.weapon=s->weapon;
     actor->combat.state=s->weapon_state;
     if(s->weapon>NF_WEAPON_NONE && s->weapon<NF_WEAPON_COUNT) {

@@ -1,4 +1,5 @@
 #include "nf_combat.h"
+#include "nf_contamination.h"
 
 #include <string.h>
 
@@ -16,7 +17,7 @@ const NfWeaponSpec *nf_weapon_spec(NfWeaponId weapon) {
 void nf_combat_init_actor(NfActor *actor) {
     if (actor == NULL) return;
     memset(&actor->combat, 0, sizeof(actor->combat));
-    actor->health = 100.0f;
+    nf_contamination_init_actor(actor);
     actor->combat.alive = true;
     actor->combat.weapon = NF_WEAPON_CARBINE;
     actor->combat.state = NF_WEAPON_READY;
@@ -40,6 +41,7 @@ static void finish_reload(NfActor *actor) {
 
 void nf_combat_step_actor(NfActor *actor, float dt) {
     if (actor == NULL || dt <= 0.0f) return;
+    nf_contamination_step_actor(actor, dt);
     if (!actor->combat.alive) {
         if (actor->combat.respawn_timer > 0.0f) {
             actor->combat.respawn_timer -= dt;
@@ -85,7 +87,7 @@ bool nf_combat_select_weapon(NfActor *actor, NfWeaponId weapon) {
     if (actor->combat.state == NF_WEAPON_RELOADING) nf_combat_cancel_reload(actor);
     actor->combat.pending_weapon = weapon;
     actor->combat.state = NF_WEAPON_SWITCHING;
-    actor->combat.action_timer = nf_weapon_spec(weapon)->switch_seconds;
+    actor->combat.action_timer = nf_weapon_spec(weapon)->switch_seconds / nf_contamination_manipulator_scale(actor);
     return true;
 }
 
@@ -93,9 +95,10 @@ bool nf_combat_start_reload(NfActor *actor) {
     if (actor == NULL || !actor->combat.alive || actor->combat.state == NF_WEAPON_SWITCHING) return false;
     const NfWeaponSpec *spec = nf_weapon_spec(actor->combat.weapon);
     if (actor->combat.ammo_mag[actor->combat.weapon] >= spec->magazine_size || actor->combat.reserve_ammo[actor->combat.weapon] == 0u) return false;
+    const float handling = nf_contamination_manipulator_scale(actor);
     actor->combat.state = NF_WEAPON_RELOADING;
-    actor->combat.action_timer = spec->reload_seconds;
-    actor->combat.reload_total = spec->reload_seconds;
+    actor->combat.action_timer = spec->reload_seconds / handling;
+    actor->combat.reload_total = actor->combat.action_timer;
     actor->combat.reload_committed = false;
     return true;
 }
@@ -116,27 +119,54 @@ bool nf_combat_try_fire(NfActor *actor, const NfCombatInput *input, uint32_t com
     actor->combat.last_fire_sequence = command_sequence;
     actor->combat.last_fire_tick = server_tick;
     actor->combat.state = NF_WEAPON_RECOVERING;
-    actor->combat.action_timer = 1.0f / spec->rounds_per_second;
+    actor->combat.action_timer = (1.0f / spec->rounds_per_second) / nf_contamination_manipulator_scale(actor);
     if (event_out != NULL) {
         *event_out = (NfCombatEvent){.server_tick=server_tick,.type=NF_COMBAT_EVENT_GUNFIRE,.source=actor->id,.weapon=actor->combat.weapon,.position=actor->transform.position};
     }
     return true;
 }
 
+static void record_stasis_inventory(NfActor *actor) {
+    if (actor == NULL) return;
+    memset(&actor->stasis_inventory, 0, sizeof(actor->stasis_inventory));
+    if (actor->faction == NF_FACTION_RANCHER) return;
+
+    uint32_t absorbed = 0u;
+    for (int i = 1; i < NF_WEAPON_COUNT; ++i) absorbed += actor->combat.reserve_ammo[i];
+    if (absorbed > 65535u) absorbed = 65535u;
+
+    actor->stasis_inventory.valid = true;
+    actor->stasis_inventory.site_weapon = NF_WEAPON_CARBINE;
+    actor->stasis_inventory.restock_weapon = NF_WEAPON_PISTOL;
+    actor->stasis_inventory.absorbed_ammo_units = (uint16_t)absorbed;
+    actor->stasis_inventory.site_fate = NF_INVENTORY_FATE_SITE_PERSIST;
+    actor->stasis_inventory.restock_fate = NF_INVENTORY_FATE_BASE_RESTOCK;
+    actor->stasis_inventory.ammo_fate = NF_INVENTORY_FATE_ECO_ABSORB;
+
+    for (int i = 1; i < NF_WEAPON_COUNT; ++i) {
+        actor->combat.ammo_mag[i] = 0u;
+        actor->combat.reserve_ammo[i] = 0u;
+    }
+}
+
 bool nf_combat_apply_damage(NfActor *target, NfEntityId source, NfWeaponId weapon, NfHitZone zone, float amount, uint64_t server_tick, NfCombatEvent *event_out) {
     if (target == NULL || !target->combat.alive || amount <= 0.0f) return false;
-    target->health -= amount;
-    if (target->health <= 0.0f) {
-        target->health = 0.0f;
-        target->combat.alive = false;
+
+    nf_contamination_apply_damage(target, zone, amount, server_tick);
+    if (nf_contamination_requires_stasis(target)) {
+        record_stasis_inventory(target);
+        nf_contamination_enter_stasis(target, server_tick);
         target->combat.respawn_timer = 3.0f;
         target->combat.action_timer = 0.0f;
-        target->transform.velocity = (NfVec3){0};
+        target->combat.reload_total = 0.0f;
+        target->combat.reload_committed = false;
+        target->combat.state = NF_WEAPON_EMPTY;
     }
+
     if (event_out != NULL) {
         *event_out = (NfCombatEvent){
             .server_tick=server_tick,
-            .type=target->combat.alive?NF_COMBAT_EVENT_DAMAGE:NF_COMBAT_EVENT_DEATH,
+            .type=target->combat.alive?NF_COMBAT_EVENT_DAMAGE:NF_COMBAT_EVENT_STASIS,
             .source=source,
             .target=target->id,
             .weapon=weapon,
@@ -152,13 +182,31 @@ void nf_combat_respawn(NfActor *actor, NfVec3 position, uint64_t server_tick, Nf
     if (actor == NULL) return;
     const NfFaction faction = actor->faction;
     const NfEntityId id = actor->id;
+    const NfStasisInventoryDisposition disposition = actor->stasis_inventory;
+    const bool ecological_replacement = faction == NF_FACTION_RANCHER;
+
     actor->transform.position = position;
     actor->transform.velocity = (NfVec3){0};
     nf_combat_init_actor(actor);
     actor->id = id;
     actor->faction = faction;
+
+    if (!ecological_replacement && disposition.valid) {
+        actor->stasis_inventory = disposition;
+        if (disposition.site_weapon > NF_WEAPON_NONE && disposition.site_weapon < NF_WEAPON_COUNT) {
+            actor->combat.ammo_mag[disposition.site_weapon] = 0u;
+            actor->combat.reserve_ammo[disposition.site_weapon] = 0u;
+        }
+        if (disposition.restock_weapon > NF_WEAPON_NONE && disposition.restock_weapon < NF_WEAPON_COUNT) {
+            actor->combat.weapon = disposition.restock_weapon;
+            actor->combat.state = NF_WEAPON_READY;
+        }
+    }
+
+    nf_contamination_revive_actor(actor, ecological_replacement);
+
     if (event_out != NULL) {
-        *event_out = (NfCombatEvent){.server_tick=server_tick,.type=NF_COMBAT_EVENT_RESPAWN,.source=id,.target=id,.position=position};
+        *event_out = (NfCombatEvent){.server_tick=server_tick,.type=NF_COMBAT_EVENT_REVIVAL,.source=id,.target=id,.position=position};
     }
 }
 
@@ -176,9 +224,9 @@ const char *nf_weapon_state_name(NfWeaponState state) {
 const char *nf_combat_event_name(NfCombatEventType type) {
     switch (type) {
         case NF_COMBAT_EVENT_GUNFIRE: return "GUNFIRE";
-        case NF_COMBAT_EVENT_DAMAGE: return "DAMAGE";
-        case NF_COMBAT_EVENT_DEATH: return "DEATH";
-        case NF_COMBAT_EVENT_RESPAWN: return "RESPAWN";
+        case NF_COMBAT_EVENT_DAMAGE: return "CONTAMINATION";
+        case NF_COMBAT_EVENT_STASIS: return "STASIS";
+        case NF_COMBAT_EVENT_REVIVAL: return "REVIVAL";
         case NF_COMBAT_EVENT_RELOAD: return "RELOAD";
         case NF_COMBAT_EVENT_WEAPON_SWITCH: return "WEAPON_SWITCH";
         default: return "NONE";

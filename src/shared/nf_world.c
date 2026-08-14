@@ -1,6 +1,7 @@
 #include "nf_world.h"
 #include "nf_movement.h"
 #include "nf_combat.h"
+#include "nf_contamination.h"
 #include "nf_region.h"
 
 #include <math.h>
@@ -26,6 +27,7 @@ void nf_world_init(NfWorld *world, uint32_t seed) {
     world->next_entity_id = 1u;
     world->movement = nf_default_movement_config();
     nf_energy_init(&world->energy, seed ^ 0xE093u);
+    nf_contamination_world_init(&world->contamination);
 }
 
 int nf_world_add_collider(NfWorld *world, NfColliderKind kind, NfVec3 min, NfVec3 max) {
@@ -182,10 +184,16 @@ void nf_world_step(NfWorld *world,float dt){
         NfActor *a=&world->actors[i];
         if(!a->active)continue;
         nf_combat_step_actor(a,dt);
-        if(a->combat.alive) nf_movement_step_actor(world,a,dt);
-        else { a->transform.velocity=(NfVec3){0}; a->input=(NfMoveInput){0}; }
+        if(a->combat.alive) {
+            const float move_scale=nf_contamination_move_scale(a);
+            a->input.forward*=move_scale;
+            a->input.strafe*=move_scale;
+            if(move_scale<0.78f)a->input.sprint_held=false;
+            nf_movement_step_actor(world,a,dt);
+        } else { a->transform.velocity=(NfVec3){0}; a->input=(NfMoveInput){0}; }
         a->input.jump_pressed=false;
     }
+    nf_contamination_world_step(world,dt);
     nf_energy_tick(&world->energy, world, (double)dt);
     ++world->tick;
 }

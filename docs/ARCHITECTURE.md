@@ -291,3 +291,48 @@ The graphical client shows red Human Rivals, tall orange Dream Cattlers and temp
 ## Current scope discipline
 
 v0.8 intentionally does **not** add final Cattler art/audio, full aerial navigation, a full Ghost Static Director, an autonomous teammate brain, full resource/reclamation objectives, general GOAP, giant influence grids, cross-match ML adaptation or the 8 km² production map.
+
+## Long-horizon seeded multiverse architecture
+
+Canonical contract: `docs/SEEDED_MULTIVERSE_WORLD_ARCHITECTURE.md`.
+
+The durable spatial hierarchy is:
+
+`MULTIVERSE -> SEED WORLD -> REGION/CELL -> LOCAL SIMULATION -> ACTOR`
+
+The durable authority hierarchy is approximately:
+
+`ACCOUNT/DIRECTORY -> SEED AUTHORITY -> CELL AUTHORITY -> LOCAL SIMULATION SYSTEMS`
+
+Long-horizon seed worlds may be up to roughly **8 km x 8 km (64 km²)** and may be internally expressed as an 8x8-style lattice of bounded cells; exact seed and cell dimensions remain engineering parameters rather than ontological commitments.
+
+World location should eventually decompose as `SEED_ID + CELL_ID + LOCAL_COORDINATES` rather than depend on one unbounded global coordinate plane.
+
+Persistent world state should conceptually satisfy:
+
+`CURRENT_WORLD = GENERATE(SEED) + PERSISTENT_CAUSAL_DELTA`
+
+Generated baseline is reproducible; meaningful historical departures persist. When simulation resolution decreases, compress causal state rather than erasing or rerolling it.
+
+Simulation fidelity extends the existing architecture:
+
+`DORMANT/PERSISTED -> STATISTICAL -> REGIONAL/PROXY -> LOCAL EMBODIMENT -> FULL LOCAL ENCOUNTER`
+
+Cross-cell traversal is eventually an authority-handoff problem, not a respawn problem. Global services coordinate directory/persistence/travel concerns; they do not author local bullets, collision or actor cognition.
+
+Scale objective: thousands of players may be distributed across dozens or hundreds of seed worlds and cells, allowing global concurrency to remain **diffuse** while local simulation remains bounded. Hotspots may still concentrate players and require more compute.
+
+Status discipline:
+
+- hierarchical seeded locality = **design commitment**;
+- thousands-player distributed world = **aspiration**;
+- final cell size, orchestration, handoff, persistence database and hotspot splitting = **open questions**;
+- current v1.x code = **not an implementation claim for MMO-scale distributed authority**.
+
+Maxims:
+
+> **Large multiplayer population != large local simulation population.**
+
+> **A large world is many authoritative localities with conserved history, not one gigantic coordinate plane.**
+
+> **When nobody is looking, compress the world; do not erase it.**
