@@ -314,8 +314,13 @@ static void evaluate_routes(
     teammate->trace.hotspot_gradient = hotspot;
 
     NfTeammateCommitment next = teammate->commitment;
-    if (b_utility > a_utility+0.04f) next = NF_TEAMMATE_COMMIT_ROUTE_B;
-    else if (teammate->commitment != NF_TEAMMATE_COMMIT_ROUTE_B) next = NF_TEAMMATE_COMMIT_ROUTE_A;
+    if (teammate->commitment == NF_TEAMMATE_COMMIT_ROUTE_B && !route->open) {
+        next = NF_TEAMMATE_COMMIT_ROUTE_A;
+    } else if (b_utility > a_utility+0.04f) {
+        next = NF_TEAMMATE_COMMIT_ROUTE_B;
+    } else if (teammate->commitment != NF_TEAMMATE_COMMIT_ROUTE_B) {
+        next = NF_TEAMMATE_COMMIT_ROUTE_A;
+    }
 
     if (next != teammate->commitment) {
         teammate->commitment = next;
