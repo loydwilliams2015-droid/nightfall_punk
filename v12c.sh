@@ -7,7 +7,7 @@ cd "$ROOT_DIR"
 cmd="${1:-help}"
 
 standard_check() {
-    ./v12b.sh standard-check
+    bash ./v12b.sh standard-check
     bash -n ./v12c.sh
     test -f src/tests/test_teammate.c
     test -f src/demo/v12_greybox.c
@@ -55,17 +55,17 @@ case "$cmd" in
         ;;
     test)
         ./nightfall.sh test
-        ./v12b.sh camera-smoke
+        bash ./v12b.sh camera-smoke
         integration_smoke
         ;;
     integration-smoke)
         integration_smoke
         ;;
     camera-smoke)
-        ./v12b.sh camera-smoke
+        bash ./v12b.sh camera-smoke
         ;;
     regression)
-        ./v12b.sh regression
+        bash ./v12b.sh regression
         ;;
     demo)
         demo
