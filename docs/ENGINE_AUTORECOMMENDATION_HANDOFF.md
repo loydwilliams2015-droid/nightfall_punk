@@ -6,29 +6,42 @@ This design branch adds policy only. It does not modify the frozen human-video c
 
 Current interlude trajectory: **v1.2b — Camera Rebuild / Camera Contract** before broader engine integration.
 
+Detailed resolved decisions: `docs/AUTORECOMMENDATION_DECISIONS_Q140_Q146.md`.
+
 ## Automatic recommendation status
 
 ### AUTO KEEP — engine-wide
 
 - Relational Action Selection above steering.
 - Semantic Steering distinct from pathfinding and physics.
-- `snap_locomotion` as canonical replacement for retired Fuzzy Rail terminology.
+- `snap_locomotion` is canonical; retired `Fuzzy Rail` terminology should not return.
 - `snap_locomotion` is a regime inside Embodied Arcade Locomotion, not the whole locomotion layer.
 - High-authority arcade intention must still pass legitimate affordance, capability, energy/contamination/momentum, collision, and material truth.
 - Existing navigation/physics machinery remains primary; relational layers extend rather than duplicate it.
 - Material impossibility breaks commitment.
 - World truth does not imply actor knowledge.
-- Sparse/event-driven material simulation preferred over universal continuous simulation.
-- Persistent consequences and compressed expectations preferred over decorative micro-history.
+- Sparse/event-driven material simulation is preferred over universal continuous simulation.
+- Persistent consequences and compressed expectations are preferred over decorative micro-history.
 - Negative-control testing is mandatory for non-omniscience claims.
 - Standard geometric machinery first; novelty budget goes to relational interpretation, semantic affordances, energy, memory, Crew negotiation, and consequence.
+
+### RESOLVED BY AUTORECOMMENDATION
+
+- **Q140 — KEEP E + C:** responsive character-controller foundation + Embodied Authority Envelope for dynamic-object force coupling.
+- **Q141 — KEEP E + C:** standard sleep/tick/LOD machinery + Priority-Hotspot Simulation Gradient.
+- **Q142 — KEEP E + C:** physical eligibility windows + Intent–Affordance Capture Gradient for `snap_locomotion`.
+- **Q143 — KEEP 5 with 3 as guideline:** Relational Perceptual Authority Camera.
+- **Q144 — KEEP E + C:** bounded presentation vocabulary driven by a Perceptual Impulse Gradient.
+- **Q145 — KEEP E + C:** explicit Epistemic Observer Contract; player/live and observer/live are distinct states.
+- **Q146 — KEEP E + C:** traversal-specific body alignment inside an Orientation Authority Envelope; body may align, camera aim remains player-owned.
+
+Do not re-ask Q140–Q146 unless implementation evidence creates a material contradiction.
 
 ### AUTO KEEP — camera
 
 - **Relational Perceptual Authority Camera** is canonical.
-- Q143 disposition: **Option 5 implementation architecture, with Option 3 Perceptual Authority Envelope as the governing guideline.**
 - Primary yaw/pitch look remains immediate/high-authority.
-- Camera translation derives from predicted/authoritative body reality and is only presentation-filtered.
+- Camera translation derives from predicted/authoritative body reality and is presentation-filtered only.
 - Traversal states bound presentation response rather than authoring body/camera motion.
 - `snap_locomotion` changes legitimate body realization first; camera presents resulting motion second.
 - First-person is canonical gameplay/demo view.
@@ -36,13 +49,15 @@ Current interlude trajectory: **v1.2b — Camera Rebuild / Camera Contract** bef
 - Observer visibility does not become Player or teammate knowledge.
 - Ordinary correction smoothing is distinct from authoritative relocation.
 - Camera presentation cannot modify authoritative simulation truth.
-- Closed/invalid route utility should display semantically as `BLOCKED`/`INVALID`, never leak `-FLT_MAX` to the HUD.
+- Closed/invalid route utility displays semantically as `BLOCKED`/`INVALID`, never as a leaked `-FLT_MAX` sentinel.
 
 ### AUTO KEEP + MEASURE
 
 Engine-wide:
 
-- bounded snap-capture windows;
+- exact Embodied Authority Envelope thresholds;
+- exact material-field tick/sleep bands;
+- bounded snap-capture windows and acquire/release thresholds;
 - path-corridor/local-steering compatibility;
 - shared abstract steering vocabulary with body-specific realization;
 - selective rigid-body/contact physics on materially consequential objects;
@@ -58,7 +73,8 @@ Camera:
 - small prediction-correction presentation smoothing;
 - base FOV and any tiny contextual FOV modulation;
 - moving-platform stabilization thresholds;
-- camera-effect Priority Hotspot budget.
+- camera-effect Priority Hotspot budget;
+- exact Orientation Authority Envelope angles by traversal type.
 
 ## v1.2b likely implementation envelope
 
@@ -74,28 +90,27 @@ Unless contradicted by code/test evidence:
 8. expose small camera diagnostics: mode, desired/presented anchor delta, FOV, active impulse;
 9. preserve all v1.2 causality tests;
 10. fix invalid-route HUD sentinel presentation;
-11. add camera-specific deterministic tests before human proof.
+11. add camera-specific deterministic tests before human proof;
+12. establish bounded camera-impact and orientation-envelope hooks without overbuilding unused effects.
 
 Do not automatically add third-person gameplay, cinematic camera graphs, universal head-bob, physical-head simulation, aim magnetism, or camera-authored traversal.
 
 ## QUESTION SUBROUTINE — current camera frontier
 
-Q143 is resolved and should not be re-asked unless contradictory evidence appears.
+Q140–Q146 are resolved. The next genuinely material camera choices are:
 
-The next mid/high-uncertainty camera choices are:
+1. **Q147 — first-person camera/geometry boundary:** how the camera should respond when a legitimate body/eye anchor approaches or intersects nearby geometry during crouch, mantle, moving-platform motion, network correction, or unusual physical contact.
+2. **Q148 — authoritative-relocation presentation:** how STASIS return, respawn-like repositioning, or other explicit non-locomotor relocation should be perceptually presented without implying that the body traversed the intervening space.
+3. **Q149 — gait-scale camera motion:** whether ordinary walking/running should transmit no procedural motion, a small relation-derived micro-motion, or a more explicit authored head-bob/sway model.
 
-1. **Q144 — physical-impact transmission:** how much genuine body/material impulse should be communicated through first-person camera presentation without reducing aim authority or comfort;
-2. **Q145 — observer transition/control:** how debug observer modes should be entered, exited, and frozen relative to live simulation so diagnostics remain useful without creating accidental gameplay/epistemic ambiguity;
-3. **Q146 — camera/body orientation coupling during traversal:** how much body yaw realignment `snap_locomotion` may perform under an independently controlled first-person view, especially for mantles, ladders, narrow passages, and strong affordance capture.
+These should use Thesis / Antithesis / Original / Industry / Synthesis positions and should be decided only at the level necessary for v1.2b.
 
-These should use the five-position Thesis / Antithesis / Original / Industry / Synthesis format where useful.
+## Deferred broader engine frontier
 
-## Deferred but still unresolved engine frontier
+Do not reopen these during camera work unless v1.2b materially consumes them:
 
-The previous broader questions remain valid but are not required to begin the bounded v1.2b camera interlude:
-
-- humanoid-to-dynamic-object force coupling;
-- continuous versus hotspot-activated material-field simulation;
-- global snap-capture strength/permissiveness and failure behavior.
-
-Return to them when the next build materially consumes those choices rather than reopening them during camera work.
+- degree/scope of destructibility;
+- active-ragdoll scope;
+- fluid fidelity beyond current sparse/local-state approach;
+- broader multi-actor force exchange;
+- later parity/difference among Player Crew, Human Rivals, and Dream Cattlers under the new body/physics contracts.
