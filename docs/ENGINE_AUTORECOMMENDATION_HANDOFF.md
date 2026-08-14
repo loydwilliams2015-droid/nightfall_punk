@@ -6,7 +6,10 @@ This design branch adds policy only. It does not modify the frozen human-video c
 
 Current interlude trajectory: **v1.2b — Camera Rebuild / Camera Contract** before broader engine integration.
 
-Detailed resolved decisions: `docs/AUTORECOMMENDATION_DECISIONS_Q140_Q146.md`.
+Detailed decisions:
+
+- `docs/AUTORECOMMENDATION_DECISIONS_Q140_Q146.md`
+- `docs/V1_2B_100_DECISION_SWEEP_Q147_Q246.md`
 
 ## Automatic recommendation status
 
@@ -27,29 +30,24 @@ Detailed resolved decisions: `docs/AUTORECOMMENDATION_DECISIONS_Q140_Q146.md`.
 
 ### RESOLVED BY AUTORECOMMENDATION
 
-- **Q140 — KEEP E + C:** responsive character-controller foundation + Embodied Authority Envelope for dynamic-object force coupling.
-- **Q141 — KEEP E + C:** standard sleep/tick/LOD machinery + Priority-Hotspot Simulation Gradient.
-- **Q142 — KEEP E + C:** physical eligibility windows + Intent–Affordance Capture Gradient for `snap_locomotion`.
-- **Q143 — KEEP 5 with 3 as guideline:** Relational Perceptual Authority Camera.
-- **Q144 — KEEP E + C:** bounded presentation vocabulary driven by a Perceptual Impulse Gradient.
-- **Q145 — KEEP E + C:** explicit Epistemic Observer Contract; player/live and observer/live are distinct states.
-- **Q146 — KEEP E + C:** traversal-specific body alignment inside an Orientation Authority Envelope; body may align, camera aim remains player-owned.
+Q140–Q146 are resolved and should not be re-asked without contradictory implementation evidence.
 
-Do not re-ask Q140–Q146 unless implementation evidence creates a material contradiction.
+The v1.2b 100-question sweep processed Q147–Q246. All but three choices collapsed into AUTO KEEP, AUTO KEEP + MEASURE, or deliberate DEFER. This is now the project default: do not re-litigate resolved camera details merely because implementation begins.
 
-### AUTO KEEP — camera
+Key resolved camera laws:
 
 - **Relational Perceptual Authority Camera** is canonical.
-- Primary yaw/pitch look remains immediate/high-authority.
-- Camera translation derives from predicted/authoritative body reality and is presentation-filtered only.
-- Traversal states bound presentation response rather than authoring body/camera motion.
-- `snap_locomotion` changes legitimate body realization first; camera presents resulting motion second.
-- First-person is canonical gameplay/demo view.
-- Static oblique/top views are explicit debug observer modes, not player presentation.
-- Observer visibility does not become Player or teammate knowledge.
-- Ordinary correction smoothing is distinct from authoritative relocation.
-- Camera presentation cannot modify authoritative simulation truth.
-- Closed/invalid route utility displays semantically as `BLOCKED`/`INVALID`, never as a leaked `-FLT_MAX` sentinel.
+- Aim belongs to player look intent; body position belongs to embodied reality; presentation mediates between them.
+- Camera remains downstream of simulation, prediction, `snap_locomotion`, physics, damage, and actor evidence.
+- Camera cannot modify authoritative simulation truth.
+- Body motion happens first; camera presents what actually occurred.
+- Traversal states bound presentation response; they do not author body/camera motion.
+- Small prediction corrections may be presentation-smoothed; authoritative relocation remains an explicit discontinuity.
+- Near-geometry handling may protect presentation but cannot manufacture a new viewpoint.
+- Ordinary gait micro-motion, impact impulses, recoil, landing response, moving-platform stabilization, and traversal presentation are bounded/measureable effects rather than new movement authorities.
+- Observer tools change developer perception without changing actor knowledge.
+- Accessibility may reduce camera motion/shake without reducing gameplay/material consequence.
+- Motion blur, DOF, chromatic aberration, lock-on, aim magnetism, photo/replay, leaning, cinematic graphs, and networked debug observer state remain deferred/absent for v1.2b.
 
 ### AUTO KEEP + MEASURE
 
@@ -71,39 +69,43 @@ Camera:
 - crouch/step/vault/mantle presentation envelopes;
 - physical/recoil/landing camera impulse thresholds;
 - small prediction-correction presentation smoothing;
-- base FOV and any tiny contextual FOV modulation;
+- sprint/traversal FOV modulation amplitudes, if any;
 - moving-platform stabilization thresholds;
 - camera-effect Priority Hotspot budget;
-- exact Orientation Authority Envelope angles by traversal type.
+- exact Orientation Authority Envelope angles by traversal type;
+- gait micro-motion amplitude;
+- near-geometry tolerance/near-plane values;
+- mouse/pitch/sensitivity tuning.
 
-## v1.2b likely implementation envelope
+## v1.2b minimum-sufficient implementation envelope
 
 Unless contradicted by code/test evidence:
 
 1. extract inline FPS camera into a small `nf_camera` module;
 2. preserve current direct mouse yaw/pitch behavior;
 3. derive desired eye anchor from predicted player body;
-4. add bounded translational presentation state;
-5. make first-person the v1.2 causal demo default;
-6. preserve fixed oblique overview as explicit diagnostic observer mode;
-7. optionally add a cheap top/debug mode;
-8. expose small camera diagnostics: mode, desired/presented anchor delta, FOV, active impulse;
-9. preserve all v1.2 causality tests;
-10. fix invalid-route HUD sentinel presentation;
-11. add camera-specific deterministic tests before human proof;
-12. establish bounded camera-impact and orientation-envelope hooks without overbuilding unused effects.
+4. add bounded translational Perceptual Authority Envelope;
+5. add local Perceptual Boundary Envelope for near-geometry presentation;
+6. make first-person the causal-demo default;
+7. preserve fixed oblique overview as explicit diagnostic observer mode;
+8. optionally add cheap debug-top mode;
+9. expose small diagnostics: mode, desired/presented anchor delta, FOV, active impulse, correction class, traversal relation;
+10. preserve all v1.2 causality/regression tests;
+11. replace invalid Route-B `-FLT_MAX` HUD output with `BLOCKED`/`INVALID`;
+12. add deterministic camera tests before human proof;
+13. establish bounded camera-impact/orientation-envelope hooks without overbuilding unused effects;
+14. keep camera work bounded/local and avoid full-world scans;
+15. persist only user-facing camera settings, not transient runtime presentation state.
 
-Do not automatically add third-person gameplay, cinematic camera graphs, universal head-bob, physical-head simulation, aim magnetism, or camera-authored traversal.
+## QUESTION SUBROUTINE — only three open questions from the 100-question sweep
 
-## QUESTION SUBROUTINE — current camera frontier
+The only Q147–Q246 choices still requiring explicit design choice are:
 
-Q140–Q146 are resolved. The next genuinely material camera choices are:
+1. **Q151 — FOV convention:** current raylib `fovy=82` is vertical FOV, while FPS players often reason in horizontal FOV. Decide the canonical project convention before tuning.
+2. **Q217 — weapon/viewmodel anchoring architecture:** camera-space viewmodel, world/body-space first-person weapon, or hybrid representation.
+3. **Q224 — first-person body representation:** no visible body, lower-body proxy, or unified full-body first-person representation.
 
-1. **Q147 — first-person camera/geometry boundary:** how the camera should respond when a legitimate body/eye anchor approaches or intersects nearby geometry during crouch, mantle, moving-platform motion, network correction, or unusual physical contact.
-2. **Q148 — authoritative-relocation presentation:** how STASIS return, respawn-like repositioning, or other explicit non-locomotor relocation should be perceptually presented without implying that the body traversed the intervening space.
-3. **Q149 — gait-scale camera motion:** whether ordinary walking/running should transmit no procedural motion, a small relation-derived micro-motion, or a more explicit authored head-bob/sway model.
-
-These should use Thesis / Antithesis / Original / Industry / Synthesis positions and should be decided only at the level necessary for v1.2b.
+Everything else in Q147–Q246 is resolved or deliberately deferred.
 
 ## Deferred broader engine frontier
 
