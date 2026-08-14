@@ -125,7 +125,14 @@ Implementation head `20c166f2fabd6125b8b67f7fdce523785a8fcdb0` passed GitHub Act
 3. all 10 CTests then passed;
 4. every inherited v1.1 smoke also passed.
 
-The final documentation/wrapper head must also have a green exact-head CI status before human recording.
+Final wrapper/handoff head `564f2c28970ba9763ebfc28e63a0be193369d57c` then passed GitHub Actions run #320, including:
+- v1.2 standard check;
+- strict full graphical Linux compile including the causal greybox;
+- all inherited + teammate causal CTests;
+- all inherited combat/network/Human Rival/Cattler/energy/Lifeworld/contamination smokes;
+- named teammate causality positive + negative proof.
+
+This ledger-finalization commit is documentation-only; its exact head should also be green before the branch is frozen for human recording.
 
 ## Human video gate
 
