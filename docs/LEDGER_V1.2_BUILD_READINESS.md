@@ -162,3 +162,38 @@ Optional second clip:
 ## Administrative note
 
 PR #17 remains a draft administrative loose end because the connected GitHub mutation path rejected PR-state/metadata changes despite accepted code and green CI. The exact v1.1 state is nevertheless preserved at `archive/v1.1`, and v1.2 branches directly from that accepted head. Do not confuse PR UI state with code-lineage evidence.
+
+---
+
+## 2026-08-13 PRAXIS / SIGNAL / STEWARD handoff addendum
+
+Canonical handoff: `docs/LEDGER_V1.2_PRAXIS_SIGNAL_STEWARD_HANDOFF.md`.
+
+### FROM — current evidence
+
+- PR #18 remains the active v1.2 causal-slice review target.
+- Pre-handoff head `e65e19e931794fbe2f7e7f359b982df6cc10d4de` passed `nightfall v1.2 CI` run **#322**.
+- Current executable/source-backed claim remains the bounded chain:
+  `WORLD-WRITE -> LEGITIMATE EVIDENCE -> BELIEF/MEMORY -> GRADIENT/HOTSPOT -> UTILITY -> COMMITMENT -> ACTION`.
+- The Pac-Man compare/contrast run is recorded as **ANALYTIC / INTERPRETIVE TEST**, not a compiled game mode, benchmark or CI proof.
+
+### TO — provisional next slice, not yet accepted v1.3
+
+Working direction:
+
+> **Production-Integrated Situated Reasoning / Plural Evidence Alpha**
+
+Priorities after the v1.2 human gate:
+
+1. production dedicated-server integration of the teammate causal loop;
+2. ordinary network-visible world consequences for the causal route change;
+3. preserve `world truth != actor knowledge != group report`;
+4. one bounded contradictory-evidence proof;
+5. material legality remains deductively decisive even when memory/report evidence conflicts;
+6. at most one earned many-valued/fuzzy predicate proof;
+7. keep fuzzy applicability, probability, confidence, contradiction and utility distinct;
+8. no giant GOAP, theorem prover, master truth score or duplicate locomotion architecture.
+
+### Readiness status after this documentation update
+
+The pre-handoff code head has successful CI evidence. These documentation commits move the branch head forward, so **exact-head CI must be re-established before v1.2 is described as final-head green or frozen for human acceptance.** No gameplay compile was requested by this ledger/handoff operation.
