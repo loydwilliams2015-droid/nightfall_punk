@@ -11,11 +11,11 @@
 
 #define NF_TEAMMATE_DECISION_INTERVAL 12u
 #define NF_TEAMMATE_DIRECT_RANGE 30.0f
-#define NF_TEAMMATE_REPORT_RANGE_CLEAR 18.0f
-#define NF_TEAMMATE_REPORT_RANGE_BLOCKED 8.0f
 #define NF_TEAMMATE_ENCOUNTER_RANGE 4.5f
 #define NF_TEAMMATE_WAYPOINT_RADIUS 1.55f
 #define NF_TEAMMATE_HOTSPOT_NAV_MAX 0.28f
+#define NF_TEAMMATE_REPORT_DELAY (NF_TICK_RATE / 5u)
+#define NF_TEAMMATE_REPORT_LIFETIME (NF_TICK_RATE * 3u)
 
 static float clamp01(float value) {
     return value < 0.0f ? 0.0f : (value > 1.0f ? 1.0f : value);
@@ -78,15 +78,6 @@ static bool line_blocked(const NfWorld *world, NfVec3 from, NfVec3 to) {
     return false;
 }
 
-static const NfActor *first_player(const NfWorld *world) {
-    if (world == NULL) return NULL;
-    for (size_t i = 0u; i < NF_MAX_ENTITIES; ++i) {
-        const NfActor *actor = &world->actors[i];
-        if (actor->active && actor->faction == NF_FACTION_PLAYER) return actor;
-    }
-    return NULL;
-}
-
 void nf_teammate_profile_from_hotspots(
     NfTeammateProfile *profile,
     const NfTeammateBiographyHotspot hotspots[NF_TEAMMATE_BIOGRAPHY_HOTSPOTS]) {
@@ -132,6 +123,7 @@ void nf_teammate_init(
     NfTeammateSystem *teammate, NfWorld *world, bool enabled, uint32_t seed) {
     if (teammate == NULL || world == NULL) return;
     memset(teammate,0,sizeof(*teammate));
+    nf_report_bus_init(&teammate->reports);
     teammate->enabled = enabled;
     teammate->spawn = (NfVec3){6.0f,0.05f,-16.0f};
     teammate->commitment = NF_TEAMMATE_COMMIT_ROUTE_A;
@@ -145,8 +137,37 @@ void nf_teammate_init(
     teammate->actor_id = nf_world_spawn_actor(world,NF_FACTION_TEAMMATE,teammate->spawn);
 }
 
+bool nf_teammate_publish_route_report(
+    NfTeammateSystem *teammate, const NfWorld *world,
+    const NfRouteSystem *route, NfEntityId reporter) {
+    if (teammate == NULL || world == NULL || route == NULL || !route->configured ||
+        !route->open || reporter == 0u) return false;
+    const NfActor *actor = nf_world_find_actor_const(world,reporter);
+    if (actor == NULL || (actor->faction != NF_FACTION_PLAYER &&
+        actor->faction != NF_FACTION_TEAMMATE)) return false;
+
+    NfReport report = {
+        .subject_key = route->gate_key,
+        .kind = NF_REPORT_ROUTE_STATE,
+        .scope = NF_REPORT_SCOPE_CREW,
+        .origin = route->changed_by != 0u ? route->changed_by : reporter,
+        .reporter = reporter,
+        .coarse_position = route->gate_center,
+        .value = 1.0f,
+        .confidence = 0.82f,
+        .origin_tick = route->changed_tick,
+        .issued_tick = world->tick,
+        .deliver_tick = world->tick + NF_TEAMMATE_REPORT_DELAY,
+        .expiry_tick = world->tick + NF_TEAMMATE_REPORT_LIFETIME
+    };
+    uint32_t id = 0u;
+    if (!nf_report_publish(&teammate->reports,report,&id)) return false;
+    teammate->last_route_report_id = id;
+    return true;
+}
+
 static NfTeammateEvidenceSource acquire_evidence(
-    const NfTeammateSystem *teammate, const NfWorld *world,
+    NfTeammateSystem *teammate, const NfWorld *world,
     const NfRouteSystem *route) {
     if (teammate == NULL || world == NULL || route == NULL || !route->open) {
         return NF_TEAMMATE_EVIDENCE_NONE;
@@ -161,26 +182,24 @@ static NfTeammateEvidenceSource acquire_evidence(
     const float gate_distance = nf_route_distance_to_gate(route,self->transform.position);
     if (gate_distance <= NF_TEAMMATE_DIRECT_RANGE &&
         !line_blocked(world,eye,route->gate_center)) {
+        teammate->last_report_confidence = 0.0f;
         return NF_TEAMMATE_EVIDENCE_DIRECT;
     }
-    const NfActor *player = first_player(world);
-    if (player != NULL && route->changed_by == player->id) {
-        const NfVec3 player_head = {
-            player->transform.position.x,
-            player->transform.position.y+player->movement.eye_height,
-            player->transform.position.z
-        };
-        const bool blocked = line_blocked(world,eye,player_head);
-        const float report_range = blocked
-            ? NF_TEAMMATE_REPORT_RANGE_BLOCKED
-            : NF_TEAMMATE_REPORT_RANGE_CLEAR;
-        if (distance_xz(self->transform.position,player->transform.position) <= report_range) {
-            return NF_TEAMMATE_EVIDENCE_CREW_REPORT;
-        }
+
+    NfReport report = {0};
+    if (nf_report_best(&teammate->reports,self->id,self->faction,world->tick,
+            NF_REPORT_ROUTE_STATE,route->gate_key,&report) &&
+        report.value > 0.5f && report.origin_tick >= route->changed_tick) {
+        teammate->last_route_report_id = report.id;
+        teammate->last_report_confidence = nf_report_weight(&report,world->tick);
+        return NF_TEAMMATE_EVIDENCE_CREW_REPORT;
     }
+
     if (gate_distance <= NF_TEAMMATE_ENCOUNTER_RANGE) {
+        teammate->last_report_confidence = 0.0f;
         return NF_TEAMMATE_EVIDENCE_ENCOUNTER;
     }
+    teammate->last_report_confidence = 0.0f;
     return NF_TEAMMATE_EVIDENCE_NONE;
 }
 
@@ -189,7 +208,8 @@ static float evidence_confidence(
     if (source == NF_TEAMMATE_EVIDENCE_DIRECT) return 0.98f;
     if (source == NF_TEAMMATE_EVIDENCE_ENCOUNTER) return 0.94f;
     if (source == NF_TEAMMATE_EVIDENCE_CREW_REPORT) {
-        return 0.62f + 0.20f*teammate->profile.evidence_discipline;
+        return clamp01(teammate->last_report_confidence *
+            (0.85f + 0.15f*teammate->profile.evidence_discipline));
     }
     return 0.0f;
 }
@@ -358,9 +378,9 @@ size_t nf_teammate_tick(
         observe_route(teammate,world,evidence);
         teammate->next_decision_tick = world->tick;
         if (!teammate->evidence_logged) {
-            printf("[teammate-evidence] source=%s confidence=%.2f tick=%llu route=OPEN\n",
+            printf("[teammate-evidence] source=%s confidence=%.2f tick=%llu route=OPEN report=%u\n",
                 nf_teammate_evidence_name(evidence),teammate->memory.confidence,
-                (unsigned long long)world->tick);
+                (unsigned long long)world->tick,teammate->last_route_report_id);
             teammate->evidence_logged = true;
         }
     }
