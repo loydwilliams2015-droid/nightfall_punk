@@ -2,8 +2,10 @@
 #define NF_AI_H
 
 #include "nf_agent.h"
+#include "nf_claim.h"
 #include "nf_combat.h"
 #include "nf_relations.h"
+#include "nf_report.h"
 #include "nf_semantics.h"
 #include "nf_world.h"
 
@@ -13,6 +15,13 @@
 #define NF_AI_MAX_AGENTS 4u
 #define NF_AI_MAX_AFFORDANCES 96u
 
+typedef enum NfAiEvidenceSource {
+    NF_AI_EVIDENCE_NONE = 0,
+    NF_AI_EVIDENCE_DIRECT,
+    NF_AI_EVIDENCE_AUDIBLE,
+    NF_AI_EVIDENCE_REPORT
+} NfAiEvidenceSource;
+
 typedef struct NfAiKnowledge {
     NfEntityId target;
     bool visible_now;
@@ -21,12 +30,16 @@ typedef struct NfAiKnowledge {
     NfVec3 last_heard_position;
     uint64_t last_heard_tick;
     float confidence;
+    NfAiEvidenceSource source;
+    uint32_t report_id;
+    uint32_t report_ancestry_id;
+    uint8_t report_hops;
 } NfAiKnowledge;
 
 typedef struct NfAiAffordance {
     uint32_t id;
     NfVec3 position;
-    NfEntityId reserved_by;
+    NfEntityId reserved_by; /* compatibility/debug mirror; NfClaimTable is authoritative */
 } NfAiAffordance;
 
 typedef struct NfAiAgent {
@@ -38,9 +51,12 @@ typedef struct NfAiAgent {
     float pitch;
     float current_score;
     float mode_scores[NF_AGENT_MODE_COUNT];
+    float selected_cover_exposure;
     uint64_t next_perception_tick;
     uint64_t next_decision_tick;
     uint64_t reaction_ready_tick;
+    uint64_t last_report_tick;
+    NfEntityId last_reported_target;
     uint32_t control_sequence;
     int selected_affordance;
     int strafe_sign;
@@ -50,19 +66,13 @@ typedef struct NfAiAgent {
     bool movement_requested;
 } NfAiAgent;
 
-typedef struct NfAiBlackboard {
-    NfEntityId reported_target;
-    NfVec3 reported_position;
-    uint64_t reported_tick;
-    float confidence;
-} NfAiBlackboard;
-
 typedef struct NfAiSystem {
     NfAiAgent agents[NF_AI_MAX_AGENTS];
     size_t count;
     NfAiAffordance affordances[NF_AI_MAX_AFFORDANCES];
     size_t affordance_count;
-    NfAiBlackboard blackboard;
+    NfReportBus reports;
+    NfClaimTable claims;
     NfRelationship rival_relationship;
     uint32_t seed;
 } NfAiSystem;
@@ -73,5 +83,8 @@ size_t nf_ai_tick(NfAiSystem *ai, NfWorld *world, const NfSemanticBus *semantics
 const NfAiAgent *nf_ai_find_agent_const(const NfAiSystem *ai, NfEntityId actor_id);
 bool nf_ai_spawn_for(const NfAiSystem *ai, NfEntityId actor_id, NfVec3 *out);
 void nf_ai_on_respawn(NfAiSystem *ai, NfEntityId actor_id);
+size_t nf_ai_live_report_count(const NfAiSystem *ai, uint64_t now_tick);
+size_t nf_ai_live_claim_count(const NfAiSystem *ai, uint64_t now_tick);
+const char *nf_ai_evidence_name(NfAiEvidenceSource source);
 
 #endif
