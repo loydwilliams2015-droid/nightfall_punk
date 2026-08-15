@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(nightfall_punk VERSION 1.2 LANGUAGES C)
+project(nightfall_punk VERSION 1.4 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -60,6 +60,8 @@ add_library(nightfall_shared STATIC
     src/shared/nf_agent.c
     src/shared/nf_relations.c
     src/shared/nf_semantics.c
+    src/shared/nf_report.c
+    src/shared/nf_claim.c
     src/shared/nf_region.c
     src/shared/nf_energy.c
     src/shared/nf_energy_actor.c
@@ -208,4 +210,10 @@ if(NF_BUILD_TESTS)
     target_include_directories(nightfall_camera_test PRIVATE src/client src/shared)
     nf_project_warnings(nightfall_camera_test)
     add_test(NAME relational_camera_v12b COMMAND nightfall_camera_test)
+
+    add_executable(nightfall_v14_relations_test src/tests/test_v14_relations.c)
+    target_link_libraries(nightfall_v14_relations_test PRIVATE nightfall_ai)
+    target_include_directories(nightfall_v14_relations_test PRIVATE src/server/ai src/shared)
+    nf_project_warnings(nightfall_v14_relations_test)
+    add_test(NAME relational_comms_claims_v14 COMMAND nightfall_v14_relations_test)
 endif()
