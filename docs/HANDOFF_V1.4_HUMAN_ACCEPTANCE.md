@@ -20,16 +20,16 @@ Causal proof:
 
 ## Automated validation
 
-Validated implementation head:
+Frozen implementation + documentation candidate before the Q250-Q252 decision stamp:
 
-- head: `a07179a0293f93dca06481da1abd2941b3ddcdef`
+- head: `da40e4c12fc1e49a207b60776585ad1b9369b593`
 - workflow: `nightfall v1.4 CI`
-- run: **#416** / `31857243391`
+- run: **#419** / `31857467965`
 - result: **PASS**
 
-Run #416 passed standard-check, strict graphical compile, all inherited + v1.4 CTests, Human Rival combat/encounter/spatial regressions, Dream Cattler ecology, topographical energy, Lifeworld, contamination/STASIS, camera, v1.2c integrated population/embodied action, and the named v1.4 object/claim/exposure proof.
+Run #419 passed standard-check, strict graphical compile, all inherited + v1.4 CTests, Human Rival combat/encounter/spatial regressions, Dream Cattler ecology, topographical energy, Lifeworld, contamination/STASIS, camera, v1.2c integrated population/embodied action, and the named v1.4 object/claim/exposure proof.
 
-This documentation stamp creates a newer branch head; the final frozen human-video candidate is accepted only after that exact documentation head also passes the same v1.4 CI workflow. Draft PR identity is recorded externally after that exact-head check.
+This Q250-Q252 documentation stamp creates a newer branch head. The human-video candidate remains accepted only after that exact new head passes the same v1.4 CI workflow.
 
 Keep the PR draft until the Pop!_OS video is reviewed.
 
@@ -92,3 +92,37 @@ Send the video even if the gate, claim, teammate, camera, Rival or Cattler behav
 ## Explicit v1.5 boundary
 
 Do not treat the absence of a player viewmodel/full playable weapon loop as a v1.4 failure. The next frontier is communications + combat integration, including bounded AI reporting and player-visible weapon/viewmodel work.
+
+## Accepted v1.5 frontier decisions — KEEP
+
+### Q250 — Experimental communications prototype disposition
+
+**KEEP: synthesis E, governed by C — Counterfactual Prototype + selective salvage.**
+
+The already-green experimental communications branch is evidence and reusable ancestry, not automatic canonical code. Preserve its tests, observations, and useful bounded-report machinery; re-derive v1.5 from the canonical communications/combat contracts and rebase only components that still satisfy those contracts.
+
+`ExperimentalPrototype -> Evidence -> ContractCheck -> SelectiveReuse | Replacement`
+
+### Q251 — Player legibility of temporal claims
+
+**KEEP: synthesis E, governed by C — Legible Consequence, Hidden Machinery + contextual UI.**
+
+Default player-facing presentation exposes consequences rather than internal claim bookkeeping:
+
+`yield / occupy / commit / release / changed interaction`
+
+Do not expose ordinary `claim_id`, owner IDs, TTLs, or scheduler internals in normal play. Explicit markers/pings are appropriate only where the player materially participates in the relation, such as revive, interaction, or Crew coordination. Debug modes may expose machinery.
+
+### Q252 — Spatial precision of v1.5 AI communications
+
+**KEEP: synthesis E, governed by C — bounded last-known-position under Contextual Semantic Grain.**
+
+Information precision is relational rather than universal:
+
+`Precision = F(EvidenceQuality, Channel, Distance, Age, Relation, Context)`
+
+Firsthand direct perception may legitimately begin precise. Relayed, delayed, noisy, or degraded reports should generally become coarser, quantized, or region-based. Communications must not increase precision beyond their causal source.
+
+Governing invariant:
+
+> **Information may lose precision through transmission; it must not gain unearned precision.**
