@@ -9,7 +9,12 @@
 #define NF_AI_PERCEPTION_INTERVAL 5u
 #define NF_AI_DECISION_INTERVAL 10u
 #define NF_AI_MEMORY_TICKS (NF_TICK_RATE * 6u)
-#define NF_AI_REPORT_TICKS (NF_TICK_RATE * 3u)
+#define NF_AI_REPORT_LIFETIME (NF_TICK_RATE * 3u)
+#define NF_AI_REPORT_DELAY_MIN (NF_TICK_RATE / 6u)
+#define NF_AI_REPORT_DELAY_JITTER (NF_TICK_RATE / 12u)
+#define NF_AI_REPORT_THROTTLE (NF_TICK_RATE / 2u)
+#define NF_AI_COVER_CLAIM_TICKS NF_TICK_RATE
+#define NF_AI_COVER_SUBJECT_BASE 0xC0000000u
 #define NF_AI_VIEW_RANGE 36.0f
 
 static float clamp01(float value) {
@@ -41,6 +46,10 @@ static uint32_t hash_u32(uint32_t value) {
     value *= 0x846ca68bu;
     value ^= value >> 16;
     return value;
+}
+
+static uint32_t cover_subject_key(const NfAiAffordance *affordance) {
+    return affordance == NULL ? 0u : (NF_AI_COVER_SUBJECT_BASE | affordance->id);
 }
 
 static bool ray_aabb(
@@ -106,13 +115,34 @@ static bool is_adversary_target(const NfActor *actor) {
         actor->faction == NF_FACTION_RANCHER;
 }
 
+static void clear_report_metadata(NfAiKnowledge *knowledge) {
+    if (knowledge == NULL) return;
+    knowledge->report_id = 0u;
+    knowledge->report_ancestry_id = 0u;
+    knowledge->report_hops = 0u;
+}
+
 static void release_cover(NfAiSystem *ai, NfAiAgent *agent) {
+    if (ai == NULL || agent == NULL) return;
     if (agent->selected_affordance >= 0 &&
         (size_t)agent->selected_affordance < ai->affordance_count) {
         NfAiAffordance *affordance = &ai->affordances[agent->selected_affordance];
-        if (affordance->reserved_by == agent->actor_id) affordance->reserved_by = 0u;
+        (void)nf_claim_release(
+            &ai->claims, NF_CLAIM_COVER, agent->actor_id,
+            cover_subject_key(affordance));
+        affordance->reserved_by = 0u;
     }
     agent->selected_affordance = -1;
+    agent->selected_cover_exposure = 1.0f;
+}
+
+static void sync_cover_claim_mirrors(NfAiSystem *ai, uint64_t tick) {
+    if (ai == NULL) return;
+    for (size_t i = 0u; i < ai->affordance_count; ++i) {
+        ai->affordances[i].reserved_by = nf_claim_hard_owner(
+            &ai->claims, NF_CLAIM_COVER,
+            cover_subject_key(&ai->affordances[i]), tick);
+    }
 }
 
 static void add_affordance(NfAiSystem *ai, const NfWorld *world, NfVec3 position) {
@@ -159,44 +189,111 @@ static void generate_cover_affordances(NfAiSystem *ai, const NfWorld *world) {
     }
 }
 
+static float cover_exposure(
+    const NfWorld *world, NfVec3 threat, NfVec3 candidate) {
+    const NfVec3 threat_eye = {threat.x, threat.y+1.4f, threat.z};
+    static const float sample_heights[3] = {0.45f, 1.00f, 1.55f};
+    unsigned exposed = 0u;
+    for (size_t i = 0u; i < 3u; ++i) {
+        const NfVec3 sample = {
+            candidate.x, candidate.y + sample_heights[i], candidate.z
+        };
+        if (!line_blocked(world, threat_eye, sample)) ++exposed;
+    }
+    return (float)exposed / 3.0f;
+}
+
 static int choose_cover(
-    NfAiSystem *ai, const NfWorld *world, const NfAiAgent *agent, NfVec3 threat) {
+    NfAiSystem *ai, const NfWorld *world, const NfAiAgent *agent,
+    NfVec3 threat, float *exposure_out) {
     const NfActor *self = nf_world_find_actor_const(world, agent->actor_id);
     if (self == NULL) return -1;
 
     float best_score = -FLT_MAX;
+    float best_exposure = 1.0f;
     int best_index = -1;
-    const NfVec3 threat_eye = {threat.x, threat.y+1.4f, threat.z};
     for (size_t i = 0; i < ai->affordance_count; ++i) {
         const NfAiAffordance *affordance = &ai->affordances[i];
-        if (affordance->reserved_by != 0u && affordance->reserved_by != agent->actor_id) {
+        if (nf_claim_is_blocked(
+                &ai->claims, NF_CLAIM_COVER, agent->actor_id,
+                cover_subject_key(affordance), world->tick)) {
             continue;
         }
         const float travel = dist_xz(self->transform.position, affordance->position);
         if (travel > 18.0f) continue;
 
-        const NfVec3 cover_eye = {
-            affordance->position.x,
-            affordance->position.y+1.0f,
-            affordance->position.z
-        };
-        const bool blocks_threat = line_blocked(world, threat_eye, cover_eye);
-        const float score = (blocks_threat ? 0.70f : 0.12f) +
-            (1.0f-clamp01(travel/18.0f))*0.30f;
+        const float exposure = cover_exposure(world, threat, affordance->position);
+        const float travel_fit = 1.0f-clamp01(travel/18.0f);
+        const float option_value = clamp01(dist_xz(affordance->position, threat)/20.0f);
+        const float score = (1.0f-exposure)*0.62f + travel_fit*0.28f + option_value*0.10f;
         if (score > best_score) {
             best_score = score;
+            best_exposure = exposure;
             best_index = (int)i;
         }
     }
+    if (exposure_out != NULL) *exposure_out = best_exposure;
     return best_index;
 }
 
-static void squad_report(
-    NfAiSystem *ai, NfEntityId target, NfVec3 position, uint64_t tick) {
-    ai->blackboard.reported_target = target;
-    ai->blackboard.reported_position = position;
-    ai->blackboard.reported_tick = tick;
-    ai->blackboard.confidence = 0.72f;
+static void publish_squad_report(
+    NfAiSystem *ai, NfAiAgent *agent, NfEntityId target,
+    NfVec3 position, uint64_t tick) {
+    if (ai == NULL || agent == NULL || target == 0u) return;
+    if (agent->last_reported_target == target &&
+        tick >= agent->last_report_tick &&
+        tick - agent->last_report_tick < NF_AI_REPORT_THROTTLE) {
+        return;
+    }
+    const uint32_t jitter_span = NF_AI_REPORT_DELAY_JITTER > 0u
+        ? NF_AI_REPORT_DELAY_JITTER : 1u;
+    const uint64_t delay = NF_AI_REPORT_DELAY_MIN +
+        (uint64_t)(hash_u32(ai->seed ^ agent->actor_id ^ (uint32_t)tick) % jitter_span);
+    NfReport report = {
+        .subject_key = target,
+        .kind = NF_REPORT_ENEMY_POSITION,
+        .scope = NF_REPORT_SCOPE_RIVAL_CREW,
+        .origin = agent->actor_id,
+        .reporter = agent->actor_id,
+        .coarse_position = position,
+        .confidence = 0.80f,
+        .origin_tick = tick,
+        .issued_tick = tick,
+        .deliver_tick = tick + delay,
+        .expiry_tick = tick + NF_AI_REPORT_LIFETIME
+    };
+    if (nf_report_publish(&ai->reports, report, NULL)) {
+        agent->last_reported_target = target;
+        agent->last_report_tick = tick;
+    }
+}
+
+static bool best_rival_report(
+    const NfAiSystem *ai, const NfWorld *world, const NfAiAgent *agent,
+    NfReport *out, float *weight_out) {
+    if (ai == NULL || world == NULL || agent == NULL || out == NULL) return false;
+    float best_weight = 0.0f;
+    const NfReport *best = NULL;
+    for (size_t i = 0u; i < ai->reports.count; ++i) {
+        const NfReport *report = &ai->reports.reports[i];
+        if (report->kind != NF_REPORT_ENEMY_POSITION || report->reporter == agent->actor_id) continue;
+        if (!nf_report_scope_allows(
+                report, agent->actor_id, NF_FACTION_RIVAL) ||
+            !nf_report_is_live(report, world->tick)) {
+            continue;
+        }
+        const NfActor *subject = nf_world_find_actor_const(world, (NfEntityId)report->subject_key);
+        if (!is_adversary_target(subject)) continue;
+        const float weight = nf_report_weight(report, world->tick);
+        if (weight > best_weight) {
+            best_weight = weight;
+            best = report;
+        }
+    }
+    if (best == NULL) return false;
+    *out = *best;
+    if (weight_out != NULL) *weight_out = best_weight;
+    return true;
 }
 
 static void perceive(
@@ -257,7 +354,9 @@ static void perceive(
         agent->knowledge.last_seen_position = best_position;
         agent->knowledge.last_seen_tick = world->tick;
         agent->knowledge.confidence = 1.0f;
-        squad_report(ai, best_id, best_position, world->tick);
+        agent->knowledge.source = NF_AI_EVIDENCE_DIRECT;
+        clear_report_metadata(&agent->knowledge);
+        publish_squad_report(ai, agent, best_id, best_position, world->tick);
         if (!was_visible || previous_target != best_id) {
             const uint32_t reaction_delay = 15u +
                 hash_u32(ai->seed ^ agent->actor_id ^ (uint32_t)world->tick) % 7u;
@@ -266,6 +365,7 @@ static void perceive(
         return;
     }
 
+    bool heard_evidence = false;
     NfSemanticAlert heard[8];
     const size_t heard_count = nf_semantic_collect_audible(
         semantics, self->transform.position, world->tick, heard, 8u);
@@ -278,20 +378,29 @@ static void perceive(
         if (event->type == NF_SEMANTIC_GUNFIRE || relevant_damage) {
             agent->knowledge.target = event->source;
             agent->knowledge.last_heard_position = event->position;
-            agent->knowledge.last_heard_tick = world->tick;
+            agent->knowledge.last_heard_tick = event->tick;
             if (agent->knowledge.confidence < 0.65f) agent->knowledge.confidence = 0.65f;
+            agent->knowledge.source = NF_AI_EVIDENCE_AUDIBLE;
+            clear_report_metadata(&agent->knowledge);
+            heard_evidence = true;
             break;
         }
     }
 
-    if (ai->blackboard.reported_target != 0u &&
-        world->tick >= ai->blackboard.reported_tick &&
-        world->tick - ai->blackboard.reported_tick <= NF_AI_REPORT_TICKS &&
-        agent->knowledge.confidence < ai->blackboard.confidence*0.85f) {
-        agent->knowledge.target = ai->blackboard.reported_target;
-        agent->knowledge.last_heard_position = ai->blackboard.reported_position;
-        agent->knowledge.last_heard_tick = ai->blackboard.reported_tick;
-        agent->knowledge.confidence = ai->blackboard.confidence*0.85f;
+    if (!heard_evidence) {
+        NfReport report = {0};
+        float report_weight = 0.0f;
+        if (best_rival_report(ai, world, agent, &report, &report_weight) &&
+            report_weight > agent->knowledge.confidence*0.82f) {
+            agent->knowledge.target = (NfEntityId)report.subject_key;
+            agent->knowledge.last_heard_position = report.coarse_position;
+            agent->knowledge.last_heard_tick = report.origin_tick;
+            agent->knowledge.confidence = report_weight;
+            agent->knowledge.source = NF_AI_EVIDENCE_REPORT;
+            agent->knowledge.report_id = report.id;
+            agent->knowledge.report_ancestry_id = report.ancestry_id;
+            agent->knowledge.report_hops = report.hops;
+        }
     }
 
     const uint64_t evidence_tick = agent->knowledge.last_seen_tick > agent->knowledge.last_heard_tick
@@ -301,7 +410,9 @@ static void perceive(
         world->tick - evidence_tick > NF_AI_MEMORY_TICKS) {
         agent->knowledge.confidence = 0.0f;
         agent->knowledge.target = 0u;
-    } else {
+        agent->knowledge.source = NF_AI_EVIDENCE_NONE;
+        clear_report_metadata(&agent->knowledge);
+    } else if (!heard_evidence && agent->knowledge.source != NF_AI_EVIDENCE_REPORT) {
         agent->knowledge.confidence = clamp01(agent->knowledge.confidence - 0.045f);
     }
 }
@@ -359,10 +470,12 @@ static void decide(NfAiSystem *ai, NfAiAgent *agent, NfWorld *world) {
              self->combat.reserve_ammo[self->combat.weapon] > 0u)
                 ? 1.0f
                 : (1.0f-ammo)*0.22f;
-        const int cover = choose_cover(ai, world, agent, known);
+        float cover_exposure_value = 1.0f;
+        const int cover = choose_cover(ai, world, agent, known, &cover_exposure_value);
         agent->mode_scores[NF_AGENT_SEEK_COVER] = cover >= 0
-            ? (1.0f-health)*0.58f + (1.0f-ammo)*0.20f +
-                (agent->knowledge.visible_now ? 0.18f : 0.0f)
+            ? (1.0f-health)*0.52f + (1.0f-ammo)*0.18f +
+                (agent->knowledge.visible_now ? 0.14f : 0.0f) +
+                (1.0f-cover_exposure_value)*0.24f
             : 0.0f;
     }
 
@@ -388,11 +501,27 @@ static void decide(NfAiSystem *ai, NfAiAgent *agent, NfWorld *world) {
         const NfVec3 threat = agent->knowledge.visible_now
             ? agent->knowledge.last_seen_position
             : agent->knowledge.last_heard_position;
-        const int cover = choose_cover(ai, world, agent, threat);
+        float exposure = 1.0f;
+        const int cover = choose_cover(ai, world, agent, threat, &exposure);
         if (cover >= 0) {
-            agent->selected_affordance = cover;
-            ai->affordances[cover].reserved_by = agent->actor_id;
+            NfAiAffordance *affordance = &ai->affordances[cover];
+            const NfClaimResult claim = nf_claim_try_acquire(
+                &ai->claims, NF_CLAIM_COVER, NF_CLAIM_HARD,
+                agent->actor_id, cover_subject_key(affordance), world->tick,
+                NF_AI_COVER_CLAIM_TICKS, NULL);
+            if (claim == NF_CLAIM_RESULT_GRANTED) {
+                agent->selected_affordance = cover;
+                agent->selected_cover_exposure = exposure;
+                affordance->reserved_by = agent->actor_id;
+            }
         }
+    } else if ((size_t)agent->selected_affordance < ai->affordance_count) {
+        NfAiAffordance *affordance = &ai->affordances[agent->selected_affordance];
+        const NfClaimResult claim = nf_claim_try_acquire(
+            &ai->claims, NF_CLAIM_COVER, NF_CLAIM_HARD,
+            agent->actor_id, cover_subject_key(affordance), world->tick,
+            NF_AI_COVER_CLAIM_TICKS, NULL);
+        if (claim != NF_CLAIM_RESULT_GRANTED) release_cover(ai, agent);
     }
 
     agent->mode = best_mode;
@@ -537,6 +666,8 @@ void nf_ai_init(NfAiSystem *ai, NfWorld *world, size_t count, uint32_t seed) {
     };
 
     memset(ai, 0, sizeof(*ai));
+    nf_report_bus_init(&ai->reports);
+    nf_claim_table_init(&ai->claims);
     ai->seed = seed;
     ai->rival_relationship = NF_RELATION_HOSTILE;
     if (count > NF_AI_MAX_AGENTS) count = NF_AI_MAX_AGENTS;
@@ -550,6 +681,7 @@ void nf_ai_init(NfAiSystem *ai, NfWorld *world, size_t count, uint32_t seed) {
             .mode = NF_AGENT_IDLE,
             .role = roles[i],
             .yaw = atan2f(-3.0f-spawns[i].x, -18.0f-spawns[i].z),
+            .selected_cover_exposure = 1.0f,
             .next_perception_tick = (uint64_t)i,
             .next_decision_tick = (uint64_t)(i*2u),
             .selected_affordance = -1,
@@ -571,11 +703,8 @@ size_t nf_ai_tick(
     NfControlFrame *out, size_t cap) {
     if (ai == NULL || world == NULL || semantics == NULL || out == NULL) return 0u;
 
-    if (ai->blackboard.reported_target != 0u &&
-        world->tick >= ai->blackboard.reported_tick &&
-        world->tick - ai->blackboard.reported_tick > NF_AI_REPORT_TICKS) {
-        ai->blackboard.confidence = 0.0f;
-    }
+    nf_claim_expire(&ai->claims, world->tick);
+    sync_cover_claim_mirrors(ai, world->tick);
 
     size_t written = 0u;
     for (size_t i = 0; i < ai->count && written < cap; ++i) {
@@ -608,6 +737,7 @@ size_t nf_ai_tick(
 
         out[written++] = build_control(ai, agent, world);
     }
+    sync_cover_claim_mirrors(ai, world->tick);
     return written;
 }
 
@@ -645,10 +775,31 @@ void nf_ai_on_respawn(NfAiSystem *ai, NfEntityId actor_id) {
         agent->spawn = spawn;
         agent->control_sequence = sequence;
         agent->selected_affordance = -1;
+        agent->selected_cover_exposure = 1.0f;
         agent->strafe_sign = (i%2u) ? -1 : 1;
         agent->last_sample_position = spawn;
+        agent->last_reported_target = 0u;
+        agent->last_report_tick = 0u;
         agent->stuck_ticks = 0u;
         agent->movement_requested = false;
         return;
+    }
+}
+
+size_t nf_ai_live_report_count(const NfAiSystem *ai, uint64_t now_tick) {
+    return ai == NULL ? 0u : nf_report_live_count(&ai->reports, now_tick);
+}
+
+size_t nf_ai_live_claim_count(const NfAiSystem *ai, uint64_t now_tick) {
+    return ai == NULL ? 0u : nf_claim_live_count(&ai->claims, now_tick);
+}
+
+const char *nf_ai_evidence_name(NfAiEvidenceSource source) {
+    switch (source) {
+        case NF_AI_EVIDENCE_DIRECT: return "DIRECT";
+        case NF_AI_EVIDENCE_AUDIBLE: return "AUDIBLE";
+        case NF_AI_EVIDENCE_REPORT: return "REPORT";
+        case NF_AI_EVIDENCE_NONE:
+        default: return "NONE";
     }
 }
