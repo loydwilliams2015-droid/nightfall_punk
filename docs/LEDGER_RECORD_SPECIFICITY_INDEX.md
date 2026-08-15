@@ -1,7 +1,9 @@
 # nightfall!punk — Record Specificity Index
 
 Timestamp: **2026-08-14 22:59 CDT (America/Chicago)**
+Last amendment: **2026-08-14 23:25 CDT (America/Chicago)**
 Chat provenance (public/redacted): **[REDACTED CHAT — Project Recordkeeping Specificity]**
+Amendment provenance (public/redacted): **[REDACTED CHAT — Visual Palette Preference]**
 Roles: **PRAXIS / STEWARD / SIGNAL**
 Record specificity: **PROJECT-WIDE / RECORDKEEPING INDEX**
 Status: **CURRENT SPECIFICITY RECONCILIATION**
@@ -18,6 +20,7 @@ This index applies the specificity policy in `docs/LEDGER_PROVENANCE_POLICY.md` 
 | `docs/LEDGER_V1.4_TO_V1.5_COMBAT_COMMUNICATIONS.md` | **VERSION v1.5 / SUBSYSTEM Combat + AI Communications / DESIGN RESOLUTION** | 150/150 design disposition; not v1.5 implementation proof |
 | `docs/HANDOFF_V1.4_TO_V1.5_COMBAT_COMMUNICATIONS.md` | **VERSION TRANSITION v1.4→v1.5 / SUBSYSTEM Combat + AI Communications / HANDOFF** | Carries implemented v1.4 constraints into v1.5 planning |
 | `docs/HANDOFF_RECALL_QUESTIONS_V1.5_COMBAT_COMMUNICATIONS.md` | **VERSION v1.5 / SUBSYSTEM Combat + AI Communications / QUESTIONS-HANDOFF** | Closed design guardrails + future uncertainty procedure |
+| `docs/LEDGER_PALETTE_PREFERENCES.md` | **PROJECT-CURRENT / SUBSYSTEM Rendering + Art Direction / VISUAL PALETTE PREFERENCE** | Explicit user preference; LA Sunset palette added as an additive reference family, not a universal recoloring rule |
 
 ## Mixed-specificity records
 
