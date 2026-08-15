@@ -2,7 +2,7 @@
 
 Date: 2026-08-14
 Branch: `build/v1.4-high-medium-integration`
-Status: **DRAFT HUMAN-VIDEO GATE**
+Status: **AUTOMATED GREEN — DRAFT HUMAN-VIDEO GATE**
 
 ## Identity
 
@@ -18,29 +18,33 @@ Causal proof:
 
 `OBJECT REVISION -> AFFORDANCE -> LEGITIMATE EVIDENCE -> UTILITY -> TEMPORAL CLAIM -> CONTROL -> BODY -> NEW RELATION`.
 
-## Candidate identity
+## Automated validation
 
-Fill after exact-head CI:
+Validated implementation head:
 
-- final head: `PENDING`
+- head: `a07179a0293f93dca06481da1abd2941b3ddcdef`
 - workflow: `nightfall v1.4 CI`
-- run: `PENDING`
-- PR: `PENDING`
+- run: **#416** / `31857243391`
+- result: **PASS**
 
-Keep draft until the Pop!_OS video is reviewed.
+Run #416 passed standard-check, strict graphical compile, all inherited + v1.4 CTests, Human Rival combat/encounter/spatial regressions, Dream Cattler ecology, topographical energy, Lifeworld, contamination/STASIS, camera, v1.2c integrated population/embodied action, and the named v1.4 object/claim/exposure proof.
+
+This documentation stamp creates a newer branch head; the final frozen human-video candidate is accepted only after that exact documentation head also passes the same v1.4 CI workflow. Draft PR identity is recorded externally after that exact-head check.
+
+Keep the PR draft until the Pop!_OS video is reviewed.
 
 ## Run locally
 
 ```bash
-cd ~/Downloads/nightfall_punk_v12 && \
-git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*' && \
-git fetch origin && \
-git switch --track origin/build/v1.4-high-medium-integration 2>/dev/null || git switch build/v1.4-high-medium-integration && \
-git pull --ff-only && \
-chmod +x v14.sh && \
-./v14.sh standard-check && \
-./v14.sh build && \
-./v14.sh test && \
+cd ~/Downloads/nightfall_punk_v12
+git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+git fetch origin
+git switch build/v1.4-high-medium-integration || git switch --track origin/build/v1.4-high-medium-integration
+git pull --ff-only
+chmod +x v14.sh
+./v14.sh standard-check
+./v14.sh build
+./v14.sh test
 ./v14.sh demo
 ```
 
