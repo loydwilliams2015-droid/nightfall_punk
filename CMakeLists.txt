@@ -147,6 +147,11 @@ if(NF_BUILD_CLIENT)
     target_link_libraries(nightfall_v12_demo PRIVATE nightfall_camera nightfall_ai raylib)
     target_include_directories(nightfall_v12_demo PRIVATE src/client src/server/ai src/shared)
     nf_project_warnings(nightfall_v12_demo)
+
+    add_executable(nightfall_v14_demo src/demo/v14_greybox.c)
+    target_link_libraries(nightfall_v14_demo PRIVATE nightfall_camera nightfall_ai raylib)
+    target_include_directories(nightfall_v14_demo PRIVATE src/client src/server/ai src/shared)
+    nf_project_warnings(nightfall_v14_demo)
 endif()
 
 if(NF_BUILD_TESTS)
