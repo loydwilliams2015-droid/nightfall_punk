@@ -91,7 +91,9 @@ Rules:
 9. report receipt may change belief/utility, never world truth;
 10. packet/network timing is not itself gameplay meaning.
 
-For the bounded v1.4 slice, Rival Crew communication topology is an explicit shared Crew channel with latency/provenance. Physical channel interruption, radio infrastructure, and richer social trust weighting remain PAR until this basic contract is human-legible.
+For the bounded v1.4 slice, Player Crew and Human Rival communication use the explicit report contract. Physical channel interruption, radio infrastructure, and richer social trust weighting remain PAR until this basic contract is human-legible.
+
+Dream Cattler pack communication remains its existing species-specific ecological report mechanism in v1.4. It is deliberately **not** forced through the humanoid `NfReport` schema in the same build. A later Cattler pass should make pack reports delayed and region-granular/provenance-aware while preserving distinct ecology; until then, that transport is explicitly PAR rather than falsely claimed as generalized.
 
 ## Temporal claims synthesis
 
@@ -156,7 +158,7 @@ It does not attempt universal mutable-object serialization yet.
 
 ### AUTO KEEP + MEASURE
 
-- 4 m report-position quantum;
+- 4 m humanoid report-position quantum;
 - ~0.2 s Crew report delay in the human proof;
 - 3 s short report lifetime;
 - report confidence decay and relay penalty;
@@ -169,6 +171,7 @@ It does not attempt universal mutable-object serialization yet.
 - deliberate Rival deception;
 - universal social trust scalar;
 - radio/network infrastructure simulation;
+- Cattler pack-report delay/region-granularity/provenance refactor;
 - multiple Crew teammates bargaining over all claim classes;
 - full dynamic-affordance graph regeneration;
 - general mutable-object replication schema;
