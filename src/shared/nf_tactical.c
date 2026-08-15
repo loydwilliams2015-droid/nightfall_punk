@@ -114,6 +114,19 @@ float nf_tactical_score_candidate(
         clamp01(candidate->action_cost)*0.24f -
         clamp01(candidate->uncertainty_cost)*(0.10f + uncertainty*0.20f) -
         clamp01(candidate->opportunity_cost)*0.18f;
+
+    if (candidate->action == NF_TACTICAL_ATTACK) {
+        /* A clear, sustainable firing opportunity must sometimes defeat the
+           otherwise useful bias toward cover and option preservation. The
+           term vanishes as evidence quality, ammunition or viability erodes. */
+        const float decisive_opportunity =
+            clamp01(snapshot->information_quality) *
+            clamp01(snapshot->ammo_fraction) * viability *
+            (1.0f-uncertainty);
+        score += decisive_opportunity*0.22f;
+        candidate->reason_bits |= NF_TACTICAL_REASON_INFORMATION|
+            NF_TACTICAL_REASON_RESOURCE;
+    }
     if (candidate->action == NF_TACTICAL_INVESTIGATE ||
         candidate->action == NF_TACTICAL_REPOSITION) {
         score += uncertainty * (1.0f-clamp01(snapshot->information_quality))*0.20f;
