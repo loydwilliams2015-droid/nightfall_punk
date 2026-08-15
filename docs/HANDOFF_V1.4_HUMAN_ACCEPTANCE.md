@@ -2,7 +2,7 @@
 
 Date: 2026-08-14
 Branch: `build/v1.4-relational-combat-communications`
-Status: **DRAFT HUMAN-VIDEO GATE**
+Status: **AUTOMATED GREEN — DRAFT HUMAN-VIDEO GATE**
 
 ## FROM
 
@@ -20,14 +20,16 @@ The new v1.2c human recording verified the integrated proof surface: Player 1, t
 
 v1.4 protects existing combat/movement truth while advancing incomplete-information communication and temporal coordination.
 
-## Final candidate identity
+## Automated candidate identity
 
-Fill only after exact-head CI is green:
+Validated implementation/documentation head before this handoff stamp:
 
-- exact head: `PENDING_FINAL_GREEN_HEAD`
+- validated head: `283d4ff09e3a432242aa69f0f285ebd6105f480e`
 - workflow: `nightfall v1.4 CI`
-- run: `PENDING_FINAL_GREEN_RUN`
-- PR: `PENDING_DRAFT_PR`
+- run: **#396** / `31856528457`
+- result: **PASS** — standard-check, strict graphical compile, all inherited + v1.4 CTests, Human Rival combat/encounter/spatial smokes, Dream Cattler ecology, topographical energy, Lifeworld, contamination, camera, integrated population/embodied action, and named v1.4 report/claim/revision proof.
+
+The final branch head after this documentation-only handoff stamp must also receive a green v1.4 CI run. Draft PR identity is recorded externally after that exact-head check because adding a PR number here would itself create another commit.
 
 Do not merge before the Pop!_OS human-video pass is reviewed.
 
@@ -65,6 +67,8 @@ No v1.4 acceptance depends on:
 - large map expansion.
 
 The player weapon/viewmodel/full playable conflict frontier remains v1.5.
+
+Dream Cattler pack reports retain their existing species-specific ecology in this build; conversion to delayed region-granular/provenance transport is explicitly PAR rather than forced through the humanoid report schema without a dedicated Cattler proof.
 
 ## Run locally
 
