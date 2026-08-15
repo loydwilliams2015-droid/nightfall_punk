@@ -240,6 +240,11 @@ static void filter_aim_and_fire(
         } else {
             state->aim_settle = clamp01(state->aim_settle-0.040f);
         }
+    } else if (agent->knowledge.visible_now && agent->knowledge.target != 0u) {
+        /* Utility can temporarily choose cover/guard while the reflex layer
+           still maintains orientation on the same directly visible target.
+           Preserve that motor/perceptual preparation instead of erasing it. */
+        state->aim_settle = clamp01(state->aim_settle-0.012f);
     } else {
         state->aim_settle = clamp01(state->aim_settle-0.055f);
     }
