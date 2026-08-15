@@ -2,6 +2,7 @@
 #define NF_CATTLER_H
 
 #include "nf_agent.h"
+#include "nf_hitbox.h"
 #include "nf_region.h"
 #include "nf_relations.h"
 #include "nf_semantics.h"
