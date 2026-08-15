@@ -3,6 +3,7 @@
 #include "nf_combat.h"
 
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
 #define NF_ENCOUNTER_ROLE_INTERVAL 30u
@@ -232,9 +233,6 @@ static void filter_aim_and_fire(
     if (agent->mode == NF_AGENT_ENGAGE && agent->knowledge.visible_now) {
         const float tolerance = 0.105f+clamp01(target_speed/8.0f)*0.040f;
         if (state->last_aim_error <= tolerance) {
-            /* Nested tactical appraisal reevaluates near a ten-tick cadence.
-               Settle quickly enough for one coherent commitment interval to
-               produce a shot while motion/suppression still raise the gate. */
             float gain = 0.050f;
             gain *= 1.0f-0.45f*clamp01(target_speed/9.0f);
             gain *= 1.0f-0.38f*state->suppression;
@@ -270,6 +268,11 @@ static void filter_aim_and_fire(
             0.16f*clamp01(target_speed/8.0f)+
             0.14f*state->suppression+
             0.05f*clamp01(own_motion);
+        fprintf(stderr,
+            "NF_ENCOUNTER_FIRE_ATTEMPT tick=%llu actor=%u mode=%d visible=%d settle=%.3f required=%.3f error=%.3f pressure=%d suppression=%.3f\n",
+            (unsigned long long)world->tick,(unsigned)agent->actor_id,(int)agent->mode,
+            agent->knowledge.visible_now?1:0,state->aim_settle,required_settle,
+            state->last_aim_error,state->pressure_authorized?1:0,state->suppression);
         bool allow = agent->knowledge.visible_now &&
             state->aim_settle >= required_settle && state->suppression < 0.82f;
 
