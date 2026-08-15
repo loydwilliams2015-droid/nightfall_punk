@@ -21,7 +21,7 @@ static void relation_contract(void) {
     assert(nf_relation_between(NF_FACTION_PLAYER,NF_FACTION_RIVAL,NF_RELATION_TRUCE)==NF_RELATION_TRUCE);
     assert(!nf_relation_can_damage(NF_RELATION_TRUCE,false));
     assert(nf_relation_can_damage(NF_RELATION_HOSTILE,false));
-    assert(nf_relation_between(NF_FACTION_PLAYER,NF_FACTION_RANCHER,NF_RELATION_TRUCE)==NF_RELATION_NONNEGOTIABLE_HOSTILE);
+    assert(nf_relation_between(NF_FACTION_PLAYER,NF_FACTION_CATTLER,NF_RELATION_TRUCE)==NF_RELATION_NONNEGOTIABLE_HOSTILE);
     assert(!nf_relationship_is_negotiable(NF_RELATION_NONNEGOTIABLE_HOSTILE));
 
     NfRancherProfile ordinary=nf_rancher_profile_from_roll(900u,10u,1000u);
@@ -82,19 +82,21 @@ static void agent_contract(void) {
     assert(held&&!shot_during_truce);
 
     /* Human-Rival truce must not turn the always-non-negotiable Cattler into
-       an ignored actor. Remove the human target and place a Cattler in the
-       first Rival's current view direction; ordinary perception/utility must
-       acquire and engage it without privileged faction scripting. */
+       an ignored actor. Isolate this relation/perception contract from the
+       preceding tactical path: the nested v1.5 AI can end that encounter at
+       different cover than the legacy heuristic, so spawning relative to its
+       previous endpoint could accidentally place the fixture behind a wall. */
     assert(nf_world_despawn_actor(&world,player));
     NfAiAgent *first_agent=&ai.agents[0];
     NfActor *first_rival=nf_world_find_actor(&world,first_agent->actor_id);
     assert(first_rival!=NULL);
-    NfVec3 cattler_pos={
-        first_rival->transform.position.x+sinf(first_agent->yaw)*7.0f,
-        0.05f,
-        first_rival->transform.position.z+cosf(first_agent->yaw)*7.0f
-    };
-    NfEntityId cattler=nf_world_spawn_actor(&world,NF_FACTION_RANCHER,cattler_pos);
+    first_rival->transform.position=(NfVec3){0.0f,0.05f,-2.0f};
+    first_rival->transform.velocity=(NfVec3){0};
+    first_agent->yaw=0.0f;
+    first_agent->next_perception_tick=world.tick;
+    first_agent->next_decision_tick=world.tick;
+    NfVec3 cattler_pos={0.0f,0.05f,5.0f};
+    NfEntityId cattler=nf_world_spawn_actor(&world,NF_FACTION_CATTLER,cattler_pos);
     assert(cattler!=0u);
     bool cattler_seen=false,cattler_engaged=false;
     for(unsigned step=0;step<180u;++step) {
@@ -155,9 +157,7 @@ static void encounter_contract(void) {
             assert(state->aim_settle>=0.0f&&state->aim_settle<=1.0f);
             assert(state->suppression>=0.0f&&state->suppression<=1.0f);
             if(state->suppression>suppression_peak) suppression_peak=state->suppression;
-            if(frames[i].combat.fire_held||frames[i].combat.fire_pressed) {
-                filtered_fire_seen=true;
-            }
+            if(frames[i].combat.fire_held||frames[i].combat.fire_pressed) filtered_fire_seen=true;
             nf_world_set_input(&world,frames[i].actor,frames[i].move);
         }
         nf_world_step(&world,1.0f/(float)NF_TICK_RATE);
@@ -249,7 +249,7 @@ static void cattler_contract(void) {
     assert(cattlers.count==3u);
     for(size_t i=0;i<cattlers.count;++i) {
         const NfActor *body=nf_world_find_actor_const(&world,cattlers.agents[i].actor_id);
-        assert(body!=NULL&&body->faction==NF_FACTION_RANCHER);
+        assert(body!=NULL&&body->faction==NF_FACTION_CATTLER);
         assert(cattlers.agents[i].social==NF_CATTLER_PACK);
         assert(cattlers.agents[i].locomotor_integrity==1.0f);
         const float score=nf_cattler_habitat_score(&cattlers,&cattlers.agents[i],&world,cattlers.agents[i].home_region);
