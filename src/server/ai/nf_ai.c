@@ -522,8 +522,12 @@ static void decide(NfAiSystem *ai, NfAiAgent *agent, NfWorld *world) {
     float best_score = candidates[0].score;
 
     const float current_score = agent->current_score*0.90f;
-    if (agent->mode != best_mode && current_score+0.10f >= best_score &&
-        current_score > 0.05f) {
+    const bool prior_mode_invalid =
+        agent->mode == NF_AGENT_TRUCE_HOLD &&
+        agent->knowledge.target != 0u &&
+        nf_relation_can_damage(target_relation, false);
+    if (!prior_mode_invalid && agent->mode != best_mode &&
+        current_score+0.10f >= best_score && current_score > 0.05f) {
         best_mode = agent->mode;
         best_score = current_score;
     }
