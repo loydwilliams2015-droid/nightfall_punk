@@ -23,7 +23,7 @@ teammate_smoke() {
         ./nightfall.sh build-headless
     fi
     ./build/headless/nightfall_teammate_test | tee build/v12-teammate-smoke.log
-    grep -q 'teammate causality / kinetic stigmergy tests: PASS' build/v12-teammate-smoke.log
+    grep -Eq 'teammate causality / kinetic stigmergy tests: PASS|teammate causality / integrated embodied action tests: PASS' build/v12-teammate-smoke.log
     grep -q 'EVIDENCE=NONE' build/v12-teammate-smoke.log
     grep -q 'ACTION=REROUTE' build/v12-teammate-smoke.log
     echo "[ok] v1.2 teammate causal positive + negative proof"
