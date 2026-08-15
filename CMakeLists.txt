@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(nightfall_punk VERSION 1.2 LANGUAGES C)
+project(nightfall_punk VERSION 1.4 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -26,10 +26,7 @@ endif()
 if(TARGET PkgConfig::ENET)
     set(NF_ENET_TARGET PkgConfig::ENET)
 elseif(NF_FETCH_ENET)
-    FetchContent_Declare(enet
-        GIT_REPOSITORY https://github.com/lsalzman/enet.git
-        GIT_TAG v1.3.18
-        GIT_SHALLOW TRUE)
+    FetchContent_Declare(enet GIT_REPOSITORY https://github.com/lsalzman/enet.git GIT_TAG v1.3.18 GIT_SHALLOW TRUE)
     FetchContent_MakeAvailable(enet)
     if(UNIX AND TARGET enet)
         set_property(TARGET enet PROPERTY C_EXTENSIONS ON)
@@ -60,6 +57,8 @@ add_library(nightfall_shared STATIC
     src/shared/nf_agent.c
     src/shared/nf_relations.c
     src/shared/nf_semantics.c
+    src/shared/nf_claim.c
+    src/shared/nf_tactical.c
     src/shared/nf_region.c
     src/shared/nf_energy.c
     src/shared/nf_energy_actor.c
@@ -72,9 +71,7 @@ if(UNIX)
     target_link_libraries(nightfall_shared PUBLIC m)
 endif()
 
-# Presentation-only camera math. It consumes body/world truth but cannot mutate simulation.
-add_library(nightfall_camera STATIC
-    src/client/nf_camera.c)
+add_library(nightfall_camera STATIC src/client/nf_camera.c)
 target_include_directories(nightfall_camera PUBLIC src/client src/shared)
 target_link_libraries(nightfall_camera PUBLIC nightfall_shared)
 nf_project_warnings(nightfall_camera)
@@ -127,10 +124,7 @@ if(NF_BUILD_CLIENT)
     if(NOT raylib_FOUND AND NF_FETCH_RAYLIB)
         set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
         set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
-        FetchContent_Declare(raylib
-            GIT_REPOSITORY https://github.com/raysan5/raylib.git
-            GIT_TAG 5.5
-            GIT_SHALLOW TRUE)
+        FetchContent_Declare(raylib GIT_REPOSITORY https://github.com/raysan5/raylib.git GIT_TAG 5.5 GIT_SHALLOW TRUE)
         FetchContent_MakeAvailable(raylib)
     endif()
     if(NOT TARGET raylib)
@@ -145,10 +139,16 @@ if(NF_BUILD_CLIENT)
     target_link_libraries(nightfall_v12_demo PRIVATE nightfall_camera nightfall_ai raylib)
     target_include_directories(nightfall_v12_demo PRIVATE src/client src/server/ai src/shared)
     nf_project_warnings(nightfall_v12_demo)
+
+    add_executable(nightfall_v14_demo src/demo/v14_greybox.c)
+    target_link_libraries(nightfall_v14_demo PRIVATE nightfall_camera nightfall_ai raylib)
+    target_include_directories(nightfall_v14_demo PRIVATE src/client src/server/ai src/shared)
+    nf_project_warnings(nightfall_v14_demo)
 endif()
 
 if(NF_BUILD_TESTS)
     enable_testing()
+
     add_executable(nightfall_world_test src/tests/test_world.c)
     target_link_libraries(nightfall_world_test PRIVATE nightfall_shared)
     nf_project_warnings(nightfall_world_test)
@@ -208,4 +208,10 @@ if(NF_BUILD_TESTS)
     target_include_directories(nightfall_camera_test PRIVATE src/client src/shared)
     nf_project_warnings(nightfall_camera_test)
     add_test(NAME relational_camera_v12b COMMAND nightfall_camera_test)
+
+    add_executable(nightfall_v14_integration_test src/tests/test_v14_integration.c)
+    target_link_libraries(nightfall_v14_integration_test PRIVATE nightfall_ai)
+    target_include_directories(nightfall_v14_integration_test PRIVATE src/server/ai src/shared)
+    nf_project_warnings(nightfall_v14_integration_test)
+    add_test(NAME high_medium_integration_v14 COMMAND nightfall_v14_integration_test)
 endif()

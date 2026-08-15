@@ -1,4 +1,4 @@
-name: nightfall v1.2c CI
+name: nightfall v1.4 CI
 
 on:
   push:
@@ -13,7 +13,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
@@ -21,39 +20,29 @@ jobs:
             build-essential cmake git pkg-config libsodium-dev \
             libasound2-dev libx11-dev libxrandr-dev libxi-dev \
             libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev
-
-      - name: v1.2c standard check
-        run: bash ./v12c.sh standard-check
-
-      - name: Strict graphical compile including integrated causal greybox
-        run: bash ./v12c.sh build
-
-      - name: All inherited plus camera and embodied population CTests
-        run: bash ./v12c.sh test
-
+      - name: v1.4 standard check
+        run: bash ./v14.sh standard-check
+      - name: Strict graphical compile including v1.4 proof
+        run: bash ./v14.sh build
+      - name: All inherited plus v1.4 CTests
+        run: bash ./v14.sh test
       - name: Four-client plus bounded-pressure Human Rival combat smoke
         run: ./nightfall.sh combat-smoke
-
       - name: Passive player versus Human Rival encounter smoke
         run: ./nightfall.sh encounter-smoke
-
       - name: Situated Human Rival spatial ecology smoke
         run: ./nightfall.sh spatial-smoke
-
       - name: Dream Cattler habitat and pack ecology smoke
         run: ./nightfall.sh cattler-smoke
-
       - name: Topographical energy accounting smoke
         run: ./nightfall.sh energy-smoke
-
       - name: Topographic lifeworld and epistemic-boundary smoke
         run: ./nightfall.sh lifeworld-smoke
-
       - name: Contamination stasis inventory and transport smoke
         run: ./nightfall.sh contamination-smoke
-
       - name: Named relational camera proof
-        run: bash ./v12c.sh camera-smoke
-
+        run: bash ./v14.sh camera-smoke
       - name: Named integrated population and embodied action proof
-        run: bash ./v12c.sh integration-smoke
+        run: bash ./v14.sh integration-smoke
+      - name: Named v1.4 object claim exposure proof
+        run: bash ./v14.sh v14-smoke

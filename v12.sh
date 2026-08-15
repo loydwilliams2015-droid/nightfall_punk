@@ -14,8 +14,8 @@ standard_check() {
     test -f src/tests/test_teammate.c
     test -f src/demo/v12_greybox.c
     test -f docs/LEDGER_V1.2_BUILD_READINESS.md
-    grep -q 'project(nightfall_punk VERSION 1.2' CMakeLists.txt
-    echo "[ok] v1.2 teammate causality / kinetic stigmergy source tree present"
+    grep -Eq 'project\(nightfall_punk VERSION (1\.2|1\.4)' CMakeLists.txt
+    echo "[ok] v1.2 teammate causality / kinetic stigmergy source tree present (native or compatible descendant)"
 }
 
 teammate_smoke() {

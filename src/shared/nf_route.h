@@ -8,10 +8,13 @@
 
 #define NF_V12_SLICE_HALF_EXTENT 40.0f
 #define NF_V12_ROUTE_INTERACT_RADIUS 3.4f
+#define NF_ROUTE_GATE_KEY 0x140001u
 
 typedef struct NfRouteSystem {
     bool configured;
     bool open;
+    uint32_t gate_key;
+    uint32_t revision;
     int gate_collider;
     NfVec3 closed_min;
     NfVec3 closed_max;
