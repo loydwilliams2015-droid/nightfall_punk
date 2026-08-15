@@ -2,7 +2,7 @@
 
 Date: 2026-08-14
 Branch: `build/v1.4-high-medium-integration`
-Status: **BUILD CANDIDATE — HUMAN VIDEO GATE REQUIRED**
+Status: **AUTOMATED GREEN — HUMAN VIDEO GATE REQUIRED**
 
 ## FROM
 
@@ -86,38 +86,38 @@ F4 is a clearly labeled debug proof setup:
 
 ## EXISTING — regression checklist
 
-- [ ] fixed-rate authoritative world simulation;
-- [ ] ENet dedicated-server/client networking;
-- [ ] prediction/reconciliation;
-- [ ] authoritative combat substrate;
-- [ ] contamination/STASIS/revival;
-- [ ] Snap Locomotion and movement authority;
-- [ ] Relational Perceptual Authority Camera;
-- [ ] teammate evidence/memory/gradient/commitment;
-- [ ] teammate physical-displacement proof;
-- [ ] Human Rival perception/utility/spatial ecology;
-- [ ] Dream Cattler ecology/weakpoint truth;
-- [ ] topographical energy;
-- [ ] Lifeworld/epistemic boundaries;
-- [ ] v1.2c integrated population.
+- [x] fixed-rate authoritative world simulation;
+- [x] ENet dedicated-server/client networking;
+- [x] prediction/reconciliation;
+- [x] authoritative combat substrate;
+- [x] contamination/STASIS/revival;
+- [x] Snap Locomotion and movement authority;
+- [x] Relational Perceptual Authority Camera;
+- [x] teammate evidence/memory/gradient/commitment;
+- [x] teammate physical-displacement proof;
+- [x] Human Rival perception/utility/spatial ecology;
+- [x] Dream Cattler ecology/weakpoint truth;
+- [x] topographical energy;
+- [x] Lifeworld/epistemic boundaries;
+- [x] v1.2c integrated population.
 
 ## ADVANCING — v1.4 checklist
 
-- [ ] stable object key;
-- [ ] monotonic object revision;
-- [ ] route replica revision behavior;
-- [ ] generalized temporal-claim C module;
-- [ ] soft-share proof;
-- [ ] hard-block proof;
-- [ ] claim expiry proof;
-- [ ] live interaction claim in graphical proof;
-- [ ] graded exposure primitive;
-- [ ] exposure affects bounded utility helper;
-- [ ] integrated direct-evidence positive proof;
-- [ ] F4 controlled human proof setup;
-- [ ] dedicated v1.4 CTest/smoke;
-- [ ] dedicated v1.4 CI;
-- [ ] final exact-head compile/tests green;
+- [x] stable object key;
+- [x] monotonic object revision;
+- [x] route replica revision behavior;
+- [x] generalized temporal-claim C module;
+- [x] soft-share proof;
+- [x] hard-block proof;
+- [x] claim expiry proof;
+- [x] live interaction claim in graphical proof;
+- [x] graded exposure primitive;
+- [x] exposure affects bounded utility helper;
+- [x] integrated direct-evidence positive proof;
+- [x] F4 controlled human proof setup;
+- [x] dedicated v1.4 CTest/smoke;
+- [x] dedicated v1.4 CI;
+- [x] strict graphical compile/tests green on validated head `a07179a0293f93dca06481da1abd2941b3ddcdef`, run #416 / `31857243391`;
 - [ ] human video review before merge.
 
 ## PAR / next frontier
@@ -139,7 +139,7 @@ F4 is a clearly labeled debug proof setup:
 
 ## Compile gate
 
-Do not mark v1.4 green until the final documentation/code head passes the dedicated `nightfall v1.4 CI` workflow end-to-end.
+Validated implementation head `a07179a0293f93dca06481da1abd2941b3ddcdef` passed dedicated `nightfall v1.4 CI` run #416 end-to-end. The final documentation-stamped head must also pass the same workflow before the draft PR is treated as the frozen human-video candidate.
 
 ## Human acceptance
 
