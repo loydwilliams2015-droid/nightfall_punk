@@ -232,7 +232,10 @@ static void filter_aim_and_fire(
     if (agent->mode == NF_AGENT_ENGAGE && agent->knowledge.visible_now) {
         const float tolerance = 0.105f+clamp01(target_speed/8.0f)*0.040f;
         if (state->last_aim_error <= tolerance) {
-            float gain = 0.032f;
+            /* Nested tactical appraisal reevaluates near a ten-tick cadence.
+               Settle quickly enough for one coherent commitment interval to
+               produce a shot while motion/suppression still raise the gate. */
+            float gain = 0.050f;
             gain *= 1.0f-0.45f*clamp01(target_speed/9.0f);
             gain *= 1.0f-0.38f*state->suppression;
             gain *= 1.0f-0.10f*clamp01(own_motion);
@@ -241,9 +244,6 @@ static void filter_aim_and_fire(
             state->aim_settle = clamp01(state->aim_settle-0.040f);
         }
     } else if (agent->knowledge.visible_now && agent->knowledge.target != 0u) {
-        /* Utility can temporarily choose cover/guard while the reflex layer
-           still maintains orientation on the same directly visible target.
-           Preserve that motor/perceptual preparation instead of erasing it. */
         state->aim_settle = clamp01(state->aim_settle-0.012f);
     } else {
         state->aim_settle = clamp01(state->aim_settle-0.055f);
@@ -266,7 +266,7 @@ static void filter_aim_and_fire(
     }
 
     if (control->combat.fire_held || control->combat.fire_pressed) {
-        const float required_settle = 0.42f+
+        const float required_settle = 0.34f+
             0.16f*clamp01(target_speed/8.0f)+
             0.14f*state->suppression+
             0.05f*clamp01(own_motion);
