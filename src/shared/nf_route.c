@@ -26,6 +26,8 @@ static void place_gate(NfRouteSystem *route, NfWorld *world, bool open) {
 void nf_route_init_v12_slice(NfRouteSystem *route, NfWorld *world) {
     if (route == NULL || world == NULL) return;
     memset(route,0,sizeof(*route));
+    route->gate_key = NF_ROUTE_GATE_KEY;
+    route->revision = 1u;
     route->gate_collider = -1;
     route->closed_min = (NfVec3){-6.0f,0.0f,4.0f};
     route->closed_max = (NfVec3){6.0f,2.2f,5.0f};
@@ -63,6 +65,8 @@ bool nf_route_try_alter(
     if (nf_contamination_manipulator_scale(actor) < 0.35f) return false;
 
     route->open = true;
+    ++route->revision;
+    if (route->revision == 0u) route->revision = 1u;
     route->changed_tick = world->tick;
     route->changed_by = actor_id;
     place_gate(route,world,true);
@@ -73,7 +77,11 @@ void nf_route_apply_replica(
     NfRouteSystem *route, NfWorld *world, bool open,
     uint64_t changed_tick, NfEntityId changed_by) {
     if (route == NULL || world == NULL || !route->configured) return;
-    if (route->open != open) place_gate(route,world,open);
+    if (route->open != open) {
+        place_gate(route,world,open);
+        ++route->revision;
+        if (route->revision == 0u) route->revision = 1u;
+    }
     route->open = open;
     route->changed_tick = changed_tick;
     route->changed_by = changed_by;
