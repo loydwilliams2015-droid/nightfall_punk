@@ -3,6 +3,7 @@
 
 #include "nf_agent.h"
 #include "nf_region.h"
+#include "nf_report.h"
 #include "nf_route.h"
 #include "nf_spatial.h"
 #include "nf_world.h"
@@ -76,6 +77,9 @@ typedef struct NfTeammateSystem {
     NfEntityId actor_id;
     NfVec3 spawn;
     NfRegionGraph graph;
+    NfReportBus reports;
+    uint32_t last_route_report_id;
+    float last_report_confidence;
     NfTeammateBiographyHotspot biography[NF_TEAMMATE_BIOGRAPHY_HOTSPOTS];
     NfTeammateProfile profile;
     NfTeammateRouteMemory memory;
@@ -95,6 +99,9 @@ void nf_teammate_profile_from_hotspots(
     const NfTeammateBiographyHotspot hotspots[NF_TEAMMATE_BIOGRAPHY_HOTSPOTS]);
 void nf_teammate_init(
     NfTeammateSystem *teammate, NfWorld *world, bool enabled, uint32_t seed);
+bool nf_teammate_publish_route_report(
+    NfTeammateSystem *teammate, const NfWorld *world,
+    const NfRouteSystem *route, NfEntityId reporter);
 size_t nf_teammate_tick(
     NfTeammateSystem *teammate, NfWorld *world, const NfRouteSystem *route,
     NfControlFrame *out, size_t cap);
