@@ -1,9 +1,21 @@
 # nightfall!punk — FROM v1.4 TO v1.5 Combat + Communications Ledger
 
-Date: 2026-08-14
+Timestamp: **2026-08-14 22:42 CDT (America/Chicago)**
+Chat provenance (public/redacted): **[REDACTED CHAT — Combat & Communications Planning]**
+Roles: **PRAXIS / STEWARD / SIGNAL**
 Branch: `build/v1.4-relational-combat-communications`
 Status: **CURRENT DESIGN HANDOFF / v1.5 RESOLUTION LAYER**
 Compile status: **no compile implied by this documentation update**.
+
+## STEWARD provenance rule
+
+Every new public ledger/handoff entry must carry:
+
+1. an exact local timestamp with timezone;
+2. a chat-origin field;
+3. a **redacted public chat label** rather than a private conversation title, personal name, account name, or other unnecessary identifying information.
+
+When an older/current public record is materially amended, add or preserve this provenance block at the amended record level. Historical immutable records need not be rewritten merely to retrofit metadata; use a later reconciliation/addendum when appropriate.
 
 ## FROM — current v1.4 truth
 
@@ -341,6 +353,7 @@ Implementation law remains:
 - v1.4 implementation: **automated-green candidate; human-video gate tracked separately**.
 - v1.5 design-resolution layer: **150/150 closed**.
 - v1.5 gameplay implementation: **NOT YET CLAIMED**.
+- public provenance rule: **timestamp + redacted chat label required on new ledger/handoff records**.
 - no compile is implied by this ledger update.
 
 Precedence for combat/communications planning:
