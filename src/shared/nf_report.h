@@ -29,9 +29,13 @@ typedef enum NfReportScope {
 typedef enum NfInformationChannel {
     NF_INFO_CHANNEL_NONE = 0,
     NF_INFO_CHANNEL_DIRECT_VISUAL,
-    NF_INFO_CHANNEL_AUDIBLE,
+    NF_INFO_CHANNEL_AUDIBLE_GUNFIRE,
+    NF_INFO_CHANNEL_IMPACT,
+    NF_INFO_CHANNEL_DAMAGE_RECEIVED,
     NF_INFO_CHANNEL_TRACE,
-    NF_INFO_CHANNEL_REPORT
+    NF_INFO_CHANNEL_REPORT,
+    NF_INFO_CHANNEL_AUDIBLE_SPEECH,
+    NF_INFO_CHANNEL_AUDIBLE = NF_INFO_CHANNEL_AUDIBLE_GUNFIRE
 } NfInformationChannel;
 
 typedef struct NfReport {
@@ -65,29 +69,17 @@ typedef struct NfReportBus {
 void nf_report_bus_init(NfReportBus *bus);
 bool nf_report_publish(NfReportBus *bus, NfReport report, uint32_t *id_out);
 bool nf_report_relay(
-    NfReportBus *bus,
-    const NfReport *parent,
-    NfEntityId reporter,
-    float confidence_factor,
-    float requested_precision_m,
-    uint64_t issued_tick,
-    uint64_t deliver_tick,
-    uint64_t expiry_tick,
+    NfReportBus *bus, const NfReport *parent, NfEntityId reporter,
+    float confidence_factor, float requested_precision_m,
+    uint64_t issued_tick, uint64_t deliver_tick, uint64_t expiry_tick,
     uint32_t *id_out);
 bool nf_report_is_live(const NfReport *report, uint64_t now_tick);
 bool nf_report_scope_allows(
-    const NfReport *report,
-    NfEntityId recipient,
-    NfFaction faction);
+    const NfReport *report, NfEntityId recipient, NfFaction faction);
 float nf_report_weight(const NfReport *report, uint64_t now_tick);
 bool nf_report_best(
-    const NfReportBus *bus,
-    NfEntityId recipient,
-    NfFaction faction,
-    uint64_t now_tick,
-    NfReportKind kind,
-    uint32_t subject_key,
-    NfReport *out);
+    const NfReportBus *bus, NfEntityId recipient, NfFaction faction,
+    uint64_t now_tick, NfReportKind kind, uint32_t subject_key, NfReport *out);
 size_t nf_report_live_count(const NfReportBus *bus, uint64_t now_tick);
 const char *nf_report_kind_name(NfReportKind kind);
 const char *nf_report_scope_name(NfReportScope scope);
