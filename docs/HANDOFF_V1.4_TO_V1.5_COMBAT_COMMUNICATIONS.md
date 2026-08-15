@@ -1,8 +1,12 @@
 # nightfall!punk — Handoff FROM v1.4 TO v1.5 Combat + Communications
 
-Date: 2026-08-14
+Timestamp: **2026-08-14 22:42 CDT (America/Chicago)**
+Chat provenance (public/redacted): **[REDACTED CHAT — Combat & Communications Planning]**
+Roles: **PRAXIS / STEWARD / SIGNAL**
 Branch: `build/v1.4-relational-combat-communications`
 Status: **HANDOFF / NO COMPILE IMPLIED**
+
+Public-record provenance rule: new ledger/handoff records must carry an exact local timestamp plus a redacted chat-origin label. Do not publish private chat titles, personal names, account names, or unnecessary identifying context.
 
 ## FROM
 
@@ -174,4 +178,4 @@ The full v1.5 design audit is now dispositioned **150/150**:
 
 `84 LOCK / 33 ADOPT / 30 INVALIDATE / 3 DEFER / 0 ASK`
 
-This handoff does not claim v1.5 code exists and does not close the v1.4 human-video gate.
+Public records use timestamped **redacted chat provenance**. This handoff does not claim v1.5 code exists and does not close the v1.4 human-video gate.
