@@ -1,4 +1,4 @@
-# nightfall!punk — v1.5 Decisions Q265–Q266
+# nightfall!punk — v1.5 Decisions Q265–Q267
 
 Status: **LOCKED DESIGN CONTRACTS — PREBUILD**
 Branch: `design/v1.5-frontier-contracts`
@@ -54,4 +54,37 @@ Suggested pipeline:
 
 This preserves individuality while making interdependence causal rather than decorative.
 
-Q267 remains open for disposition.
+## Q267 — KEEP: Bounded Reproductive Conflict Appraisal
+
+Use bounded utility machinery for continue / withdraw / reposition / exchange / detour / detente decisions, but derive each appraisal from the same nested-account and actor-knowledge architecture fixed in Q266.
+
+A compact conceptual form is:
+
+`U_continue = ExpectedObjectiveGain + ExpectedResourceGain + FutureOptionGain - EnergyBurn - CapacityRisk - Exposure - Uncertainty`
+
+compared against the best currently believed alternative:
+
+`U_alternative = max(Withdraw, Reposition, Exchange, Detour, Detente)`
+
+The terms are not evaluated from server omniscience. They are conditioned by legitimate actor knowledge:
+
+`Decision_i = F(Belief_i, Memory_i, NestedAccounts_i, Energy_i, Relation_i, CurrentState_i)`
+
+### Strong continuation rule
+
+**An actor continues conflict only insofar as, from its situated and bounded perspective, continued conflict still reproduces sufficient future possibility across the nested accounts that constitute its tactical world.**
+
+Consequences:
+
+- low health alone does not force retreat;
+- high health alone does not justify pursuit;
+- poor information can rationally increase withdrawal pressure;
+- a mistaken but legitimate belief can sustain a fight longer than an omniscient optimizer would;
+- Crew viability, relation-specific obligations, resource flows, locality conditions, and future-option value can outweigh immediate damage opportunities;
+- retreat is not failure by definition: under Sustainable Passage / Reproductive Victory it can be the winning move when it preserves or improves long-horizon viability.
+
+Implementation should remain bounded and efficient: use existing utility evaluation, hysteresis, memory, information topography, claims, and Snap Locomotion rather than adding a general planner.
+
+Suggested conflict loop:
+
+`Evidence -> Belief -> Nested Account Projection -> Continue-vs-Alternative Appraisal -> Commitment -> Embodied Action -> Consequence -> New Evidence / Account Revision`
