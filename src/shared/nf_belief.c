@@ -6,6 +6,7 @@
 
 #define NF_BELIEF_MIN_PRECISION_M 0.25f
 #define NF_BELIEF_FORGET_TICKS (NF_TICK_RATE * 10u)
+#define NF_BELIEF_DIRECT_CURRENT_TICKS 8u
 
 static float clamp01(float v) {
     return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
@@ -22,6 +23,14 @@ static float sanitize_precision(float p) {
 static bool is_threat_kind(NfBeliefSubjectKind kind) {
     return kind == NF_BELIEF_SUBJECT_ACTOR ||
         kind == NF_BELIEF_SUBJECT_UNKNOWN_THREAT;
+}
+static bool fresh_direct_actor(
+    const NfBeliefHypothesis *h, uint64_t now_tick) {
+    return h != NULL && h->active &&
+        h->kind == NF_BELIEF_SUBJECT_ACTOR &&
+        h->channel == NF_INFO_CHANNEL_DIRECT_VISUAL &&
+        now_tick >= h->updated_tick &&
+        now_tick - h->updated_tick <= NF_BELIEF_DIRECT_CURRENT_TICKS;
 }
 static float hypothesis_weight(
     const NfBeliefHypothesis *h, uint64_t now_tick) {
@@ -215,7 +224,8 @@ void nf_belief_decay(
             continue;
         }
         const float seconds = (float)age / (float)NF_TICK_RATE;
-        if (is_threat_kind(h->kind) && h->channel != NF_INFO_CHANNEL_DIRECT_VISUAL) {
+        const bool current_direct = fresh_direct_actor(h, now_tick);
+        if (is_threat_kind(h->kind) && !current_direct) {
             h->precision_m = maxf_local(
                 h->precision_m, NF_BELIEF_MIN_PRECISION_M + seconds*mobility*0.35f);
         }
@@ -241,6 +251,19 @@ const NfBeliefHypothesis *nf_belief_best(
 const NfBeliefHypothesis *nf_belief_best_threat(
     const NfBeliefStore *store, uint64_t now_tick) {
     if (store == NULL) return NULL;
+
+    const NfBeliefHypothesis *direct = NULL;
+    for (size_t i = 0u; i < NF_BELIEF_CAPACITY; ++i) {
+        const NfBeliefHypothesis *h = &store->hypotheses[i];
+        if (!fresh_direct_actor(h, now_tick)) continue;
+        if (direct == NULL || h->updated_tick > direct->updated_tick ||
+            (h->updated_tick == direct->updated_tick &&
+             h->confidence > direct->confidence)) {
+            direct = h;
+        }
+    }
+    if (direct != NULL) return direct;
+
     const NfBeliefHypothesis *best = NULL;
     float best_weight = 0.0f;
     for (size_t i = 0u; i < NF_BELIEF_CAPACITY; ++i) {
