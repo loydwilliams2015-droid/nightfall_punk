@@ -564,7 +564,7 @@ Cattler form:
 
 # Current registry summary
 
-This first pass registers **38 deduction-active premises** across:
+This first pass registers **47 deduction-active premises** across:
 
 - architecture/method;
 - server/control authority;
@@ -581,7 +581,7 @@ This first pass registers **38 deduction-active premises** across:
 
 ## Important STEWARD boundary
 
-This registry does **not** claim that all 38 premises have equal specificity or evidence status.
+This registry does **not** claim that all 47 premises have equal specificity or evidence status.
 
 A project-wide implemented invariant such as `P-AUTH-01` has different authority from a v1.5 locked-but-not-yet-implemented design premise such as `P-COMBAT-04`.
 
