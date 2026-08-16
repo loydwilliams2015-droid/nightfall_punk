@@ -1,9 +1,11 @@
 # nightfall!punk — Record Specificity Index
 
 Timestamp: **2026-08-14 22:59 CDT (America/Chicago)**
-Last amendment: **2026-08-14 23:25 CDT (America/Chicago)**
+Prior amendment: **2026-08-14 23:25 CDT (America/Chicago)**
+Latest amendment: **2026-08-16 16:31 CDT (America/Chicago)**
 Chat provenance (public/redacted): **[REDACTED CHAT — Project Recordkeeping Specificity]**
-Amendment provenance (public/redacted): **[REDACTED CHAT — Visual Palette Preference]**
+Prior amendment provenance (public/redacted): **[REDACTED CHAT — Visual Palette Preference]**
+Latest amendment provenance (public/redacted): **[REDACTED CHAT — Evidence Structures and Inference Governance]**
 Roles: **PRAXIS / STEWARD / SIGNAL**
 Record specificity: **PROJECT-WIDE / RECORDKEEPING INDEX**
 Status: **CURRENT SPECIFICITY RECONCILIATION**
@@ -16,6 +18,10 @@ This index applies the specificity policy in `docs/LEDGER_PROVENANCE_POLICY.md` 
 |---|---|---|
 | `docs/LEDGER_PROVENANCE_POLICY.md` | **PROJECT-WIDE / RECORDKEEPING POLICY** | Current policy |
 | `docs/LEDGER_RECORD_SPECIFICITY_INDEX.md` | **PROJECT-WIDE / RECORDKEEPING INDEX** | Current reconciliation |
+| `docs/LEDGER_EXPLICIT_PREMISE_REGISTRY.md` | **PROJECT-WIDE METHODOLOGY / CROSS-SUBSYSTEM PREMISE INVENTORY** | Protocol 1; explicit deduction-active premise registry |
+| `docs/LEDGER_EXPLICIT_PREMISE_REGISTRY_FPS_PHYSICS_ADDENDUM.md` | **PROJECT-WIDE / SUBSYSTEM Environmental Physics + FPS Causality** | Protocol 1 addendum; 12 adopted FPS/environmental-physics premises |
+| `docs/PROTOCOL_2_OBSERVATION_CREDIBILITY_ROUTINE.md` | **PROJECT-WIDE METHODOLOGY / TEST + OBSERVATION + INDUCTIVE EVALUATION** | Protocol 2; compile-bracketed observation and pattern-credibility workflow |
+| `docs/PROTOCOL_3_EVIDENCE_INFERENCE_GOVERNANCE.md` | **PROJECT-WIDE METHODOLOGY / OBSERVATION + INDUCTION + CONTRADICTION + EXPERIMENT GOVERNANCE** | Protocol 3; distributions, causal chains, secure metadata, typed reference authority, dependency-aware Bayesian updating, contradiction engine, experiment registry |
 | `docs/HANDOFF_V1.4_HUMAN_ACCEPTANCE.md` | **VERSION v1.4 / TEST + HUMAN-ACCEPTANCE HANDOFF** | Automated-green candidate; human-video gate distinct |
 | `docs/LEDGER_V1.4_TO_V1.5_COMBAT_COMMUNICATIONS.md` | **VERSION v1.5 / SUBSYSTEM Combat + AI Communications / DESIGN RESOLUTION** | 150/150 design disposition; not v1.5 implementation proof |
 | `docs/HANDOFF_V1.4_TO_V1.5_COMBAT_COMMUNICATIONS.md` | **VERSION TRANSITION v1.4→v1.5 / SUBSYSTEM Combat + AI Communications / HANDOFF** | Carries implemented v1.4 constraints into v1.5 planning |
@@ -97,16 +103,17 @@ Before implementing a ledger decision, identify its specificity. A version-local
 
 ## SIGNAL
 
-When comparing games, science, literary theory, telemetry, or play recordings, preserve the scope of the evidence. One game example, one seed, or one recording is evidence at its actual level, not automatic universal proof.
+When comparing games, science, literary theory, telemetry, or play recordings, preserve the scope and typed authority of the evidence. One game example, one seed, one reference, or one recording is evidence at its actual level, not automatic universal proof.
 
 ## STEWARD
 
-Maintain both **precedence** and **specificity**. When two records disagree, ask:
+Maintain **precedence, specificity, evidence status, contradiction class, and provenance**. When two records disagree, ask:
 
 1. Which is newer and explicitly superseding?
 2. Which has stronger evidence status?
 3. What scope did each record actually earn?
-4. Are they truly contradictory, or simply statements at different specificity levels?
+4. Are they truly contradictory, or statements at different specificity levels?
+5. Is the conflict a paradox/physical impossibility, an empirical contradiction, or a dialectical/game-theoretical conflict between simultaneously viable relations?
 
 ## Maxim
 
