@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(nightfall_punk VERSION 1.4 LANGUAGES C)
+project(nightfall_punk VERSION 1.5 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -59,6 +59,10 @@ add_library(nightfall_shared STATIC
     src/shared/nf_semantics.c
     src/shared/nf_claim.c
     src/shared/nf_tactical.c
+    src/shared/nf_report.c
+    src/shared/nf_belief.c
+    src/shared/nf_metabolic.c
+    src/shared/nf_comm_present.c
     src/shared/nf_region.c
     src/shared/nf_energy.c
     src/shared/nf_energy_actor.c
@@ -144,6 +148,11 @@ if(NF_BUILD_CLIENT)
     target_link_libraries(nightfall_v14_demo PRIVATE nightfall_camera nightfall_ai raylib)
     target_include_directories(nightfall_v14_demo PRIVATE src/client src/server/ai src/shared)
     nf_project_warnings(nightfall_v14_demo)
+
+    add_executable(nightfall_v15_demo src/demo/v15_greybox.c)
+    target_link_libraries(nightfall_v15_demo PRIVATE nightfall_camera nightfall_ai raylib)
+    target_include_directories(nightfall_v15_demo PRIVATE src/client src/server/ai src/shared)
+    nf_project_warnings(nightfall_v15_demo)
 endif()
 
 if(NF_BUILD_TESTS)
@@ -214,4 +223,15 @@ if(NF_BUILD_TESTS)
     target_include_directories(nightfall_v14_integration_test PRIVATE src/server/ai src/shared)
     nf_project_warnings(nightfall_v14_integration_test)
     add_test(NAME high_medium_integration_v14 COMMAND nightfall_v14_integration_test)
+
+    add_executable(nightfall_v15_report_test src/tests/test_v15_report.c)
+    target_link_libraries(nightfall_v15_report_test PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_v15_report_test)
+    add_test(NAME information_report_v15 COMMAND nightfall_v15_report_test)
+
+    add_executable(nightfall_v15_integration_test src/tests/test_v15_integration.c)
+    target_link_libraries(nightfall_v15_integration_test PRIVATE nightfall_ai)
+    target_include_directories(nightfall_v15_integration_test PRIVATE src/server/ai src/shared)
+    nf_project_warnings(nightfall_v15_integration_test)
+    add_test(NAME vertical_integration_v15 COMMAND nightfall_v15_integration_test)
 endif()

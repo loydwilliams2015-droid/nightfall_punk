@@ -20,7 +20,9 @@ typedef enum NfFaction {
     NF_FACTION_PLAYER,
     NF_FACTION_TEAMMATE,
     NF_FACTION_RIVAL,
-    NF_FACTION_RANCHER
+    NF_FACTION_CATTLER,
+    /* Temporary v1.5 compatibility alias. New code must use CATTLER. */
+    NF_FACTION_RANCHER = NF_FACTION_CATTLER
 } NfFaction;
 
 typedef enum NfMovementMode {

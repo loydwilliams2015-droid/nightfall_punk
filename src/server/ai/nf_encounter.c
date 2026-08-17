@@ -194,7 +194,8 @@ static void filter_aim_and_fire(
     NfAiAgent *agent,
     NfActor *body,
     NfControlFrame *control,
-    NfWorld *world) {
+    NfWorld *world,
+    bool opportunistic_pressure) {
     NfEncounterAgentState *state = state_for(encounter, agent->actor_id);
     if (state == NULL || body == NULL) return;
 
@@ -232,7 +233,7 @@ static void filter_aim_and_fire(
     if (agent->mode == NF_AGENT_ENGAGE && agent->knowledge.visible_now) {
         const float tolerance = 0.105f+clamp01(target_speed/8.0f)*0.040f;
         if (state->last_aim_error <= tolerance) {
-            float gain = 0.032f;
+            float gain = 0.050f;
             gain *= 1.0f-0.45f*clamp01(target_speed/9.0f);
             gain *= 1.0f-0.38f*state->suppression;
             gain *= 1.0f-0.10f*clamp01(own_motion);
@@ -240,6 +241,8 @@ static void filter_aim_and_fire(
         } else {
             state->aim_settle = clamp01(state->aim_settle-0.040f);
         }
+    } else if (agent->knowledge.visible_now && agent->knowledge.target != 0u) {
+        state->aim_settle = clamp01(state->aim_settle-0.012f);
     } else {
         state->aim_settle = clamp01(state->aim_settle-0.055f);
     }
@@ -261,14 +264,14 @@ static void filter_aim_and_fire(
     }
 
     if (control->combat.fire_held || control->combat.fire_pressed) {
-        const float required_settle = 0.42f+
+        const float required_settle = 0.34f+
             0.16f*clamp01(target_speed/8.0f)+
             0.14f*state->suppression+
             0.05f*clamp01(own_motion);
         bool allow = agent->knowledge.visible_now &&
             state->aim_settle >= required_settle && state->suppression < 0.82f;
 
-        if (allow && !state->pressure_authorized) {
+        if (allow && !state->pressure_authorized && !opportunistic_pressure) {
             const uint32_t phase = (uint32_t)(
                 (world->tick+hash_u32(encounter->seed^agent->actor_id))%180u);
             const NfActor *target = nf_world_find_actor_const(world, agent->knowledge.target);
@@ -329,6 +332,15 @@ void nf_encounter_filter_controls(
         encounter->next_role_tick = world->tick+NF_ENCOUNTER_ROLE_INTERVAL;
     }
 
+    size_t pressure_intents = 0u;
+    for (size_t i = 0u; i < control_count; ++i) {
+        if (!(controls[i].combat.fire_held || controls[i].combat.fire_pressed)) continue;
+        const NfEncounterAgentState *state =
+            nf_encounter_agent_state_const(encounter, controls[i].actor);
+        if (state != NULL && state->pressure_authorized) ++pressure_intents;
+    }
+
+    size_t opportunistic_slots_used = 0u;
     for (size_t i = 0; i < control_count; ++i) {
         NfAiAgent *agent = NULL;
         for (size_t j = 0; j < ai->count; ++j) {
@@ -339,7 +351,17 @@ void nf_encounter_filter_controls(
         }
         if (agent == NULL) continue;
         NfActor *body = nf_world_find_actor(world, agent->actor_id);
-        filter_aim_and_fire(encounter, agent, body, &controls[i], world);
+        NfEncounterAgentState *state = state_for(encounter, agent->actor_id);
+        const bool raw_fire = controls[i].combat.fire_held || controls[i].combat.fire_pressed;
+        const bool opportunistic = raw_fire && state != NULL &&
+            !state->pressure_authorized &&
+            pressure_intents+opportunistic_slots_used < encounter->pressure_slots;
+        filter_aim_and_fire(
+            encounter, agent, body, &controls[i], world, opportunistic);
+        if (opportunistic &&
+            (controls[i].combat.fire_held || controls[i].combat.fire_pressed)) {
+            ++opportunistic_slots_used;
+        }
     }
 }
 
