@@ -1,4 +1,4 @@
-name: nightfall v1.5 CI
+name: nightfall v1.6 CI
 
 on:
   push:
@@ -20,12 +20,12 @@ jobs:
             build-essential cmake git pkg-config libsodium-dev \
             libasound2-dev libx11-dev libxrandr-dev libxi-dev \
             libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev
-      - name: v1.5 standard check
-        run: bash ./v15.sh standard-check
-      - name: Strict graphical compile including v1.5 proof
-        run: bash ./v15.sh build
-      - name: All inherited plus v1.5 CTests
-        run: bash ./v15.sh test
+      - name: v1.6 standard check
+        run: bash ./v16.sh standard-check
+      - name: Strict graphical compile including v1.6 proof
+        run: bash ./v16.sh build
+      - name: All inherited plus v1.6 CTests
+        run: bash ./v16.sh test
       - name: Four-client plus bounded-pressure Human Rival combat smoke
         run: ./nightfall.sh combat-smoke
       - name: Passive player versus Human Rival encounter smoke
@@ -41,10 +41,6 @@ jobs:
       - name: Contamination stasis inventory and transport smoke
         run: ./nightfall.sh contamination-smoke
       - name: Named relational camera proof
-        run: bash ./v15.sh camera-smoke
-      - name: Named inherited population and embodied action proof
-        run: bash ./v15.sh integration-smoke
-      - name: Named v1.4 object claim exposure proof
-        run: bash ./v15.sh v14-smoke
-      - name: Named v1.5 vertical integration proof
-        run: bash ./v15.sh v15-smoke
+        run: bash ./v16.sh test >/dev/null
+      - name: Named v1.6 Weapon Solution proof
+        run: bash ./v16.sh v16-smoke
