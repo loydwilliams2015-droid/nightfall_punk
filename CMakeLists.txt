@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(nightfall_punk VERSION 1.5 LANGUAGES C)
+project(nightfall_punk VERSION 1.6 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -53,6 +53,7 @@ add_library(nightfall_shared STATIC
     src/shared/nf_world.c
     src/shared/nf_movement.c
     src/shared/nf_combat.c
+    src/shared/nf_weapon_solution.c
     src/shared/nf_contamination.c
     src/shared/nf_agent.c
     src/shared/nf_relations.c
@@ -153,6 +154,11 @@ if(NF_BUILD_CLIENT)
     target_link_libraries(nightfall_v15_demo PRIVATE nightfall_camera nightfall_ai raylib)
     target_include_directories(nightfall_v15_demo PRIVATE src/client src/server/ai src/shared)
     nf_project_warnings(nightfall_v15_demo)
+
+    add_executable(nightfall_v16_demo src/demo/v16_weapon_solution.c)
+    target_link_libraries(nightfall_v16_demo PRIVATE nightfall_camera nightfall_ai raylib)
+    target_include_directories(nightfall_v16_demo PRIVATE src/client src/server/ai src/shared)
+    nf_project_warnings(nightfall_v16_demo)
 endif()
 
 if(NF_BUILD_TESTS)
@@ -234,4 +240,9 @@ if(NF_BUILD_TESTS)
     target_include_directories(nightfall_v15_integration_test PRIVATE src/server/ai src/shared)
     nf_project_warnings(nightfall_v15_integration_test)
     add_test(NAME vertical_integration_v15 COMMAND nightfall_v15_integration_test)
+
+    add_executable(nightfall_v16_weapon_solution_test src/tests/test_v16_weapon_solution.c)
+    target_link_libraries(nightfall_v16_weapon_solution_test PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_v16_weapon_solution_test)
+    add_test(NAME weapon_solution_focus_v16 COMMAND nightfall_v16_weapon_solution_test)
 endif()
