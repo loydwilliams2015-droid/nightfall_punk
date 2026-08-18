@@ -1,4 +1,4 @@
-name: nightfall v1.6 CI
+name: nightfall v1.6A CI
 
 on:
   push:
@@ -20,12 +20,12 @@ jobs:
             build-essential cmake git pkg-config libsodium-dev \
             libasound2-dev libx11-dev libxrandr-dev libxi-dev \
             libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev
-      - name: v1.6 standard check
-        run: bash ./v16.sh standard-check
-      - name: Strict graphical compile including v1.6 proof
-        run: bash ./v16.sh build
-      - name: All inherited plus v1.6 CTests
-        run: bash ./v16.sh test
+      - name: v1.6A standard check
+        run: bash ./v16a.sh standard-check
+      - name: Strict graphical compile including v1.6A proof
+        run: bash ./v16a.sh build
+      - name: All inherited plus v1.6 and v1.6A CTests
+        run: bash ./v16a.sh test
       - name: Four-client plus bounded-pressure Human Rival combat smoke
         run: ./nightfall.sh combat-smoke
       - name: Passive player versus Human Rival encounter smoke
@@ -44,3 +44,5 @@ jobs:
         run: bash ./v16.sh test >/dev/null
       - name: Named v1.6 Weapon Solution proof
         run: bash ./v16.sh v16-smoke
+      - name: Named v1.6A correspondence / calibration proof
+        run: bash ./v16a.sh v16a-smoke
