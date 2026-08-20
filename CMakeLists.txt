@@ -154,6 +154,11 @@ if(NF_BUILD_CLIENT)
     target_include_directories(nightfall_client PRIVATE src/client)
     nf_project_warnings(nightfall_client)
 
+    add_executable(nightfall_v16b_client src/client/v16b_main.c)
+    target_link_libraries(nightfall_v16b_client PRIVATE nightfall_network raylib)
+    target_include_directories(nightfall_v16b_client PRIVATE src/shared)
+    nf_project_warnings(nightfall_v16b_client)
+
     add_executable(nightfall_v12_demo src/demo/v12_greybox.c)
     target_link_libraries(nightfall_v12_demo PRIVATE nightfall_camera nightfall_ai raylib)
     target_include_directories(nightfall_v12_demo PRIVATE src/client src/server/ai src/shared)
