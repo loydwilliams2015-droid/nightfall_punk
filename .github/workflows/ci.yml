@@ -37,10 +37,29 @@ jobs:
           mkdir -p build/v16b-video
           for scenario in focus_hold redirect_focus reload_focus; do
             frames="build/v16b-video/${scenario}-frames"
+            rm -rf "$frames"
             mkdir -p "$frames"
-            xvfb-run -a ./build/full/nightfall_v16b_demo --auto "$scenario" --seconds 5 --frames-dir "$frames"
-            ffmpeg -loglevel error -y -framerate 30 -i "$frames/frame_%05d.png" \
-              -c:v libx264 -pix_fmt yuv420p "build/v16b-video/${scenario}.mp4"
+            rm -f frame_*.png
+            xvfb-run -a ./build/full/nightfall_v16b_demo \
+              --auto "$scenario" --seconds 5 --frames-dir "$frames"
+
+            # raylib 5.5 TakeScreenshot() normalizes to a basename on this
+            # headless X11 path. Accept either the requested directory or the
+            # working-directory fallback, then put every sample in one place.
+            if ! compgen -G "$frames/frame_*.png" >/dev/null; then
+              compgen -G "frame_*.png" >/dev/null
+              mv frame_*.png "$frames/"
+            fi
+            frame_count=$(find "$frames" -maxdepth 1 -name 'frame_*.png' | wc -l)
+            test "$frame_count" -gt 0
+
+            # Software/Xvfb screenshot readback is evidence-oriented rather
+            # than realtime capture (~4 fps in CI). Encode at the actual proof
+            # cadence instead of incorrectly accelerating it at 30 fps.
+            ffmpeg -loglevel error -y -framerate 4 \
+              -i "$frames/frame_%05d.png" \
+              -c:v libx264 -pix_fmt yuv420p \
+              "build/v16b-video/${scenario}.mp4"
           done
       - name: Four-client plus bounded-pressure Human Rival combat smoke
         run: ./nightfall.sh combat-smoke
