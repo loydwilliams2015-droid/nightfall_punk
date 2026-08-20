@@ -1,4 +1,4 @@
-name: nightfall v1.6A CI
+name: nightfall v1.6B CI
 
 on:
   push:
@@ -9,23 +9,39 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install Linux build dependencies
+      - name: Install Linux build and video dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             build-essential cmake git pkg-config libsodium-dev \
             libasound2-dev libx11-dev libxrandr-dev libxi-dev \
-            libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev
-      - name: v1.6A standard check
-        run: bash ./v16a.sh standard-check
-      - name: Strict graphical compile including v1.6A proof
-        run: bash ./v16a.sh build
-      - name: All inherited plus v1.6 and v1.6A CTests
-        run: bash ./v16a.sh test
+            libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev \
+            xvfb ffmpeg
+      - name: v1.6B standard check
+        run: bash ./v16b.sh standard-check
+      - name: Strict graphical compile including network client and v1.6B proof
+        run: bash ./v16b.sh build
+      - name: All inherited plus v1.6 v1.6A and v1.6B CTests
+        run: bash ./v16b.sh test
+      - name: v1.6B deterministic scripted sample database and OITOA soil analysis
+        run: bash ./v16b.sh sample-db
+      - name: v1.6B production authority network scenario smoke 100ms jitter loss
+        run: bash ./v16b.sh net-smoke
+      - name: Automated graphical evidence samples
+        run: |
+          set -euo pipefail
+          mkdir -p build/v16b-video
+          for scenario in focus_hold redirect_focus reload_focus; do
+            frames="build/v16b-video/${scenario}-frames"
+            mkdir -p "$frames"
+            xvfb-run -a ./build/full/nightfall_v16b_demo --auto "$scenario" --seconds 5 --frames-dir "$frames"
+            ffmpeg -loglevel error -y -framerate 30 -i "$frames/frame_%05d.png" \
+              -c:v libx264 -pix_fmt yuv420p "build/v16b-video/${scenario}.mp4"
+          done
       - name: Four-client plus bounded-pressure Human Rival combat smoke
         run: ./nightfall.sh combat-smoke
       - name: Passive player versus Human Rival encounter smoke
@@ -40,9 +56,21 @@ jobs:
         run: ./nightfall.sh lifeworld-smoke
       - name: Contamination stasis inventory and transport smoke
         run: ./nightfall.sh contamination-smoke
-      - name: Named relational camera proof
-        run: bash ./v16.sh test >/dev/null
       - name: Named v1.6 Weapon Solution proof
         run: bash ./v16.sh v16-smoke
-      - name: Named v1.6A correspondence / calibration proof
+      - name: Named v1.6A correspondence calibration proof
         run: bash ./v16a.sh v16a-smoke
+      - name: Named v1.6B Weapon Authority Mobility proof
+        run: bash ./v16b.sh v16b-smoke
+      - name: Upload v1.6B sample database analysis and automated videos
+        uses: actions/upload-artifact@v4
+        with:
+          name: v16b-sample-database-and-video-evidence
+          path: |
+            build/v16b-samples/samples.csv
+            build/v16b-samples/report.md
+            build/v16b-samples/soil.csv
+            build/v16b-samples/net-*.csv
+            build/v16b-samples/net-server.log
+            build/v16b-video/*.mp4
+          if-no-files-found: error
