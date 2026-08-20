@@ -10,6 +10,8 @@
 typedef struct NfWeaponSolutionRuntime {
     float focus_amount;
     float instability_deg;
+    float redirect_stress_deg;
+    float support_stress_deg;
 } NfWeaponSolutionRuntime;
 
 typedef struct NfWeaponEnvelopeInput {
@@ -30,7 +32,9 @@ typedef struct NfWeaponEnvelope {
     NfVec3 intended_direction;
     float base_cone_deg;
     float motion_cone_deg;
+    float redirect_cone_deg;
     float airborne_cone_deg;
+    float support_cone_deg;
     float contamination_cone_deg;
     float recoil_cone_deg;
     float state_cone_deg;
@@ -61,7 +65,9 @@ typedef struct NfWeaponSolution {
     NfVec3 solved_direction;
     float base_cone_deg;
     float motion_cone_deg;
+    float redirect_cone_deg;
     float airborne_cone_deg;
+    float support_cone_deg;
     float contamination_cone_deg;
     float recoil_cone_deg;
     float state_cone_deg;
@@ -77,6 +83,14 @@ void nf_weapon_solution_runtime_step(
     NfWeaponId weapon,
     bool focus_held,
     bool sprinting,
+    float dt);
+/* v1.6B reload/handling seam: scale only Focus acquisition; release remains fast. */
+void nf_weapon_solution_runtime_step_scaled(
+    NfWeaponSolutionRuntime *runtime,
+    NfWeaponId weapon,
+    bool focus_held,
+    bool sprinting,
+    float acquisition_scale,
     float dt);
 void nf_weapon_solution_record_shot(
     NfWeaponSolutionRuntime *runtime,
@@ -95,10 +109,26 @@ NfWeaponSolution nf_weapon_realize_shot(
 /* v1.6 compatibility wrapper: evaluate envelope then realize accepted shot. */
 NfWeaponSolution nf_weapon_solve(NfWeaponSolutionInput input);
 
+/* v1.6B canonical actor seam. Call after movement integration and before fire. */
+void nf_weapon_authority_step_actor(NfActor *actor, bool focus_held, float dt);
+NfWeaponEnvelope nf_weapon_authority_envelope(
+    const NfActor *actor,
+    float yaw_radians,
+    float pitch_radians);
+bool nf_weapon_authority_try_fire(
+    NfActor *actor,
+    const NfCombatInput *input,
+    uint32_t input_sequence,
+    uint64_t server_tick,
+    uint32_t world_seed,
+    float yaw_radians,
+    NfWeaponSolution *solution_out,
+    NfCombatEvent *fire_event_out);
+
 /* Legacy v1.6 projection retained for inherited tests. */
 float nf_weapon_reticle_radius_px(const NfWeaponSolution *solution);
 
-/* v1.6A live projection: FOV-aware, mildly nonlinear, monotonic, presentation-only. */
+/* v1.6A/B live projection: FOV-aware, mildly nonlinear, monotonic, presentation-only. */
 float nf_weapon_reticle_radius_px_for_envelope(
     const NfWeaponEnvelope *envelope,
     float vertical_fov_deg,
