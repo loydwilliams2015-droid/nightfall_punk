@@ -5,14 +5,15 @@
 #define NF_HEADER_BYTES 8u
 #define NF_COMMAND_BYTES 31u
 #define NF_ACTOR_BYTES 69u
-#define NF_COMBAT_EVENT_BYTES 49u
+#define NF_AUTHORITY_BYTES (4u+4u+(NF_WEAPON_COUNT*4u)+4u+4u+4u)
+#define NF_COMBAT_EVENT_BYTES 66u
 
 static void put_u16(uint8_t *p, uint16_t v) { p[0]=(uint8_t)v; p[1]=(uint8_t)(v>>8); }
 static void put_u32(uint8_t *p, uint32_t v) { p[0]=(uint8_t)v; p[1]=(uint8_t)(v>>8); p[2]=(uint8_t)(v>>16); p[3]=(uint8_t)(v>>24); }
 static void put_u64(uint8_t *p, uint64_t v) { for (unsigned i=0;i<8;++i) p[i]=(uint8_t)(v>>(8u*i)); }
 static uint16_t get_u16(const uint8_t *p) { return (uint16_t)p[0]|((uint16_t)p[1]<<8); }
 static uint32_t get_u32(const uint8_t *p) { return (uint32_t)p[0]|((uint32_t)p[1]<<8)|((uint32_t)p[2]<<16)|((uint32_t)p[3]<<24); }
-static uint64_t get_u64(const uint8_t *p) { uint64_t v=0; for (unsigned i=0;i<8;++i) v|=(uint64_t)p[i]<<(8u*i); return v; }
+static uint64_t get_u64(const uint8_t *p) { uint64_t v=0; for (unsigned i=0;i<8;++i) p[i]=(uint8_t)(v>>(8u*i)); return v; }
 static void put_f32(uint8_t *p, float v) { uint32_t u; memcpy(&u,&v,sizeof(u)); put_u32(p,u); }
 static float get_f32(const uint8_t *p) { uint32_t u=get_u32(p); float v; memcpy(&v,&u,sizeof(v)); return v; }
 
@@ -26,7 +27,9 @@ static size_t write_header(uint8_t *out, size_t cap, NfMessageType type) {
 }
 
 static bool read_header(const uint8_t *data, size_t size, NfMessageType expected) {
-    return data!=NULL && size>=NF_HEADER_BYTES && get_u32(data)==NF_PROTOCOL_MAGIC && get_u16(data+4)==NF_PROTOCOL_VERSION && (expected==NF_MSG_NONE || data[6]==(uint8_t)expected);
+    return data!=NULL && size>=NF_HEADER_BYTES && get_u32(data)==NF_PROTOCOL_MAGIC &&
+        get_u16(data+4)==NF_PROTOCOL_VERSION &&
+        (expected==NF_MSG_NONE || data[6]==(uint8_t)expected);
 }
 
 NfMessageType nf_protocol_peek_type(const uint8_t *data,size_t size) {
@@ -107,6 +110,7 @@ static size_t encode_command(uint8_t *out,size_t cap,const NfInputCommand *c) {
     if(c->combat.fire_held)combat_flags|=1u;
     if(c->combat.fire_pressed)combat_flags|=2u;
     if(c->combat.reload_pressed)combat_flags|=4u;
+    if(c->combat.focus_held)combat_flags|=8u;
     out[o++]=combat_flags;
     out[o++]=c->combat.weapon_slot;
     put_f32(out+o,c->combat.aim_pitch_radians); o+=4;
@@ -131,6 +135,7 @@ static bool decode_command(const uint8_t *data,size_t size,NfInputCommand *c) {
     c->combat.fire_held=(f&1u)!=0;
     c->combat.fire_pressed=(f&2u)!=0;
     c->combat.reload_pressed=(f&4u)!=0;
+    c->combat.focus_held=(f&8u)!=0;
     c->combat.weapon_slot=data[o++];
     c->combat.aim_pitch_radians=get_f32(data+o);
     return true;
@@ -228,31 +233,65 @@ static bool decode_actor(const uint8_t *data,size_t size,NfActorNetState *a) {
     return true;
 }
 
+static size_t encode_authority(uint8_t *out,size_t cap,const NfWeaponAuthorityNetState *a) {
+    if (out==NULL || a==NULL || cap<NF_AUTHORITY_BYTES) return 0;
+    size_t o=0;
+    put_u32(out+o,a->actor_id); o+=4;
+    put_f32(out+o,a->focus_amount); o+=4;
+    for (int i=0;i<NF_WEAPON_COUNT;++i) { put_f32(out+o,a->instability_deg[i]); o+=4; }
+    put_u32(out+o,a->accepted_shot_sequence); o+=4;
+    put_f32(out+o,a->redirect_stress_deg); o+=4;
+    put_f32(out+o,a->support_stress_deg); o+=4;
+    return o;
+}
+
+static bool decode_authority(const uint8_t *data,size_t size,NfWeaponAuthorityNetState *a) {
+    if (data==NULL || a==NULL || size<NF_AUTHORITY_BYTES) return false;
+    size_t o=0;
+    memset(a,0,sizeof(*a));
+    a->actor_id=get_u32(data+o); o+=4;
+    a->focus_amount=get_f32(data+o); o+=4;
+    for (int i=0;i<NF_WEAPON_COUNT;++i) { a->instability_deg[i]=get_f32(data+o); o+=4; }
+    a->accepted_shot_sequence=get_u32(data+o); o+=4;
+    a->redirect_stress_deg=get_f32(data+o); o+=4;
+    a->support_stress_deg=get_f32(data+o);
+    return true;
+}
+
 size_t nf_protocol_encode_snapshot(uint8_t *out,size_t cap,const NfSnapshotMessage *msg) {
     if (msg==NULL || msg->actor_count>NF_NET_MAX_SNAPSHOT_ACTORS) return 0;
-    const size_t need=NF_HEADER_BYTES+8+4+1+(size_t)msg->actor_count*NF_ACTOR_BYTES;
-    if(cap<need) return 0;
+    const size_t need=NF_HEADER_BYTES+8+4+1+(size_t)msg->actor_count*NF_ACTOR_BYTES+1+
+        (msg->owner_authority_valid?NF_AUTHORITY_BYTES:0u);
+    if(cap<need || need>NF_NET_MAX_PACKET_BYTES) return 0;
     write_header(out,cap,NF_MSG_SNAPSHOT);
     size_t o=8;
     put_u64(out+o,msg->server_tick); o+=8;
     put_u32(out+o,msg->acknowledged_input); o+=4;
     out[o++]=msg->actor_count;
     for(uint8_t i=0;i<msg->actor_count;++i) o+=encode_actor(out+o,cap-o,&msg->actors[i]);
+    out[o++]=msg->owner_authority_valid?1u:0u;
+    if(msg->owner_authority_valid) o+=encode_authority(out+o,cap-o,&msg->owner_authority);
     return o;
 }
 
 bool nf_protocol_decode_snapshot(const uint8_t *data,size_t size,NfSnapshotMessage *out) {
-    if (out==NULL || size<NF_HEADER_BYTES+13 || !read_header(data,size,NF_MSG_SNAPSHOT)) return false;
+    if (out==NULL || size<NF_HEADER_BYTES+14 || !read_header(data,size,NF_MSG_SNAPSHOT)) return false;
     size_t o=8;
     memset(out,0,sizeof(*out));
     out->server_tick=get_u64(data+o); o+=8;
     out->acknowledged_input=get_u32(data+o); o+=4;
     out->actor_count=data[o++];
-    if(out->actor_count>NF_NET_MAX_SNAPSHOT_ACTORS || size!=o+(size_t)out->actor_count*NF_ACTOR_BYTES) return false;
+    if(out->actor_count>NF_NET_MAX_SNAPSHOT_ACTORS) return false;
+    const size_t actors_bytes=(size_t)out->actor_count*NF_ACTOR_BYTES;
+    if(size<o+actors_bytes+1u) return false;
     for(uint8_t i=0;i<out->actor_count;++i) {
         if(!decode_actor(data+o,size-o,&out->actors[i])) return false;
         o+=NF_ACTOR_BYTES;
     }
+    out->owner_authority_valid=data[o++]!=0;
+    const size_t expected=o+(out->owner_authority_valid?NF_AUTHORITY_BYTES:0u);
+    if(size!=expected) return false;
+    if(out->owner_authority_valid && !decode_authority(data+o,size-o,&out->owner_authority)) return false;
     return true;
 }
 
@@ -286,6 +325,11 @@ size_t nf_protocol_encode_combat_event(uint8_t *out,size_t cap,const NfCombatEve
     put_f32(out+o,e->position.y); o+=4;
     put_f32(out+o,e->position.z); o+=4;
     put_u16(out+o,e->rewind_ms); o+=2;
+    put_u32(out+o,e->shot_sequence); o+=4;
+    put_f32(out+o,e->shot_direction.x); o+=4;
+    put_f32(out+o,e->shot_direction.y); o+=4;
+    put_f32(out+o,e->shot_direction.z); o+=4;
+    out[o++]=e->shot_blocked?1u:0u;
     return o;
 }
 
@@ -305,7 +349,12 @@ bool nf_protocol_decode_combat_event(const uint8_t *data,size_t size,NfCombatEve
     e->position.x=get_f32(data+o); o+=4;
     e->position.y=get_f32(data+o); o+=4;
     e->position.z=get_f32(data+o); o+=4;
-    e->rewind_ms=get_u16(data+o);
+    e->rewind_ms=get_u16(data+o); o+=2;
+    e->shot_sequence=get_u32(data+o); o+=4;
+    e->shot_direction.x=get_f32(data+o); o+=4;
+    e->shot_direction.y=get_f32(data+o); o+=4;
+    e->shot_direction.z=get_f32(data+o); o+=4;
+    e->shot_blocked=data[o]!=0;
     return true;
 }
 
@@ -356,4 +405,25 @@ void nf_actor_apply_net_state(NfActor *actor,const NfActorNetState *s,const NfMo
     actor->movement.candidate.type=s->candidate_type;
     actor->movement.candidate.feature_index=s->candidate_feature;
     nf_actor_apply_combat_net_state(actor,s);
+}
+
+void nf_weapon_authority_to_net_state(const NfActor *actor,NfWeaponAuthorityNetState *out) {
+    if(actor==NULL || out==NULL) return;
+    memset(out,0,sizeof(*out));
+    out->actor_id=actor->id;
+    out->focus_amount=actor->weapon_authority.focus_amount;
+    for(int i=0;i<NF_WEAPON_COUNT;++i) out->instability_deg[i]=actor->weapon_authority.instability_deg[i];
+    out->accepted_shot_sequence=actor->weapon_authority.accepted_shot_sequence;
+    out->redirect_stress_deg=actor->weapon_authority.redirect_stress_deg;
+    out->support_stress_deg=actor->weapon_authority.support_stress_deg;
+}
+
+void nf_weapon_authority_apply_net_state(NfActor *actor,const NfWeaponAuthorityNetState *s) {
+    if(actor==NULL || s==NULL || s->actor_id!=actor->id) return;
+    actor->weapon_authority.focus_amount=s->focus_amount;
+    for(int i=0;i<NF_WEAPON_COUNT;++i) actor->weapon_authority.instability_deg[i]=s->instability_deg[i];
+    actor->weapon_authority.accepted_shot_sequence=s->accepted_shot_sequence;
+    actor->weapon_authority.redirect_stress_deg=s->redirect_stress_deg;
+    actor->weapon_authority.support_stress_deg=s->support_stress_deg;
+    actor->weapon_authority.kinematic_initialized=false;
 }
