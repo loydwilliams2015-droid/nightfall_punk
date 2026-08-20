@@ -13,7 +13,7 @@ static void put_u32(uint8_t *p, uint32_t v) { p[0]=(uint8_t)v; p[1]=(uint8_t)(v>
 static void put_u64(uint8_t *p, uint64_t v) { for (unsigned i=0;i<8;++i) p[i]=(uint8_t)(v>>(8u*i)); }
 static uint16_t get_u16(const uint8_t *p) { return (uint16_t)p[0]|((uint16_t)p[1]<<8); }
 static uint32_t get_u32(const uint8_t *p) { return (uint32_t)p[0]|((uint32_t)p[1]<<8)|((uint32_t)p[2]<<16)|((uint32_t)p[3]<<24); }
-static uint64_t get_u64(const uint8_t *p) { uint64_t v=0; for (unsigned i=0;i<8;++i) p[i]|=(uint64_t)p[i]<<(8u*i); return v; }
+static uint64_t get_u64(const uint8_t *p) { uint64_t v=0; for (unsigned i=0;i<8;++i) v|=(uint64_t)p[i]<<(8u*i); return v; }
 static void put_f32(uint8_t *p, float v) { uint32_t u; memcpy(&u,&v,sizeof(u)); put_u32(p,u); }
 static float get_f32(const uint8_t *p) { uint32_t u=get_u32(p); float v; memcpy(&v,&u,sizeof(v)); return v; }
 
