@@ -5,7 +5,7 @@
 #define NF_HEADER_BYTES 8u
 #define NF_COMMAND_BYTES 31u
 #define NF_ACTOR_BYTES 69u
-#define NF_AUTHORITY_BYTES (4u+4u+(NF_WEAPON_COUNT*4u)+4u+4u+4u)
+#define NF_AUTHORITY_BYTES 60u
 #define NF_COMBAT_EVENT_BYTES 66u
 
 static void put_u16(uint8_t *p, uint16_t v) { p[0]=(uint8_t)v; p[1]=(uint8_t)(v>>8); }
@@ -13,7 +13,7 @@ static void put_u32(uint8_t *p, uint32_t v) { p[0]=(uint8_t)v; p[1]=(uint8_t)(v>
 static void put_u64(uint8_t *p, uint64_t v) { for (unsigned i=0;i<8;++i) p[i]=(uint8_t)(v>>(8u*i)); }
 static uint16_t get_u16(const uint8_t *p) { return (uint16_t)p[0]|((uint16_t)p[1]<<8); }
 static uint32_t get_u32(const uint8_t *p) { return (uint32_t)p[0]|((uint32_t)p[1]<<8)|((uint32_t)p[2]<<16)|((uint32_t)p[3]<<24); }
-static uint64_t get_u64(const uint8_t *p) { uint64_t v=0; for (unsigned i=0;i<8;++i) p[i]=(uint8_t)(v>>(8u*i)); return v; }
+static uint64_t get_u64(const uint8_t *p) { uint64_t v=0; for (unsigned i=0;i<8;++i) p[i]|=(uint64_t)p[i]<<(8u*i); return v; }
 static void put_f32(uint8_t *p, float v) { uint32_t u; memcpy(&u,&v,sizeof(u)); put_u32(p,u); }
 static float get_f32(const uint8_t *p) { uint32_t u=get_u32(p); float v; memcpy(&v,&u,sizeof(v)); return v; }
 
@@ -242,6 +242,15 @@ static size_t encode_authority(uint8_t *out,size_t cap,const NfWeaponAuthorityNe
     put_u32(out+o,a->accepted_shot_sequence); o+=4;
     put_f32(out+o,a->redirect_stress_deg); o+=4;
     put_f32(out+o,a->support_stress_deg); o+=4;
+    out[o++]=(uint8_t)a->weapon;
+    out[o++]=(uint8_t)a->pending_weapon;
+    out[o++]=(uint8_t)a->weapon_state;
+    out[o++]=a->reload_committed?1u:0u;
+    put_f32(out+o,a->action_timer); o+=4;
+    put_f32(out+o,a->reload_total); o+=4;
+    put_u32(out+o,a->last_fire_input_sequence); o+=4;
+    for(int i=0;i<NF_WEAPON_COUNT;++i){put_u16(out+o,a->ammo_mag[i]);o+=2;}
+    for(int i=0;i<NF_WEAPON_COUNT;++i){put_u16(out+o,a->reserve_ammo[i]);o+=2;}
     return o;
 }
 
@@ -254,8 +263,17 @@ static bool decode_authority(const uint8_t *data,size_t size,NfWeaponAuthorityNe
     for (int i=0;i<NF_WEAPON_COUNT;++i) { a->instability_deg[i]=get_f32(data+o); o+=4; }
     a->accepted_shot_sequence=get_u32(data+o); o+=4;
     a->redirect_stress_deg=get_f32(data+o); o+=4;
-    a->support_stress_deg=get_f32(data+o);
-    return true;
+    a->support_stress_deg=get_f32(data+o); o+=4;
+    a->weapon=(NfWeaponId)data[o++];
+    a->pending_weapon=(NfWeaponId)data[o++];
+    a->weapon_state=(NfWeaponState)data[o++];
+    a->reload_committed=data[o++]!=0;
+    a->action_timer=get_f32(data+o);o+=4;
+    a->reload_total=get_f32(data+o);o+=4;
+    a->last_fire_input_sequence=get_u32(data+o);o+=4;
+    for(int i=0;i<NF_WEAPON_COUNT;++i){a->ammo_mag[i]=get_u16(data+o);o+=2;}
+    for(int i=0;i<NF_WEAPON_COUNT;++i){a->reserve_ammo[i]=get_u16(data+o);o+=2;}
+    return o==NF_AUTHORITY_BYTES;
 }
 
 size_t nf_protocol_encode_snapshot(uint8_t *out,size_t cap,const NfSnapshotMessage *msg) {
@@ -416,6 +434,14 @@ void nf_weapon_authority_to_net_state(const NfActor *actor,NfWeaponAuthorityNetS
     out->accepted_shot_sequence=actor->weapon_authority.accepted_shot_sequence;
     out->redirect_stress_deg=actor->weapon_authority.redirect_stress_deg;
     out->support_stress_deg=actor->weapon_authority.support_stress_deg;
+    out->weapon=actor->combat.weapon;
+    out->pending_weapon=actor->combat.pending_weapon;
+    out->weapon_state=actor->combat.state;
+    out->reload_committed=actor->combat.reload_committed;
+    out->action_timer=actor->combat.action_timer;
+    out->reload_total=actor->combat.reload_total;
+    out->last_fire_input_sequence=actor->combat.last_fire_sequence;
+    for(int i=0;i<NF_WEAPON_COUNT;++i){out->ammo_mag[i]=actor->combat.ammo_mag[i];out->reserve_ammo[i]=actor->combat.reserve_ammo[i];}
 }
 
 void nf_weapon_authority_apply_net_state(NfActor *actor,const NfWeaponAuthorityNetState *s) {
@@ -426,4 +452,12 @@ void nf_weapon_authority_apply_net_state(NfActor *actor,const NfWeaponAuthorityN
     actor->weapon_authority.redirect_stress_deg=s->redirect_stress_deg;
     actor->weapon_authority.support_stress_deg=s->support_stress_deg;
     actor->weapon_authority.kinematic_initialized=false;
+    actor->combat.weapon=s->weapon;
+    actor->combat.pending_weapon=s->pending_weapon;
+    actor->combat.state=s->weapon_state;
+    actor->combat.reload_committed=s->reload_committed;
+    actor->combat.action_timer=s->action_timer;
+    actor->combat.reload_total=s->reload_total;
+    actor->combat.last_fire_sequence=s->last_fire_input_sequence;
+    for(int i=0;i<NF_WEAPON_COUNT;++i){actor->combat.ammo_mag[i]=s->ammo_mag[i];actor->combat.reserve_ammo[i]=s->reserve_ammo[i];}
 }
