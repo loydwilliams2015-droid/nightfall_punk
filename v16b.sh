@@ -12,6 +12,7 @@ standard_check(){
   test -f src/shared/nf_protocol.c
   test -f src/shared/nf_prediction.c
   test -f src/server/v16b_main.c
+  test -f src/client/v16b_main.c
   test -f src/tools/v16b_netbot.c
   test -f src/tools/v16b_sample_db.c
   test -f tools/analyze_v16b_samples.py
@@ -24,6 +25,7 @@ standard_check(){
   grep -q 'NF_NET_STALE_HELD_INPUT_MS 350u' src/shared/nf_protocol.h
   grep -q 'focus_held' src/shared/nf_world.h
   grep -q 'nightfall_v16b_server' CMakeLists.txt
+  grep -q 'nightfall_v16b_client' CMakeLists.txt
   grep -q 'nightfall_v16b_demo' CMakeLists.txt
   grep -q 'weapon_authority_mobility_v16b' CMakeLists.txt
   echo "[ok] v1.6B Weapon Authority / Mobility source contract present"
@@ -53,7 +55,7 @@ sample_db(){
 net_smoke(){
   test -x build/headless/nightfall_v16b_server || ./nightfall.sh build-headless
   mkdir -p build/v16b-samples
-  ./build/headless/nightfall_v16b_server --duration 12 --sim-latency 100 --sim-jitter 25 --sim-loss 0.02 --ai-count 2 --pressure-slots 1 --cattler-count 0 > build/v16b-samples/net-server.log 2>&1 &
+  ./build/headless/nightfall_v16b_server --duration 30 --sim-latency 100 --sim-jitter 25 --sim-loss 0.02 --ai-count 2 --pressure-slots 1 --cattler-count 0 > build/v16b-samples/net-server.log 2>&1 &
   local server_pid=$!
   trap 'kill "$server_pid" 2>/dev/null || true' EXIT INT TERM
   sleep 0.5
