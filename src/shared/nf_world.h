@@ -183,6 +183,7 @@ typedef struct NfCombatInput {
     bool fire_held;
     bool fire_pressed;
     bool reload_pressed;
+    bool focus_held;
     uint8_t weapon_slot;
     float aim_pitch_radians;
 } NfCombatInput;
@@ -225,6 +226,20 @@ typedef struct NfCombatState {
     uint64_t last_fire_tick;
 } NfCombatState;
 
+/* v1.6B: actor-local authoritative causes. Focus is actor attention; recoil is per weapon.
+   accepted_shot_sequence is material ancestry and is deliberately distinct from input sequence. */
+typedef struct NfWeaponAuthorityState {
+    float focus_amount;
+    float instability_deg[NF_WEAPON_COUNT];
+    uint32_t accepted_shot_sequence;
+    NfVec3 previous_velocity;
+    NfMovementMode previous_mode;
+    bool previous_grounded;
+    bool kinematic_initialized;
+    float redirect_stress_deg;
+    float support_stress_deg;
+} NfWeaponAuthorityState;
+
 typedef struct NfCombatEvent {
     uint32_t sequence;
     uint64_t server_tick;
@@ -236,6 +251,10 @@ typedef struct NfCombatEvent {
     float amount;
     NfVec3 position;
     uint16_t rewind_ms;
+    /* v1.6B firearm provenance; zero for non-shot events. */
+    uint32_t shot_sequence;
+    NfVec3 shot_direction;
+    bool shot_blocked;
 } NfCombatEvent;
 
 typedef struct NfActor {
@@ -246,6 +265,7 @@ typedef struct NfActor {
     NfMoveInput input;
     NfMovementState movement;
     NfCombatState combat;
+    NfWeaponAuthorityState weapon_authority;
     NfAgencyState agency;
     NfBodyContamination contamination;
     NfStasisInventoryDisposition stasis_inventory;
