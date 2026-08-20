@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(nightfall_punk VERSION 1.6.1 LANGUAGES C)
+project(nightfall_punk VERSION 1.6.2 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -54,6 +54,7 @@ add_library(nightfall_shared STATIC
     src/shared/nf_movement.c
     src/shared/nf_combat.c
     src/shared/nf_weapon_solution.c
+    src/shared/nf_weapon_geometry.c
     src/shared/nf_contamination.c
     src/shared/nf_agent.c
     src/shared/nf_relations.c
@@ -116,12 +117,25 @@ if(NF_BUILD_SERVER)
     target_link_libraries(nightfall_server PRIVATE nightfall_network nightfall_ai)
     target_include_directories(nightfall_server PRIVATE src/server/ai)
     nf_project_warnings(nightfall_server)
+
+    add_executable(nightfall_v16b_server src/server/v16b_main.c)
+    target_link_libraries(nightfall_v16b_server PRIVATE nightfall_network nightfall_ai)
+    target_include_directories(nightfall_v16b_server PRIVATE src/server/ai src/shared)
+    nf_project_warnings(nightfall_v16b_server)
 endif()
 
 if(NF_BUILD_NETBOT)
     add_executable(nightfall_netbot src/tools/netbot.c)
     target_link_libraries(nightfall_netbot PRIVATE nightfall_network)
     nf_project_warnings(nightfall_netbot)
+
+    add_executable(nightfall_v16b_netbot src/tools/v16b_netbot.c)
+    target_link_libraries(nightfall_v16b_netbot PRIVATE nightfall_network)
+    nf_project_warnings(nightfall_v16b_netbot)
+
+    add_executable(nightfall_v16b_sample_db src/tools/v16b_sample_db.c)
+    target_link_libraries(nightfall_v16b_sample_db PRIVATE nightfall_network)
+    nf_project_warnings(nightfall_v16b_sample_db)
 endif()
 
 if(NF_BUILD_CLIENT)
@@ -139,6 +153,11 @@ if(NF_BUILD_CLIENT)
     target_link_libraries(nightfall_client PRIVATE nightfall_camera nightfall_network raylib)
     target_include_directories(nightfall_client PRIVATE src/client)
     nf_project_warnings(nightfall_client)
+
+    add_executable(nightfall_v16b_client src/client/v16b_main.c)
+    target_link_libraries(nightfall_v16b_client PRIVATE nightfall_network raylib)
+    target_include_directories(nightfall_v16b_client PRIVATE src/shared)
+    nf_project_warnings(nightfall_v16b_client)
 
     add_executable(nightfall_v12_demo src/demo/v12_greybox.c)
     target_link_libraries(nightfall_v12_demo PRIVATE nightfall_camera nightfall_ai raylib)
@@ -164,6 +183,11 @@ if(NF_BUILD_CLIENT)
     target_link_libraries(nightfall_v16a_demo PRIVATE nightfall_camera nightfall_ai raylib)
     target_include_directories(nightfall_v16a_demo PRIVATE src/client src/server/ai src/shared)
     nf_project_warnings(nightfall_v16a_demo)
+
+    add_executable(nightfall_v16b_demo src/demo/v16b_weapon_authority_mobility.c)
+    target_link_libraries(nightfall_v16b_demo PRIVATE nightfall_shared raylib)
+    target_include_directories(nightfall_v16b_demo PRIVATE src/shared)
+    nf_project_warnings(nightfall_v16b_demo)
 endif()
 
 if(NF_BUILD_TESTS)
@@ -255,4 +279,9 @@ if(NF_BUILD_TESTS)
     target_link_libraries(nightfall_v16a_weapon_correspondence_test PRIVATE nightfall_shared)
     nf_project_warnings(nightfall_v16a_weapon_correspondence_test)
     add_test(NAME weapon_correspondence_calibration_v16a COMMAND nightfall_v16a_weapon_correspondence_test)
+
+    add_executable(nightfall_v16b_weapon_authority_test src/tests/test_v16b_weapon_authority.c)
+    target_link_libraries(nightfall_v16b_weapon_authority_test PRIVATE nightfall_network)
+    nf_project_warnings(nightfall_v16b_weapon_authority_test)
+    add_test(NAME weapon_authority_mobility_v16b COMMAND nightfall_v16b_weapon_authority_test)
 endif()

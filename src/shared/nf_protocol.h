@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 #define NF_PROTOCOL_MAGIC 0x3430464eu /* "NF04" little-endian; stable family magic */
-#define NF_PROTOCOL_VERSION 5u
+#define NF_PROTOCOL_VERSION 6u
 #define NF_NET_DEFAULT_PORT 7777u
 #define NF_NET_MAX_PACKET_BYTES 1200u
 #define NF_NET_MAX_PLAYERS 4u
@@ -20,6 +20,7 @@
 #define NF_NET_SNAPSHOT_HZ 30u
 #define NF_NET_RECONNECT_WINDOW_MS 20000u
 #define NF_NET_MAX_REWIND_TICKS 12u
+#define NF_NET_STALE_HELD_INPUT_MS 350u
 
 typedef enum NfMessageType {
     NF_MSG_NONE = 0,
@@ -85,11 +86,33 @@ typedef struct NfActorNetState {
     uint16_t reserve_ammo;
 } NfActorNetState;
 
+/* v1.6B owner-only state required for exact local combat/Weapon Authority replay.
+   The block remains under the 1200-byte maximum even with sixteen remote actor records. */
+typedef struct NfWeaponAuthorityNetState {
+    NfEntityId actor_id;
+    float focus_amount;
+    float instability_deg[NF_WEAPON_COUNT];
+    uint32_t accepted_shot_sequence;
+    float redirect_stress_deg;
+    float support_stress_deg;
+    NfWeaponId weapon;
+    NfWeaponId pending_weapon;
+    NfWeaponState weapon_state;
+    bool reload_committed;
+    float action_timer;
+    float reload_total;
+    uint32_t last_fire_input_sequence;
+    uint16_t ammo_mag[NF_WEAPON_COUNT];
+    uint16_t reserve_ammo[NF_WEAPON_COUNT];
+} NfWeaponAuthorityNetState;
+
 typedef struct NfSnapshotMessage {
     uint64_t server_tick;
     uint32_t acknowledged_input;
     uint8_t actor_count;
     NfActorNetState actors[NF_NET_MAX_SNAPSHOT_ACTORS];
+    bool owner_authority_valid;
+    NfWeaponAuthorityNetState owner_authority;
 } NfSnapshotMessage;
 
 typedef struct NfPingMessage { uint32_t stamp_ms; } NfPingMessage;
@@ -114,5 +137,7 @@ bool nf_protocol_decode_combat_event(const uint8_t *data, size_t size, NfCombatE
 void nf_actor_to_net_state(const NfActor *actor, NfActorNetState *out);
 void nf_actor_apply_net_state(NfActor *actor, const NfActorNetState *state, const NfMovementConfig *config);
 void nf_actor_apply_combat_net_state(NfActor *actor, const NfActorNetState *state);
+void nf_weapon_authority_to_net_state(const NfActor *actor, NfWeaponAuthorityNetState *out);
+void nf_weapon_authority_apply_net_state(NfActor *actor, const NfWeaponAuthorityNetState *state);
 
 #endif

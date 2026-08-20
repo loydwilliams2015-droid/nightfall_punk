@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 #define NF_PI 3.14159265358979323846f
+#define NF_V16B_RELOAD_FOCUS_ACQUIRE_SCALE 0.55f
 
 typedef struct NfWeaponSolutionTuning {
     float base_cone_deg;
@@ -85,8 +86,7 @@ static NfVec3 normalize3(NfVec3 v) {
 
 void nf_weapon_solution_runtime_init(NfWeaponSolutionRuntime *runtime) {
     if (runtime == NULL) return;
-    runtime->focus_amount = 0.0f;
-    runtime->instability_deg = 0.0f;
+    *runtime = (NfWeaponSolutionRuntime){0};
 }
 
 float nf_weapon_focus_target(bool focus_held, bool sprinting) {
@@ -94,17 +94,19 @@ float nf_weapon_focus_target(bool focus_held, bool sprinting) {
     return sprinting ? 0.35f : 1.0f;
 }
 
-void nf_weapon_solution_runtime_step(
+void nf_weapon_solution_runtime_step_scaled(
     NfWeaponSolutionRuntime *runtime,
     NfWeaponId weapon,
     bool focus_held,
     bool sprinting,
+    float acquisition_scale,
     float dt) {
     if (runtime == NULL || dt <= 0.0f) return;
     const NfWeaponSolutionTuning tuning = tuning_for(weapon);
     const float target = nf_weapon_focus_target(focus_held,sprinting);
     const bool acquiring = target > runtime->focus_amount;
-    const float focus_rate = acquiring ? 12.5f : 18.0f;
+    const float scale = clampf(acquisition_scale,0.0f,1.0f);
+    const float focus_rate = acquiring ? 12.5f*scale : 18.0f;
     const float focus_step = clamp01(dt*focus_rate);
     runtime->focus_amount += (target-runtime->focus_amount)*focus_step;
     runtime->focus_amount = clamp01(runtime->focus_amount);
@@ -113,6 +115,16 @@ void nf_weapon_solution_runtime_step(
         (1.0f+runtime->focus_amount*tuning.focus_recovery_multiplier);
     runtime->instability_deg -= recovery*dt;
     if (runtime->instability_deg < 0.0f) runtime->instability_deg = 0.0f;
+}
+
+void nf_weapon_solution_runtime_step(
+    NfWeaponSolutionRuntime *runtime,
+    NfWeaponId weapon,
+    bool focus_held,
+    bool sprinting,
+    float dt) {
+    nf_weapon_solution_runtime_step_scaled(
+        runtime,weapon,focus_held,sprinting,1.0f,dt);
 }
 
 void nf_weapon_solution_record_shot(
@@ -142,26 +154,36 @@ NfWeaponEnvelope nf_weapon_evaluate_envelope(NfWeaponEnvelopeInput input) {
     result.motion_cone_deg = tuning.move_cone_deg*speed_fraction;
     if (input.crouched) result.motion_cone_deg *= 0.78f;
 
+    result.redirect_cone_deg = maxf(0.0f,input.runtime.redirect_stress_deg);
     if (input.movement_mode == NF_MOVE_AIR ||
         input.movement_mode == NF_MOVE_VAULT ||
         input.movement_mode == NF_MOVE_MANTLE) {
         result.airborne_cone_deg = tuning.air_cone_deg;
     }
+    result.support_cone_deg = maxf(0.0f,input.runtime.support_stress_deg);
     result.contamination_cone_deg = tuning.contamination_cone_deg *
         clamp01(input.manipulator_contamination);
     result.recoil_cone_deg = maxf(0.0f,input.runtime.instability_deg);
     result.state_cone_deg = result.motion_cone_deg+
-        result.airborne_cone_deg+result.contamination_cone_deg+
+        result.redirect_cone_deg+result.airborne_cone_deg+
+        result.support_cone_deg+result.contamination_cone_deg+
         result.recoil_cone_deg;
 
-    const float state_reference = maxf(0.01f,
-        tuning.move_cone_deg+tuning.air_cone_deg+tuning.recoil_cap_deg);
-    const float state_pressure = clamp01(result.state_cone_deg/state_reference);
-    /* v1.6A D: full Focus suppresses roughly 50%-70% of state instability,
-       while already-calm baseline precision changes only slightly. */
-    result.focus_state_reduction = result.focus_amount*(0.50f+0.20f*state_pressure);
-    const float focused_base = result.base_cone_deg*(1.0f-result.focus_amount*0.10f);
-    const float focused_state = result.state_cone_deg*(1.0f-result.focus_state_reduction);
+    /* v1.6B: Focus is not a universal percentage buff. It can organize recoil and
+       active redirection more than it can abolish lost support or contamination. */
+    const float f = result.focus_amount;
+    const float focused_motion = result.motion_cone_deg*(1.0f-f*0.56f);
+    const float focused_redirect = result.redirect_cone_deg*(1.0f-f*0.58f);
+    const float focused_air = result.airborne_cone_deg*(1.0f-f*0.35f);
+    const float focused_support = result.support_cone_deg*(1.0f-f*0.35f);
+    const float focused_contamination = result.contamination_cone_deg*(1.0f-f*0.20f);
+    const float focused_recoil = result.recoil_cone_deg*(1.0f-f*0.66f);
+    const float focused_state = focused_motion+focused_redirect+focused_air+
+        focused_support+focused_contamination+focused_recoil;
+    result.focus_state_reduction = result.state_cone_deg > 0.000001f
+        ? clamp01(1.0f-focused_state/result.state_cone_deg)
+        : 0.0f;
+    const float focused_base = result.base_cone_deg*(1.0f-f*0.10f);
     result.total_cone_deg = focused_base+focused_state;
     if (result.total_cone_deg < 0.0f) result.total_cone_deg = 0.0f;
     return result;
@@ -180,7 +202,9 @@ NfWeaponSolution nf_weapon_realize_shot(
     result.intended_direction = envelope->intended_direction;
     result.base_cone_deg = envelope->base_cone_deg;
     result.motion_cone_deg = envelope->motion_cone_deg;
+    result.redirect_cone_deg = envelope->redirect_cone_deg;
     result.airborne_cone_deg = envelope->airborne_cone_deg;
+    result.support_cone_deg = envelope->support_cone_deg;
     result.contamination_cone_deg = envelope->contamination_cone_deg;
     result.recoil_cone_deg = envelope->recoil_cone_deg;
     result.state_cone_deg = envelope->state_cone_deg;
@@ -220,6 +244,143 @@ NfWeaponSolution nf_weapon_solve(NfWeaponSolutionInput input) {
         &envelope,input.world_seed,input.shooter,input.shot_sequence);
 }
 
+static bool support_sensitive_mode(NfMovementMode mode) {
+    return mode==NF_MOVE_AIR || mode==NF_MOVE_VAULT || mode==NF_MOVE_MANTLE ||
+        mode==NF_MOVE_LADDER || mode==NF_MOVE_PLATFORM;
+}
+
+void nf_weapon_authority_step_actor(NfActor *actor, bool focus_held, float dt) {
+    if (actor == NULL || dt <= 0.0f ||
+        actor->combat.weapon<=NF_WEAPON_NONE || actor->combat.weapon>=NF_WEAPON_COUNT) return;
+
+    NfWeaponAuthorityState *authority=&actor->weapon_authority;
+    if (authority->redirect_stress_deg > 0.0f) {
+        authority->redirect_stress_deg -= 1.80f*dt;
+        if (authority->redirect_stress_deg < 0.0f) authority->redirect_stress_deg=0.0f;
+    }
+    if (authority->support_stress_deg > 0.0f) {
+        authority->support_stress_deg -= 1.55f*dt;
+        if (authority->support_stress_deg < 0.0f) authority->support_stress_deg=0.0f;
+    }
+
+    if (authority->kinematic_initialized) {
+        const float pvx=authority->previous_velocity.x;
+        const float pvz=authority->previous_velocity.z;
+        const float cvx=actor->transform.velocity.x;
+        const float cvz=actor->transform.velocity.z;
+        const float ps=sqrtf(pvx*pvx+pvz*pvz);
+        const float cs=sqrtf(cvx*cvx+cvz*cvz);
+        float turn01=0.0f;
+        if (ps>0.20f && cs>0.20f) {
+            const float dot=clampf((pvx*cvx+pvz*cvz)/(ps*cs),-1.0f,1.0f);
+            turn01=clamp01((1.0f-dot)*0.5f);
+        }
+        const float speed_change01=clamp01(fabsf(cs-ps)/3.6f);
+        const float speed_weight=clamp01(maxf(ps,cs)/7.2f);
+        const float redirect_target=0.30f*turn01*speed_weight+0.08f*speed_change01;
+        if (redirect_target>authority->redirect_stress_deg) {
+            authority->redirect_stress_deg=redirect_target;
+        }
+
+        const bool support_changed=authority->previous_grounded!=actor->movement.grounded ||
+            (authority->previous_mode!=actor->movement.mode &&
+             (support_sensitive_mode(authority->previous_mode) || support_sensitive_mode(actor->movement.mode)));
+        if (support_changed) {
+            const float impulse=(actor->movement.mode==NF_MOVE_MANTLE || actor->movement.mode==NF_MOVE_VAULT)
+                ?0.34f:0.24f;
+            if (impulse>authority->support_stress_deg) authority->support_stress_deg=impulse;
+        }
+    } else {
+        authority->kinematic_initialized=true;
+    }
+    authority->previous_velocity=actor->transform.velocity;
+    authority->previous_mode=actor->movement.mode;
+    authority->previous_grounded=actor->movement.grounded;
+
+    const NfWeaponId active=actor->combat.weapon;
+    NfWeaponSolutionRuntime runtime={
+        .focus_amount=authority->focus_amount,
+        .instability_deg=authority->instability_deg[active],
+        .redirect_stress_deg=authority->redirect_stress_deg,
+        .support_stress_deg=authority->support_stress_deg
+    };
+    const bool sprinting=actor->movement.mode==NF_MOVE_SPRINT;
+    const float acquisition_scale=actor->combat.state==NF_WEAPON_RELOADING
+        ?NF_V16B_RELOAD_FOCUS_ACQUIRE_SCALE:1.0f;
+    nf_weapon_solution_runtime_step_scaled(
+        &runtime,active,focus_held,sprinting,acquisition_scale,dt);
+    authority->focus_amount=runtime.focus_amount;
+    authority->instability_deg[active]=runtime.instability_deg;
+
+    for (int i=1;i<NF_WEAPON_COUNT;++i) {
+        if ((NfWeaponId)i==active) continue;
+        const NfWeaponSolutionTuning tuning=tuning_for((NfWeaponId)i);
+        authority->instability_deg[i]-=tuning.recovery_deg_per_second*dt;
+        if (authority->instability_deg[i]<0.0f) authority->instability_deg[i]=0.0f;
+    }
+}
+
+NfWeaponEnvelope nf_weapon_authority_envelope(
+    const NfActor *actor,
+    float yaw_radians,
+    float pitch_radians) {
+    if (actor==NULL) return (NfWeaponEnvelope){0};
+    const NfWeaponId weapon=actor->combat.weapon;
+    NfWeaponEnvelopeInput input={0};
+    input.weapon=weapon;
+    input.yaw_radians=yaw_radians;
+    input.pitch_radians=pitch_radians;
+    input.velocity=actor->transform.velocity;
+    input.movement_mode=actor->movement.mode;
+    input.crouched=actor->movement.crouched;
+    input.manipulator_contamination=actor->contamination.manipulator;
+    input.runtime.focus_amount=actor->weapon_authority.focus_amount;
+    if (weapon>NF_WEAPON_NONE && weapon<NF_WEAPON_COUNT) {
+        input.runtime.instability_deg=actor->weapon_authority.instability_deg[weapon];
+    }
+    input.runtime.redirect_stress_deg=actor->weapon_authority.redirect_stress_deg;
+    input.runtime.support_stress_deg=actor->weapon_authority.support_stress_deg;
+    return nf_weapon_evaluate_envelope(input);
+}
+
+bool nf_weapon_authority_try_fire(
+    NfActor *actor,
+    const NfCombatInput *input,
+    uint32_t input_sequence,
+    uint64_t server_tick,
+    uint32_t world_seed,
+    float yaw_radians,
+    NfWeaponSolution *solution_out,
+    NfCombatEvent *fire_event_out) {
+    if (actor==NULL || input==NULL) return false;
+    const NfWeaponEnvelope envelope=nf_weapon_authority_envelope(
+        actor,yaw_radians,input->aim_pitch_radians);
+    NfCombatEvent event={0};
+    if (!nf_combat_try_fire(actor,input,input_sequence,server_tick,&event)) return false;
+
+    ++actor->weapon_authority.accepted_shot_sequence;
+    if (actor->weapon_authority.accepted_shot_sequence==0u) {
+        actor->weapon_authority.accepted_shot_sequence=1u;
+    }
+    const uint32_t shot_sequence=actor->weapon_authority.accepted_shot_sequence;
+    const NfWeaponSolution solution=nf_weapon_realize_shot(
+        &envelope,world_seed,actor->id,shot_sequence);
+
+    NfWeaponSolutionRuntime runtime={
+        .focus_amount=actor->weapon_authority.focus_amount,
+        .instability_deg=actor->weapon_authority.instability_deg[actor->combat.weapon]
+    };
+    nf_weapon_solution_record_shot(&runtime,actor->combat.weapon);
+    actor->weapon_authority.instability_deg[actor->combat.weapon]=runtime.instability_deg;
+
+    event.shot_sequence=shot_sequence;
+    event.shot_direction=solution.solved_direction;
+    event.shot_blocked=false;
+    if (solution_out!=NULL) *solution_out=solution;
+    if (fire_event_out!=NULL) *fire_event_out=event;
+    return true;
+}
+
 float nf_weapon_reticle_radius_px_for_envelope(
     const NfWeaponEnvelope *envelope,
     float vertical_fov_deg,
@@ -245,7 +406,9 @@ float nf_weapon_reticle_radius_px(const NfWeaponSolution *solution) {
     envelope.intended_direction = solution->intended_direction;
     envelope.base_cone_deg = solution->base_cone_deg;
     envelope.motion_cone_deg = solution->motion_cone_deg;
+    envelope.redirect_cone_deg = solution->redirect_cone_deg;
     envelope.airborne_cone_deg = solution->airborne_cone_deg;
+    envelope.support_cone_deg = solution->support_cone_deg;
     envelope.contamination_cone_deg = solution->contamination_cone_deg;
     envelope.recoil_cone_deg = solution->recoil_cone_deg;
     envelope.state_cone_deg = solution->state_cone_deg;
