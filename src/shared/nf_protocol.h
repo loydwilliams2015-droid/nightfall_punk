@@ -86,8 +86,8 @@ typedef struct NfActorNetState {
     uint16_t reserve_ammo;
 } NfActorNetState;
 
-/* v1.6B owner-only causes required for prediction/reconciliation.
-   This block is not repeated for every remote actor. */
+/* v1.6B owner-only state required for exact local combat/Weapon Authority replay.
+   The block remains under the 1200-byte maximum even with sixteen remote actor records. */
 typedef struct NfWeaponAuthorityNetState {
     NfEntityId actor_id;
     float focus_amount;
@@ -95,6 +95,15 @@ typedef struct NfWeaponAuthorityNetState {
     uint32_t accepted_shot_sequence;
     float redirect_stress_deg;
     float support_stress_deg;
+    NfWeaponId weapon;
+    NfWeaponId pending_weapon;
+    NfWeaponState weapon_state;
+    bool reload_committed;
+    float action_timer;
+    float reload_total;
+    uint32_t last_fire_input_sequence;
+    uint16_t ammo_mag[NF_WEAPON_COUNT];
+    uint16_t reserve_ammo[NF_WEAPON_COUNT];
 } NfWeaponAuthorityNetState;
 
 typedef struct NfSnapshotMessage {
