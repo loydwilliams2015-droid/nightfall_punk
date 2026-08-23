@@ -1,0 +1,38 @@
+name: nightfall v1.7A spatial logic CI
+
+on:
+  push:
+    branches: [ "build/v1.7a-spatial-logic-laboratory" ]
+  pull_request:
+    branches: [ "build/v1.6b-weapon-authority-mobility", "build/**" ]
+
+jobs:
+  spatial-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install strict C and Python tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3
+      - name: v1.7A standard ownership and ontology check
+        run: bash ./v17a.sh standard-check
+      - name: Strict standalone spatial laboratory compile
+        run: bash ./v17a.sh build
+      - name: Spatial logic deterministic contracts
+        run: bash ./v17a.sh test
+      - name: AI-player soil samples OITOA and PAR
+        run: bash ./v17a.sh sample-db 512
+      - name: Upload v1.7A spatial evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: v17a-spatial-logic-evidence
+          path: |
+            build/v17a/contracts.log
+            build/v17a-samples/samples.csv
+            build/v17a-samples/report.md
+            build/v17a-samples/soil.csv
+            build/v17a-samples/par.md
+          if-no-files-found: error
