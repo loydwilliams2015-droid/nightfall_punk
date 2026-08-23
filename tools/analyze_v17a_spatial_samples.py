@@ -134,7 +134,7 @@ with open(report_path, "w", encoding="utf-8") as out:
     for lab, de, dh, ds in lab_effects:
         out.write(f"| {lab} | {de:+.3f} | {dh:+.3f} | {ds:+.1%} |\n")
     out.write("\n## Interpretation\n\n")
-    out.write("The informed controller is bounded: it observes a local radius, uses decomposed exposure/ecology/resource/option-retention terms, and never receives an omniscient tactical score. The greedy control has the same goal but ignores those relational costs; the random control samples the same reachable actions uniformly. Strong gains in cover/ecology/snap/vertical labs show useful spatial signal. Near-zero or adverse deltas in corridor/loop/dynamic/contract are retained as evidence rather than hidden: they identify where 1.7B needs route commitment, multi-step appraisal, and contract-specific utility rather than more local weighting.\n")
+    out.write("The informed controller is bounded: it observes a local radius, uses decomposed exposure/ecology/resource/option-retention terms, and never receives an omniscient tactical score. The greedy control has the same goal but ignores those relational costs; the random control samples the same reachable actions uniformly. Strong gains in corridor, cover, ecology, snap, and vertical laboratories show useful spatial signal. Near-zero or adverse exposure deltas in loop, dynamic, and contract are retained as evidence rather than hidden: they identify where 1.7B needs multi-step route commitment and contract-specific utility rather than more local weighting.\n")
 
 with open(par_path, "w", encoding="utf-8") as out:
     out.write("# nightfall!punk v1.7A Spatial PAR sheet (provisional)\n\n")
