@@ -9,30 +9,77 @@ on:
 jobs:
   spatial-lab:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install strict C and Python tooling
+      - name: Install strict C Python graphics and evidence tooling
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential python3
+          sudo apt-get install -y \
+            build-essential cmake git pkg-config python3 \
+            libasound2-dev libx11-dev libxrandr-dev libxi-dev \
+            libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev \
+            xvfb imagemagick
       - name: v1.7A standard ownership and ontology check
         run: bash ./v17a.sh standard-check
-      - name: Strict standalone spatial laboratory compile
+      - name: Strict standalone spatial and review compile
         run: bash ./v17a.sh build
-      - name: Spatial logic deterministic contracts
+      - name: Spatial logic and graphical-review deterministic contracts
         run: bash ./v17a.sh test
       - name: AI-player soil samples OITOA and PAR
         run: bash ./v17a.sh sample-db 512
-      - name: Upload v1.7A spatial evidence
+      - name: Select median best worst pathological and disagreement seeds
+        run: |
+          mkdir -p build/v17a-review
+          python3 tools/select_v17a_graphical_seeds.py \
+            build/v17a-samples/samples.csv \
+            build/v17a-review/selections.csv
+          test "$(($(wc -l < build/v17a-review/selections.csv)-1))" -eq 40
+      - name: Run 320 selected-seed AI review rounds
+        run: |
+          ./build/v17a/nightfall_v17a_graphical_review \
+            build/v17a-review/selections.csv \
+            build/v17a-review/review.csv
+      - name: Build graphical referee viewer
+        run: bash ./v17a.sh viewer-build
+      - name: Render 40 instrumented versus perceptual referee frames
+        run: |
+          mkdir -p build/v17a-review/frames
+          xvfb-run -a ./build/v17a-viewer/nightfall_v17a_viewer \
+            --batch "$(pwd)/build/v17a-review/selections.csv" \
+            "$(pwd)/build/v17a-review/frames"
+          frame_count=$(find build/v17a-review/frames -maxdepth 1 -name '*.png' | wc -l)
+          echo "referee frames: $frame_count"
+          test "$frame_count" -eq 40
+          montage build/v17a-review/frames/*.png -thumbnail 320x180 -tile 5x8 -geometry +2+2 build/v17a-review/contact.png
+      - name: Analyze player-channel graphical correspondence
+        run: |
+          python3 tools/analyze_v17a_graphical_review.py \
+            build/v17a-review/review.csv \
+            build/v17a-review/report.md \
+            build/v17a-review/soil.csv \
+            build/v17a-review/par.md \
+            build/v17a-review/classifications.csv \
+            build/v17a-review/frames
+          cat build/v17a-review/report.md
+      - name: Upload v1.7A spatial and graphical evidence
         uses: actions/upload-artifact@v4
         with:
-          name: v17a-spatial-logic-evidence
+          name: v17a-spatial-logic-and-graphical-review
           path: |
             build/v17a/contracts.log
+            build/v17a/review-contracts.log
             build/v17a-samples/samples.csv
             build/v17a-samples/report.md
             build/v17a-samples/soil.csv
             build/v17a-samples/par.md
+            build/v17a-review/selections.csv
+            build/v17a-review/review.csv
+            build/v17a-review/report.md
+            build/v17a-review/soil.csv
+            build/v17a-review/par.md
+            build/v17a-review/classifications.csv
+            build/v17a-review/contact.png
+            build/v17a-review/frames/*.png
           if-no-files-found: error
