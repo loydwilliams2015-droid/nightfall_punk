@@ -22,7 +22,7 @@ build_lab(){
 }
 
 standard_check(){
-  ./v16b.sh standard-check
+  bash ./v16b.sh standard-check
   bash -n ./v17a.sh
   test -f src/shared/nf_spatial_logic.h
   test -f src/shared/nf_spatial_logic.c
@@ -95,7 +95,7 @@ case "$cmd" in
   viewer-build) viewer_build ;;
   regression)
     standard_check
-    ./v16b.sh test
+    bash ./v16b.sh test
     build_lab
     v17a_test
     sample_db sample-db 512
