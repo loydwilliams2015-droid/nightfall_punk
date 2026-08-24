@@ -131,10 +131,12 @@ static float review_score(
     if (mode == NF_SPATIAL_REVIEW_RANDOM) return review_rng01(rng);
 
     float score = -1.55f * (float)review_manhattan(world, candidate, goal);
-    if (mode == NF_SPATIAL_REVIEW_GREEDY) return score;
+    if (mode == NF_SPATIAL_REVIEW_GREEDY) {
+        return score + 0.02f * review_rng01(rng);
+    }
 
     if (known[candidate] == 0u) {
-        return score - 0.35f;
+        return score - 0.35f + 0.02f * review_rng01(rng);
     }
 
     if (mode == NF_SPATIAL_REVIEW_INSTRUMENTED) {
@@ -157,7 +159,7 @@ static float review_score(
     if (visits[candidate] != 0u) {
         score -= 1.20f * (float)visits[candidate];
     }
-    return score;
+    return score + 0.02f * review_rng01(rng);
 }
 
 static int choose_candidate(
@@ -327,7 +329,7 @@ NfSpatialReviewResult nf_spatial_review_run(
         }
 
         uint32_t reference_rng_a = review_mix32(seed ^ (uint32_t)step ^ 0x13579bdu);
-        uint32_t reference_rng_b = review_mix32(seed ^ (uint32_t)step ^ 0x2468aceu);
+        uint32_t reference_rng_b = reference_rng_a;
         int instrumented_choice = choose_candidate(
             &world, current, world.goal_cell, NF_SPATIAL_REVIEW_INSTRUMENTED,
             known, visits, cue_exposure, cue_ecology, cue_resource,
