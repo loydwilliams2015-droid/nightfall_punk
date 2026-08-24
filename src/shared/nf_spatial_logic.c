@@ -59,6 +59,7 @@ bool nf_spatial_line_of_sight(const NfSpatialWorld *w, int a, int b) {
     int err = dx - dy;
     for (;;) {
         int c = nf_spatial_cell_xy(w, x0, y0);
+        if (c < 0) return false;
         if (c != a && c != b && w->cells[c].solid != 0u) return false;
         if (x0 == x1 && y0 == y1) break;
         int e2 = 2 * err;
@@ -68,7 +69,7 @@ bool nf_spatial_line_of_sight(const NfSpatialWorld *w, int a, int b) {
     return true;
 }
 size_t nf_spatial_observe_local(const NfSpatialWorld *w, int origin, int radius, uint8_t *known, size_t count) {
-    if (known == NULL || count < (size_t)(w->width * w->height) || !nf_spatial_is_valid_cell(w, origin)) return 0u;
+    if (w == NULL || known == NULL || count < (size_t)(w->width * w->height) || !nf_spatial_is_valid_cell(w, origin)) return 0u;
     size_t added = 0u;
     for (int c = 0; c < w->width * w->height; ++c) {
         if (manhattan(w, origin, c) <= radius && nf_spatial_line_of_sight(w, origin, c) && known[c] == 0u) {
@@ -123,22 +124,22 @@ static void carve_lab(NfSpatialWorld *w, uint32_t *rng) {
         carve_open(w);
     }
     if (w->lab == NF_SPATIAL_LAB_VERTICAL) {
-        for (int y = 2; y <= 9; ++y) { int c = nf_spatial_cell_xy(w, 5, y); w->cells[c].support_kind = NF_SUPPORT_LADDER; w->cells[c].affordance = 0.9f; }
-        for (int x = 6; x <= 9; ++x) { int c = nf_spatial_cell_xy(w, x, 4); w->cells[c].support_kind = NF_SUPPORT_PLATFORM; w->cells[c].affordance = 0.6f; }
+        for (int y = 2; y <= 9; ++y) { int c = nf_spatial_cell_xy(w, 5, y); if (c >= 0) { w->cells[c].support_kind = NF_SUPPORT_LADDER; w->cells[c].affordance = 0.9f; } }
+        for (int x = 6; x <= 9; ++x) { int c = nf_spatial_cell_xy(w, x, 4); if (c >= 0) { w->cells[c].support_kind = NF_SUPPORT_PLATFORM; w->cells[c].affordance = 0.6f; } }
     }
     if (w->lab == NF_SPATIAL_LAB_COVER) {
         const int p[5][2] = {{4,4},{7,4},{4,7},{7,7},{6,6}};
-        for (int i = 0; i < 5; ++i) { int c = nf_spatial_cell_xy(w,p[i][0],p[i][1]); w->cells[c].cover = 0.65f + 0.25f*rng01(rng); w->cells[c].exposure = 0.15f; }
+        for (int i = 0; i < 5; ++i) { int c = nf_spatial_cell_xy(w,p[i][0],p[i][1]); if (c >= 0) { w->cells[c].cover = 0.65f + 0.25f*rng01(rng); w->cells[c].exposure = 0.15f; } }
     }
     if (w->lab == NF_SPATIAL_LAB_SNAP) {
         for (int y = 1; y < w->height - 1; ++y) for (int x = 1; x < w->width - 1; ++x)
-            if ((x + y) % 3 == 0) w->cells[nf_spatial_cell_xy(w,x,y)].affordance = 0.45f + 0.5f*rng01(rng);
-        w->cells[nf_spatial_cell_xy(w,6,6)].authored_forbid_affordance = 1u;
+            if ((x + y) % 3 == 0) { int c = nf_spatial_cell_xy(w,x,y); if (c >= 0) w->cells[c].affordance = 0.45f + 0.5f*rng01(rng); }
+        int forbidden = nf_spatial_cell_xy(w,6,6); if (forbidden >= 0) w->cells[forbidden].authored_forbid_affordance = 1u;
     }
     if (w->lab == NF_SPATIAL_LAB_ECOLOGY) {
         for (int y = 1; y < w->height - 1; ++y) for (int x = 1; x < w->width - 1; ++x) {
             int c=nf_spatial_cell_xy(w,x,y); float nx=(float)x/(float)(w->width-1), ny=(float)y/(float)(w->height-1);
-            w->cells[c].ecological_risk=clamp01(0.2f+0.55f*nx+0.2f*rng01(rng)); w->cells[c].resource=clamp01(0.75f*ny+0.2f*rng01(rng));
+            if (c >= 0) { w->cells[c].ecological_risk=clamp01(0.2f+0.55f*nx+0.2f*rng01(rng)); w->cells[c].resource=clamp01(0.75f*ny+0.2f*rng01(rng)); }
         }
     }
 }
@@ -164,7 +165,8 @@ void nf_spatial_world_init(NfSpatialWorld *w, NfSpatialLabKind lab, uint32_t see
         w->cells[c].exposure=clamp01(w->cells[c].exposure+0.65f*open-0.55f*w->cells[c].cover+0.08f*rng01(&rng));
         if (lab != NF_SPATIAL_LAB_ECOLOGY) { w->cells[c].ecological_risk=clamp01(0.08f+0.34f*rng01(&rng)+0.18f*open); w->cells[c].resource=clamp01(0.08f+0.42f*rng01(&rng)); }
     }
-    w->cells[w->start_cell].solid=0u; w->cells[w->goal_cell].solid=0u;
+    if (w->start_cell >= 0) w->cells[w->start_cell].solid=0u;
+    if (w->goal_cell >= 0) w->cells[w->goal_cell].solid=0u;
     if (lab == NF_SPATIAL_LAB_CONTRACT) {
         w->object_authority[0]=NF_SPATIAL_ACTOR_COMMONS; w->object_cell[0]=nf_spatial_cell_xy(w,6,5);
         NfContractExchangeEvent e={0u,NF_SPATIAL_ACTOR_COMMONS,NF_SPATIAL_ACTOR_RIVAL,0.85f,0.92f,w->object_cell[0],4,1u}; (void)nf_spatial_apply_contract_event(w,&e);
@@ -189,7 +191,10 @@ NfSpatialRoundResult nf_spatial_run_round(NfSpatialLabKind lab,NfSpatialPolicyKi
     if(!nf_spatial_is_valid_cell(&w,cur)||nf_spatial_shortest_path(&w,cur,w.goal_cell)<0){r.deterministic_hash=round_hash(&r);return r;}vis[cur]=1u;r.unique_cells=1u;
     for(uint16_t step=0u;step<NF_SPATIAL_MAX_STEPS&&health>0.0f;++step){
         (void)nf_spatial_observe_local(&w,cur,3,known,sizeof(known)); if(cur==w.goal_cell){r.success=1u;break;}
-        if(lab==NF_SPATIAL_LAB_DYNAMIC&&step>0u&&step%12u==0u){int g=nf_spatial_cell_xy(&w,6,5);w.cells[g].solid=w.cells[g].solid?0u:1u;nf_spatial_mark_dirty(&w,g,2);updates=(uint16_t)(updates+nf_spatial_recompute_dirty(&w,12u));}
+        if(lab==NF_SPATIAL_LAB_DYNAMIC&&step>0u&&step%12u==0u){
+            int g=nf_spatial_cell_xy(&w,6,5);
+            if(g>=0){w.cells[g].solid=w.cells[g].solid?0u:1u;nf_spatial_mark_dirty(&w,g,2);updates=(uint16_t)(updates+nf_spatial_recompute_dirty(&w,12u));}
+        }
         int cand[4],n=0;for(int k=0;k<4;++k){int q=neighbor(&w,cur,k);if(nf_spatial_is_valid_cell(&w,q))cand[n++]=q;}if(n==0)break;
         int chosen=cand[0];float best=-1000000.0f;for(int k=0;k<n;++k){float s=score_cell(&w,cur,cand[k],w.goal_cell,known,vis,policy,&rng);if(s>best){best=s;chosen=cand[k];}}
         if(manhattan(&w,chosen,w.goal_cell)>manhattan(&w,cur,w.goal_cell)) ++r.retreats;
