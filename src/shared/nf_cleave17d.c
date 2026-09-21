@@ -2,6 +2,15 @@
 
 #include <string.h>
 
+static uint32_t nf17d_mix32(uint32_t x) {
+    x ^= x >> 16;
+    x *= 0x7feb352du;
+    x ^= x >> 15;
+    x *= 0x846ca68bu;
+    x ^= x >> 16;
+    return x;
+}
+
 static bool component_version_matches(
     Nf17bComponentMask bit,
     Nf17bComponentMask dependency_mask,
@@ -157,6 +166,119 @@ size_t nf17d_build_conflict_sets(
     return produced;
 }
 
+bool nf17d_smallest_common_scope(
+    const Nf17dScopePath *a,
+    const Nf17dScopePath *b,
+    Nf17dScopeKind *kind,
+    uint32_t *scope_id) {
+
+    if (a == NULL || b == NULL) return false;
+
+    for (uint32_t k = 0u; k < (uint32_t)NF17D_SCOPE_COUNT; ++k) {
+        const uint32_t bit = 1u << k;
+        if ((a->valid_mask & bit) == 0u || (b->valid_mask & bit) == 0u) continue;
+        if (a->id[k] == 0u || a->id[k] != b->id[k]) continue;
+        if (kind != NULL) *kind = (Nf17dScopeKind)k;
+        if (scope_id != NULL) *scope_id = a->id[k];
+        return true;
+    }
+
+    return false;
+}
+
+static bool hierarchical_transactions_interact(
+    const Nf17dScopedTransaction *a,
+    const Nf17dScopedTransaction *b) {
+
+    if (a == NULL || b == NULL) return false;
+    if (a->transaction.tick != b->transaction.tick) return false;
+
+    if (a->transaction.target_id == b->transaction.target_id &&
+        nf17b_classify_conflict(&a->transaction, &b->transaction) != NF17B_CONFLICT_COMPATIBLE) {
+        return true;
+    }
+
+    const Nf17bComponentMask hazard =
+        (a->transaction.write_mask & (b->transaction.read_mask | b->transaction.write_mask)) |
+        (b->transaction.write_mask & (a->transaction.read_mask | a->transaction.write_mask));
+
+    if (hazard == 0u) return false;
+    return nf17d_smallest_common_scope(&a->scope, &b->scope, NULL, NULL);
+}
+
+size_t nf17d_build_hierarchical_conflict_sets(
+    const Nf17dScopedTransaction *transactions,
+    size_t transaction_count,
+    Nf17dConflictSet *out,
+    size_t out_capacity) {
+
+    if (transactions == NULL || transaction_count == 0u) return 0u;
+    if (transaction_count > NF17D_MAX_TRANSACTIONS) transaction_count = NF17D_MAX_TRANSACTIONS;
+
+    uint16_t parent[NF17D_MAX_TRANSACTIONS];
+    bool interacting[NF17D_MAX_TRANSACTIONS];
+    for (size_t i = 0u; i < transaction_count; ++i) {
+        parent[i] = (uint16_t)i;
+        interacting[i] = false;
+    }
+
+    for (size_t i = 0u; i < transaction_count; ++i) {
+        for (size_t j = i + 1u; j < transaction_count; ++j) {
+            if (!hierarchical_transactions_interact(&transactions[i], &transactions[j])) continue;
+            interacting[i] = true;
+            interacting[j] = true;
+
+            uint16_t ri = (uint16_t)i;
+            while (parent[ri] != ri) ri = parent[ri];
+            uint16_t rj = (uint16_t)j;
+            while (parent[rj] != rj) rj = parent[rj];
+            if (ri != rj) parent[rj] = ri;
+        }
+    }
+
+    for (size_t i = 0u; i < transaction_count; ++i) {
+        uint16_t root = (uint16_t)i;
+        while (parent[root] != root) root = parent[root];
+        uint16_t node = (uint16_t)i;
+        while (parent[node] != node) {
+            const uint16_t next = parent[node];
+            parent[node] = root;
+            node = next;
+        }
+    }
+
+    uint16_t roots[NF17D_MAX_CONFLICT_SETS];
+    size_t produced = 0u;
+    for (size_t i = 0u; i < transaction_count; ++i) {
+        if (!interacting[i]) continue;
+        const uint16_t root = parent[i];
+
+        size_t set_index = produced;
+        for (size_t k = 0u; k < produced; ++k) {
+            if (roots[k] == root) {
+                set_index = k;
+                break;
+            }
+        }
+
+        if (set_index == produced) {
+            if (produced >= NF17D_MAX_CONFLICT_SETS) break;
+            roots[produced] = root;
+            if (out != NULL && produced < out_capacity) memset(&out[produced], 0, sizeof(out[produced]));
+            ++produced;
+        }
+
+        if (out != NULL && set_index < out_capacity) {
+            Nf17dConflictSet *set = &out[set_index];
+            if (set->count < NF17D_MAX_CONFLICT_MEMBERS) set->member[set->count++] = (uint16_t)i;
+            set->combined_read_mask |= transactions[i].transaction.read_mask;
+            set->combined_write_mask |= transactions[i].transaction.write_mask;
+        }
+    }
+
+    return produced;
+}
+
 size_t nf17d_build_scoped_purple_envelopes(
     const Nf17cDomainDependency *deps,
     size_t dep_count,
@@ -246,6 +368,39 @@ bool nf17d_cache_valid(
                                   stamp->support_version, state->support_version);
 }
 
+Nf17dHierCacheStamp nf17d_hier_cache_stamp(
+    const Nf17bAuthoritativeState *state,
+    Nf17bComponentMask dependency_mask,
+    Nf17dLocalEpoch local) {
+
+    Nf17dHierCacheStamp stamp;
+    stamp.component = nf17d_cache_stamp(state, dependency_mask);
+    stamp.local = local;
+    return stamp;
+}
+
+bool nf17d_hier_cache_valid(
+    const Nf17dHierCacheStamp *stamp,
+    const Nf17bAuthoritativeState *state,
+    Nf17dLocalEpoch current) {
+
+    if (stamp == NULL || state == NULL) return false;
+    if (!nf17d_cache_valid(&stamp->component, state)) return false;
+    if (stamp->local.global_epoch != current.global_epoch) return false;
+
+    if (stamp->local.nexus_id != 0u) {
+        if (stamp->local.nexus_id != current.nexus_id) return false;
+        if (stamp->local.nexus_epoch != current.nexus_epoch) return false;
+    }
+
+    if (stamp->local.chunk_id != 0u) {
+        if (stamp->local.chunk_id != current.chunk_id) return false;
+        if (stamp->local.chunk_epoch != current.chunk_epoch) return false;
+    }
+
+    return true;
+}
+
 void nf17d_budget_init(
     Nf17dBudgetPool *pool,
     const uint32_t floor[NF17B_DOMAIN_COUNT],
@@ -256,6 +411,7 @@ void nf17d_budget_init(
     memset(pool, 0, sizeof(*pool));
     pool->shared_surplus = shared_surplus;
     pool->emergency_reserve = emergency_reserve;
+    pool->borrow_open = 0u;
 
     for (size_t i = 0u; i < NF17B_DOMAIN_COUNT; ++i) {
         const uint32_t value = floor == NULL ? 0u : floor[i];
@@ -280,7 +436,7 @@ uint32_t nf17d_budget_request(
     units -= own;
     granted += own;
 
-    if (units > 0u) {
+    if (pool->borrow_open != 0u && units > 0u) {
         const uint32_t shared = pool->shared_surplus < units ? pool->shared_surplus : units;
         pool->shared_surplus -= shared;
         pool->borrowed[index] += shared;
@@ -305,6 +461,15 @@ void nf17d_budget_release_domain(Nf17dBudgetPool *pool, Nf17bDomain domain) {
     pool->remaining[index] = 0u;
 }
 
+void nf17d_budget_phase_barrier(Nf17dBudgetPool *pool) {
+    if (pool == NULL) return;
+    for (size_t i = 0u; i < NF17B_DOMAIN_COUNT; ++i) {
+        pool->shared_surplus += pool->remaining[i];
+        pool->remaining[i] = 0u;
+    }
+    pool->borrow_open = 1u;
+}
+
 bool nf17d_reason_trace_complete(const Nf17dReasonTraceRecord *record) {
     if (record == NULL) return false;
     if (record->consequential == 0u) return true;
@@ -321,6 +486,46 @@ bool nf17d_reason_trace_complete(const Nf17dReasonTraceRecord *record) {
     if (record->trace.calibrated_confidence < 0.0f ||
         record->trace.calibrated_confidence > 1.0f) return false;
     return true;
+}
+
+static void nf17d_trace_fold_cold(Nf17dTraceHistory *history, const Nf17dReasonTraceRecord *record) {
+    if (history == NULL || record == NULL) return;
+    const uint32_t h = nf17c_reason_trace_hash(&record->trace) ^
+        nf17d_mix32(record->present_mask) ^
+        nf17d_mix32((uint32_t)record->consequential);
+    history->cold_hash ^= nf17d_mix32(h + history->cold_count * 0x9e3779b9u);
+    ++history->cold_count;
+}
+
+void nf17d_trace_history_init(Nf17dTraceHistory *history) {
+    if (history != NULL) memset(history, 0, sizeof(*history));
+}
+
+void nf17d_trace_history_push(
+    Nf17dTraceHistory *history,
+    Nf17dReasonTraceRecord record,
+    bool promote) {
+
+    if (history == NULL) return;
+
+    if (history->hot_count == NF17D_TRACE_HOT_CAPACITY) {
+        nf17d_trace_fold_cold(history, &history->hot[history->hot_head]);
+    } else {
+        ++history->hot_count;
+    }
+    history->hot[history->hot_head] = record;
+    history->hot_head = (uint16_t)((history->hot_head + 1u) % NF17D_TRACE_HOT_CAPACITY);
+
+    if (promote || record.consequential != 0u) {
+        if (history->promoted_count == NF17D_TRACE_PROMOTED_CAPACITY) {
+            nf17d_trace_fold_cold(history, &history->promoted[history->promoted_head]);
+        } else {
+            ++history->promoted_count;
+        }
+        history->promoted[history->promoted_head] = record;
+        history->promoted_head =
+            (uint16_t)((history->promoted_head + 1u) % NF17D_TRACE_PROMOTED_CAPACITY);
+    }
 }
 
 uint32_t nf17d_overlay_mask(Nf17dViewPreset preset) {
@@ -376,6 +581,31 @@ Nf17dObservabilityFrame nf17d_observe(
     frame.pending_count = pending_count;
     if (trace != NULL) frame.reason_trace_hash = nf17c_reason_trace_hash(&trace->trace);
     return frame;
+}
+
+Nf17dDebugBatchContract nf17d_debug_batch_contract(
+    const Nf17dObservabilityFrame *frame,
+    uint8_t distance_band,
+    uint8_t budget_pressure) {
+
+    Nf17dDebugBatchContract contract;
+    memset(&contract, 0, sizeof(contract));
+    if (frame == NULL) return contract;
+
+    contract.authoritative_hash = frame->authoritative_hash;
+    contract.overlay_mask = frame->overlay_mask;
+    contract.cpu_semantics = 1u;
+    contract.gpu_presentation_only = 1u;
+
+    if (budget_pressure >= 2u || distance_band >= 3u) {
+        contract.detail = (uint8_t)NF17D_DEBUG_DETAIL_REGION;
+    } else if (budget_pressure >= 1u || distance_band >= 2u) {
+        contract.detail = (uint8_t)NF17D_DEBUG_DETAIL_NEXUS;
+    } else {
+        contract.detail = (uint8_t)NF17D_DEBUG_DETAIL_NEAR;
+    }
+
+    return contract;
 }
 
 const char *nf17d_evidence_level_name(Nf17dEvidenceLevel level) {
