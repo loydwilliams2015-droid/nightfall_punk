@@ -102,6 +102,31 @@ int main(void) {
                1, "same target mutual dependence creates scoped Purple");
     expect_int((int)scoped_purple[0].target_id, 300, "Purple records causal target");
 
+    Nf17dScopedTransaction hierarchical[2];
+    memset(hierarchical, 0, sizeof(hierarchical));
+    hierarchical[0].transaction = make_txn(8u, 501u, NF17B_TXN_OPEN,
+        NF17B_COMPONENT_TOPOLOGY, NF17B_COMPONENT_TOPOLOGY);
+    hierarchical[1].transaction = make_txn(8u, 502u, NF17B_TXN_CLOSE,
+        NF17B_COMPONENT_TOPOLOGY, NF17B_COMPONENT_TOPOLOGY);
+    hierarchical[0].scope.valid_mask = (1u << NF17D_SCOPE_CELL) | (1u << NF17D_SCOPE_NEXUS) | (1u << NF17D_SCOPE_WORLD);
+    hierarchical[1].scope.valid_mask = hierarchical[0].scope.valid_mask;
+    hierarchical[0].scope.id[NF17D_SCOPE_CELL] = 10u;
+    hierarchical[1].scope.id[NF17D_SCOPE_CELL] = 11u;
+    hierarchical[0].scope.id[NF17D_SCOPE_NEXUS] = 7u;
+    hierarchical[1].scope.id[NF17D_SCOPE_NEXUS] = 7u;
+    hierarchical[0].scope.id[NF17D_SCOPE_WORLD] = 1u;
+    hierarchical[1].scope.id[NF17D_SCOPE_WORLD] = 1u;
+    Nf17dScopeKind common_kind = NF17D_SCOPE_WORLD;
+    uint32_t common_id = 0u;
+    expect_true(nf17d_smallest_common_scope(
+                    &hierarchical[0].scope, &hierarchical[1].scope, &common_kind, &common_id),
+                "hierarchical transactions find common authority");
+    expect_int((int)common_kind, (int)NF17D_SCOPE_NEXUS, "smallest common authority is nexus");
+    expect_int((int)common_id, 7, "smallest common authority id retained");
+    expect_int((int)nf17d_build_hierarchical_conflict_sets(
+                   hierarchical, 2u, sets, NF17D_MAX_CONFLICT_SETS),
+               1, "hierarchical shared nexus creates local conflict set");
+
     Nf17bAuthoritativeState state;
     nf17b_state_init(&state);
     Nf17dCacheStamp topo_cache = nf17d_cache_stamp(&state, NF17B_COMPONENT_TOPOLOGY);
@@ -113,16 +138,37 @@ int main(void) {
     nf17b_commit_write_mask(&state, NF17B_COMPONENT_TOPOLOGY);
     expect_true(!nf17d_cache_valid(&topo_cache, &state), "topology write precisely invalidates topology cache");
 
+    Nf17dLocalEpoch local = {1u, 7u, 2u, 21u, 3u};
+    Nf17dHierCacheStamp hier_cache =
+        nf17d_hier_cache_stamp(&state, NF17B_COMPONENT_TOPOLOGY, local);
+    expect_true(nf17d_hier_cache_valid(&hier_cache, &state, local),
+                "hierarchical local cache valid at matching epochs");
+    Nf17dLocalEpoch unrelated_chunk = local;
+    unrelated_chunk.chunk_id = 22u;
+    unrelated_chunk.chunk_epoch = 1u;
+    expect_true(!nf17d_hier_cache_valid(&hier_cache, &state, unrelated_chunk),
+                "different chunk does not reuse local cache");
+    Nf17dLocalEpoch global_flush = local;
+    ++global_flush.global_epoch;
+    expect_true(!nf17d_hier_cache_valid(&hier_cache, &state, global_flush),
+                "global epoch provides coarse emergency invalidation");
+
     uint32_t floors[NF17B_DOMAIN_COUNT] = {5u, 5u, 5u, 5u, 5u, 5u, 5u};
     Nf17dBudgetPool budget;
     nf17d_budget_init(&budget, floors, 2u, 3u);
     expect_int((int)nf17d_budget_request(&budget, NF17B_DOMAIN_MATERIAL, 6u, false),
-               6, "domain consumes floor then shared surplus");
-    expect_int((int)budget.borrowed[NF17B_DOMAIN_MATERIAL], 1, "borrow is explicitly accounted");
-    nf17d_budget_release_domain(&budget, NF17B_DOMAIN_ACTOR);
-    expect_true(budget.shared_surplus >= 6u, "unused actor floor returns to shared surplus");
-    expect_int((int)nf17d_budget_request(&budget, NF17B_DOMAIN_STRUCTURE, 10u, true),
-               10, "critical work may borrow released capacity before emergency reserve");
+               5, "ordinary work cannot borrow before phase barrier");
+    expect_int((int)budget.borrowed[NF17B_DOMAIN_MATERIAL], 0, "pre-barrier ordinary borrowing remains closed");
+    expect_int((int)nf17d_budget_request(&budget, NF17B_DOMAIN_STRUCTURE, 7u, true),
+               7, "critical work can use immediate emergency reserve");
+    expect_int((int)budget.emergency_reserve, 1, "critical emergency borrowing is bounded");
+    nf17d_budget_phase_barrier(&budget);
+    expect_true(budget.borrow_open != 0u, "phase barrier opens shared borrowing");
+    expect_true(budget.shared_surplus > 2u, "unused floors return to shared surplus at barrier");
+    expect_int((int)nf17d_budget_request(&budget, NF17B_DOMAIN_MATERIAL, 4u, false),
+               4, "post-barrier ordinary work may borrow shared surplus");
+    expect_true(budget.borrowed[NF17B_DOMAIN_MATERIAL] >= 4u,
+                "post-barrier borrowing is explicitly accounted");
 
     Nf17dReasonTraceRecord trace;
     memset(&trace, 0, sizeof(trace));
@@ -148,6 +194,19 @@ int main(void) {
     expect_true(!nf17d_reason_trace_complete(&trace), "missing belief provenance fails consequential trace");
     trace.present_mask |= NF17D_TRACE_BELIEF;
 
+    Nf17dTraceHistory history;
+    nf17d_trace_history_init(&history);
+    for (uint32_t i = 0u; i < NF17D_TRACE_HOT_CAPACITY + 3u; ++i) {
+        trace.trace.tick = i;
+        trace.consequential = (i % 9u) == 0u ? 1u : 0u;
+        nf17d_trace_history_push(&history, trace, false);
+    }
+    expect_int((int)history.hot_count, (int)NF17D_TRACE_HOT_CAPACITY,
+               "hot trace history remains bounded");
+    expect_true(history.promoted_count > 0u, "consequential events promote automatically");
+    expect_true(history.cold_count > 0u && history.cold_hash != 0u,
+                "aged trace detail decays to compact cold causal identity");
+
     expect_int((int)nf17d_overlay_mask(NF17D_VIEW_PLAY), 0, "play preset has no debug overlays");
     expect_true((nf17d_overlay_mask(NF17D_VIEW_WORLD) & NF17D_OVERLAY_MATERIAL) != 0u,
                 "world preset exposes material state");
@@ -167,6 +226,17 @@ int main(void) {
     expect_true(hash_before == hash_after && frame.authoritative_hash == hash_before,
                 "viewer ON/OFF observes identical authoritative state");
     expect_int((int)frame.conflict_set_count, 1, "observability frame exposes conflict count");
+
+    const Nf17dDebugBatchContract near_batch = nf17d_debug_batch_contract(&frame, 0u, 0u);
+    expect_int((int)near_batch.detail, (int)NF17D_DEBUG_DETAIL_NEAR,
+               "near low-pressure diagnostics retain fine detail");
+    expect_true(near_batch.cpu_semantics != 0u && near_batch.gpu_presentation_only != 0u,
+                "CPU owns debug meaning while GPU remains presentation-only");
+    const Nf17dDebugBatchContract degraded_batch = nf17d_debug_batch_contract(&frame, 3u, 2u);
+    expect_int((int)degraded_batch.detail, (int)NF17D_DEBUG_DETAIL_REGION,
+               "distance and pressure gracefully aggregate diagnostic detail");
+    expect_true(degraded_batch.authoritative_hash == frame.authoritative_hash,
+                "debug detail degradation preserves authoritative identity");
 
     policy.observer_can_mutate_authority = 1u;
     expect_true(!nf17d_policy_is_safe(&policy), "unsafe observer mutation policy rejected");
