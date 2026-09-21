@@ -75,7 +75,8 @@ add_library(nightfall_shared STATIC
     src/shared/nf_spatial_review.c
     src/shared/nf_logic17b.c
     src/shared/nf_logic17c.c
-    src/shared/nf_cleave17d.c)
+    src/shared/nf_cleave17d.c
+    src/shared/nf_observe17e.c)
 target_include_directories(nightfall_shared PUBLIC src/shared)
 nf_project_warnings(nightfall_shared)
 if(UNIX)
@@ -314,4 +315,9 @@ if(NF_BUILD_TESTS)
     target_link_libraries(nightfall_v17d_cleave_test PRIVATE nightfall_shared)
     nf_project_warnings(nightfall_v17d_cleave_test)
     add_test(NAME cleave_observability_v17d COMMAND nightfall_v17d_cleave_test)
+
+    add_executable(nightfall_v17e_observe_test src/tests/test_v17e_observe.c)
+    target_link_libraries(nightfall_v17e_observe_test PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_v17e_observe_test)
+    add_test(NAME graphical_overlay_composition_v17e COMMAND nightfall_v17e_observe_test)
 endif()
