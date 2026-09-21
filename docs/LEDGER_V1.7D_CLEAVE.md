@@ -33,7 +33,7 @@ v1.7D cleaves in both senses: bind the code that has earned architectural/eviden
 
 ## Coding determinations resolved in v1.7D
 1. Authoritative same-tick reads use the v1.7B snapshot contract.
-2. Transaction conflicts are grouped as connected components, not one global queue.
+2. Transaction conflicts are grouped as connected components, not one global queue; same authoritative scope can connect distinct targets.
 3. Noninteracting transactions remain outside conflict sets.
 4. Conflict-set membership is derived from actual read/write hazards and domain rules.
 5. Transforming operations remain distinct from mergeable additive operations.
@@ -56,7 +56,7 @@ v1.7D cleaves in both senses: bind the code that has earned architectural/eviden
 22. A subsystem can remain architecturally valid while retained experimental.
 23. A failed implementation does not automatically invalidate its interface or hypothesis family.
 24. v1.7D promotes calibration without claiming H3 runtime or H4 player evidence.
-25. Purple/cascade/refinement remain H0 until dedicated physical corpora exist.
+25. Purple/cascade/refinement remain H0 until dedicated physical corpora exist; Purple grouping is target-local so unrelated domain cycles cannot synthesize coupling.
 26. Read-only observability is a code contract, not a UI convention.
 27. Observing a frame must not change the authoritative state hash.
 28. PLAY/WORLD/ACTOR/CAUSAL/FULL are overlay masks over one data source, not separate simulation paths.
