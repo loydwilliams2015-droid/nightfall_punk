@@ -12,6 +12,8 @@
 #define NF17D_MAX_CONFLICT_MEMBERS 16u
 #define NF17D_MAX_CACHE_ENTRIES 32u
 #define NF17D_MAX_DEPENDENCIES 64u
+#define NF17D_TRACE_HOT_CAPACITY 64u
+#define NF17D_TRACE_PROMOTED_CAPACITY 32u
 
 typedef enum Nf17dEvidenceLevel {
     NF17D_EVIDENCE_H0_CONCEPTUAL = 0,
@@ -64,6 +66,14 @@ typedef struct Nf17dConflictSet {
     Nf17bComponentMask combined_write_mask;
 } Nf17dConflictSet;
 
+typedef struct Nf17dLocalEpoch {
+    uint32_t global_epoch;
+    uint32_t nexus_id;
+    uint32_t nexus_epoch;
+    uint32_t chunk_id;
+    uint32_t chunk_epoch;
+} Nf17dLocalEpoch;
+
 typedef struct Nf17dCacheStamp {
     Nf17bComponentMask dependency_mask;
     uint32_t topology_version;
@@ -74,10 +84,35 @@ typedef struct Nf17dCacheStamp {
     uint32_t support_version;
 } Nf17dCacheStamp;
 
+typedef struct Nf17dHierCacheStamp {
+    Nf17dCacheStamp component;
+    Nf17dLocalEpoch local;
+} Nf17dHierCacheStamp;
+
 typedef struct Nf17dScopedPurpleEnvelope {
     Nf17cPurpleEnvelope envelope;
     uint32_t target_id;
 } Nf17dScopedPurpleEnvelope;
+
+typedef enum Nf17dScopeKind {
+    NF17D_SCOPE_OBJECT = 0,
+    NF17D_SCOPE_CELL = 1,
+    NF17D_SCOPE_NEXUS = 2,
+    NF17D_SCOPE_CONTRACT_SET = 3,
+    NF17D_SCOPE_PHYSICAL_ISLAND = 4,
+    NF17D_SCOPE_WORLD = 5,
+    NF17D_SCOPE_COUNT = 6
+} Nf17dScopeKind;
+
+typedef struct Nf17dScopePath {
+    uint32_t id[NF17D_SCOPE_COUNT];
+    uint32_t valid_mask;
+} Nf17dScopePath;
+
+typedef struct Nf17dScopedTransaction {
+    Nf17bTransaction transaction;
+    Nf17dScopePath scope;
+} Nf17dScopedTransaction;
 
 typedef struct Nf17dBudgetPool {
     uint32_t floor[NF17B_DOMAIN_COUNT];
@@ -85,6 +120,8 @@ typedef struct Nf17dBudgetPool {
     uint32_t shared_surplus;
     uint32_t emergency_reserve;
     uint32_t borrowed[NF17B_DOMAIN_COUNT];
+    uint8_t borrow_open;
+    uint8_t reserved[3];
 } Nf17dBudgetPool;
 
 typedef enum Nf17dTraceField {
@@ -102,6 +139,17 @@ typedef struct Nf17dReasonTraceRecord {
     uint8_t consequential;
     uint8_t reserved[3];
 } Nf17dReasonTraceRecord;
+
+typedef struct Nf17dTraceHistory {
+    Nf17dReasonTraceRecord hot[NF17D_TRACE_HOT_CAPACITY];
+    Nf17dReasonTraceRecord promoted[NF17D_TRACE_PROMOTED_CAPACITY];
+    uint16_t hot_head;
+    uint16_t hot_count;
+    uint16_t promoted_head;
+    uint16_t promoted_count;
+    uint32_t cold_hash;
+    uint32_t cold_count;
+} Nf17dTraceHistory;
 
 typedef enum Nf17dViewPreset {
     NF17D_VIEW_PLAY = 0,
@@ -129,6 +177,21 @@ enum {
     NF17D_OVERLAY_REASON_TRACE = 1u << 13
 };
 
+typedef enum Nf17dDebugDetail {
+    NF17D_DEBUG_DETAIL_NEAR = 0,
+    NF17D_DEBUG_DETAIL_NEXUS = 1,
+    NF17D_DEBUG_DETAIL_REGION = 2
+} Nf17dDebugDetail;
+
+typedef struct Nf17dDebugBatchContract {
+    uint32_t authoritative_hash;
+    uint32_t overlay_mask;
+    uint8_t detail;
+    uint8_t cpu_semantics;
+    uint8_t gpu_presentation_only;
+    uint8_t reserved;
+} Nf17dDebugBatchContract;
+
 typedef struct Nf17dObservabilityFrame {
     uint32_t tick;
     uint32_t authoritative_hash;
@@ -149,6 +212,18 @@ size_t nf17d_build_conflict_sets(
     Nf17dConflictSet *out,
     size_t out_capacity);
 
+size_t nf17d_build_hierarchical_conflict_sets(
+    const Nf17dScopedTransaction *transactions,
+    size_t transaction_count,
+    Nf17dConflictSet *out,
+    size_t out_capacity);
+
+bool nf17d_smallest_common_scope(
+    const Nf17dScopePath *a,
+    const Nf17dScopePath *b,
+    Nf17dScopeKind *kind,
+    uint32_t *scope_id);
+
 size_t nf17d_build_scoped_purple_envelopes(
     const Nf17cDomainDependency *deps,
     size_t dep_count,
@@ -162,6 +237,14 @@ Nf17dCacheStamp nf17d_cache_stamp(
 bool nf17d_cache_valid(
     const Nf17dCacheStamp *stamp,
     const Nf17bAuthoritativeState *state);
+Nf17dHierCacheStamp nf17d_hier_cache_stamp(
+    const Nf17bAuthoritativeState *state,
+    Nf17bComponentMask dependency_mask,
+    Nf17dLocalEpoch local);
+bool nf17d_hier_cache_valid(
+    const Nf17dHierCacheStamp *stamp,
+    const Nf17bAuthoritativeState *state,
+    Nf17dLocalEpoch current);
 
 void nf17d_budget_init(
     Nf17dBudgetPool *pool,
@@ -174,8 +257,14 @@ uint32_t nf17d_budget_request(
     uint32_t units,
     bool critical);
 void nf17d_budget_release_domain(Nf17dBudgetPool *pool, Nf17bDomain domain);
+void nf17d_budget_phase_barrier(Nf17dBudgetPool *pool);
 
 bool nf17d_reason_trace_complete(const Nf17dReasonTraceRecord *record);
+void nf17d_trace_history_init(Nf17dTraceHistory *history);
+void nf17d_trace_history_push(
+    Nf17dTraceHistory *history,
+    Nf17dReasonTraceRecord record,
+    bool promote);
 
 uint32_t nf17d_overlay_mask(Nf17dViewPreset preset);
 Nf17dObservabilityFrame nf17d_observe(
@@ -186,6 +275,11 @@ Nf17dObservabilityFrame nf17d_observe(
     uint16_t purple_count,
     uint16_t pending_count,
     const Nf17dReasonTraceRecord *trace);
+
+Nf17dDebugBatchContract nf17d_debug_batch_contract(
+    const Nf17dObservabilityFrame *frame,
+    uint8_t distance_band,
+    uint8_t budget_pressure);
 
 const char *nf17d_evidence_level_name(Nf17dEvidenceLevel level);
 const char *nf17d_cleave_disposition_name(Nf17dCleaveDisposition disposition);
