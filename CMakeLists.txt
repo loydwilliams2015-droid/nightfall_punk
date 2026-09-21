@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(nightfall_punk VERSION 1.6.2 LANGUAGES C)
+project(nightfall_punk VERSION 1.7.4 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -70,7 +70,12 @@ add_library(nightfall_shared STATIC
     src/shared/nf_energy_actor.c
     src/shared/nf_hitbox.c
     src/shared/nf_lifeworld.c
-    src/shared/nf_route.c)
+    src/shared/nf_route.c
+    src/shared/nf_spatial_logic.c
+    src/shared/nf_spatial_review.c
+    src/shared/nf_logic17b.c
+    src/shared/nf_logic17c.c
+    src/shared/nf_cleave17d.c)
 target_include_directories(nightfall_shared PUBLIC src/shared)
 nf_project_warnings(nightfall_shared)
 if(UNIX)
@@ -284,4 +289,29 @@ if(NF_BUILD_TESTS)
     target_link_libraries(nightfall_v16b_weapon_authority_test PRIVATE nightfall_network)
     nf_project_warnings(nightfall_v16b_weapon_authority_test)
     add_test(NAME weapon_authority_mobility_v16b COMMAND nightfall_v16b_weapon_authority_test)
+
+    add_executable(nightfall_v17a_spatial_logic_test src/tests/test_v17a_spatial_logic.c)
+    target_link_libraries(nightfall_v17a_spatial_logic_test PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_v17a_spatial_logic_test)
+    add_test(NAME spatial_logic_v17a COMMAND nightfall_v17a_spatial_logic_test)
+
+    add_executable(nightfall_v17a_spatial_review_test src/tests/test_v17a_spatial_review.c)
+    target_link_libraries(nightfall_v17a_spatial_review_test PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_v17a_spatial_review_test)
+    add_test(NAME spatial_review_v17a COMMAND nightfall_v17a_spatial_review_test)
+
+    add_executable(nightfall_v17b_logic_test src/tests/test_v17b_logic.c)
+    target_link_libraries(nightfall_v17b_logic_test PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_v17b_logic_test)
+    add_test(NAME hybrid_contracts_v17b COMMAND nightfall_v17b_logic_test)
+
+    add_executable(nightfall_v17c_logic_test src/tests/test_v17c_logic.c)
+    target_link_libraries(nightfall_v17c_logic_test PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_v17c_logic_test)
+    add_test(NAME calibration_coupling_attribution_v17c COMMAND nightfall_v17c_logic_test)
+
+    add_executable(nightfall_v17d_cleave_test src/tests/test_v17d_cleave.c)
+    target_link_libraries(nightfall_v17d_cleave_test PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_v17d_cleave_test)
+    add_test(NAME cleave_observability_v17d COMMAND nightfall_v17d_cleave_test)
 endif()
