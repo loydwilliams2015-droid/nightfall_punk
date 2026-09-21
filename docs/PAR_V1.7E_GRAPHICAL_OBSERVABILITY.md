@@ -64,3 +64,27 @@ The build may never trade overload for fabricated certainty or mutate authoritat
 A developer can inspect a primitive 3D scene and reconstruct:
 authoritative material state -> evidence -> actor belief/confidence -> appraisal -> transaction/conflict -> coupling/frontier -> committed consequence,
 while graphical observation remains deterministic, bounded and benchmarked.
+
+## Multidimensional overlap composition — LOCK
+When multiple overlays occupy the same anchor/space, v1.7E composes them into one multidimensional diagnostic object.
+
+Rules:
+- all contributing dimensions remain in the object's dimension mask and inspector metadata;
+- the highest-priority dimension controls immediate presentation;
+- lower-priority dimensions are visually suppressed, never semantically discarded;
+- equal-priority dimensions remain simultaneously visible as a compound multi/rainbow object;
+- invariant and pending states receive semantic priority boosts;
+- composition is anchor-local (object/cell/nexus/boundary/region);
+- composite presentation may use multi-color/purple/rainbow encoding, bands, halos, edges or stacked primitive cues;
+- graphical polish is explicitly out of scope for 1.7E;
+- suppression must never hide the existence of a dimension from inspection or recorded diagnostics.
+
+### Composition PAR
+| Gate | PAR |
+|---|---|
+| Same-anchor overlay contributions producing duplicate independent diagnostic objects | 0 unless explicitly requested |
+| Suppressed dimension lost from metadata | 0 |
+| Equal-priority dimension arbitrarily dropped | 0 |
+| Invariant/pending state visually subordinated to ordinary decorative/debug information | 0 |
+| Composite object changing authoritative state | 0 |
+| Different anchors accidentally merged | 0 |
