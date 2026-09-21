@@ -28,3 +28,11 @@ Every benchmark row should retain build, scene, seed class, seed, preset, visibl
 E1/E5/E8/E9 may progress from H0 to H1/H2 through deterministic and controlled graphical fixtures.
 E2/E3/E4/E6/E7/E10/E11/E12/E15 require compiled runtime profiling for H3.
 E14 requires human/developer testing before H4.
+
+## Additional overlap-composition hypotheses
+| ID | Hypothesis | Sample organization | Supporting result | Falsifying result |
+|---|---|---|---|---|
+| E16 | Multidimensional composition reduces clutter without losing causal information | same scene with naive stacked overlays vs composed object | fewer visible primitives/draw submissions with equal inspector reconstruction | missing dimension, misleading primary, or no clutter reduction |
+| E17 | Priority suppression improves immediate diagnostic legibility | timed identification of invariant/pending/conflict state with/without priority composition | faster correct identification with no causal-reconstruction loss | slower or less accurate identification |
+| E18 | Equal-priority rainbow composition preserves genuine simultaneity better than arbitrary tie-breaking | equal-priority belief/contract/causal fixtures | all co-primary dimensions recoverable and visibly represented | one dimension dominates/disappears |
+| E19 | Anchor-local composition scales better than global overlay ordering | increasing object/cell counts with local overlap clusters | cost tracks local overlap density rather than global dimension count | composition cost approaches global all-to-all ordering |
