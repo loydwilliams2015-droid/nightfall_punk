@@ -1,0 +1,22 @@
+name: nightfall v1.7B hybrid contracts CI
+
+on:
+  push:
+    branches: [ "build/v1.7b-hybrid-contracts" ]
+  pull_request:
+    branches: [ "build/v1.7b-hybrid-contracts" ]
+
+jobs:
+  v17b:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install strict C toolchain
+        run: sudo apt-get update && sudo apt-get install -y build-essential python3
+      - name: v1.7A inherited contract check
+        run: bash ./v17a.sh test
+      - name: v1.7B strict compile and contracts
+        run: bash ./v17b.sh test
+      - name: v1.7B cumulative regression
+        run: bash ./v17b.sh regression
