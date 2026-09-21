@@ -1,0 +1,18 @@
+name: nightfall v1.7C calibration coupling attribution CI
+
+on:
+  push:
+    branches: [ "build/v1.7c-calibration-coupling-attribution" ]
+  pull_request:
+    branches: [ "build/v1.7c-calibration-coupling-attribution" ]
+
+jobs:
+  v17c:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install strict C toolchain
+        run: sudo apt-get update && sudo apt-get install -y build-essential python3
+      - name: Cumulative v1.7A to v1.7C regression
+        run: bash ./v17c.sh regression
