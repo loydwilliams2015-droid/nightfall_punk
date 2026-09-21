@@ -11,6 +11,7 @@
 #define NF17D_MAX_CONFLICT_SETS 16u
 #define NF17D_MAX_CONFLICT_MEMBERS 16u
 #define NF17D_MAX_CACHE_ENTRIES 32u
+#define NF17D_MAX_DEPENDENCIES 64u
 
 typedef enum Nf17dEvidenceLevel {
     NF17D_EVIDENCE_H0_CONCEPTUAL = 0,
@@ -72,6 +73,11 @@ typedef struct Nf17dCacheStamp {
     uint32_t resource_version;
     uint32_t support_version;
 } Nf17dCacheStamp;
+
+typedef struct Nf17dScopedPurpleEnvelope {
+    Nf17cPurpleEnvelope envelope;
+    uint32_t target_id;
+} Nf17dScopedPurpleEnvelope;
 
 typedef struct Nf17dBudgetPool {
     uint32_t floor[NF17B_DOMAIN_COUNT];
@@ -141,6 +147,13 @@ size_t nf17d_build_conflict_sets(
     const Nf17bTransaction *transactions,
     size_t transaction_count,
     Nf17dConflictSet *out,
+    size_t out_capacity);
+
+size_t nf17d_build_scoped_purple_envelopes(
+    const Nf17cDomainDependency *deps,
+    size_t dep_count,
+    uint32_t tick,
+    Nf17dScopedPurpleEnvelope *out,
     size_t out_capacity);
 
 Nf17dCacheStamp nf17d_cache_stamp(
