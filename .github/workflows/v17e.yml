@@ -1,0 +1,29 @@
+name: nightfall v1.7E graphical observability CI
+
+on:
+  push:
+    branches: [ "build/v1.7e-graphical-observability" ]
+  pull_request:
+    branches: [ "build/v1.7e-graphical-observability" ]
+
+jobs:
+  v17e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install strict C/CMake toolchain
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake python3
+      - name: Cumulative v1.7A to v1.7E regression
+        run: bash ./v17e.sh regression
+      - name: Configure logic-only CMake build
+        run: >
+          cmake -S . -B build/cmake-v17e
+          -DNF_BUILD_CLIENT=OFF
+          -DNF_BUILD_SERVER=OFF
+          -DNF_BUILD_NETBOT=OFF
+          -DNF_BUILD_TESTS=ON
+      - name: Build full shared lineage
+        run: cmake --build build/cmake-v17e --parallel 2
+      - name: Run CTest
+        run: ctest --test-dir build/cmake-v17e --output-on-failure
