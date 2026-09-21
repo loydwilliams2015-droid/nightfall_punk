@@ -84,3 +84,12 @@ v1.7D is ready to hand off when:
 
 ## Scientific interpretation
 v1.7D is primarily a code-organization and observability build. It should not be credited with new player-performance gains merely because architecture is cleaner. Its positive claim is stronger separation of concerns, falsifiability, reproducibility, and lower risk of hidden coupling.
+
+## Final lightweight/instantaneous lock
+41. Derived-state invalidation is hierarchical: global epoch for coarse emergency flush, nexus/chunk epochs for ordinary local reuse, component versions for typed dependencies.
+42. Ordinary budget borrowing opens at a phase barrier; critical work may use the bounded emergency reserve immediately.
+43. Transaction arbitration may use typed scope ancestry: object -> cell -> nexus -> contract-set -> physical-island -> world, selecting the smallest common authoritative scope.
+44. Reason-trace retention is bounded: hot ring -> promoted consequential ring -> cold causal hash/summary.
+45. Observability semantics are CPU-owned read-only data; the GPU is presentation-only.
+46. Diagnostic detail gracefully decays near -> nexus -> region under distance or budget pressure while authoritative identity remains unchanged.
+47. Fast-path policy favors local work, batching, bounded deferral and explicit pending state rather than global recomputation or fabricated resolution.
