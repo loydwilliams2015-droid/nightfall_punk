@@ -20,7 +20,7 @@ void nf17d_policy_default(Nf17dCleavePolicy *policy) {
     }
 
     policy->subsystem[NF17D_SUBSYS_SNAPSHOT_TRANSACTIONS] =
-        (Nf17dSubsystemStatus){NF17D_EVIDENCE_H2_CONTROLLED, NF17D_CLEAVE_PROMOTE, 0u};
+        (Nf17dSubsystemStatus){NF17D_EVIDENCE_H1_SYNTHETIC, NF17D_CLEAVE_PROMOTE, 0u};
     policy->subsystem[NF17D_SUBSYS_TOPOLOGY_AUTHORITY] =
         (Nf17dSubsystemStatus){NF17D_EVIDENCE_H2_CONTROLLED, NF17D_CLEAVE_PROMOTE, 0u};
     policy->subsystem[NF17D_SUBSYS_CALIBRATION] =
@@ -62,6 +62,25 @@ bool nf17d_policy_is_safe(const Nf17dCleavePolicy *policy) {
     return true;
 }
 
+static bool transactions_interact(const Nf17bTransaction *a, const Nf17bTransaction *b) {
+    if (a == NULL || b == NULL || a->tick != b->tick) return false;
+
+    if (a->target_id == b->target_id &&
+        nf17b_classify_conflict(a, b) != NF17B_CONFLICT_COMPATIBLE) {
+        return true;
+    }
+
+    const bool same_scope =
+        a->scope_id != 0u &&
+        a->scope_id == b->scope_id;
+
+    const Nf17bComponentMask hazard =
+        (a->write_mask & (b->read_mask | b->write_mask)) |
+        (b->write_mask & (a->read_mask | a->write_mask));
+
+    return same_scope && hazard != 0u;
+}
+
 size_t nf17d_build_conflict_sets(
     const Nf17bTransaction *transactions,
     size_t transaction_count,
@@ -80,9 +99,7 @@ size_t nf17d_build_conflict_sets(
 
     for (size_t i = 0u; i < transaction_count; ++i) {
         for (size_t j = i + 1u; j < transaction_count; ++j) {
-            if (transactions[i].tick != transactions[j].tick) continue;
-            if (nf17b_classify_conflict(&transactions[i], &transactions[j]) ==
-                NF17B_CONFLICT_COMPATIBLE) continue;
+            if (!transactions_interact(&transactions[i], &transactions[j])) continue;
 
             interacting[i] = true;
             interacting[j] = true;
@@ -134,6 +151,56 @@ size_t nf17d_build_conflict_sets(
             }
             set->combined_read_mask |= transactions[i].read_mask;
             set->combined_write_mask |= transactions[i].write_mask;
+        }
+    }
+
+    return produced;
+}
+
+size_t nf17d_build_scoped_purple_envelopes(
+    const Nf17cDomainDependency *deps,
+    size_t dep_count,
+    uint32_t tick,
+    Nf17dScopedPurpleEnvelope *out,
+    size_t out_capacity) {
+
+    if (deps == NULL || dep_count == 0u) return 0u;
+    if (dep_count > NF17D_MAX_DEPENDENCIES) dep_count = NF17D_MAX_DEPENDENCIES;
+
+    uint32_t seen_targets[NF17D_MAX_DEPENDENCIES];
+    size_t seen_count = 0u;
+    size_t produced = 0u;
+
+    for (size_t i = 0u; i < dep_count; ++i) {
+        const uint32_t target = deps[i].target_id;
+        bool seen = false;
+        for (size_t t = 0u; t < seen_count; ++t) {
+            if (seen_targets[t] == target) {
+                seen = true;
+                break;
+            }
+        }
+        if (seen) continue;
+        seen_targets[seen_count++] = target;
+
+        Nf17cDomainDependency local[NF17D_MAX_DEPENDENCIES];
+        size_t local_count = 0u;
+        for (size_t j = 0u; j < dep_count; ++j) {
+            if (deps[j].target_id == target && local_count < NF17D_MAX_DEPENDENCIES) {
+                local[local_count++] = deps[j];
+            }
+        }
+
+        Nf17cPurpleEnvelope temporary[NF17C_MAX_PURPLE_ENVELOPES];
+        const size_t found = nf17c_build_purple_envelopes(
+            local, local_count, tick, temporary, NF17C_MAX_PURPLE_ENVELOPES);
+
+        for (size_t p = 0u; p < found; ++p) {
+            if (out != NULL && produced < out_capacity && p < NF17C_MAX_PURPLE_ENVELOPES) {
+                out[produced].envelope = temporary[p];
+                out[produced].target_id = target;
+            }
+            ++produced;
         }
     }
 
