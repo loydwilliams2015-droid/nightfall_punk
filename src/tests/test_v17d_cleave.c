@@ -61,6 +61,9 @@ int main(void) {
         NF17B_COMPONENT_TOPOLOGY | NF17B_COMPONENT_MATERIAL);
     txns[3] = make_txn(7u, 99u, NF17B_TXN_DAMAGE,
         NF17B_COMPONENT_MATERIAL, NF17B_COMPONENT_MATERIAL);
+    txns[0].scope_id = 44u;
+    txns[1].scope_id = 44u;
+    txns[2].scope_id = 44u;
 
     Nf17dConflictSet sets[NF17D_MAX_CONFLICT_SETS];
     const size_t set_count = nf17d_build_conflict_sets(txns, 4u, sets, NF17D_MAX_CONFLICT_SETS);
@@ -70,6 +73,34 @@ int main(void) {
                 "conflict set preserves topology write dependency");
     expect_true((sets[0].combined_write_mask & NF17B_COMPONENT_MATERIAL) != 0u,
                 "conflict set preserves material write dependency");
+
+    Nf17bTransaction scoped[2];
+    scoped[0] = make_txn(8u, 100u, NF17B_TXN_OPEN,
+        NF17B_COMPONENT_TOPOLOGY, NF17B_COMPONENT_TOPOLOGY);
+    scoped[1] = make_txn(8u, 101u, NF17B_TXN_CLOSE,
+        NF17B_COMPONENT_TOPOLOGY, NF17B_COMPONENT_TOPOLOGY);
+    scoped[0].scope_id = 900u;
+    scoped[1].scope_id = 900u;
+    expect_int((int)nf17d_build_conflict_sets(scoped, 2u, sets, NF17D_MAX_CONFLICT_SETS),
+               1, "same authoritative scope can conflict across different targets");
+
+    Nf17cDomainDependency false_cycle[2] = {
+        {(uint8_t)NF17B_DOMAIN_MATERIAL, (uint8_t)NF17B_DOMAIN_STRUCTURE, 0u, 100u, 1u},
+        {(uint8_t)NF17B_DOMAIN_STRUCTURE, (uint8_t)NF17B_DOMAIN_MATERIAL, 0u, 200u, 2u}
+    };
+    Nf17dScopedPurpleEnvelope scoped_purple[NF17C_MAX_PURPLE_ENVELOPES];
+    expect_int((int)nf17d_build_scoped_purple_envelopes(
+                   false_cycle, 2u, 9u, scoped_purple, NF17C_MAX_PURPLE_ENVELOPES),
+               0, "unrelated targets cannot synthesize a false Purple cycle");
+
+    Nf17cDomainDependency true_cycle[2] = {
+        {(uint8_t)NF17B_DOMAIN_MATERIAL, (uint8_t)NF17B_DOMAIN_STRUCTURE, 0u, 300u, 1u},
+        {(uint8_t)NF17B_DOMAIN_STRUCTURE, (uint8_t)NF17B_DOMAIN_MATERIAL, 0u, 300u, 2u}
+    };
+    expect_int((int)nf17d_build_scoped_purple_envelopes(
+                   true_cycle, 2u, 9u, scoped_purple, NF17C_MAX_PURPLE_ENVELOPES),
+               1, "same target mutual dependence creates scoped Purple");
+    expect_int((int)scoped_purple[0].target_id, 300, "Purple records causal target");
 
     Nf17bAuthoritativeState state;
     nf17b_state_init(&state);
