@@ -93,3 +93,6 @@ v1.7D is primarily a code-organization and observability build. It should not be
 45. Observability semantics are CPU-owned read-only data; the GPU is presentation-only.
 46. Diagnostic detail gracefully decays near -> nexus -> region under distance or budget pressure while authoritative identity remains unchanged.
 47. Fast-path policy favors local work, batching, bounded deferral and explicit pending state rather than global recomputation or fabricated resolution.
+
+## v1.7E preconfiguration handoff — multidimensional overlays
+Overlapping graphical observations are not independent flat layers by default. A shared spatial/semantic anchor composes into a multidimensional diagnostic object. Priority determines immediate visibility; nonpriority dimensions remain suppressed metadata; equal-priority dimensions remain visibly compound. Purple/rainbow composition is a diagnostic encoding of multiplicity, not a claim that the underlying domains have merged materially.
