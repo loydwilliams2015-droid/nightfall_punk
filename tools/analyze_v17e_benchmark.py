@@ -23,25 +23,25 @@ def main():
     if missing:
         raise SystemExit("missing benchmark rows: " + repr(missing))
 
-    base = fv(by["off"], "frame_avg_ms")
+    base = fv(by["off"], "frame_median_ms")
     checks = []
     checks.append(("E1 authoritative observer inertness",
                    all(int(by[p]["hash_mismatches"]) == 0 for p in required),
                    "all modes must preserve authoritative hash"))
 
-    play_over = pct(fv(by["play"], "frame_avg_ms") - base, base)
-    checks.append(("PLAY <=2% mean proxy", play_over <= 2.0,
+    play_over = pct(fv(by["play"], "frame_median_ms") - base, base)
+    checks.append(("PLAY <=2% median", play_over <= 2.0,
                    f"{play_over:.2f}% vs OFF"))
 
     single = {}
     for p in ("world", "actor", "causal"):
-        single[p] = pct(fv(by[p], "frame_avg_ms") - base, base)
-    checks.append(("single diagnostic <=8% mean proxy",
+        single[p] = pct(fv(by[p], "frame_median_ms") - base, base)
+    checks.append(("single diagnostic <=8% median",
                    all(v <= 8.0 for v in single.values()),
                    ", ".join(f"{k}={v:.2f}%" for k,v in single.items())))
 
-    full_over = pct(fv(by["full"], "frame_avg_ms") - base, base)
-    checks.append(("FULL <=20% mean proxy", full_over <= 20.0,
+    full_over = pct(fv(by["full"], "frame_median_ms") - base, base)
+    checks.append(("FULL <=20% median", full_over <= 20.0,
                    f"{full_over:.2f}% vs OFF"))
 
     inert = all(int(by[p]["hash_mismatches"]) == 0 for p in required)
@@ -52,15 +52,15 @@ def main():
         "",
         f"Source: {src}",
         "",
-        "> CI may use Xvfb/software OpenGL. Treat absolute frame times as runner-specific; relative observer overhead and hash-inertness are the primary CI signals.",
+        "> CI uses balanced forward/reverse preset order with per-block warm-up. Xvfb/software OpenGL may still make absolute frame times runner-specific; median relative overhead and hash-inertness are the primary CI signals.",
         "",
-        "| Preset | Avg frame ms | P95 | P99 | Compose avg us | Render avg us | Contributions | Objects | Hash mismatches |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| Preset | Avg frame ms | Median | P95 | P99 | Compose avg us | Render avg us | Contributions | Objects | Hash mismatches |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for p in required:
         r = by[p]
         lines.append(
-            f"| {p.upper()} | {fv(r,'frame_avg_ms'):.4f} | {fv(r,'frame_p95_ms'):.4f} | {fv(r,'frame_p99_ms'):.4f} | "
+            f"| {p.upper()} | {fv(r,'frame_avg_ms'):.4f} | {fv(r,'frame_median_ms'):.4f} | {fv(r,'frame_p95_ms'):.4f} | {fv(r,'frame_p99_ms'):.4f} | "
             f"{fv(r,'compose_avg_us'):.2f} | {fv(r,'render_avg_us'):.2f} | {fv(r,'contributions_avg'):.1f} | "
             f"{fv(r,'objects_avg'):.1f} | {int(r['hash_mismatches'])} |"
         )
