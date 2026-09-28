@@ -194,6 +194,11 @@ if(NF_BUILD_CLIENT)
     target_link_libraries(nightfall_v16b_demo PRIVATE nightfall_shared raylib)
     target_include_directories(nightfall_v16b_demo PRIVATE src/shared)
     nf_project_warnings(nightfall_v16b_demo)
+
+    add_executable(nightfall_v17e_observer src/demo/v17e_graphical_observer.c)
+    target_link_libraries(nightfall_v17e_observer PRIVATE nightfall_shared raylib)
+    target_include_directories(nightfall_v17e_observer PRIVATE src/shared)
+    nf_project_warnings(nightfall_v17e_observer)
 endif()
 
 if(NF_BUILD_TESTS)
