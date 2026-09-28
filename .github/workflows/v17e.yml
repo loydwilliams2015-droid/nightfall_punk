@@ -8,14 +8,19 @@ on:
 
 jobs:
   v17e:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-      - name: Install strict C/CMake toolchain
-        run: sudo apt-get update && sudo apt-get install -y build-essential cmake python3
+
+      - name: Install strict C, raylib and headless-graphics dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y             build-essential cmake python3 git pkg-config xvfb             libasound2-dev libx11-dev libxrandr-dev libxi-dev             libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev
+
       - name: Cumulative v1.7A to v1.7E regression
         run: bash ./v17e.sh regression
+
       - name: Configure logic-only CMake build
         run: >
           cmake -S . -B build/cmake-v17e
@@ -23,7 +28,44 @@ jobs:
           -DNF_BUILD_SERVER=OFF
           -DNF_BUILD_NETBOT=OFF
           -DNF_BUILD_TESTS=ON
+
       - name: Build full shared lineage
         run: cmake --build build/cmake-v17e --parallel 2
-      - name: Run CTest
+
+      - name: Run logic CTest
         run: ctest --test-dir build/cmake-v17e --output-on-failure
+
+      - name: Build primitive graphical observer
+        run: bash ./v17e.sh build-graphics
+
+      - name: Run graphical OFF/PLAY/WORLD/ACTOR/CAUSAL/FULL benchmark
+        env:
+          NF17E_BENCH_FRAMES: "240"
+        run: bash ./v17e.sh benchmark
+
+      - name: Package PopOS observer
+        run: |
+          set -euo pipefail
+          PKG=build/dist/nightfall-v17e-popos
+          mkdir -p "$PKG/bin" "$PKG/docs" "$PKG/source"
+          cp build/v17e-full/nightfall_v17e_observer "$PKG/bin/"
+          cp packaging/popos/run-v17e.sh "$PKG/"
+          cp packaging/popos/build-on-popos.sh "$PKG/"
+          cp packaging/popos/README.md "$PKG/"
+          cp build/v17e/graphical_benchmark.csv "$PKG/docs/"
+          cp build/v17e/graphical_benchmark_report.md "$PKG/docs/"
+          cp docs/PAR_V1.7E_GRAPHICAL_OBSERVABILITY.md "$PKG/docs/"
+          cp docs/HYPOTHESES_V1.7E_GRAPHICAL_OBSERVABILITY.md "$PKG/docs/"
+          chmod +x "$PKG/run-v17e.sh" "$PKG/build-on-popos.sh" "$PKG/bin/nightfall_v17e_observer"
+          git archive HEAD | tar -x -C "$PKG/source"
+          tar -C build/dist -czf build/dist/nightfall-v17e-popos.tar.gz nightfall-v17e-popos
+
+      - name: Upload PopOS package and benchmark
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightfall-v17e-popos
+          path: |
+            build/dist/nightfall-v17e-popos.tar.gz
+            build/v17e/graphical_benchmark.csv
+            build/v17e/graphical_benchmark_report.md
+          if-no-files-found: error
