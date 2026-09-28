@@ -35,10 +35,38 @@ test_v17e(){
   grep -q 'v1.7E overlay compositor: PASS' build/v17e/contracts.log
 }
 
+build_graphics(){
+  cmake -S "$ROOT_DIR" -B build/v17e-full -DCMAKE_BUILD_TYPE=Release \
+    -DNF_BUILD_CLIENT=ON -DNF_BUILD_SERVER=OFF -DNF_BUILD_NETBOT=OFF -DNF_BUILD_TESTS=ON
+  cmake --build build/v17e-full --target nightfall_v17e_observer --parallel 2
+  echo "[ok] v1.7E primitive graphical observer"
+}
+
+benchmark_graphics(){
+  build_graphics
+  mkdir -p build/v17e
+  local frames="${NF17E_BENCH_FRAMES:-360}"
+  if command -v xvfb-run >/dev/null 2>&1; then
+    xvfb-run -a -s "-screen 0 1280x760x24" \
+      ./build/v17e-full/nightfall_v17e_observer --benchmark --frames "$frames" --csv build/v17e/graphical_benchmark.csv
+  else
+    ./build/v17e-full/nightfall_v17e_observer --benchmark --frames "$frames" --csv build/v17e/graphical_benchmark.csv
+  fi
+  cat build/v17e/graphical_benchmark.csv
+}
+
+demo(){
+  build_graphics
+  exec ./build/v17e-full/nightfall_v17e_observer
+}
+
 case "$cmd" in
   standard-check) standard_check ;;
   build) build_v17e ;;
   test) build_v17e; test_v17e ;;
+  build-graphics) build_graphics ;;
+  benchmark) benchmark_graphics ;;
+  demo) demo ;;
   regression)
     bash ./v17d.sh regression
     standard_check
@@ -53,6 +81,9 @@ nightfall!punk v1.7E — Graphical Observability
   ./v17e.sh build
   ./v17e.sh test
   ./v17e.sh regression
+  ./v17e.sh build-graphics
+  ./v17e.sh benchmark
+  ./v17e.sh demo
 
 Current primitive:
   overlapping diagnostic dimensions compose into one multidimensional object.
