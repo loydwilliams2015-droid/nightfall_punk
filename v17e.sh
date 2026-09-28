@@ -52,7 +52,9 @@ benchmark_graphics(){
   else
     ./build/v17e-full/nightfall_v17e_observer --benchmark --frames "$frames" --csv build/v17e/graphical_benchmark.csv
   fi
-  cat build/v17e/graphical_benchmark.csv
+  python3 tools/analyze_v17e_benchmark.py \
+    build/v17e/graphical_benchmark.csv \
+    build/v17e/graphical_benchmark_report.md
 }
 
 demo(){
