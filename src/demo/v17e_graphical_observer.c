@@ -337,16 +337,18 @@ static void bench_write_row(
         render_sum += a->render_us[i];
     }
     const double n = a->count ? (double)a->count : 1.0;
+    const double median = percentile(frame, a->count, 0.50);
     const double p95 = percentile(frame, a->count, 0.95);
     const double p99 = percentile(frame, a->count, 0.99);
     const double cp95 = percentile(compose, a->count, 0.95);
     const double rp95 = percentile(render, a->count, 0.95);
 
     fprintf(out,
-        "%s,%zu,%.6f,%.6f,%.6f,%.3f,%.3f,%.3f,%.3f,%.2f,%.2f,%u\n",
+        "%s,%zu,%.6f,%.6f,%.6f,%.6f,%.3f,%.3f,%.3f,%.3f,%.2f,%.2f,%u\n",
         preset,
         a->count,
         frame_sum / n,
+        median,
         p95,
         p99,
         compose_sum / n,
@@ -405,10 +407,16 @@ int main(int argc, char **argv) {
     };
 
     FILE *csv = NULL;
-    BenchAccumulator acc = {0};
-    int bench_preset = 0;
+    BenchAccumulator acc[6] = {{0}};
+    static const int bench_order[12] = {0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0};
+    int bench_block = 0;
+    int bench_mode = bench_order[0];
     unsigned bench_frame = 0u;
-    bool bench_off = false;
+    unsigned bench_warmup = 0u;
+    const unsigned warmup_per_block = 30u;
+    unsigned measured_per_block = frames_per_preset / 2u;
+    bool bench_off = true;
+    if (measured_per_block == 0u) measured_per_block = 1u;
 
     if (benchmark) {
         csv = fopen(csv_path, "w");
@@ -418,11 +426,12 @@ int main(int argc, char **argv) {
             return 2;
         }
         fprintf(csv,
-            "preset,frames,frame_avg_ms,frame_p95_ms,frame_p99_ms,"
+            "preset,frames,frame_avg_ms,frame_median_ms,frame_p95_ms,frame_p99_ms,"
             "compose_avg_us,compose_p95_us,render_avg_us,render_p95_us,"
             "contributions_avg,objects_avg,hash_mismatches\n");
-        bench_off = bench_preset == 0;
-        state.preset = bench_mode_preset(bench_preset);
+        bench_mode = bench_order[bench_block];
+        bench_off = bench_mode == 0;
+        state.preset = bench_mode_preset(bench_mode);
     }
 
     while (!WindowShouldClose()) {
@@ -501,26 +510,36 @@ int main(int argc, char **argv) {
 
         if (benchmark) {
             const double frame_end = GetTime();
-            if (acc.count < NF17E_MAX_FRAME_SAMPLES) {
-                acc.frame_ms[acc.count] = (frame_end - frame_begin) * 1000.0;
-                acc.compose_us[acc.count] = (compose_end - compose_begin) * 1000000.0;
-                acc.render_us[acc.count] = (render_end - compose_end) * 1000000.0;
-                ++acc.count;
-            }
-            acc.contribution_sum += state.contribution_count;
-            acc.object_sum += state.object_count;
-            if (before_hash != after_hash || before_hash != state.state_hash) ++acc.hash_mismatches;
+            if (bench_warmup < warmup_per_block) {
+                ++bench_warmup;
+            } else {
+                BenchAccumulator *a = &acc[bench_mode];
+                if (a->count < NF17E_MAX_FRAME_SAMPLES) {
+                    a->frame_ms[a->count] = (frame_end - frame_begin) * 1000.0;
+                    a->compose_us[a->count] = (compose_end - compose_begin) * 1000000.0;
+                    a->render_us[a->count] = (render_end - compose_end) * 1000000.0;
+                    ++a->count;
+                }
+                a->contribution_sum += state.contribution_count;
+                a->object_sum += state.object_count;
+                if (before_hash != after_hash || before_hash != state.state_hash) ++a->hash_mismatches;
 
-            ++bench_frame;
-            if (bench_frame >= frames_per_preset) {
-                bench_write_row(csv, bench_mode_name(bench_preset), &acc);
-                fflush(csv);
-                memset(&acc, 0, sizeof(acc));
-                bench_frame = 0u;
-                ++bench_preset;
-                if (bench_preset >= 6) break;
-                bench_off = bench_preset == 0;
-                state.preset = bench_mode_preset(bench_preset);
+                ++bench_frame;
+                if (bench_frame >= measured_per_block) {
+                    bench_frame = 0u;
+                    bench_warmup = 0u;
+                    ++bench_block;
+                    if (bench_block >= 12) {
+                        for (int mode = 0; mode < 6; ++mode) {
+                            bench_write_row(csv, bench_mode_name(mode), &acc[mode]);
+                        }
+                        fflush(csv);
+                        break;
+                    }
+                    bench_mode = bench_order[bench_block];
+                    bench_off = bench_mode == 0;
+                    state.preset = bench_mode_preset(bench_mode);
+                }
             }
         }
     }
