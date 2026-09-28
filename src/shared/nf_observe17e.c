@@ -46,20 +46,23 @@ uint16_t nf17e_effective_priority(
     if (policy == NULL || contribution == NULL ||
         contribution->dimension >= (uint8_t)NF17E_DIM_COUNT) return 0u;
 
-    uint32_t priority =
+    if (contribution->dimension == (uint8_t)NF17E_DIM_INVARIANT &&
+        policy->invariant_priority_boost != 0u) {
+        return UINT16_MAX;
+    }
+
+    if ((contribution->pending != 0u ||
+         contribution->dimension == (uint8_t)NF17E_DIM_PENDING) &&
+        policy->pending_priority_boost != 0u) {
+        const uint32_t local = contribution->priority > 5000u ? 5000u : contribution->priority;
+        return (uint16_t)(60000u + local);
+    }
+
+    const uint32_t priority =
         (uint32_t)policy->base_priority[contribution->dimension] +
         (uint32_t)contribution->priority;
 
-    if (contribution->pending != 0u && policy->pending_priority_boost != 0u) {
-        priority += 32u;
-    }
-
-    if (contribution->dimension == (uint8_t)NF17E_DIM_INVARIANT &&
-        policy->invariant_priority_boost != 0u) {
-        priority += 64u;
-    }
-
-    return priority > UINT16_MAX ? UINT16_MAX : (uint16_t)priority;
+    return priority > 59999u ? 59999u : (uint16_t)priority;
 }
 
 static bool same_anchor(
