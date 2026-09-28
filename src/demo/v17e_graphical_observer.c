@@ -1,6 +1,7 @@
 #include "nf_observe17e.h"
 #include "nf_spatial_logic.h"
 #include "raylib.h"
+#include "raymath.h"
 
 #include <math.h>
 #include <stdbool.h>
@@ -364,6 +365,16 @@ static Nf17dViewPreset preset_from_index(int i) {
     return p[i < 0 ? 0 : (i > 4 ? 4 : i)];
 }
 
+static const char *bench_mode_name(int i) {
+    static const char *names[6] = {"off", "play", "world", "actor", "causal", "full"};
+    return names[i < 0 ? 0 : (i > 5 ? 5 : i)];
+}
+
+static Nf17dViewPreset bench_mode_preset(int i) {
+    if (i <= 0) return NF17D_VIEW_PLAY;
+    return preset_from_index(i - 1);
+}
+
 int main(int argc, char **argv) {
     bool benchmark = false;
     unsigned frames_per_preset = 360u;
@@ -397,6 +408,7 @@ int main(int argc, char **argv) {
     BenchAccumulator acc = {0};
     int bench_preset = 0;
     unsigned bench_frame = 0u;
+    bool bench_off = false;
 
     if (benchmark) {
         csv = fopen(csv_path, "w");
@@ -409,7 +421,8 @@ int main(int argc, char **argv) {
             "preset,frames,frame_avg_ms,frame_p95_ms,frame_p99_ms,"
             "compose_avg_us,compose_p95_us,render_avg_us,render_p95_us,"
             "contributions_avg,objects_avg,hash_mismatches\n");
-        state.preset = preset_from_index(bench_preset);
+        bench_off = bench_preset == 0;
+        state.preset = bench_mode_preset(bench_preset);
     }
 
     while (!WindowShouldClose()) {
@@ -451,7 +464,13 @@ int main(int argc, char **argv) {
         const double frame_begin = GetTime();
 
         const double compose_begin = GetTime();
-        build_observability(&state);
+        if (!benchmark || !bench_off) {
+            build_observability(&state);
+        } else {
+            state.contribution_count = 0u;
+            state.object_count = 0u;
+            state.state_hash = nf17b_state_hash(&state.authority);
+        }
         const double compose_end = GetTime();
 
         BeginDrawing();
@@ -494,13 +513,14 @@ int main(int argc, char **argv) {
 
             ++bench_frame;
             if (bench_frame >= frames_per_preset) {
-                bench_write_row(csv, nf17d_view_preset_name(state.preset), &acc);
+                bench_write_row(csv, bench_mode_name(bench_preset), &acc);
                 fflush(csv);
                 memset(&acc, 0, sizeof(acc));
                 bench_frame = 0u;
                 ++bench_preset;
-                if (bench_preset >= 5) break;
-                state.preset = preset_from_index(bench_preset);
+                if (bench_preset >= 6) break;
+                bench_off = bench_preset == 0;
+                state.preset = bench_mode_preset(bench_preset);
             }
         }
     }
