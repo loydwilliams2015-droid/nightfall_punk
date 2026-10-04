@@ -1,7 +1,10 @@
-build/
+# Compiled artifacts, native build caches, transient local run evidence
+/build/
 *.o
 *.a
 *.so
-*.swp
-*~
+*.out
+__pycache__/
+*.pyc
 .DS_Store
+# Keep committed source, corpus generators, and reviewed evidence snapshots.

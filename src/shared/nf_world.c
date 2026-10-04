@@ -177,8 +177,33 @@ static void nf_world_update_moving_colliders(NfWorld *world) {
     for(size_t i=0;i<world->collider_count;++i){NfCollider *c=&world->colliders[i];c->previous_min=c->min;c->previous_max=c->max;nf_world_place_moving_collider(c,time);}
 }
 
-void nf_world_step(NfWorld *world,float dt){
-    if(world==NULL||dt<=0)return;
+bool nf_world_bind_tick_owner(NfWorld *world,NfWorldTickOwner owner,void *ctx){
+    if(!world||!owner||!ctx||world->tick_owner||world->tick_in_progress)return false;
+    world->tick_owner=owner;world->tick_owner_context=ctx;return true;
+}
+bool nf_world_unbind_tick_owner(NfWorld *world,NfWorldTickOwner owner,void *ctx){
+    if(!world||!owner||world->tick_in_progress||world->tick_owner!=owner||
+       world->tick_owner_context!=ctx)return false;
+    world->tick_owner=NULL;world->tick_owner_context=NULL;return true;
+}
+NfWorldTickStatus nf_world_step_checked(NfWorld *world,float dt){
+    if(!world||!(dt>0.0f)||!isfinite(dt))return NF_WORLD_TICK_INVALID;
+    if(world->tick_in_progress){world->last_tick_status=NF_WORLD_TICK_REENTRANT;
+        return NF_WORLD_TICK_REENTRANT;}
+    world->tick_in_progress=true;
+    if(world->tick_owner){
+        const uint64_t before=world->tick;
+        const NfWorldTickStatus reported=world->tick_owner(world,dt,world->tick_owner_context);
+        /* Reentrancy and broken commit reports cannot gain another tick. The
+           owner must stage/verify before publication; this check is diagnostic. */
+        const NfWorldTickStatus result=
+            (reported==NF_WORLD_TICK_COMMITTED && world->tick==before+1u) ||
+            (reported!=NF_WORLD_TICK_COMMITTED && world->tick==before)
+            ? reported : NF_WORLD_TICK_REJECTED;
+        world->last_tick_status=result;
+        world->tick_in_progress=false;
+        return result;
+    }
     nf_world_update_moving_colliders(world);
     for(size_t i=0;i<NF_MAX_ENTITIES;++i){
         NfActor *a=&world->actors[i];
@@ -196,6 +221,12 @@ void nf_world_step(NfWorld *world,float dt){
     nf_contamination_world_step(world,dt);
     nf_energy_tick(&world->energy, world, (double)dt);
     ++world->tick;
+    world->last_tick_status=NF_WORLD_TICK_COMMITTED;
+    world->tick_in_progress=false;
+    return NF_WORLD_TICK_COMMITTED;
+}
+void nf_world_step(NfWorld *world,float dt){
+    (void)nf_world_step_checked(world,dt);
 }
 size_t nf_world_active_actor_count(const NfWorld *world){if(world==NULL)return 0;size_t n=0;for(size_t i=0;i<NF_MAX_ENTITIES;++i)if(world->actors[i].active)++n;return n;}
 const char *nf_movement_mode_name(NfMovementMode mode){switch(mode){case NF_MOVE_GROUND:return"GROUND";case NF_MOVE_SPRINT:return"SPRINT";case NF_MOVE_CROUCH:return"CROUCH";case NF_MOVE_AIR:return"AIR";case NF_MOVE_LADDER:return"LADDER";case NF_MOVE_VAULT:return"VAULT";case NF_MOVE_MANTLE:return"MANTLE";case NF_MOVE_PLATFORM:return"PLATFORM";default:return"UNKNOWN";}}
