@@ -91,6 +91,11 @@ int main(void) {
     gate(!nf18a_history_commit(&authority,&a,20u,2u,1u),"D24_duplicate_same_tick_commit_rejected");
     gate(!nf18a_history_commit(&authority,&a,21u,3u,2u),"D25_cross_actor_history_rejected");
     gate(nf18a_history_commit(&authority,&free,21u,3u,1u),"D26_monotone_authoritative_history_commit");
+    Nf18aCollider crowded[9];
+    for(unsigned i=0u;i<9u;++i) crowded[i]=box(100u+i,1,-10,-2,1.02f,10,2);
+    const Nf18aSolveResult overfull=solve((NfVec3){0,0,0},(NfVec3){240,0,0},crowded,9u,cfg);
+    gate(overfull.status==NF18A_PENDING_BUDGET && overfull.feet.x<0.701f,
+         "D27_simultaneous_contact_overflow_is_pending");
     printf("TOTAL,%u,PASS,%u,FAIL,%u\n",total,total-failed,failed);
     return failed?1:0;
 }
