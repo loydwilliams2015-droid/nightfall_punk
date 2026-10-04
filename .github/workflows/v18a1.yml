@@ -1,0 +1,43 @@
+name: nightfall v1.8A1 Contact Truth Laboratory
+on:
+  push:
+    branches: [ "build/v1.8a1-contact-truth-laboratory" ]
+  pull_request:
+    branches: [ "build/v1.8a1-contact-truth-laboratory" ]
+
+jobs:
+  contact-truth:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install C11 and inherited project build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake python3 pkg-config libenet-dev libsodium-dev
+      - name: Compile and test historical 1.7A-E logic regression
+        run: bash ./v17e.sh regression
+      - name: Strict contact truth fixtures and native sample corpus
+        run: bash ./v18a1.sh all
+      - name: Configure project integration without graphical dependency
+        run: >
+          cmake -S . -B build/cmake-v18a1
+          -DNF_BUILD_CLIENT=OFF
+          -DNF_BUILD_SERVER=OFF
+          -DNF_BUILD_NETBOT=OFF
+          -DNF_BUILD_TESTS=ON
+          -DNF_FETCH_RAYLIB=OFF
+          -DNF_FETCH_ENET=OFF
+      - name: Build shared engine and historical tests
+        run: cmake --build build/cmake-v18a1 --parallel 2
+      - name: Run CTest full logic corpus
+        run: ctest --test-dir build/cmake-v18a1 --output-on-failure
+      - name: Preserve scientific evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightfall-v18a1-contact-truth-data
+          if-no-files-found: error
+          path: |
+            build/v18a/fixture_results.csv
+            build/v18a/contact_samples.csv
+            build/v18a/PAR_RESULTS.md
