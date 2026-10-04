@@ -114,6 +114,7 @@ Nf18aSolveResult nf18a_solve(uint32_t tick,uint32_t body_id,NfVec3 feet,NfVec3 v
         float best=FLT_MAX;
         Nf18aContact hits[NF18A_MAX_CONTACTS];
         size_t count=0;
+        bool manifold_overflow=false;
         for(size_t k=0;k<collider_count;++k) {
             if (colliders[k].body_id==body_id) continue;
             if(!swept_candidate(position,shape,motion,colliders[k],dt,cfg.skin)) continue;
@@ -124,8 +125,14 @@ Nf18aSolveResult nf18a_solve(uint32_t tick,uint32_t body_id,NfVec3 feet,NfVec3 v
             if (hit.kind==NF18A_CONTACT_INITIAL_OVERLAP) {
                 r.status=NF18A_INVALID_START; r.feet=position; r.velocity=(NfVec3){0}; return r;
             }
-            if (hit.toi < best-cfg.simultaneous_toi_epsilon) {best=hit.toi;count=0;}
-            if (fabsf(hit.toi-best)<=cfg.simultaneous_toi_epsilon && count<NF18A_MAX_CONTACTS) {
+            if (hit.toi < best-cfg.simultaneous_toi_epsilon) {
+                best=hit.toi;count=0;manifold_overflow=false;
+            }
+            if (fabsf(hit.toi-best)<=cfg.simultaneous_toi_epsilon) {
+                if(count>=NF18A_MAX_CONTACTS) {
+                    manifold_overflow=true;
+                    continue;
+                }
                 hit.body_a=body_id;
                 hit.tick=tick;
                 hit.contact_id=mix(body_id*0x9e3779b9u ^ hit.body_b);
@@ -134,6 +141,12 @@ Nf18aSolveResult nf18a_solve(uint32_t tick,uint32_t body_id,NfVec3 feet,NfVec3 v
             }
         }
         if (count==0) {position=add(position,motion); motion=(NfVec3){0};break;}
+        if(manifold_overflow) {
+            /* Never treat unrepresented simultaneous constraints as free space. */
+            r.status=NF18A_PENDING_BUDGET;
+            r.feet=position;r.velocity=(NfVec3){0};
+            r.realized_distance=len(sub(position,feet));return r;
+        }
         any=true;
         const float fraction=fmaxf(0.0f,best-1.0e-6f);
         position=add(position,mul(motion,fraction));
