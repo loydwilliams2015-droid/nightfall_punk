@@ -1,0 +1,54 @@
+name: 1.8A.5 H1 source reconciliation (offline laboratory)
+on:
+  push:
+    branches:
+      - integration/v1.8a5-h1-source-provenance
+  pull_request:
+    paths:
+      - 'src/shared/nf_contact18a*'
+      - 'src/tests/*v18a*'
+      - 'tools/analyze_v18a*'
+      - 'v18a*.sh'
+      - 'CMakeLists.txt'
+      - '.github/workflows/v18a5-h1-reconciliation.yml'
+      - 'docs/RESEARCH_LINEAGE_V1.8A.md'
+      - 'docs/SCIENTIFIC_ACCOUNTABILITY_PROTOCOL.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contact-laboratory:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          ${{ matrix.compiler }} --version
+          cmake --version
+          python3 --version
+      - name: Strict C11 and inherited regression
+        env:
+          CC: ${{ matrix.compiler }}
+        run: bash ./v18a5_close.sh all
+      - name: Standalone CMake and CTest, no ENet/raylib fetch
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build/ci-contact -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$CC"
+          cmake --build build/ci-contact --parallel
+          ctest --test-dir build/ci-contact --output-on-failure
+      - name: Preserve build evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contact-h1-${{ matrix.compiler }}
+          path: |
+            build/v18a5/closure/fixtures.csv
+            build/v18a5/closure/samples.csv
+            build/v18a5/closure/PAR_RESULTS.md
+            build/v18a5/closure/inherited.log
+          if-no-files-found: warn

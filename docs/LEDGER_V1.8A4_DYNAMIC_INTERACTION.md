@@ -1,33 +1,47 @@
-# nightfall!punk 1.8A.4 — Dynamic Interaction H1 handoff
+# nightfall!punk 1.8A.4 — Dynamic Interaction: experimental policy ledger
 
-**Source boundary:** This GitHub branch holds the authoritative architectural and evidence handoff only. The complete tested C implementation is in the downloadable 1.8A.4 source archive. Do **not** claim this GitHub branch is CI-certified or that it already runs the new physical solver.
+## Prior lock carried unchanged
+1.8A.3 **Model C** is the H1 shape/traversal exit candidate: upright swept capsule, independently tested rounded-box-like foot support, and simultaneous geometry AND traversal authority. It is NOT production physics. The old swept box remains a diagnostic comparator. In particular, a successful stair/ladder adjudication grants the authority to *attempt* a bounded physical motor action, never instantaneous position relocation.
 
-## Preserved lock: 1.8A.3 Model C
+## New 1.8A.4 laboratory law
+1. Ordinary input feeds a bounded force/acceleration motor acting on an explicitly mass-bearing body. Motor work (including negative braking work) is accounted independently of contact impulses.
+2. A genuine dynamic contact modifies the participating body velocities and, for off-centre contacts, their angular velocities; normal and tangential impulses must have equal-and-opposite body effects.
+3. A contact-only estimate without actual reciprocal state change is a negative control and inadmissible as the dynamic player physics implementation.
+4. All physical collisions remain subject to material geometry. The 1.8A.4 swept-capsule bridge uses the 1.8A.3 capsule/AABB narrowphase before attempting an actual pairwise impulse exchange.
+5. Contact manifolds are sorted by stable body/feature identity and have explicit capacity limits. No duplicate contact can separately claim a fresh impulse.
+6. Adaptive iterations: cheap 2-pass reserve up to 4 and then 6, with explicit pending and NO partial island commit on exhaustion. Test residual is provisionally 0.005 m/s, not a general collision-fidelity certification.
+7. Stage requests call the original trusted 1.8A.3 adjudicator, verify body position/shape, tick/version and once-per-tick staging before authorizing motor input. This still requires a separate dynamic trajectory CCD and actual transaction commit.
+8. Only applied contact impulses from an accepted pair result may enter a condensed-history sample. The world transaction manager must still commit the sample authoritatively; the in-memory ring is not durable long-term history.
 
-Accept swept upright capsule + independently validated rounded-box-like foot support + simultaneous geometry/traversal jurisdiction as the **H1 laboratory exit candidate, not production player physics**. Both jurisdictions must approve and an external world transaction must commit. Authorizing a trajectory never teleports the actor.
+## Unweighted competing models
+A. Estimate-only kinematic-style contact report — negative control, NO object momentum transfer.
+B. Reciprocal linear normal impulse — material two-body response; lacks torque and friction.
+C. Reciprocal linear plus off-center angular normal impulse — supports torque; lacks tangential friction.
+D. Same with Coulomb-bounded tangent impulse and fixed six solver passes — admissible comparator.
+E. Same contact physics as D, with a bounded 2→4→6 adaptive solver — **H1 laboratory exit candidate**.
 
-## 1.8A.4 selection
+## Native evidence / observations
+- 56/56 named strict-C assertions, including replay, normal/elastic/friction mechanics, model differences, angular momentum, contact order invariance, 3-body adaptive reserve and an eight-body pending island with no partial commit.
+- Inherited 1.8A.1 27/27, 1.8A.2 46/46, and 1.8A.3 38/38 + production-negative-controls guard all passed locally.
+- 8,000 matched model evaluations of 1,000 shared pair-contact fixtures, 1,000 shared single-contact island fixtures, and 500 additional chain fixtures; 1,500 distinct parameter sets, not 8,000 independent worlds.
+- Max tested direct-pair linear momentum residual 0.00024414 kg*m/s; no contact kinetic energy increase in these tested pairs; 0 within-process replay mismatches.
+- For the deliberately defined 1,000 simple + 500 three-body scenario mix, fixed six required 8.0 mean contact evaluations and adaptive 4.424: 44.7% fewer *constraint evaluations*, not a measured wall-clock frame improvement. Both correctly accept all in this limited corpus; maximum B-crate-speed disagreement in chains about 0.001245 m/s.
+- A deep 8-body chain exceeded reserve and returned explicit PENDING with unchanged original body states.
 
-Select **motor-driven reciprocal linear-and-angular contact with Coulomb-bounded friction and a 2→4→6 adaptive constraint budget** as the **H1 laboratory exit candidate**. The motor is a bounded, accountable external source of work. A contact cannot be called dynamic because it merely reports an estimated impulse: velocity/angular velocity must actually update both applicable bodies. Reject invalid input and duplicate contact IDs; retain explicit PENDING and rollback on contact-island budget exhaustion.
+## Evidential grade and outstanding build gates
+This is an **H1 laboratory**, not a complete 3D rigid-body world. Principal-axis inverse inertia is evaluated in the current world frame but orientations are not integrated. A single physical sweep handles upright capsule vs translating axis-aligned box; general multibody CCD, arbitrary-mesh contact, rotating geometry, friction at long-lived resting contacts, restitution thresholds, warm starts, high mass ratios, continuous motor trajectory verification, dynamic stair support, authority-owned geometry provenance, broadphase spatial indexing, full Cell/Nexus substrate, chunk loading, authoritative transaction commit, network replay, durable history and human H4 movement feel remain to be built.
 
-The 1.8A.3 trusted snapshot is re-adjudicated before staging a motor impulse. Verify actor ID, material geometry, world revision, authoritative pose/shape, feature permission, step/ladder authority and single-stage-per-tick. No direct world-state mutation is authorized by a mere candidate.
+## Reproduction
+Run `bash ./v18a4.sh all` in the complete source package. It runs strict C tests and emits `build/v18a4/samples.csv` and `build/v18a4/PAR_RESULTS.md`. `bash ./v18a4.sh regression` runs the historical A.1–A.3 fixture gates plus the A.4 suite. The offline container's global CMake configure attempted to download ENet, which is unavailable in its network sandbox. That is an unverified integration gate—not a passed or a source failure.
 
-## H1 local evidence (not GitHub CI evidence)
+## Scientific adjudication
+- **Conditional a priori:** G∧T jurisdiction; internal impulses reciprocal; insufficient solve must not claim contact-free traversal.
+- **Certain H1 fixture tests:** compiler warnings, explicit invariants, concrete numerical checks and repeatable declared corpus.
+- **Highly predictable but defeasible:** adaptive solver saves constraint evaluations with similar accepted state at our tested tolerance; persistence/generalized CCD/human feel not established.
+- **Quine:** divide responsibility between witness shape, motor, mass, inertia, timestep, and solver.
+- **Kuhn:** the estimate-only controller's lack of a material reaction is an explicit anomaly, not semantics to be relabeled.
+- **Lakatos:** preserve authority/conservation while allowing motor gains, restitution, friction and iteration budgets to evolve.
+- **Feyerabend:** keep competitor implementations on exactly matched conditions.
+- **Popper:** actively challenge the exit candidate with deep constraints, rotating bodies, false supports, low ceiling traversal and malicious client requests.
 
-- 56/56 strict-C assertions; AddressSanitizer/UndefinedBehaviorSanitizer pass.
-- Inherited local suites: 1.8A.1 27/27, 1.8A.2 46/46, 1.8A.3 38/38 + production negative-control guard.
-- 8,000 model evaluations on shared deterministic parameters: 1,000 two-body pair fixture sets; 1,000 matching island evaluations, plus 500 held-out three-body chain sets.
-- Direct pair contact momentum residual <=0.00024414 kg*m/s, zero within-process replay mismatches in declared corpus.
-- 1,000 simple island fixtures: fixed six constraint evaluations vs adaptive one; 500 chain fixtures: fixed 12 vs adaptive 11.272 average. The selected mixture saves 44.7% of constraint evaluations, **not measured CPU time**. Max fixed/adaptive crate speed difference in chain roughly 0.001245 m/s.
-- Dense eight-body chain explicitly PENDING with caller-state rollback; 0.005 m/s provisional normal-speed convergence criterion.
-- Actual applied contact receipt may be passed into 1.8A.2's condensed history, but only after separate world transaction commit; durable event persistence remains future work.
-
-## What remains unbuilt
-
-Continuous stair/ladder motor path realization, rotating collider geometry/angular CCD, orientation integration, warm-started persistent friction, full 3D stacked rigid-body solver, dynamic support contracts, fine chunk material authority, faithful native server/client reconciliation, verified cross-platform fixed-point replay, game camera/weapon integration, H3 hardware benchmarks, H4 human trials, durable contact-event store.
-
-The full project's global CMake configure could not complete in the isolated container because ENet's external dependency could not be fetched; it must not be recorded as PASS or as a code failure.
-
-## Method
-
-Conditional a priori hard core: genuine material contact, geometry AND traversal, reciprocal impulses, bounded conserved contact constraints, explicit pending without partial commit. H1 compiled tests support this scope, while relative efficiency, human feel and production suitability remain contingent and defeasible. Keep fixed six and angular-normal comparators, estimate-only negative control, and severe future falsification for low ceilings, rotated crates, deep stacks, high mass ratios and same-tick multiplayer.
+**Decision: ACCEPT E as the 1.8A.4 H1 experimental exit candidate, NOT as production gameplay physics.**
