@@ -264,3 +264,21 @@ size_t nf18a_extract_world_colliders(const NfWorld *world, Nf18aCollider *out, s
     }
     return count;
 }
+
+/* Per-owner, monotone commit marker. This does not commit world state itself: the
+   caller must prove that the transaction reached the authoritative commit phase. */
+bool nf18a_history_commit(Nf18aHistory *history, const Nf18aSolveResult *solve,
+                          uint32_t tick, uint32_t state_version, uint32_t owner_body_id) {
+    if (!history || !solve || state_version==0u || owner_body_id==0u) return false;
+    if(solve->status==NF18A_INVALID_INPUT || solve->status==NF18A_INVALID_START) return false;
+    if(history->has_committed) {
+        if(history->owner_body_id!=owner_body_id || tick<=history->last_commit_tick ||
+           state_version<=history->last_state_version) return false;
+    }
+    nf18a_history_record(history,solve,tick);
+    history->owner_body_id=owner_body_id;
+    history->last_commit_tick=tick;
+    history->last_state_version=state_version;
+    history->has_committed=1u;
+    return true;
+}
