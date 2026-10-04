@@ -1,0 +1,44 @@
+name: A6 paired arcade falsification (source only)
+on:
+  push:
+    branches: [integration/v1.8a6-dual-arcade-counterpoints]
+    paths:
+      - 'demos/a6-dual/**'
+      - '.github/workflows/v18a6-dual-arcade.yml'
+      - 'src/shared/**'
+  pull_request:
+    paths:
+      - 'demos/a6-dual/**'
+      - '.github/workflows/v18a6-dual-arcade.yml'
+      - 'src/shared/**'
+jobs:
+  game-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install headless/X11 dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential libx11-dev
+      - name: Build the real A6 contact modules plus both 2D games
+        env:
+          CC: ${{ matrix.compiler }}
+        run: bash demos/a6-dual/build.sh
+      - name: Inherited H1 contact/embodiment regression
+        run: ctest --test-dir build/dual --output-on-failure
+      - name: Paired falsification fixtures
+        run: |
+          demos/a6-dual/bin/nightfall-cinder --selftest
+          for s in crate ladder pending door; do demos/a6-dual/bin/nightfall-slipgate --scenario "$s"; done
+      - name: Independent, complete reproducible AI-player corpus
+        run: python3 demos/a6-dual/scripts/bench.py --seeds 128 --start 31001 --steps 300
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nightfall-arcade-${{ matrix.compiler }}-par
+          path: |
+            demos/a6-dual/results/PAR.json
+            demos/a6-dual/results/PAR.md
+            demos/a6-dual/results/paired_1_8a6_arcade.csv
