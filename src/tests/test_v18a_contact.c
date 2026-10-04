@@ -86,6 +86,11 @@ int main(void) {
          converted[0].body_id==1u,"D21_world_collider_adapter");
     gate(nf18a_extract_world_colliders(&world,converted,0u)==SIZE_MAX,
          "D22_no_silent_collider_truncation");
+    Nf18aHistory authority;nf18a_history_init(&authority);
+    gate(nf18a_history_commit(&authority,&a,20u,2u,1u),"D23_first_authoritative_history_commit");
+    gate(!nf18a_history_commit(&authority,&a,20u,2u,1u),"D24_duplicate_same_tick_commit_rejected");
+    gate(!nf18a_history_commit(&authority,&a,21u,3u,2u),"D25_cross_actor_history_rejected");
+    gate(nf18a_history_commit(&authority,&free,21u,3u,1u),"D26_monotone_authoritative_history_commit");
     printf("TOTAL,%u,PASS,%u,FAIL,%u\n",total,total-failed,failed);
     return failed?1:0;
 }
