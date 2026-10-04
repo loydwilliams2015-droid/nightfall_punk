@@ -16,6 +16,58 @@ function(nf_project_warnings target_name)
     target_compile_options(${target_name} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endfunction()
 
+# Offline-capable, strict-C scientific contact laboratory. It intentionally
+# avoids ENet/raylib resolution and does not represent full-client integration.
+option(NF_CONTACT_LAB_ONLY "Build dependency-free v1.8A.5 contact laboratory" OFF)
+if(NF_CONTACT_LAB_ONLY)
+    enable_testing()
+    set(NF_CONTACT_SOURCES
+        src/shared/nf_contact18a.c
+        src/shared/nf_contact18a2.c
+        src/shared/nf_contact18a3.c
+        src/shared/nf_contact18a4.c
+        src/shared/nf_contact18a5.c
+        src/shared/nf_contact18a5_sink.c
+        src/shared/nf_contact18a5_close.c
+        src/shared/nf_contact18a5_wal.c)
+    add_library(nightfall_contact_lab STATIC ${NF_CONTACT_SOURCES})
+    target_include_directories(nightfall_contact_lab PUBLIC src/shared)
+    target_compile_definitions(nightfall_contact_lab PRIVATE NF18A5_TEST_CONTROLS=1)
+    nf_project_warnings(nightfall_contact_lab)
+    if(UNIX)
+        target_link_libraries(nightfall_contact_lab PUBLIC m)
+    endif()
+    add_executable(nightfall_v18a5_contact_test src/tests/test_v18a5_contact.c)
+    target_link_libraries(nightfall_v18a5_contact_test PRIVATE nightfall_contact_lab)
+    nf_project_warnings(nightfall_v18a5_contact_test)
+    add_test(NAME canonical_history_v18a5 COMMAND nightfall_v18a5_contact_test)
+    add_executable(nightfall_v18a5_sink_test src/tests/test_v18a5_sink.c)
+    target_link_libraries(nightfall_v18a5_sink_test PRIVATE nightfall_contact_lab)
+    nf_project_warnings(nightfall_v18a5_sink_test)
+    add_test(NAME durable_sink_lab_v18a5 COMMAND nightfall_v18a5_sink_test)
+    add_library(nightfall_contact_prod STATIC ${NF_CONTACT_SOURCES})
+    target_include_directories(nightfall_contact_prod PUBLIC src/shared)
+    nf_project_warnings(nightfall_contact_prod)
+    if(UNIX)
+        target_link_libraries(nightfall_contact_prod PUBLIC m)
+    endif()
+    add_executable(nightfall_v18a5_production_test src/tests/test_v18a5_production.c)
+    target_link_libraries(nightfall_v18a5_production_test PRIVATE nightfall_contact_prod)
+    nf_project_warnings(nightfall_v18a5_production_test)
+    add_test(NAME production_guard_v18a5 COMMAND nightfall_v18a5_production_test)
+    add_executable(nightfall_v18a5_sample_db src/tests/sample_v18a5_contact.c)
+    target_link_libraries(nightfall_v18a5_sample_db PRIVATE nightfall_contact_lab)
+    nf_project_warnings(nightfall_v18a5_sample_db)
+    add_executable(nightfall_v18a5_close_test src/tests/test_v18a5_close.c)
+    target_link_libraries(nightfall_v18a5_close_test PRIVATE nightfall_contact_prod)
+    nf_project_warnings(nightfall_v18a5_close_test)
+    add_test(NAME physical_world_closure_v18a5 COMMAND nightfall_v18a5_close_test)
+    add_executable(nightfall_v18a5_close_samples src/tests/sample_v18a5_close.c)
+    target_link_libraries(nightfall_v18a5_close_samples PRIVATE nightfall_contact_prod)
+    nf_project_warnings(nightfall_v18a5_close_samples)
+    return()
+endif()
+
 include(FetchContent)
 find_package(PkgConfig QUIET)
 
@@ -77,7 +129,14 @@ add_library(nightfall_shared STATIC
     src/shared/nf_logic17c.c
     src/shared/nf_cleave17d.c
     src/shared/nf_observe17e.c
-    src/shared/nf_contact18a.c)
+    src/shared/nf_contact18a.c
+    src/shared/nf_contact18a2.c
+    src/shared/nf_contact18a3.c
+    src/shared/nf_contact18a4.c
+    src/shared/nf_contact18a5.c
+    src/shared/nf_contact18a5_sink.c
+    src/shared/nf_contact18a5_close.c
+    src/shared/nf_contact18a5_wal.c)
 target_include_directories(nightfall_shared PUBLIC src/shared)
 nf_project_warnings(nightfall_shared)
 if(UNIX)
@@ -331,4 +390,19 @@ if(NF_BUILD_TESTS)
     target_link_libraries(nightfall_v18a_contact_test PRIVATE nightfall_shared)
     nf_project_warnings(nightfall_v18a_contact_test)
     add_test(NAME contact_truth_v18a COMMAND nightfall_v18a_contact_test)
+
+    add_executable(nightfall_v18a3_production_gate src/tests/test_v18a3_production.c)
+    target_link_libraries(nightfall_v18a3_production_gate PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_v18a3_production_gate)
+    add_test(NAME shape_traversal_production_guard_v18a3 COMMAND nightfall_v18a3_production_gate)
+
+    add_executable(nightfall_v18a4_dynamic_test src/tests/test_v18a4_contact.c)
+    target_link_libraries(nightfall_v18a4_dynamic_test PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_v18a4_dynamic_test)
+    add_test(NAME dynamic_motor_contact_v18a4 COMMAND nightfall_v18a4_dynamic_test)
+
+    add_executable(nightfall_v18a2_contact_test src/tests/test_v18a2_contact.c)
+    target_link_libraries(nightfall_v18a2_contact_test PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_v18a2_contact_test)
+    add_test(NAME motor_contact_history_v18a2 COMMAND nightfall_v18a2_contact_test)
 endif()
