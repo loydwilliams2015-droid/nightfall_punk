@@ -1,0 +1,261 @@
+{
+  "title": "nightfall!punk paired Pac-Man comparative test, NOT upstream GZDoom/LibreQuake benchmark",
+  "seed_start": 31001,
+  "per_cohort_seeds": 128,
+  "tick_cap": 300,
+  "total_playthroughs": 1024,
+  "key_limitations": [
+    "fixed two authored maps, not independent generated worlds",
+    "two simplified ghost policies are author-defined controls, not upstream engines",
+    "paired seeds share initial states, but random consumption differs after policy branches",
+    "the player AI uses a full maze search; only systemic ghosts have bounded local geometric memory",
+    "2D turn/tile projection of selected authoritative C contact modules, not full 3D FPS",
+    "no independent human play-feel evidence"
+  ],
+  "runtime_seconds": [
+    {
+      "game": "cinder",
+      "player": "goal",
+      "ai": "classic",
+      "wall_seconds": 0.5911
+    },
+    {
+      "game": "cinder",
+      "player": "goal",
+      "ai": "systemic",
+      "wall_seconds": 0.5771
+    },
+    {
+      "game": "cinder",
+      "player": "random",
+      "ai": "classic",
+      "wall_seconds": 0.0816
+    },
+    {
+      "game": "cinder",
+      "player": "random",
+      "ai": "systemic",
+      "wall_seconds": 0.3087
+    },
+    {
+      "game": "slipgate",
+      "player": "goal",
+      "ai": "classic",
+      "wall_seconds": 0.4282
+    },
+    {
+      "game": "slipgate",
+      "player": "goal",
+      "ai": "systemic",
+      "wall_seconds": 0.5562
+    },
+    {
+      "game": "slipgate",
+      "player": "random",
+      "ai": "classic",
+      "wall_seconds": 0.0528
+    },
+    {
+      "game": "slipgate",
+      "player": "random",
+      "ai": "systemic",
+      "wall_seconds": 0.3314
+    }
+  ],
+  "csv_sha256": "734fef8b1ed69d538b75929c38d7e68399fce69792852e6dcf25535daa58c5ab",
+  "replay_mismatches": 0,
+  "results": [
+    {
+      "game": "cinder",
+      "player": "goal",
+      "n": 128,
+      "classical": {
+        "ticks": 272.914,
+        "score": 1931.875,
+        "health": 0.297,
+        "won": 0.117,
+        "contacts": 0.0,
+        "purple": 0.0,
+        "cache_loads": 37.344,
+        "cache_pending": 37.344,
+        "energy_retreats": 0.0,
+        "stale_chases": 0.0,
+        "history_events": 0.0,
+        "blocked_moves": 0.0
+      },
+      "systemic": {
+        "ticks": 286.828,
+        "score": 2062.812,
+        "health": 2.227,
+        "won": 0.758,
+        "contacts": 0.0,
+        "purple": 0.0,
+        "cache_loads": 38.312,
+        "cache_pending": 38.312,
+        "energy_retreats": 72.578,
+        "stale_chases": 43.188,
+        "history_events": 0.0,
+        "blocked_moves": 0.0
+      },
+      "systemic_minus_classic_score": [
+        130.938,
+        92.344,
+        166.445
+      ],
+      "systemic_minus_classic_health": [
+        1.93,
+        1.672,
+        2.18
+      ],
+      "systemic_minus_classic_events": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "game": "cinder",
+      "player": "random",
+      "n": 128,
+      "classical": {
+        "ticks": 38.352,
+        "score": 55.859,
+        "health": -0.789,
+        "won": 0.0,
+        "contacts": 0.0,
+        "purple": 0.0,
+        "cache_loads": 2.0,
+        "cache_pending": 2.0,
+        "energy_retreats": 0.0,
+        "stale_chases": 0.0,
+        "history_events": 0.0,
+        "blocked_moves": 15.961
+      },
+      "systemic": {
+        "ticks": 271.906,
+        "score": 173.047,
+        "health": 3.305,
+        "won": 0.0,
+        "contacts": 0.0,
+        "purple": 0.0,
+        "cache_loads": 3.891,
+        "cache_pending": 3.891,
+        "energy_retreats": 70.688,
+        "stale_chases": 0.867,
+        "history_events": 0.0,
+        "blocked_moves": 113.102
+      },
+      "systemic_minus_classic_score": [
+        117.188,
+        105.312,
+        129.453
+      ],
+      "systemic_minus_classic_health": [
+        4.094,
+        3.797,
+        4.367
+      ],
+      "systemic_minus_classic_events": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "game": "slipgate",
+      "player": "goal",
+      "n": 128,
+      "classical": {
+        "ticks": 180.695,
+        "score": 1373.047,
+        "health": 0.0,
+        "won": 0.0,
+        "contacts": 0.234,
+        "purple": 0.234,
+        "cache_loads": 24.609,
+        "cache_pending": 24.609,
+        "energy_retreats": 0.0,
+        "stale_chases": 0.0,
+        "history_events": 0.125,
+        "blocked_moves": 0.0
+      },
+      "systemic": {
+        "ticks": 294.109,
+        "score": 1839.297,
+        "health": 1.75,
+        "won": 0.0,
+        "contacts": 1.109,
+        "purple": 1.109,
+        "cache_loads": 30.219,
+        "cache_pending": 30.219,
+        "energy_retreats": 74.766,
+        "stale_chases": 43.016,
+        "history_events": 0.82,
+        "blocked_moves": 0.0
+      },
+      "systemic_minus_classic_score": [
+        466.25,
+        432.578,
+        498.281
+      ],
+      "systemic_minus_classic_health": [
+        1.75,
+        1.57,
+        1.93
+      ],
+      "systemic_minus_classic_events": [
+        0.695,
+        0.398,
+        1.0
+      ]
+    },
+    {
+      "game": "slipgate",
+      "player": "random",
+      "n": 128,
+      "classical": {
+        "ticks": 35.812,
+        "score": 55.938,
+        "health": -0.32,
+        "won": 0.0,
+        "contacts": 0.0,
+        "purple": 0.0,
+        "cache_loads": 2.203,
+        "cache_pending": 2.203,
+        "energy_retreats": 0.0,
+        "stale_chases": 0.0,
+        "history_events": 0.0,
+        "blocked_moves": 14.445
+      },
+      "systemic": {
+        "ticks": 257.547,
+        "score": 206.172,
+        "health": 3.156,
+        "won": 0.0,
+        "contacts": 0.0,
+        "purple": 0.0,
+        "cache_loads": 5.266,
+        "cache_pending": 5.266,
+        "energy_retreats": 65.805,
+        "stale_chases": 2.008,
+        "history_events": 0.0,
+        "blocked_moves": 93.844
+      },
+      "systemic_minus_classic_score": [
+        150.234,
+        137.578,
+        163.203
+      ],
+      "systemic_minus_classic_health": [
+        3.477,
+        3.18,
+        3.758
+      ],
+      "systemic_minus_classic_events": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ]
+}
