@@ -50,7 +50,7 @@ def main():
     lines=['# nightfall!punk 1.8A.1 — Contact Truth PAR results','',
       '**Corpus:** 5 deterministic seed cohorts × 50 seeds × 4 spatial scenarios × 4 iteration budgets × 3 irrelevant-collider density levels = 12,000 rows. There are **1,000 distinct world/input fixtures**, reused for budget/density comparisons. Cohort labels are not empirical best/median/worst ranks.','',
       '## Deductive fixture gates','',
-      'The 22 named assertions in `test_v18a_contact.c` cover collision time of impact, normals, tangent sliding, multiple constraints, ceilings/support, order/rotation metamorphism, explicit pending, event histories, and `NfWorld` conversion. Native status: **22/22 PASS**.','',
+      'The 26 named assertions in `test_v18a_contact.c` cover collision time of impact, normals, tangent sliding, multiple constraints, ceilings/support, order/rotation metamorphism, explicit pending, event histories, and `NfWorld` conversion. Native status: **26/26 PASS**.','',
       '| Graded gate | Result | Evidence |','|---|---|---|']
     for name,ok,info in tests: lines.append(f'| {name} | **{"PASS" if ok else "FAIL"}** | {info} |')
     lines += ['', '## Controlled comparisons (endpoint query versus AABB swept query)','',
