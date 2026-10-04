@@ -96,6 +96,11 @@ typedef struct Nf18aHistory {
     uint16_t head;
     uint32_t cold_hash;
     uint32_t cold_events;
+    uint32_t owner_body_id;
+    uint32_t last_commit_tick;
+    uint32_t last_state_version;
+    uint8_t has_committed;
+    uint8_t reserved_commit[3];
 } Nf18aHistory;
 
 typedef struct Nf18aConfig {
@@ -119,7 +124,11 @@ Nf18aSolveResult nf18a_solve(
     const Nf18aCollider *colliders, size_t collider_count,
     Nf18aConfig config);
 void nf18a_history_init(Nf18aHistory *history);
+/* A preview trace is not an authoritative commit. Runtime must call
+   nf18a_history_commit only after the world's atomic authoritative commit. */
 void nf18a_history_record(Nf18aHistory *history, const Nf18aSolveResult *solve, uint32_t tick);
+bool nf18a_history_commit(Nf18aHistory *history, const Nf18aSolveResult *solve,
+                          uint32_t tick, uint32_t state_version, uint32_t owner_body_id);
 uint32_t nf18a_result_hash(const Nf18aSolveResult *solve);
 size_t nf18a_extract_world_colliders(
     const NfWorld *world, Nf18aCollider *out, size_t capacity);
