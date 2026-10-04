@@ -32,3 +32,6 @@ Box2D separates collision queries from dynamics and exposes TOI/shape casts, con
 
 ## Run
 `./v18a1.sh all` (requires C11 compiler, libc math, Python 3). It emits a 22-assertion fixture result, 12,000-row comparative CSV and scientifically graded `PAR_RESULTS.md`.
+
+## Authoritative history handoff
+`nf18a_history_commit` accepts one per-owner monotone committed frame and rejects duplicate ticks, missing versions and foreign actor ownership. This is a **commit marker behind an API**, not automatic integration with the authoritative transaction manager; the caller must only invoke it after successful atomic state commit.
