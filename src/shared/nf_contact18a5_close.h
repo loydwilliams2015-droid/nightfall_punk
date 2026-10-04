@@ -40,6 +40,16 @@ Nf18a5Query nf18a5_resolve_exact(Nf18a5Grid *grid,NfVec3 probe,uint32_t tick,
    This is NOT a portable/replicated production world WAL. */
 bool nf18a5_checkpoint(const char *path,const Nf18a5Integrated *state);
 bool nf18a5_restore(const char *path,Nf18a5Integrated *state);
+/* Opt-in H1 prepublication gate: called after physical and contact-history
+   staging but BEFORE the A5 WAL and caller-state publication. A rejecting
+   validator cannot leave behind a committed newer snapshot. */
+typedef bool (*Nf18a5PrepublishGate)(const Nf18a5Integrated *candidate,void *ctx);
+Nf18a5CloseResult nf18a5_integrated_pair_step_checked(
+    Nf18a5Integrated *state,uint32_t expected_revision,uint32_t tick,
+    NfVec3 static_world_probe,Nf18a5FineProvider provider,void *provider_ctx,
+    Nf18a2ShapePolicy shape,Nf18a4Motor motor,float dt,
+    float restitution,float friction,const char *world_journal,
+    Nf18a5PrepublishGate gate,void *gate_ctx);
 Nf18a5CloseResult nf18a5_integrated_pair_step(
     Nf18a5Integrated *state, uint32_t expected_revision, uint32_t tick,
     NfVec3 static_world_probe, Nf18a5FineProvider provider,void *provider_ctx,
