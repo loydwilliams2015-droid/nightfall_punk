@@ -1,0 +1,58 @@
+name: 1.8A.6 embodiment H1 source + scientific evidence
+on:
+  push:
+    branches:
+      - integration/v1.8a6-embodiment-h1
+  pull_request:
+    paths:
+      - 'src/shared/nf_embody18a6.*'
+      - 'src/shared/nf_world.*'
+      - 'src/tests/test_v18a6_tick_owner.c'
+      - 'docs/LEDGER_V1.8A6_TICK_AUTHORITY.md'
+      - 'src/tests/*v18a6*'
+      - 'tools/analyze_v18a6*'
+      - 'v18a6.sh'
+      - 'CMakeLists.txt'
+      - '.github/workflows/v18a6-embodiment-h1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  embodiment-h1:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain identity
+        run: |
+          ${{ matrix.compiler }} --version
+          cmake --version
+          python3 --version
+      - name: Strict C11 offline engine + camera + contact labs
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B "build/ci-embody-${CC}" -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$CC"
+          cmake --build "build/ci-embody-${CC}" --parallel
+          ctest --test-dir "build/ci-embody-${CC}" --output-on-failure
+          "./build/ci-embody-${CC}/nightfall_v18a6_embodiment_test" > "build/ci-embody-${CC}/fixture_results.csv"
+          "./build/ci-embody-${CC}/nightfall_v18a6_tick_owner_test" > "build/ci-embody-${CC}/tick_owner_results.csv"
+          "./build/ci-embody-${CC}/nightfall_v18a6_sample_db" "build/ci-embody-${CC}/models.csv"
+          python3 tools/analyze_v18a6_embodiment.py "build/ci-embody-${CC}/models.csv" "build/ci-embody-${CC}/PAR_RESULTS.md"
+          "./build/ci-embody-${CC}/nightfall_v18a6_sample_db" "build/ci-embody-${CC}/models-repeat.csv"
+          cmp "build/ci-embody-${CC}/models.csv" "build/ci-embody-${CC}/models-repeat.csv"
+          sha256sum "build/ci-embody-${CC}/models.csv" "build/ci-embody-${CC}/models-repeat.csv"
+      - name: Archive reproducible results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: embodiment-h1-${{ matrix.compiler }}
+          path: |
+            build/ci-embody-${{ matrix.compiler }}/fixture_results.csv
+            build/ci-embody-${{ matrix.compiler }}/tick_owner_results.csv
+            build/ci-embody-${{ matrix.compiler }}/models.csv
+            build/ci-embody-${{ matrix.compiler }}/PAR_RESULTS.md
+          if-no-files-found: warn

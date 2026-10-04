@@ -312,6 +312,19 @@ typedef struct NfMovementConfig {
     float candidate_retain_score;
 } NfMovementConfig;
 
+/* A world tick has exactly one movement owner. A rejected or pending opt-in
+   tick does not silently fall through to historical locomotion. */
+typedef enum NfWorldTickStatus {
+    NF_WORLD_TICK_COMMITTED=0,
+    NF_WORLD_TICK_PENDING=1,
+    NF_WORLD_TICK_REJECTED=2,
+    NF_WORLD_TICK_INVALID=3,
+    NF_WORLD_TICK_REENTRANT=4
+} NfWorldTickStatus;
+struct NfWorld;
+typedef NfWorldTickStatus (*NfWorldTickOwner)(struct NfWorld *world,
+                                             float dt, void *context);
+
 typedef struct NfWorld {
     uint64_t tick;
     uint32_t seed;
@@ -324,6 +337,11 @@ typedef struct NfWorld {
     NfMovementConfig movement;
     NfEnergySystem energy;
     NfContaminationSystem contamination;
+    /* Opt-in authority route; NULL preserves legacy behavior. Not serialized. */
+    NfWorldTickOwner tick_owner;
+    void *tick_owner_context;
+    NfWorldTickStatus last_tick_status;
+    bool tick_in_progress;
 } NfWorld;
 
 void nf_world_init(NfWorld *world, uint32_t seed);
@@ -334,6 +352,10 @@ bool nf_world_despawn_actor(NfWorld *world, NfEntityId id);
 NfActor *nf_world_find_actor(NfWorld *world, NfEntityId id);
 const NfActor *nf_world_find_actor_const(const NfWorld *world, NfEntityId id);
 void nf_world_set_input(NfWorld *world, NfEntityId id, NfMoveInput input);
+/* Bind only at a tick boundary; never fall back to legacy on owner failure. */
+bool nf_world_bind_tick_owner(NfWorld *world, NfWorldTickOwner owner, void *ctx);
+bool nf_world_unbind_tick_owner(NfWorld *world, NfWorldTickOwner owner, void *ctx);
+NfWorldTickStatus nf_world_step_checked(NfWorld *world, float dt);
 void nf_world_step(NfWorld *world, float dt);
 void nf_world_sync_dynamic_geometry(NfWorld *world);
 size_t nf_world_active_actor_count(const NfWorld *world);

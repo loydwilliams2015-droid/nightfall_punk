@@ -129,10 +129,11 @@ static bool publish(Nf18a5Integrated *dst,const Nf18a5Integrated *candidate,
     if(journal && !nf18a5_checkpoint(journal,candidate))return false;
     *dst=*candidate;return true;
 }
-Nf18a5CloseResult nf18a5_integrated_pair_step(
+Nf18a5CloseResult nf18a5_integrated_pair_step_checked(
     Nf18a5Integrated *s,uint32_t version,uint32_t tick,NfVec3 probe,
     Nf18a5FineProvider loader,void *ctx,Nf18a2ShapePolicy shape,
-    Nf18a4Motor motor,float dt,float restitution,float friction,const char *journal){
+    Nf18a4Motor motor,float dt,float restitution,float friction,const char *journal,
+    Nf18a5PrepublishGate gate,void *gate_ctx){
     if(!s || !nf18a4_body_valid(&s->actor)||!nf18a4_body_valid(&s->object)||
        s->actor.id==s->object.id || version!=s->world.revision || tick<=s->world.tick)
         return result(NF18A5_CLOSE_STALE,NF18A5_Q_INVALID,s?s->world.grid.global_revision:0);
@@ -197,11 +198,21 @@ Nf18a5CloseResult nf18a5_integrated_pair_step(
     }
     next.actor=pair.actor;next.object=pair.object;
     if(out.dynamic_contact)++next.committed_receipts;
+    if(gate && !gate(&next,gate_ctx)){
+        out.status=NF18A5_CLOSE_GATED;return out;
+    }
     if(!publish(s,&next,journal)){
         out.status=NF18A5_CLOSE_DISK_FAILED;return out;
     }
     out.status=NF18A5_CLOSE_COMMITTED;
     out.material_revision_after=s->world.grid.global_revision;return out;
+}
+Nf18a5CloseResult nf18a5_integrated_pair_step(
+    Nf18a5Integrated *s,uint32_t version,uint32_t tick,NfVec3 probe,
+    Nf18a5FineProvider loader,void *ctx,Nf18a2ShapePolicy shape,
+    Nf18a4Motor motor,float dt,float restitution,float friction,const char *journal){
+    return nf18a5_integrated_pair_step_checked(s,version,tick,probe,
+        loader,ctx,shape,motor,dt,restitution,friction,journal,NULL,NULL);
 }
 Nf18a5CloseResult nf18a5_integrated_support_step(
     Nf18a5Integrated *s,uint32_t version,uint32_t tick,
