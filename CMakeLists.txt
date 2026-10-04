@@ -76,7 +76,8 @@ add_library(nightfall_shared STATIC
     src/shared/nf_logic17b.c
     src/shared/nf_logic17c.c
     src/shared/nf_cleave17d.c
-    src/shared/nf_observe17e.c)
+    src/shared/nf_observe17e.c
+    src/shared/nf_contact18a.c)
 target_include_directories(nightfall_shared PUBLIC src/shared)
 nf_project_warnings(nightfall_shared)
 if(UNIX)
@@ -325,4 +326,9 @@ if(NF_BUILD_TESTS)
     target_link_libraries(nightfall_v17e_observe_test PRIVATE nightfall_shared)
     nf_project_warnings(nightfall_v17e_observe_test)
     add_test(NAME graphical_overlay_composition_v17e COMMAND nightfall_v17e_observe_test)
+
+    add_executable(nightfall_v18a_contact_test src/tests/test_v18a_contact.c)
+    target_link_libraries(nightfall_v18a_contact_test PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_v18a_contact_test)
+    add_test(NAME contact_truth_v18a COMMAND nightfall_v18a_contact_test)
 endif()
