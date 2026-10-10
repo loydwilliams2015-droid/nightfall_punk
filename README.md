@@ -50,4 +50,4 @@ The current research line is still diverged from `main`; issue #30 tracks reconc
 
 ## Commercial / commons direction
 
-The project intends to reconcile commons-oriented/copyleft goals with legitimate commercial activity such as support, hosting, integration, custom development, stewardship, and packaged distribution. The exact software license is still under review; see [docs/LICENSING_DECISION_MATRIX.md](docs/LICENSING_DECISION_MATRIX.md).
+The project intends to reconcile commons-oriented/copyleft goals with legitimate commercial activity such as support, hosting, integration, custom development, stewardship, and packaged distribution. The public software license is now **GPL-3.0-or-later**. Commercial services remain compatible with that commons license; a separate commercial software license is reserved as a possible later option subject to the contributor-rights policy. See [docs/LICENSING_DECISION_MATRIX.md](docs/LICENSING_DECISION_MATRIX.md).
