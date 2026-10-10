@@ -31,7 +31,7 @@ Historical build, archive, agent, and review branches remain evidence. Historica
 
 ## Repository facts requiring active stewardship
 
-1. GitHub currently detects no project license. Root project language must therefore avoid claiming an active open-source/copyleft license.
+1. Project-authored software is now licensed under GPL-3.0-or-later with machine-readable scope in `REUSE.toml`; documentation/data/art remain separately scoped unless explicitly marked.
 2. The current research line and `main` are diverged. The 1.8B PAR branch was audited as roughly 300 commits ahead and six behind `main`; reconcile rather than force-push.
 3. The original tested 1.8B.1 C source archive is not currently available in this session and is not grafted into its GitHub handoff branch. Preserve that provenance gap instead of reconstructing evidence retroactively.
 4. External runtime/build dependencies include ENet, raylib, and optional libsodium. Keep their notices and versions distinct from project-authored code.
@@ -53,6 +53,6 @@ Historical build, archive, agent, and review branches remain evidence. Historica
 2. Graft/review B.1 source, run branch-specific CI, and attach source/data hashes.
 3. Begin B.2 with live geometry, contract, and actor-local evidence rather than authored laboratory booleans.
 4. Reconcile `main` before claiming a canonical production branch.
-5. Make the software-license decision only after rights/compatibility review.
+5. Complete the reviewed narrow CLA text before accepting external code contributions or relying on future commercial relicensing.
 
 > One concise current count-as-one; many provenance-preserving traces.
