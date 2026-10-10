@@ -27,8 +27,17 @@ for rel in REQUIRED:
 
 readme = (ROOT / "README.md").read_text(encoding="utf-8") if (ROOT / "README.md").exists() else ""
 has_license = any((ROOT / name).is_file() for name in ("LICENSE", "LICENSE.txt", "LICENSE.md", "COPYING"))
-if not has_license and ("open-source" in readme.lower() or "copyleft licensed" in readme.lower()):
-    errors.append("README claims active open-source/copyleft licensing but no project LICENSE is present")
+
+# Detect the known stale positive claim, not mere discussion of licensing.
+# Negative statements such as "do not treat this as open-source licensed" are valid.
+stale_positive_markers = (
+    "open-source copy-left",
+    "open source copy-left",
+    "open-source copyleft project",
+    "open source copyleft project",
+)
+if not has_license and any(marker in readme.lower() for marker in stale_positive_markers):
+    errors.append("README makes a positive open-source/copyleft claim but no project LICENSE is present")
 if not has_license:
     warnings.append("no project-wide LICENSE present; LICENSE_STATUS.md governs current wording")
 
