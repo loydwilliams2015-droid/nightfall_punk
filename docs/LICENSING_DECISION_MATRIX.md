@@ -1,30 +1,47 @@
-# nightfall!punk — Licensing decision matrix
+# nightfall!punk — Licensing decision record
 
-**Current status:** no project-wide license selected. This document is a decision aid, not a license.
+**Decision date:** 2026-10-10  
+**Software license:** **GPL-3.0-or-later — LOCKED and applied to project-authored software identified by `REUSE.toml`.**
 
-## Preconditions before selection
+## Completed selection work
 
-1. Identify copyright holders/contributors for code intended for the licensed release.
-2. Audit imported/adapted code and generated assets for compatible terms.
-3. Separate engine/source license from documentation, data, art, music, trademarks, and hosted services.
-4. Decide whether network-service reciprocity is a project requirement.
-5. Decide whether future dual licensing is genuinely needed; if so, obtain legal advice on contributor rights before accepting broad external code.
+1. Visible current ancestry audited: 537 commits, all using the same GitHub author/committer account.
+2. Current tree audited for vendored/imported source and media assets: no obvious third-party source tree or tracked media package found.
+3. Direct dependency terms reviewed: ENet MIT; raylib zlib/libpng; libsodium ISC.
+4. GPL-3.0-or-later selected rather than AGPL for the present project software.
+5. Future GPL + separately negotiated commercial licensing retained as an option.
+6. **Narrow CLA direction selected** over DCO-alone for future external code contributions if commercial relicensing is to remain possible.
+7. GPL text, REUSE/SPDX scope, status notice, contribution gate, and release notice added.
 
-## Candidate families
+## Why GPL-3.0-or-later
 
-| Candidate | Fit | Main implication |
-|---|---|---|
-| **GPL-3.0-or-later** | strong candidate for a distributed copyleft game/engine commons | distributed modified/combined covered works must satisfy GPL source/reciprocity obligations |
-| **AGPL-3.0-or-later** | consider only if network-service source reciprocity is an explicit goal | adds network-interaction source-offer obligations; stronger operational consequences |
-| **MPL-2.0** | file-level copyleft alternative | weaker boundary than GPL; may fit modular ecosystems better |
-| **Permissive (MIT/BSD/Apache)** | maximum downstream reuse | does not preserve copyleft reciprocity; probably weaker fit with stated commons preference |
+The project favors strong distributed-software reciprocity while allowing commercial use, paid distribution, hosting, support, integration, customization, stewardship, and other services.
+
+The `-or-later` expression gives recipients the GPLv3 terms or a later GPL version at their option.
+
+## Why not AGPL now
+
+The project has not made network-service source reciprocity a constitutional requirement. AGPL remains a future alternative only if that requirement changes; it is not the current license.
+
+## Why a narrow CLA rather than DCO-alone
+
+DCO is a provenance certification. It does not itself provide the additional relicensing grant needed for a future GPL + commercial dual-license model.
+
+The intended CLA should let contributors retain ownership while granting a narrowly bounded additional license to the project. Binding CLA language still needs qualified legal review before external code contributions are merged.
+
+## Separate materials
+
+The GPL software decision does not automatically decide licenses for:
+- documentation/research prose;
+- evidence datasets;
+- original art/audio/lore;
+- trademarks/branding;
+- hosted services and service contracts.
+
+Those require explicit treatment before distribution.
 
 ## Commercial sustainability
 
-Open-source status is compatible with selling software and services. A commons-oriented project can charge for hosting, support, custom development, stewardship, media, convenience, and packaged distributions while respecting the license freedoms.
+GPL software may be used commercially subject to its terms. Commons-oriented revenue may include hosting, support, custom development, stewardship, media, convenience, packaged distributions, institutional contracts, and separately negotiated commercial integration where contributor rights permit it.
 
-## Preliminary fit
-
-Given the project's stated preference for **strong copyleft + legitimate commercial services**, GPL-3.0-or-later is the natural first license for counsel/contributor review. AGPL should be evaluated separately if hosted network service reciprocity is truly desired. This is a recommendation for review, **not a license grant**.
-
-After selection, add the exact LICENSE text, SPDX identifiers, contribution terms, release notices, and update `LICENSE_STATUS.md`.
+See `LICENSE_STATUS.md`, `docs/CONTRIBUTOR_LICENSING_POLICY.md`, and `RELEASE_LICENSING_NOTICE.md`.
