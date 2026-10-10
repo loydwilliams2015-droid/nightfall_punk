@@ -42,3 +42,7 @@ Maintain challenger models, negative controls, failed runs, and evidence grades.
 - review/close or archive older draft PRs through a dedicated historical pass rather than deleting them opportunistically.
 
 **Disposition:** stewardship foundation prepared; no production evidence grade promoted by this documentation pass.
+
+## Governance-audit erratum
+
+The first push/PR runs of the new governance audit failed because the checker matched the phrase `open-source/copyleft` inside the corrective sentence **"do not treat it as open-source/copyleft licensed."** This was a checker false positive, not a repository licensing contradiction. The failed workflow runs are intentionally retained. The audit was corrected to detect the historical positive claim (`open-source copy-left`) rather than any occurrence of licensing vocabulary, then rerun.
