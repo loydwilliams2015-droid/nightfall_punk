@@ -42,7 +42,7 @@ Historical build, archive, agent, and review branches remain evidence. Historica
 - `docs/SCIENTIFIC_ACCOUNTABILITY_PROTOCOL.md` — historical 1.8A protocol.
 - `docs/SCIENTIFIC_ACCOUNTABILITY_PROTOCOL_V2.md` — project-wide extension from this stewardship pass.
 - `docs/LEGAL_PROVENANCE_AND_FAIR_USE_POLICY.md` — code/assets/research attribution and fair-use boundary.
-- `docs/DATA_AND_EVIDENCE_POLICY.md` — raw/derived evidence, privacy, hashes, retention.
+- `docs/DATA_AND_EVIDENCE_POLICY.md` — raw/derived evidence, privacy, hashes, retention.\n- `docs/REFERENCE_CREDIBILITY_AND_CITATION_POLICY.md` — typed external-source authority and citation discipline.
 - `docs/BRANCH_AND_RELEASE_POLICY.md` — branch roles, promotion, archive rules.
 - `THIRD_PARTY_NOTICES.md` — dependency attribution.
 - `CONTRIBUTING.md` — contribution and research workflow.
