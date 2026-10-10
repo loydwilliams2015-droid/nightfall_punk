@@ -1,117 +1,53 @@
-# nightfall_punk
+# nightfall!punk
 
-Open-source copy-left **Neo-Xennial / Systemic Arena FPS** developed in C + raylib.
+**Neo-Xennial / Systemic Arena FPS research project in C.**
 
-**Current candidate milestone: v0.9 — Topographical Energy Accounting.** Accepted versions remain archived through `archive/v0.7`. v0.8 Dream Cattler Habitat Ecology is still a draft human-acceptance candidate on PR #11; v0.9 is deliberately stacked on that branch rather than pretending v0.8 has already been accepted.
+> **License status:** a project-wide software license has not yet been adopted. The repository is public, but do not treat it as open-source/copyleft licensed until a LICENSE file is deliberately added after the rights review. See [LICENSE_STATUS.md](LICENSE_STATUS.md).
 
-nightfall!punk is rebuilt graybox-first: gameplay, physics, networking, combat, agent intelligence and ecological world truth must become coherent before the original aesthetic engine returns.
+## Current state — 2026-10-10
 
-## v0.9 thesis
+The active research line has advanced beyond the historical v0.x README. Current work spans the **1.8A physical-world sweep** and the **1.8B interaction sweep**.
 
-The ecological engine now begins with a **universal energy ledger inside authoritative `NfWorld`**. Energy accounting is the common currency; different actors may still pursue different strategies. The map participates in price formation: distance, route depth, elevation proxy, terrain resistance, structural exposure, productive capacity, regeneration, absorptive capacity and historical depletion all change the energetic value of a place.
+- 1.8A.3: Model C shape/traversal H1 lock.
+- 1.8A.4: Model E dynamic-interaction H1 lock.
+- 1.8A.5: Model D canonical-grid and condensed-history H1 locks.
+- 1.8A.6: conditional Model 3 grounded embodiment H1 lock.
+- 1.8B.1: M4 bounded material-first smart-object interaction is the provisional H1 incumbent; M3 remains the mandatory challenger.
+- 1.8B.1–B.5: interaction PAR research programme locked at H0 for future builds.
 
-The ecological cycle is conceptually:
+These are evidence-bounded research decisions, **not claims that the production multiplayer FPS is complete**.
 
-`world truth -> energy accounting -> Bayesian helicopter search -> bounded actor belief -> strategy -> simultaneous action -> consequence -> new world truth`
+Start with [PROJECT_STATE_INDEX.md](PROJECT_STATE_INDEX.md) for the current count-as-one and links to the detailed ledgers.
 
-The accountant may know the present world state; actors may not. `nf_energy` therefore contains both omniscient regional opportunity search and explicitly bounded/stale belief projections. v0.9 does **not** pipe omniscient energy truth directly into Human Rival or Dream Cattler cognition.
+## Engineering principles
 
-History materially changes resource availability. Human/Rival/Cattler occupancy now participates in a low-resolution world-metabolism proof: regional usable stock can be extracted, potential can be converted with loss, regenerative inputs can restore capacity, externalities can accumulate, and historical overshoot can reduce regional health. This is graybox accounting, not the final gathering interaction.
+- fixed, explicit authority boundaries;
+- material truth before semantic permission;
+- actor-local knowledge rather than silent omniscience;
+- bounded deterministic conflict arbitration;
+- real applied consequences before authoritative history;
+- read-only diagnostics and observation;
+- negative controls and challenger models retained for falsification.
 
-### C20 accounting invariants
+## Repository stewardship
 
-- transfer moves energy; it does not create it
-- conversion can create usable output only by consuming potential input and recording loss
-- capacity changes future throughput without minting current stock
-- regeneration is recorded as external input to the modeled regional system
-- topography changes acquisition cost rather than changing conservation bookkeeping
+The project preserves historical build and archive branches instead of rewriting them into a clean-looking linear story. Current policy:
 
-### C21 helicopter-search contract
+- [Scientific Accountability Protocol v2](docs/SCIENTIFIC_ACCOUNTABILITY_PROTOCOL_V2.md)
+- [Legal / Provenance / Fair Use](docs/LEGAL_PROVENANCE_AND_FAIR_USE_POLICY.md)
+- [Data and Evidence](docs/DATA_AND_EVIDENCE_POLICY.md)
+- [Branch and Release Policy](docs/BRANCH_AND_RELEASE_POLICY.md)
+- [Third-Party Notices](THIRD_PARTY_NOTICES.md)
+- [Contributing](CONTRIBUTING.md)
 
-- bounded 24-region search, not a giant per-object strategic solve
-- world-level search may inspect authoritative present state
-- actor belief search uses prior + observed evidence + confidence + staleness
-- perfect present accounting does not imply perfect future prediction
-- deeper horizons are alternative valuations of the same ledger, not separate currencies
+The previous root README, which described the v0.9 state, is preserved at [docs/archive/README_ROOT_V0.9_SNAPSHOT.md](docs/archive/README_ROOT_V0.9_SNAPSHOT.md).
 
-### C22 proof pair
+## Build status
 
-The test harness deliberately contrasts:
+Historical and laboratory scripts remain in the repository, but build instructions are **milestone-specific**. Use the ledger/README belonging to the branch you are evaluating. Do not interpret an isolated contact-lab pass as full client/server certification.
 
-- **South Works** — high initial usable stock, weaker renewal/absorption, worse terrain/access economics
-- **Signal Court** — lower initial stock, stronger productive/regenerative capacity and cheaper topographical access from the central lab
+The current research line is still diverged from `main`; issue #30 tracks reconciliation before broad promotion.
 
-Sustained Rival occupation depletes South Works while Signal Court continues to regenerate. A stale belief and a newly observed belief therefore assign different energetic prospects to the same history-changing world.
+## Commercial / commons direction
 
-## Existing gameplay baseline
-
-v0.9 preserves the accepted and candidate systems underneath it:
-
-- fixed 60 Hz authoritative simulation
-- shared Fuzzy Rail movement/traversal
-- ENet transport + prediction/reconciliation
-- authoritative hitscan/rewind/combat/death/respawn
-- Human Rival perception, utility, bounded encounter pressure and spatial ecology
-- 0.40 km² / 24-region situated-agency lab
-- Dream Cattler habitat, infestation, imperfect pack evidence, locomotor weak points and internal ecology ledger
-
-The production map target remains 8 km². The current lab remains intentionally **0.40 km² (500 m x 800 m)** so architecture is falsifiable before scale increases.
-
-## Build and test
-
-```bash
-chmod +x nightfall.sh
-./nightfall.sh standard-check
-./nightfall.sh build
-./nightfall.sh test
-./nightfall.sh combat-smoke
-./nightfall.sh encounter-smoke
-./nightfall.sh spatial-smoke
-./nightfall.sh cattler-smoke
-./nightfall.sh energy-smoke
-```
-
-`energy-smoke` writes `build/energy-smoke.log` and proves transfer/conversion/capacity invariants, topographical costs, historical depletion/regeneration, helicopter ranking, and stale-vs-fresh Bayesian beliefs.
-
-## Graphical demo
-
-```bash
-./nightfall.sh local
-```
-
-Default local configuration remains four Human Rivals, two Human-Rival pressure slots, and three Dream Cattlers. Red actors are Human Rivals. Tall orange actors are Dream Cattlers; yellow lower-body bands are temporary knee/foot weak-point diagnostics.
-
-Press **F4** for the accepted 24-region graph. The energy ledger remains server/test-side in v0.9; it is intentionally **not** exposed as a player-facing score HUD.
-
-Controls: WASD move, mouse look, Shift sprint, Ctrl crouch, Space jump, E interact/ladder, left mouse fire, R reload, 1 carbine, 2 pistol, F4 spatial graph, F10 toggle/reacquire mouse capture.
-
-Useful debug variants:
-
-```bash
-NF_AI_COUNT=0 NF_CATTLER_COUNT=3 NF_CATTLER_PROFILE=pack ./nightfall.sh local
-NF_AI_COUNT=0 NF_CATTLER_COUNT=1 NF_CATTLER_PROFILE=loner ./nightfall.sh local
-NF_AI_COUNT=0 NF_CATTLER_COUNT=5 NF_CATTLER_PROFILE=horde ./nightfall.sh local
-NF_RIVAL_TRUCE=1 ./nightfall.sh local
-```
-
-## Human acceptance target
-
-For v0.9, record the normal graphical demo to prove no regression in movement, networking, combat, Human Rivals or Dream Cattlers. Separately capture the energy proof:
-
-```bash
-./nightfall.sh energy-smoke
-tail -n 200 build/server.log
-cat build/energy-smoke.log
-```
-
-The gameplay video proves the old game still coheres; the energy trace proves the new ecological truth substrate. Actor-facing energetic decision integration is a later gate and must use legitimate belief, never direct omniscient state.
-
-## Explicit readiness watches
-
-- v0.8 PR #11 is still unmerged/unarchived pending human acceptance
-- the current Cattler `HUNT_SURGE` runtime still switches an event enum abruptly; the locked design requires gradual composition/decomposition and local mob-cap pressure
-- post-safety life-state for badly wounded Human Rivals remains unresolved; do not patch with a magic retreat timer
-- v0.9 establishes energy truth/search/accounting but does not yet let AI optimize directly against the omniscient ledger
-- final visual ecological index objects, resource interaction, Ghost Static event economy and 8 km² simulation LOD remain later work
-
-Completed versions are preserved as immutable `archive/v0.X` branches only after their acceptance gate closes. See `docs/LEDGER.md`, `docs/ARCHITECTURE.md`, and `docs/V0.9_TOPOGRAPHICAL_ENERGY.md`.
+The project intends to reconcile commons-oriented/copyleft goals with legitimate commercial activity such as support, hosting, integration, custom development, stewardship, and packaged distribution. The public software license is now **GPL-3.0-or-later**. Commercial services remain compatible with that commons license; a separate commercial software license is reserved as a possible later option subject to the contributor-rights policy. See [docs/LICENSING_DECISION_MATRIX.md](docs/LICENSING_DECISION_MATRIX.md).

@@ -1,0 +1,31 @@
+version = 1
+
+# Project-authored software, tests, build scripts, packaging scripts, and CI.
+# Historical research prose/data remain separately governed unless explicitly marked.
+[[annotations]]
+path = [
+  "src/**",
+  "tools/**",
+  "packaging/**",
+  "*.sh",
+  "CMakeLists.txt",
+  ".github/workflows/**",
+  "demos/**/*.c",
+  "demos/**/*.h",
+  "demos/**/*.sh",
+  "demos/**/*.py",
+  "demos/**/CMakeLists.txt"
+]
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 nightfall!punk contributors"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+# Repository-governance automation and contribution templates are also project software/process material.
+[[annotations]]
+path = [
+  ".github/PULL_REQUEST_TEMPLATE.md",
+  "tools/project_audit.py"
+]
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 nightfall!punk contributors"
+SPDX-License-Identifier = "GPL-3.0-or-later"
