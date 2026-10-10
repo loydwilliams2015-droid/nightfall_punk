@@ -29,7 +29,8 @@ if(NF_CONTACT_LAB_ONLY)
         src/shared/nf_contact18a5.c
         src/shared/nf_contact18a5_sink.c
         src/shared/nf_contact18a5_close.c
-        src/shared/nf_contact18a5_wal.c)
+        src/shared/nf_contact18a5_wal.c
+        src/shared/nf_eligibility18b2.c)
     add_library(nightfall_contact_lab STATIC ${NF_CONTACT_SOURCES})
     target_include_directories(nightfall_contact_lab PUBLIC src/shared)
     target_compile_definitions(nightfall_contact_lab PRIVATE NF18A5_TEST_CONTROLS=1)
@@ -45,6 +46,10 @@ if(NF_CONTACT_LAB_ONLY)
     target_link_libraries(nightfall_v18a5_sink_test PRIVATE nightfall_contact_lab)
     nf_project_warnings(nightfall_v18a5_sink_test)
     add_test(NAME durable_sink_lab_v18a5 COMMAND nightfall_v18a5_sink_test)
+    add_executable(nightfall_v18b2_eligibility_test src/tests/test_v18b2_eligibility.c)
+    target_link_libraries(nightfall_v18b2_eligibility_test PRIVATE nightfall_contact_lab)
+    nf_project_warnings(nightfall_v18b2_eligibility_test)
+    add_test(NAME eligibility_v18b2 COMMAND nightfall_v18b2_eligibility_test)
     add_library(nightfall_contact_prod STATIC ${NF_CONTACT_SOURCES})
     target_include_directories(nightfall_contact_prod PUBLIC src/shared)
     nf_project_warnings(nightfall_contact_prod)
