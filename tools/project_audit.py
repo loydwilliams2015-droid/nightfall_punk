@@ -8,7 +8,11 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = [
     "PROJECT_STATE_INDEX.md",
+    "LICENSE",
+    "LICENSES/GPL-3.0-or-later.txt",
     "LICENSE_STATUS.md",
+    "REUSE.toml",
+    "RELEASE_LICENSING_NOTICE.md",
     "THIRD_PARTY_NOTICES.md",
     "CONTRIBUTING.md",
     "CODE_OF_CONDUCT.md",
@@ -17,6 +21,7 @@ REQUIRED = [
     "docs/LEGAL_PROVENANCE_AND_FAIR_USE_POLICY.md",
     "docs/DATA_AND_EVIDENCE_POLICY.md",
     "docs/BRANCH_AND_RELEASE_POLICY.md",
+    "docs/CONTRIBUTOR_LICENSING_POLICY.md",
 ]
 errors: list[str] = []
 warnings: list[str] = []
@@ -26,20 +31,18 @@ for rel in REQUIRED:
         errors.append(f"missing required governance file: {rel}")
 
 readme = (ROOT / "README.md").read_text(encoding="utf-8") if (ROOT / "README.md").exists() else ""
-has_license = any((ROOT / name).is_file() for name in ("LICENSE", "LICENSE.txt", "LICENSE.md", "COPYING"))
+license_status = (ROOT / "LICENSE_STATUS.md").read_text(encoding="utf-8") if (ROOT / "LICENSE_STATUS.md").exists() else ""
+reuse = (ROOT / "REUSE.toml").read_text(encoding="utf-8") if (ROOT / "REUSE.toml").exists() else ""
 
-# Detect the known stale positive claim, not mere discussion of licensing.
-# Negative statements such as "do not treat this as open-source licensed" are valid.
-stale_positive_markers = (
-    "open-source copy-left",
-    "open source copy-left",
-    "open-source copyleft project",
-    "open source copyleft project",
-)
-if not has_license and any(marker in readme.lower() for marker in stale_positive_markers):
-    errors.append("README makes a positive open-source/copyleft claim but no project LICENSE is present")
+has_license = (ROOT / "LICENSE").is_file() and (ROOT / "LICENSES/GPL-3.0-or-later.txt").is_file()
 if not has_license:
-    warnings.append("no project-wide LICENSE present; LICENSE_STATUS.md governs current wording")
+    errors.append("GPL license files are missing")
+if has_license and "GPL-3.0-or-later" not in license_status:
+    errors.append("LICENSE_STATUS.md does not identify GPL-3.0-or-later")
+if "SPDX-License-Identifier = \"GPL-3.0-or-later\"" not in reuse:
+    errors.append("REUSE.toml does not contain the GPL-3.0-or-later SPDX expression")
+if "GPL-3.0-or-later" not in readme:
+    errors.append("README does not state the active software license")
 
 try:
     tracked = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True).splitlines()
