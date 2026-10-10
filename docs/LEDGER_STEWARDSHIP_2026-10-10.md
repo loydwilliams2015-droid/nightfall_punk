@@ -46,3 +46,18 @@ Maintain challenger models, negative controls, failed runs, and evidence grades.
 ## Governance-audit erratum
 
 The first push/PR runs of the new governance audit failed because the checker matched the phrase `open-source/copyleft` inside the corrective sentence **"do not treat it as open-source/copyleft licensed."** This was a checker false positive, not a repository licensing contradiction. The failed workflow runs are intentionally retained. The audit was corrected to detect the historical positive claim (`open-source copy-left`) rather than any occurrence of licensing vocabulary, then rerun.
+
+## LEGAL-01 execution sweep
+
+A repository rights/licensing sweep was completed after the initial stewardship pass:
+
+- 537 visible commits in the current stewardship ancestry were enumerated; all use the same visible GitHub author/committer account.
+- 351 tracked blobs were classified; no tracked image/audio/font/PAK/WAD/BSP media assets or obvious vendored third-party source trees were found.
+- direct dependency licenses were checked: ENet MIT, raylib zlib/libpng, libsodium ISC;
+- GPL-3.0-or-later was adopted for project-authored software identified by `REUSE.toml`;
+- standard license text was added at `LICENSE` and `LICENSES/GPL-3.0-or-later.txt`;
+- a narrow CLA direction was selected over DCO-alone to preserve possible future commercial relicensing while contributors retain copyright;
+- external code contributions remain gated until binding CLA language receives qualified legal review;
+- release, contribution, status, README, third-party, and SPDX/REUSE records were updated.
+
+Residual uncertainty is explicitly retained: repository archaeology cannot prove absence of every possible historical source-similarity issue in AI-assisted or manually adapted code. Credible provenance challenges require targeted review rather than assuming the audit is a forensic originality certification.
