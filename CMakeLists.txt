@@ -174,6 +174,7 @@ add_library(nightfall_shared STATIC
     src/shared/nf_contact18a5_sink.c
     src/shared/nf_contact18a5_close.c
     src/shared/nf_contact18a5_wal.c
+    src/shared/nf_eligibility18b2.c
     src/shared/nf_embody18a6.c)
 target_include_directories(nightfall_shared PUBLIC src/shared src/client)
 nf_project_warnings(nightfall_shared)
