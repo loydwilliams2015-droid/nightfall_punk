@@ -131,7 +131,16 @@ reaches x=1.9605; the small canonical fixture does not sustain six seconds of
 committed physical ticks. The precise pending frontier needs broader diagnosis;
 do not interpret it as demonstrated realtime gameplay throughput.
 The separate legacy four-client combat/network smoke passes; it does not
-prove multiplayer EEC integration. Remote CI results are recorded separately.
+prove multiplayer EEC integration. On engineering commit
+`7378a23f0c615d2d7e96bdada1c24d9687a1c968`, all **nine remote GitHub checks
+PASS**. The full Ubuntu run includes 29 tests, the new authenticated M3/M4
+encounter smoke, inherited gameplay/network checks, and automated legacy-demo
+graphics. These are executed CI results, not new EEC graphical UI or human H4.
+[CI_FINAL.md](evidence/1.8B2-EEC/CI_FINAL.md) and the exact check JSON record
+this source head. Artifact ZIP downloads were Forbidden at two Azure storage
+hosts; additive destinations were saved in the environment draft, but current
+instance ZIP access remains blocked. Successful API/log reads and local raw
+source/data/binaries remain available in the dossier.
 
 ## PAR — isolated CPU measurements and exit candidate
 
