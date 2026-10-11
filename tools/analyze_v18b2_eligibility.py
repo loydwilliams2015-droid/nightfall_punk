@@ -56,7 +56,7 @@ def main(root):
                        "mean_geometry_queries": sum(int(r["geometry_queries"]) for r in rows) / len(rows),
                        "mean_material_queries": sum(int(r["material_queries"]) for r in rows) / len(rows)})
     with (root / "comparison.csv").open("w", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=list(result[0]))
+        writer = csv.DictWriter(stream, fieldnames=list(result[0]), lineterminator="\n")
         writer.writeheader()
         writer.writerows(result)
     admissible = [m for m in ("M3", "M4") if all(
