@@ -4,6 +4,18 @@
 conversation. **HOLD release; retain M4 provisionally, with M3 admissible.**
 These are new-source H2 results, not recovered historical H1 or human H4 proof.
 
+## Recommendation lock
+
+Locked at the user's instruction on 2026-10-10 (America/Chicago): **HOLD the
+1.8B.2 release.** M4 remains the provisional incumbent; M3 remains the mandatory,
+admissible challenger. The evaluated source is frozen at
+`fadae2b5a88c1d989febc39a83ab9fc8ec020559` in draft PR #44:
+[source on GitHub](https://github.com/loydwilliams2015-droid/nightfall_punk/tree/fadae2b5a88c1d989febc39a83ab9fc8ec020559).
+The open acceptance gates below remain open; this lock does not approve a merge,
+release or historical-source promotion. Reconsider the recommendation only with
+new recorded evidence and explicit acceptance of the governing release gates.
+This lock changes documentation only and introduces no new execution results.
+
 ## Source authority and inherited evidence
 
 Fetched and verified PR #42 at `f30ef6b48179afd28f0911b9922cdcf41af6fd33`

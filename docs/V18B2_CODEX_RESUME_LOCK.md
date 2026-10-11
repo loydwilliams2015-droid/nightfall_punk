@@ -39,3 +39,11 @@ See [LEDGER_V18B2_EEC_LIVE_TICK.md](LEDGER_V18B2_EEC_LIVE_TICK.md) for the
 new H2 single-owner increment and the remaining OPEN acceptance gates.
 M4 provisional, M3 mandatory/admissible; release HOLD. The original baseline
 SHAs and provenance distinctions above remain unchanged.
+
+## User-locked recommendation
+
+2026-10-10 (America/Chicago): **HOLD 1.8B.2 release**, locked by user instruction.
+M4 provisional incumbent; M3 mandatory admissible challenger. Evaluated source:
+`fadae2b5a88c1d989febc39a83ab9fc8ec020559`, draft PR #44. See the recommendation
+lock in the live-owner ledger above. No merge, release or lineage promotion is
+approved; existing OPEN acceptance gates remain unchanged.
