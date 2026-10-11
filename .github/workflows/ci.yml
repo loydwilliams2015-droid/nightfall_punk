@@ -27,6 +27,8 @@ jobs:
         run: bash ./v16b.sh build
       - name: All inherited plus v1.6 v1.6A and v1.6B CTests
         run: bash ./v16b.sh test
+      - name: Authenticated B2 live A6 encounter and replay smoke, M3 and M4
+        run: python3 tools/check_v18b2_network.py
       - name: v1.6B deterministic scripted sample database and OITOA soil analysis
         run: bash ./v16b.sh sample-db
       - name: v1.6B production authority network scenario smoke 100ms jitter loss
@@ -92,4 +94,5 @@ jobs:
             build/v16b-samples/net-*.csv
             build/v16b-samples/net-server.log
             build/v16b-video/*.mp4
+            build/b2-resume-evidence/network-*.log
           if-no-files-found: error

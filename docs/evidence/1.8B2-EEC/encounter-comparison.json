@@ -1,0 +1,126 @@
+{
+  "indexed_fixture_ids": 672,
+  "model_case_ids_per_repeat": 1344,
+  "dependent_timing_repeats": 3,
+  "semantic_replay_and_pairs": "PASS",
+  "models": {
+    "M3": {
+      "rows_dependent_repeats": 2016,
+      "authored_errors": 0,
+      "unsafe_publications": 0,
+      "grants": 234,
+      "frame_overruns": 0,
+      "all": {
+        "proposal_ns": {
+          "p50": 795,
+          "p95": 927,
+          "p99": 1392
+        },
+        "tick_ns": {
+          "p50": 1632,
+          "p95": 11068,
+          "p99": 14071
+        },
+        "total_ns": {
+          "p50": 2493,
+          "p95": 11869,
+          "p99": 16082
+        }
+      },
+      "held-out": {
+        "proposal_ns": {
+          "p50": 792,
+          "p95": 928,
+          "p99": 1428
+        },
+        "tick_ns": {
+          "p50": 1632,
+          "p95": 11022,
+          "p99": 11439
+        },
+        "total_ns": {
+          "p50": 2500,
+          "p95": 11817,
+          "p99": 12502
+        }
+      },
+      "published": {
+        "proposal_ns": {
+          "p50": 797,
+          "p95": 884,
+          "p99": 1334
+        },
+        "tick_ns": {
+          "p50": 11043,
+          "p95": 13768,
+          "p99": 57280
+        },
+        "total_ns": {
+          "p50": 11837,
+          "p95": 14764,
+          "p99": 67443
+        }
+      }
+    },
+    "M4": {
+      "rows_dependent_repeats": 2016,
+      "authored_errors": 0,
+      "unsafe_publications": 0,
+      "grants": 234,
+      "frame_overruns": 0,
+      "all": {
+        "proposal_ns": {
+          "p50": 793,
+          "p95": 939,
+          "p99": 1644
+        },
+        "tick_ns": {
+          "p50": 1634,
+          "p95": 11075,
+          "p99": 13831
+        },
+        "total_ns": {
+          "p50": 2496,
+          "p95": 11879,
+          "p99": 16319
+        }
+      },
+      "held-out": {
+        "proposal_ns": {
+          "p50": 791,
+          "p95": 927,
+          "p99": 1378
+        },
+        "tick_ns": {
+          "p50": 1632,
+          "p95": 11045,
+          "p99": 11483
+        },
+        "total_ns": {
+          "p50": 2503,
+          "p95": 11835,
+          "p99": 13170
+        }
+      },
+      "published": {
+        "proposal_ns": {
+          "p50": 801,
+          "p95": 976,
+          "p99": 6779
+        },
+        "tick_ns": {
+          "p50": 11056,
+          "p95": 14924,
+          "p99": 75233
+        },
+        "total_ns": {
+          "p50": 11857,
+          "p95": 16876,
+          "p99": 76017
+        }
+      }
+    }
+  },
+  "causal_positive_metrics": "See independent EEC05 fixtures; no positive contacts in this one-frame corpus",
+  "selection": "M4 retained provisionally, subject to separate acceptance gates"
+}

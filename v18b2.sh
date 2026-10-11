@@ -7,6 +7,8 @@ if (( jobs > 5 )); then jobs=5; fi
 mode=${1:-all}
 evidence=build/b2-evidence
 mkdir -p "$evidence"
+encounter_evidence=build/b2-resume-evidence
+mkdir -p "$encounter_evidence"
 if [[ "$mode" == all || "$mode" == check ]]; then
   clang_bin=$(command -v clang-19 || command -v clang)
   for compiler in gcc "$clang_bin"; do
@@ -21,6 +23,7 @@ if [[ "$mode" == all || "$mode" == check ]]; then
   cmake --build build/b2-asan --parallel "$jobs"
   ctest --test-dir build/b2-asan --output-on-failure | tee "$evidence/asan-tests.log"
   build/b2-gcc/nightfall_v18b2_contract_test > "$evidence/targeted.csv"
+  build/b2-gcc/nightfall_v18b2_encounter_test > "$encounter_evidence/encounter-targeted.csv"
 fi
 if [[ "$mode" == all || "$mode" == benchmark ]]; then
   # No concurrent compilation while measuring. These seeds and strata were
@@ -31,9 +34,15 @@ if [[ "$mode" == all || "$mode" == benchmark ]]; then
   done
   python3 tools/analyze_v18b2_eligibility.py "$evidence"
 fi
+if [[ "$mode" == all || "$mode" == encounter-benchmark ]]; then
+  for run in 1 2 3; do
+    build/b2-gcc/nightfall_v18b2_encounter_samples "$run" "$encounter_evidence/encounter-run$run.csv"
+  done
+  python3 tools/analyze_v18b2_encounter.py "$encounter_evidence"
+fi
 if [[ "$mode" == engine ]]; then
   cmake -S . -B build/full -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=ON
   cmake --build build/full --parallel "$jobs"
   ctest --test-dir build/full --output-on-failure | tee "$evidence/engine-tests.log"
 fi
-case "$mode" in all|check|benchmark|engine) ;; *) echo "usage: bash v18b2.sh all|check|benchmark|engine" >&2; exit 2;; esac
+case "$mode" in all|check|benchmark|engine|encounter-benchmark) ;; *) echo "usage: bash v18b2.sh all|check|benchmark|engine|encounter-benchmark" >&2; exit 2;; esac
