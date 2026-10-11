@@ -6,7 +6,8 @@ elif [[ -f "$ROOT/../../CMakeLists.txt" ]]; then ENGINE="$(cd "$ROOT/../.." && p
 else echo 'Cannot find the nightfall!punk 1.8A6 engine source. Supply engine/ or place under demos/a6-dual/ in the GitHub repository.' >&2;exit 2;fi
 cd "$ROOT"
 cmake -S "$ENGINE" -B "$ENGINE/build/dual" -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release > /dev/null
-cmake --build "$ENGINE/build/dual" --target nightfall_embody_prod --parallel "${JOBS:-4}" > /dev/null
+# The workflow immediately runs this build tree's inherited CTests too.
+cmake --build "$ENGINE/build/dual" --parallel "${JOBS:-4}" > /dev/null
 mkdir -p bin
 cc="${CC:-cc}"
 flags=(-std=c11 -O2 -D_POSIX_C_SOURCE=200809L -Wall -Wextra -Wpedantic -Werror -I"$ENGINE/src/shared" -I"$ENGINE/src/client")

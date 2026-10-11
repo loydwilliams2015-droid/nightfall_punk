@@ -14,6 +14,11 @@ option(NF_FETCH_ENET "Fetch ENet 1.3.18 when no system package is found" ON)
 
 function(nf_project_warnings target_name)
     target_compile_options(${target_name} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    # Assertions in test executables must execute even in Release builds.
+    # Otherwise NDEBUG both removes checks and causes unused-fixture errors.
+    if(target_name MATCHES "_test$")
+        target_compile_options(${target_name} PRIVATE -UNDEBUG)
+    endif()
 endfunction()
 
 # Offline-capable, strict-C scientific contact laboratory. It intentionally

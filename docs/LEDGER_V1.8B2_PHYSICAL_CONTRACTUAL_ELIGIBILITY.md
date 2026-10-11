@@ -94,6 +94,7 @@ concentrated case families limit independence and representativeness.
 | Replay / semantic stability | Zero replay discrepancies and cross-repeat semantic divergences for M3/M4; analyzer rejects incomplete corpora. |
 | Targeted integration and adversarial checks | 66 explicit checks pass, including 4096 flag combinations for both admissible policies, fine residency, one-ULP reach, nonfinite input, huge hull frontier, forged/stale witness, interleaved replay, failed/reentrant publisher, real WAL, and 2/4/8/16-actor contested permutations. |
 | Compiler and sanitizer regressions | Nine offline CTests pass under GCC optimized, Clang optimized and GCC ASan/UBSan. Assertions remain active under `-O2`; strict C11 warnings are errors. |
+| Inherited Release CI repair | Reproduced `NDEBUG`-removed B2 assertion checks causing unused-variable/parameter errors. CMake now keeps assertions active for project test executables. Default GCC/Clang Release suites pass nine tests. The arcade builder now builds the test executables required by its CTest step; its inherited nine tests pass locally. |
 | Full engine compilation and regressions | Native client/server compiled; 28 full tests pass. Reusable installer rerun also builds full/headless and passes 28 headless tests. |
 | Network representative operation | Fresh full server on UDP 27777: netbot connected, 209 snapshots, 100 combat events, 38 damage events, seven deaths, exit 0. Existing gameplay path only. |
 | PR #41 clean reference | Original 6000 fixture/capacity suite and 256-case supplement pass under GCC, Clang and ASan/UBSan. Separate from the B2 corpus. |
@@ -161,7 +162,7 @@ independent game-world reliability and no broad proof inferred from zero failure
 | Physical realization | B3: prove actual requested transitions and supported moving platforms through application; current B2 stationary support and screening scope does not close this. |
 | Same-tick and sustained multi-actor use | B4: existing deterministic capacity checks are local evidence; sustained contention, joint resources, cancellation and cross-tick fairness need their own acceptance. |
 | Durable and network authority | B5: implement persisted reservations, owner locking, reboot replay and multi-object conflict recovery; exercise loss/reorder and independent observers. A callback contract and finite in-memory receipts do not close this. |
-| Branch CI / integrated performance | Workflow committed for lab + exact PR #41 checks. Remote Actions results have not been verified here. Current experiment is local H2 laboratory evidence, not H3 promotion. Measure live tick timing after wiring. |
+| Branch CI / integrated performance | B2 lab + exact PR #41 workflow passed on [push](https://github.com/loydwilliams2015-droid/nightfall_punk/actions/runs/38098826576) and [PR](https://github.com/loydwilliams2015-droid/nightfall_punk/actions/runs/38098853707) at `ce3067966e3c64f5d91f1ca3038c72cdaeff75c5`. First inherited PR workflows failed at Release compilation and arcade CTest; focused repairs follow in the review branch. Latest-head CI status is captured separately with the artifacts. H3 promotion still requires actual live tick wiring and timing. |
 | H4 responsiveness | NOT RUN: graphical client compiled, no display/human gameplay test in cloud. Need instrumented input-to-application/display measurements and human acceptance. |
 
 Git HTTPS reads, PR-head retrieval, public PR HTML and Git push transport work.
@@ -169,6 +170,10 @@ GitHub API initially denied CONNECT, then succeeded on final retry, including
 repository, issue #37, PR #41 and Actions metadata reads. API read connectivity
 is now verified; no duplicate token is needed. The additive `api.github.com`
 draft setting preserves package-manager presets.
+Draft PR [#42](https://github.com/loydwilliams2015-droid/nightfall_punk/pull/42)
+was created against the actual B2 parent branch; writes and CI status reads are
+verified. Actions log downloads hit a separate destination denial; the additive
+`results-receiver.actions.githubusercontent.com` rule is also saved for review.
 Review/save the tested install/start draft in environment settings and publish
 to persist the reproducible environment; saving alone neither applies settings nor verifies restored
 startup. Existing install now includes Clang 19, startup describes this branch
