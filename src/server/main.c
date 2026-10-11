@@ -17,6 +17,7 @@
 #include "nf_semantics.h"
 #include "nf_spatial.h"
 #include "nf_world.h"
+#include "v18b2_encounter_server.h"
 
 #include <float.h>
 #include <math.h>
@@ -280,6 +281,8 @@ static void seed_lifeworld_corner(NfCattlerSystem *cattlers,NfWorld *world){
 }
 
 int main(int argc,char **argv){
+    for(int i=1;i<argc;++i)if(!strcmp(argv[i],"--b2-encounter-proof"))
+        return nf18b2_encounter_server_main(argc,argv);
     uint16_t port=NF_NET_DEFAULT_PORT;uint32_t sim_latency=0,sim_jitter=0;float sim_loss=0.0f;double duration=0.0;bool friendly_fire=false;
     size_t ai_count=4u,pressure_slots=2u,cattler_count=NF_CATTLER_DEFAULT_AGENTS;NfRelationship rival_relation=NF_RELATION_HOSTILE;NfCattlerDebugProfile cattler_profile=NF_CATTLER_PROFILE_NORMAL;
     for(int i=1;i<argc;++i){

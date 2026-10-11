@@ -31,6 +31,19 @@ typedef struct Nf18a6TickTrace {
     NfWorldTickStatus world_status;
     Nf18a6Status embodiment_status;
 } Nf18a6TickTrace;
+/* Optional local B2 gates, always inside the existing tick owner. READY permits
+   physical staging; it is not a receipt or a completed execution. */
+typedef enum Nf18a6OwnerGate {
+    NF18A6_GATE_READY=0, NF18A6_GATE_BLOCKED, NF18A6_GATE_PENDING,
+    NF18A6_GATE_STALE, NF18A6_GATE_INVALID
+} Nf18a6OwnerGate;
+struct Nf18a6Outcome;
+typedef struct Nf18a6OwnerHooks {
+    Nf18a6OwnerGate (*begin)(const NfWorld *,uint32_t,void *);
+    bool (*prepublish)(const NfWorld *,const Nf18a5Integrated *,void *);
+    void (*finish)(const NfWorld *,const struct Nf18a6Outcome *,void *);
+    void *context;
+} Nf18a6OwnerHooks;
 typedef struct Nf18a6Runtime {
     Nf18a5Integrated physical;
     NfCameraState camera;
@@ -45,6 +58,7 @@ typedef struct Nf18a6Runtime {
     void *tick_provider_context;
     const char *tick_journal;
     Nf18a6TickTrace tick_trace;
+    Nf18a6OwnerHooks owner_hooks;
 } Nf18a6Runtime;
 typedef struct Nf18a6Outcome {
     Nf18a6Status status;

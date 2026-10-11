@@ -1,0 +1,21 @@
+{
+  "engineering_head": "f30ef6b48179afd28f0911b9922cdcf41af6fd33",
+  "handoff_head": "f377d662c2e4bf70a38fbbf1d8255527022f7fc8",
+  "historical_archive_recovered": false,
+  "files_sha256": {
+    "PR41_PROVENANCE.json": "d28b64e979c27ff575d0817df04f205478f4b2bc13f21e3cfdda4dd8c9c53d59",
+    "RAW_DATA_SHA256SUMS": "16b999a03f8b489f23c8a876bd879babe65409d4f118ada1e6d2baa9b104006f",
+    "RESULTS.md": "8973e634ee1702b5b179715d3f15d8a60a06896402fe9cb8e98161814eb51985",
+    "abi-sizes.txt": "abfd7882d5f6b18aae75b633bc4d686a477bb3f7350baa8a9e2557cfda3d4dd2",
+    "comparison.csv": "ca42410f51670ba42cb1156a96c42635342338b9a39e6a5ae46fd4a6febdaee2",
+    "comparison.json": "2d8ba35ba19264793820c0058481480eceda3aeb73d706daf47ee539902bb545",
+    "machine.json": "42b28edeea7be5b17b1e62f5a86916d22ec77d29a92fd85c3e108000db585111",
+    "run1-calibration.csv": "8f448fe991a5ed7196f3af68432dc958945defdd92bee16ed130d21eda95aeb0",
+    "run1-held-out.csv": "5e173184173c7d56ca0ed824625c0a6adb1c198af3641b73ffdff197f4277ef2",
+    "run2-calibration.csv": "6cc46238badbfb9cdd2256d2ee72e60dfa276e0a4d869d64a48db341fe52e0e5",
+    "run2-held-out.csv": "b91bd10053ed4c60ff0169e3542307e2201c0af9ff0132403f8af42cdaae3031",
+    "run3-calibration.csv": "a2bc75e82f4cf3fefdbe5eb91456f50284bb0247f53de25d369fc36e7b607a70",
+    "run3-held-out.csv": "f3aa96664d5b365871c9bdb46d690038d4009c7435e314514113de3fe46161a3",
+    "targeted.csv": "6aae33d9b2999de8b07fc4e53483132ff1786af26fd23d646a2202243d33e6c2"
+  }
+}

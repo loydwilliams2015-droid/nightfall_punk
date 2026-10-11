@@ -1,16 +1,19 @@
 name: 1.8B.2 physical and contractual eligibility
 on:
   push:
-    branches: [agent/v1.8b2-physical-contractual-eligibility]
+    branches: [agent/v1.8b2-physical-contractual-eligibility, agent/v18b2-eec-live-tick]
   pull_request:
     paths:
       - 'src/shared/nf_eligibility18b2.*'
+      - 'src/shared/nf_encounter18b2.*'
+      - 'src/shared/nf_embody18a6.*'
       - 'src/shared/nf_contact18a5_close.*'
       - 'src/tests/*v18b2*'
       - 'src/tests/test_v18b1_pr41_coverage.c'
       - 'src/reproduction/v18b1/**'
       - 'tools/check_v18b1_pr41.sh'
       - 'tools/analyze_v18b2_eligibility.py'
+      - 'tools/analyze_v18b2_encounter.py'
       - 'v18b2.sh'
       - 'CMakeLists.txt'
   workflow_dispatch:
@@ -30,5 +33,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: eligibility-B2-evidence
-          path: build/b2-evidence/
+          path: |
+            build/b2-evidence/
+            build/b2-resume-evidence/
           if-no-files-found: error

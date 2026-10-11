@@ -1,5 +1,9 @@
 # 1.8B.2 ledger handoff — codex nightfall dev chat one
 
+Later executed EEC integration is recorded separately in
+[LEDGER_V18B2_EEC_LIVE_TICK.md](LEDGER_V18B2_EEC_LIVE_TICK.md).
+The measurements below remain the frozen PR #42 laboratory evidence.
+
 2026-10-11 UTC. PRAXIS / SIGNAL / STEWARD.
 
 **M4 is the selected new-source laboratory candidate. Full release exit remains

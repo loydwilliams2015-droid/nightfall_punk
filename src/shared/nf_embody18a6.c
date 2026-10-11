@@ -93,6 +93,7 @@ typedef struct Nf18a6GateContext {
     Nf18a2ShapePolicy shape;
     float dt;
     NfVec3 start;
+    const Nf18a6OwnerHooks *hooks;
 } Nf18a6GateContext;
 static bool prepublish_world_gate(const Nf18a5Integrated *next,void *context){
     const Nf18a6GateContext *g=context;
@@ -127,7 +128,8 @@ static bool prepublish_world_gate(const Nf18a5Integrated *next,void *context){
            low.y<ob->max.y-.0001f&&high.y>ob->min.y+.0001f &&
            low.z<ob->max.z-.0001f&&high.z>ob->min.z+.0001f)return false;
     }
-    return true;
+    return !g->hooks->prepublish ||
+        g->hooks->prepublish(w,next,g->hooks->context);
 }
 static bool invalid_nearby_actors(const NfWorld *w,NfEntityId own,NfVec3 feet){
     for(size_t i=0;i<NF_MAX_ENTITIES;++i){
@@ -215,7 +217,7 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
         ++r->accepted;return outcome(NF18A6_COMMITTED,r);
     }
     Nf18a5Integrated next=r->physical;
-    const Nf18a6GateContext gate={w,r->object_collider_index,shape,dt,start};
+    const Nf18a6GateContext gate={w,r->object_collider_index,shape,dt,start,&r->owner_hooks};
     Nf18a5CloseResult result=nf18a5_integrated_pair_step_checked(&next,version,tick,start,
                     loader,ctx,shape,motor,dt,0.0f,0.5f,journal,
                     prepublish_world_gate,(void *)&gate);
@@ -271,6 +273,9 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
     return out;
 }
 bool nf18a6_recover(Nf18a6Runtime *r,NfWorld *w,const char *journal){
+    /* A physical-only WAL cannot recover B2 reservations/receipts atomically.
+       An attached B2 owner requires the future B5 recovery interface. */
+    if(r && r->owner_hooks.context)return false;
     if(!r||!w||!journal||r->object_collider_index>=w->collider_count)return false;
     Nf18a5Integrated restored={0};
     if(!nf18a5_restore(journal,&restored)||restored.actor.id!=r->actor_id||
@@ -372,9 +377,18 @@ static NfWorldTickStatus nf18a6_tick_dispatch(NfWorld *world,float dt,void *cont
     Nf18a6TickTrace trace={0};
     trace.tick=candidate_tick;trace.target_id=runtime->physical.object.id;
     trace.red_proposed=1u;trace.blue_material_checked=1u;
-    const Nf18a6Outcome result=nf18a6_step(runtime,world,actor->input,
-                              runtime->tick_provider,runtime->tick_provider_context,
-                              dt,runtime->tick_journal);
+    Nf18a6OwnerGate authorization=NF18A6_GATE_READY;
+    if(runtime->owner_hooks.begin)
+        authorization=runtime->owner_hooks.begin(world,candidate_tick,runtime->owner_hooks.context);
+    Nf18a6Outcome result;
+    if(authorization==NF18A6_GATE_READY)
+        result=nf18a6_step(runtime,world,actor->input,runtime->tick_provider,
+                         runtime->tick_provider_context,dt,runtime->tick_journal);
+    else result=outcome(authorization==NF18A6_GATE_PENDING?NF18A6_PENDING:
+        authorization==NF18A6_GATE_STALE?NF18A6_STALE:
+        authorization==NF18A6_GATE_INVALID?NF18A6_INVALID:NF18A6_BLOCKED,runtime);
+    if(runtime->owner_hooks.finish)
+        runtime->owner_hooks.finish(world,&result,runtime->owner_hooks.context);
     trace.embodiment_status=result.status;
     NfWorldTickStatus status=NF_WORLD_TICK_REJECTED;
     if(result.status==NF18A6_COMMITTED)status=NF_WORLD_TICK_COMMITTED;

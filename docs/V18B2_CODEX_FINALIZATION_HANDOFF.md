@@ -34,3 +34,14 @@ PAR means an on-par comparison sheet, not a backronym. Maturity H0 plan / H1 lab
 ## Roles and delivery
 PRAXIS owns real engine implementation; SIGNAL owns independent challenge and UX causal observations; STEWARD owns provenance, ledgers, reproducibility, acceptance. GitHub canonical. These updates cannot edit previous ChatGPT/Work/Codex chat messages directly; other chats must read the shared ledger URL.
 Sources: GitHub PR #34 #35 #39 #40 #41 #42, Issue #37, docs/LEDGER_V1.8B1_SMART_OBJECT_H1_HANDOFF.md, docs/LEDGER_V1.8B2_PHYSICAL_CONTRACTUAL_ELIGIBILITY.md.
+
+## Executed Codex follow-up, 2026-10-11 UTC
+
+The synchronized [live-owner ledger](LEDGER_V18B2_EEC_LIVE_TICK.md) records the
+new source, independent EEC fixtures, paired owner-frame measurements,
+compiler/full-engine/network results, retained failures and RET classifications.
+PR #42 f30ef6b and PR #43 f377d662 remain frozen authorities, not merged.
+Single-physical-actor integration now has executed H2 evidence. Shared live
+multi-actor execution, B5 registry crash recovery, historical-source/new-lineage
+approval and EEC human acceptance remain OPEN. M4 remains provisional, M3
+admissible. Release recommendation **HOLD**, with no human acceptance recorded.

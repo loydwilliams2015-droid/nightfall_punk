@@ -1,0 +1,5 @@
+[b2-server] opt-in A6 owner port=27782 model=M4 crypto=libsodium scope=single-physical-actor
+[b2-intent] action=1 assessment=0 tick=6
+[b2-disposition] action=1 state=EXECUTING published=1 server_input_to_disposition_ms=3
+[b2-encounter] action=1 state=COMPENSATION_REQUIRED published=1 applied_receipts=1 balance=10->9
+[b2-summary] proposals=1 grants=1 duplicate_packets=91 frames=360 tick=23 actual_A4_receipts=5 history_samples=5 balance=9 committed_frames=23 pending_frames=337 rejected_frames=0

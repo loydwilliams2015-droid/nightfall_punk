@@ -32,3 +32,10 @@ PRAXIS: implement minimal owner-bound bridge and encounter fixtures.
 SIGNAL: independently falsify, profile, detect mismatches and retained failures.
 STEWARD: source/data hashes, ledger and release governance.
 Do not claim work continued autonomously or that a new chat has been notified. User opens Codex chat and posts the handoff link.
+
+## Executed follow-up record
+
+See [LEDGER_V18B2_EEC_LIVE_TICK.md](LEDGER_V18B2_EEC_LIVE_TICK.md) for the
+new H2 single-owner increment and the remaining OPEN acceptance gates.
+M4 provisional, M3 mandatory/admissible; release HOLD. The original baseline
+SHAs and provenance distinctions above remain unchanged.
