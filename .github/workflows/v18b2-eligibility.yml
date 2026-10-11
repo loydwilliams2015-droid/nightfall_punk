@@ -1,0 +1,34 @@
+name: 1.8B.2 physical and contractual eligibility
+on:
+  push:
+    branches: [agent/v1.8b2-physical-contractual-eligibility]
+  pull_request:
+    paths:
+      - 'src/shared/nf_eligibility18b2.*'
+      - 'src/shared/nf_contact18a5_close.*'
+      - 'src/tests/*v18b2*'
+      - 'src/tests/test_v18b1_pr41_coverage.c'
+      - 'src/reproduction/v18b1/**'
+      - 'tools/check_v18b1_pr41.sh'
+      - 'tools/analyze_v18b2_eligibility.py'
+      - 'v18b2.sh'
+      - 'CMakeLists.txt'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  eligibility:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Offline compiler, sanitizer and paired corpus validation
+        run: bash v18b2.sh all
+      - name: Exact PR 41 reproduction and independent positive coverage
+        run: bash tools/check_v18b1_pr41.sh
+      - name: Preserve executed evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eligibility-B2-evidence
+          path: build/b2-evidence/
+          if-no-files-found: error

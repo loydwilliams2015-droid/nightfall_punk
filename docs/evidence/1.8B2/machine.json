@@ -1,0 +1,9 @@
+{
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "cpu": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+  "nproc": "5",
+  "parent_commit": "726b7e875075bec19a72fbc0569e3ada6aedfe95",
+  "compiler": "gcc (Debian 14.2.0-19) 14.2.0",
+  "flags": "-std=c11 -Wall -Wextra -Wpedantic -Werror -O2 (assertions retained)",
+  "scope": "native authored eligibility fixture CPU time; no game-world failure probability, integrated FPS or H4 claim"
+}
