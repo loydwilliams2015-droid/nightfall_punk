@@ -35,6 +35,12 @@ void nf18a5_integrated_init(Nf18a5Integrated *s, uint8_t chunk_capacity,
 Nf18a5Query nf18a5_resolve_exact(Nf18a5Grid *grid,NfVec3 probe,uint32_t tick,
                                   Nf18a5FineProvider provider,void *provider_ctx,
                                   uint32_t *load_count);
+/* Bounded static-material coverage, using actual A3 capsule CCD against all
+   canonical/fine voxels in the swept hull. Cache fills are not material writes.
+   Missing/stale data and a frontier over 4096 voxels return PENDING. */
+Nf18a5Query nf18a5_sweep_query(Nf18a5Grid *grid,NfVec3 feet,
+    NfVec3 displacement,Nf18a2ShapePolicy shape,float dt,uint32_t tick,
+    Nf18a5FineProvider provider,void *context,uint32_t *load_count);
 /* The journal is a single-process, same-ABI snapshot WAL: durable before publish.
    Recovery accepts complete snapshots and FAILS CLOSED on torn/corrupt tails.
    This is NOT a portable/replicated production world WAL. */

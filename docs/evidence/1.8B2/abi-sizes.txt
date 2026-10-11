@@ -1,0 +1,5 @@
+authority_bytes=792
+actor_bytes=48
+object_bytes=180
+use_bytes=32
+decision_bytes=24

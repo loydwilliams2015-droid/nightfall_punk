@@ -32,10 +32,9 @@ int main(void) {
     synthetic.status=NF18B2_ELIGIBLE; synthetic.traversal.commit_eligible=1;
     synthetic.tick=10; synthetic.actor_id=7; synthetic.feature_id=12;
     synthetic.witness_hash=12345; /* publisher protocol/unit test, not proof of physical eligibility */
-    assert(nf18b2_publish(&authority,&synthetic,publish_fail,0)==NF18B2_PUBLISH_FAILED);
+    assert(nf18b2_publish(&authority,&synthetic,publish_fail,0)==NF18B2_INVALID);
     assert(!authority.has_commit);
-    assert(nf18b2_publish(&authority,&synthetic,publish_ok,0)==NF18B2_ELIGIBLE);
-    assert(nf18b2_publish(&authority,&synthetic,publish_ok,0)==NF18B2_DUPLICATE);
-    assert(publishes==1);
+    assert(nf18b2_publish(&authority,&synthetic,publish_ok,0)==NF18B2_INVALID);
+    assert(!authority.has_commit && publishes==0);
     return 0;
 }

@@ -1,0 +1,11 @@
+{
+  "url": "https://github.com/loydwilliams2015-droid/nightfall_punk/pull/41",
+  "head": "3fb792eab6e035e1a9736db7dbcf22fc36bac410",
+  "identity": "exact clean reproduction copy, distinct from historical H1",
+  "sha256": {
+    "README.md": "98c788fa922ff4399cb4e504294b1df64f29bb6b69ede807e1190e1cd117fad1",
+    "nf_smart18b1.c": "838654b756826e359eb3e19e9736f09f6053e1957dc56b924e73cc250c586b9f",
+    "nf_smart18b1.h": "dca2c601cb6174cbe770e1cfd6bb7acebe6fa7b4b7ceeca4385a63ed527abc2b",
+    "test_smart18b1.c": "27cc8e822d755babc60098b100cd0408270c8e0662791814319e46f6859d6cc1"
+  }
+}

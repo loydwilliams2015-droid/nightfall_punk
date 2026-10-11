@@ -14,6 +14,11 @@ option(NF_FETCH_ENET "Fetch ENet 1.3.18 when no system package is found" ON)
 
 function(nf_project_warnings target_name)
     target_compile_options(${target_name} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    # Assertions in test executables must execute even in Release builds.
+    # Otherwise NDEBUG both removes checks and causes unused-fixture errors.
+    if(target_name MATCHES "_test$")
+        target_compile_options(${target_name} PRIVATE -UNDEBUG)
+    endif()
 endfunction()
 
 # Offline-capable, strict-C scientific contact laboratory. It intentionally
@@ -50,6 +55,13 @@ if(NF_CONTACT_LAB_ONLY)
     target_link_libraries(nightfall_v18b2_eligibility_test PRIVATE nightfall_contact_lab)
     nf_project_warnings(nightfall_v18b2_eligibility_test)
     add_test(NAME eligibility_v18b2 COMMAND nightfall_v18b2_eligibility_test)
+    add_executable(nightfall_v18b2_contract_test src/tests/test_v18b2_contracts.c)
+    target_link_libraries(nightfall_v18b2_contract_test PRIVATE nightfall_contact_lab)
+    nf_project_warnings(nightfall_v18b2_contract_test)
+    add_test(NAME physical_contract_eligibility_v18b2 COMMAND nightfall_v18b2_contract_test)
+    add_executable(nightfall_v18b2_sample_db src/tests/sample_v18b2_eligibility.c)
+    target_link_libraries(nightfall_v18b2_sample_db PRIVATE nightfall_contact_prod)
+    nf_project_warnings(nightfall_v18b2_sample_db)
     add_library(nightfall_contact_prod STATIC ${NF_CONTACT_SOURCES})
     target_include_directories(nightfall_contact_prod PUBLIC src/shared)
     nf_project_warnings(nightfall_contact_prod)
@@ -302,6 +314,11 @@ endif()
 
 if(NF_BUILD_TESTS)
     enable_testing()
+
+    add_executable(nightfall_v18b2_contract_test src/tests/test_v18b2_contracts.c)
+    target_link_libraries(nightfall_v18b2_contract_test PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_v18b2_contract_test)
+    add_test(NAME physical_contract_eligibility_v18b2 COMMAND nightfall_v18b2_contract_test)
 
     add_executable(nightfall_world_test src/tests/test_world.c)
     target_link_libraries(nightfall_world_test PRIVATE nightfall_shared)

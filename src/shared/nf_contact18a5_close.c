@@ -46,10 +46,11 @@ Nf18a5Query nf18a5_resolve_exact(Nf18a5Grid *g,NfVec3 p,uint32_t tick,
    against each SOLID canonical or fine subvoxel. No point-query shortcut can
    authorize the whole actor path. Static material only: dynamic objects go
    through nf18a4_pair_step separately. */
-static Nf18a5Query world_sweep(Nf18a5Grid *g,NfVec3 feet,
+Nf18a5Query nf18a5_sweep_query(Nf18a5Grid *g,NfVec3 feet,
         NfVec3 displacement,Nf18a2ShapePolicy shape,float dt,uint32_t tick,
         Nf18a5FineProvider provider,void *ctx,uint32_t *loads){
-    if(!g||!isfinite(feet.x)||!isfinite(feet.y)||!isfinite(feet.z)||
+    if(!g||!tick||g->count>NF18A5_MAX_CHUNKS||!nf18a2_profile_valid(shape)||
+       !isfinite(feet.x)||!isfinite(feet.y)||!isfinite(feet.z)||
        !isfinite(displacement.x)||!isfinite(displacement.y)||!isfinite(displacement.z)||
        !(dt>0.0f)||!isfinite(dt)||!(shape.radius>0.0f)||!(shape.height>0.0f))
         return NF18A5_Q_INVALID;
@@ -66,10 +67,14 @@ static Nf18a5Query world_sweep(Nf18a5Grid *g,NfVec3 feet,
             return NF18A5_Q_INVALID;
         mn[i]=(int32_t)floor(lo[i]);mx[i]=(int32_t)floor(hi[i]);
     }
-    uint64_t span=(uint64_t)((int64_t)mx[0]-mn[0]+1)*
-                  (uint64_t)((int64_t)mx[1]-mn[1]+1)*
-                  (uint64_t)((int64_t)mx[2]-mn[2]+1);
-    if(span>4096u)return NF18A5_Q_PENDING; /* explicit bounded frontier */
+    uint64_t span=1;
+    for(int i=0;i<3;++i){
+        const uint64_t width=(uint64_t)((int64_t)mx[i]-mn[i]+1);
+        /* Check BEFORE multiplication: an adversarial large hull must not
+           wrap the budget to zero and enter an effectively unbounded loop. */
+        if(width>4096u/span)return NF18A5_Q_PENDING;
+        span*=width;
+    }
     bool blocked=false,pending=false;
     for(int64_t y=mn[1];y<=mx[1];++y)for(int64_t z=mn[2];z<=mx[2];++z)
         for(int64_t x=mn[0];x<=mx[0];++x){
@@ -77,11 +82,12 @@ static Nf18a5Query world_sweep(Nf18a5Grid *g,NfVec3 feet,
         int32_t cy=(int32_t)floor((double)y/4.0);
         int32_t cz=(int32_t)floor((double)z/4.0);
         Nf18a5Chunk *c=get(g,cx,cy,cz);
-        if(!c){pending=true;continue;}
+        if(!c||!c->canonical_epoch||tick<c->last_access_tick){pending=true;continue;}
         unsigned lx=(unsigned)(x-(int64_t)cx*4);
         unsigned ly=(unsigned)(y-(int64_t)cy*4);
         unsigned lz=(unsigned)(z-(int64_t)cz*4);
         const uint8_t v=c->canonical[(ly*4u+lz)*4u+lx];
+        if(v>NF18A5_MIXED)return NF18A5_Q_INVALID;
         if(v==NF18A5_FREE)continue;
         if(v==NF18A5_MIXED && (!c->fine_valid||c->fine_parent_epoch!=c->canonical_epoch)){
             NfVec3 probe={(float)x+.25f,(float)y+.25f,(float)z+.25f};
@@ -96,11 +102,15 @@ static Nf18a5Query world_sweep(Nf18a5Grid *g,NfVec3 feet,
         if(v==NF18A5_MIXED && (!c||!c->fine_valid||sub==0u)){
             pending=true;continue;
         }
+        if(v==NF18A5_MIXED && ((sub!=2u&&sub!=4u)||
+           c->fine_count!=(4u*sub)*(4u*sub)*(4u*sub)))return NF18A5_Q_INVALID;
         for(unsigned dy=0;dy<sub;++dy)for(unsigned dz=0;dz<sub;++dz)
             for(unsigned dx=0;dx<sub;++dx){
             if(v==NF18A5_MIXED){
                 unsigned sx=lx*sub+dx,sy=ly*sub+dy,sz=lz*sub+dz,n=4u*sub;
-                if(c->fine[(sy*n+sz)*n+sx]!=NF18A5_SOLID)continue;
+                const uint8_t fine=c->fine[(sy*n+sz)*n+sx];
+                if(fine>NF18A5_SOLID)return NF18A5_Q_INVALID;
+                if(fine!=NF18A5_SOLID)continue;
             }
             float step=1.0f/(float)sub;
             Nf18aCollider obstacle={0};obstacle.body_id=UINT32_MAX;
@@ -154,7 +164,7 @@ Nf18a5CloseResult nf18a5_integrated_pair_step_checked(
     const NfVec3 feet={next.actor.center.x,
                        next.actor.center.y-0.5f*shape.height,next.actor.center.z};
     const NfVec3 desired={preview.velocity.x*dt,preview.velocity.y*dt,preview.velocity.z*dt};
-    Nf18a5Query route=world_sweep(&next.world.grid,feet,desired,shape,dt,tick,
+    Nf18a5Query route=nf18a5_sweep_query(&next.world.grid,feet,desired,shape,dt,tick,
                                    loader,ctx,&out.cache_loads);
     if(route!=NF18A5_Q_FREE){
         out.query=route;
@@ -175,7 +185,7 @@ Nf18a5CloseResult nf18a5_integrated_pair_step_checked(
     const NfVec3 actual={pair.actor.center.x-next.actor.center.x,
                           pair.actor.center.y-next.actor.center.y,
                           pair.actor.center.z-next.actor.center.z};
-    Nf18a5Query realized=world_sweep(&next.world.grid,feet,actual,shape,dt,tick,
+    Nf18a5Query realized=nf18a5_sweep_query(&next.world.grid,feet,actual,shape,dt,tick,
                                       loader,ctx,&out.cache_loads);
     if(realized!=NF18A5_Q_FREE){
         out.query=realized;
