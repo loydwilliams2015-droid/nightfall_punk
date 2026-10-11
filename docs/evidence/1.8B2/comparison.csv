@@ -1,4 +1,4 @@
-corpus,model,evaluations,unique_cases,unsafe,mismatches,replay_discrepancies,p50_ns,p95_ns,p99_ns,mean_geometry_queries,mean_material_queries
+corpus,model,evaluations,case_ids,unsafe,mismatches,replay_discrepancies,p50_ns,p95_ns,p99_ns,mean_geometry_queries,mean_material_queries
 boundary,M0,6144,2048,3072,3072,0,3.5,3.75,7.25,0.0,0.0
 boundary,M1,6144,2048,0,0,0,7.0,8.0,8.5,0.0,0.0
 boundary,M2,6144,2048,3072,3072,0,5.125,5.75,6.625,0.0,0.0

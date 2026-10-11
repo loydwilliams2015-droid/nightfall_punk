@@ -47,7 +47,7 @@ def main(root):
     for (corpus, model), rows in sorted(buckets.items()):
         timings = [float(r["ns"]) for r in rows]
         result.append({"corpus": corpus, "model": model, "evaluations": len(rows),
-                       "unique_cases": COUNTS[corpus],
+                       "case_ids": COUNTS[corpus],
                        "unsafe": sum(int(r["unsafe"]) for r in rows),
                        "mismatches": sum(not int(r["correct"]) for r in rows),
                        "replay_discrepancies": sum(not int(r["replay"]) for r in rows),
@@ -67,7 +67,7 @@ def main(root):
         "M3" not in admissible or hold["M4"]["p50_ns"] <= hold["M3"]["p50_ns"]) else (
         "M3" if "M3" in admissible else None)
     report = {"scope": "new-source authored-domain native laboratory; not historical B1 reproduction",
-              "unique_cases": sum(COUNTS.values()), "models": 5, "timing_repeats": 3,
+              "indexed_cases": sum(COUNTS.values()), "models": 5, "timing_repeats": 3,
               "model_case_evaluations_per_repeat": sum(COUNTS.values()) * 5,
               "admissible": admissible, "exit_candidate": chosen, "release_exit": "BLOCKED",
               "unresolved": ["historical B1 archive", "live object/credential registry and tick-owner integration",
@@ -75,8 +75,9 @@ def main(root):
                              "integrated frame timing and human responsiveness"], "rows": result}
     (root / "comparison.json").write_text(json.dumps(report, indent=2) + "\n")
     lines = ["# 1.8B.2 executed comparative results", "",
-             f"{sum(COUNTS.values()):,} authored cases × 5 models = "
-             f"{sum(COUNTS.values()) * 5:,} distinct model-case evaluations; 3 dependent timing repeats.",
+             f"{sum(COUNTS.values()):,} indexed authored cases × 5 models = "
+             f"{sum(COUNTS.values()) * 5:,} model-case IDs; 3 dependent timing repeats.",
+             "Case IDs do not imply distinct stimuli: boundary repeats two one-ULP states 1,024 times each.",
              "No independent game-world failure probability or formal proof is inferred.", "",
              "| Corpus | Model | Mismatches (3 repeats) | Unsafe grants | p50 ns | p95 ns | p99 ns |",
              "|---|---|---:|---:|---:|---:|---:|"]
@@ -92,7 +93,7 @@ def main(root):
               "Movement support is stationary only; moving support is honestly blocked.",
               "Full release exit **BLOCKED** on the individually listed integration/provenance/H4 gates."]
     (root / "RESULTS.md").write_text("\n".join(lines) + "\n")
-    print(json.dumps({k: report[k] for k in ("unique_cases", "admissible", "exit_candidate", "release_exit")}))
+    print(json.dumps({k: report[k] for k in ("indexed_cases", "admissible", "exit_candidate", "release_exit")}))
     if not chosen:
         raise SystemExit(1)
 

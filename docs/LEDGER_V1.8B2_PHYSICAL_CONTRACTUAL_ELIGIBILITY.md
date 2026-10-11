@@ -80,13 +80,16 @@ accepts only M3/M4. None is a recovered historical model or commercial-engine po
 
 Registration: [experiment plan](V1.8B2_EXPERIMENT_PLAN.md), frozen seeds/strata before
 comparison. Canonical 2048; randomized 8192; pathological 1024; boundary 2048;
-held-out 8192. Total **21,504 authored cases × five policies = 107,520 distinct
-model-case evaluations**, repeated three times for local timing stability.
+held-out 8192. Total **21,504 indexed authored cases × five policies = 107,520
+model-case IDs**, repeated three times for local timing stability.
 Each timing sample averages eight calls. Repeats and batched calls do not multiply
 the independent case count. Held-out seed `0xB218CAFE` differs from calibration
 `0x18312345`; no tuning from held-out outcomes was used. Truth comes from fixture
 construction separately from adjudicator/A3/A5 calls. Shared constructors and
 concentrated case families limit independence and representativeness.
+Case IDs do not imply distinct input states: the boundary corpus repeats two
+exact/one-ULP reach states 1024 times each. Its 2048 records measure those two
+states' local costs, not 2048 different boundary geometries.
 
 | Mandatory laboratory gate | Executed result |
 |---|---|
@@ -112,7 +115,7 @@ native library calls, including input validation, not a production tick or displ
 
 | Held-out metric | M3 | M4 |
 |---|---:|---:|
-| Unique cases | 8192 | 8192 |
+| Indexed case IDs | 8192 | 8192 |
 | Incorrect / unsafe / replay | 0 / 0 / 0 | 0 / 0 / 0 |
 | Batch-average p50 ns | 202.375 | 32.250 |
 | Batch-average p95 ns | 416.875 | 227.125 |
@@ -120,11 +123,11 @@ native library calls, including input validation, not a production tick or displ
 | Mean geometry queries | 0.80725 | 0.30017 |
 | Mean material queries | 1.24512 | 0.60034 |
 
-M0, M1 and M2 fail safety/correctness gates; held-out unique unsafe grants are
+M0, M1 and M2 fail safety/correctness gates; held-out unsafe case IDs are
 6143, 404 and 201 respectively. Their low cost cannot compensate. Full tables:
 [RESULTS.md](evidence/1.8B2/RESULTS.md), [CSV](evidence/1.8B2/comparison.csv),
 [JSON](evidence/1.8B2/comparison.json). Table mismatch totals include three repeats;
-unique unsafe counts above divide those dependent repeated totals by three.
+unsafe case-ID counts above divide those dependent repeated totals by three.
 
 Selection uses mandatory truth gates before cost. Among the two passing policies,
 M4 retains the design incumbent with equal observed correctness/causal fidelity

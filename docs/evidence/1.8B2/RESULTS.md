@@ -1,6 +1,7 @@
 # 1.8B.2 executed comparative results
 
-21,504 authored cases × 5 models = 107,520 distinct model-case evaluations; 3 dependent timing repeats.
+21,504 indexed authored cases × 5 models = 107,520 model-case IDs; 3 dependent timing repeats.
+Case IDs do not imply distinct stimuli: boundary repeats two one-ULP states 1,024 times each.
 No independent game-world failure probability or formal proof is inferred.
 
 | Corpus | Model | Mismatches (3 repeats) | Unsafe grants | p50 ns | p95 ns | p99 ns |
