@@ -1,0 +1,23 @@
+name: 1.8B.3 physical interaction
+on:
+  push:
+    branches: [agent/v18b3-physical-interaction]
+  pull_request:
+    paths: ['src/shared/*18b3*', 'src/tests/*18b3*', 'tools/*18b3*', 'v18b3.sh', 'CMakeLists.txt']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  physical-interaction:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Strict compilers, sanitizers and independent paired corpus
+        run: bash v18b3.sh all
+      - name: Preserve source-linked raw results including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: physical-interaction-B3-evidence
+          path: build/b3-evidence/
+          if-no-files-found: error

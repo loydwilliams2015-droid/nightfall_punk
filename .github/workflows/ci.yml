@@ -29,6 +29,17 @@ jobs:
         run: bash ./v16b.sh test
       - name: Authenticated B2 live A6 encounter and replay smoke, M3 and M4
         run: python3 tools/check_v18b2_network.py
+      - name: Authenticated B3 physical realization, seven actions, M3 and M4
+        run: python3 tools/check_v18b3_network.py
+      - name: Native B3 physical fixture viewer, automated M4 scenes
+        run: |
+          set -euo pipefail
+          mkdir -p build/b3-evidence
+          cd build/b3-evidence
+          for kind in 0 1 2 3 4 5 6; do
+            xvfb-run -a ../full/nightfall_v18b3_demo --auto --kind "$kind" --seconds 1.5 --capture "kind${kind}.png"
+            test -s "kind${kind}.png"
+          done
       - name: v1.6B deterministic scripted sample database and OITOA soil analysis
         run: bash ./v16b.sh sample-db
       - name: v1.6B production authority network scenario smoke 100ms jitter loss
@@ -95,4 +106,6 @@ jobs:
             build/v16b-samples/net-server.log
             build/v16b-video/*.mp4
             build/b2-resume-evidence/network-*.log
+            build/b3-evidence/network-*.log
+            build/b3-evidence/*.png
           if-no-files-found: error

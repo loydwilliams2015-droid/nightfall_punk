@@ -7,8 +7,10 @@
 #include <time.h>
 int main(int argc,char **argv){
     uint16_t port=27778;double duration=4;
+    int b3_kind=-1;unsigned hold_ms=450;
     for(int i=1;i<argc;++i){if(!strcmp(argv[i],"--port")&&i+1<argc)port=(uint16_t)atoi(argv[++i]);
-        else if(!strcmp(argv[i],"--duration")&&i+1<argc)duration=atof(argv[++i]);}
+        else if(!strcmp(argv[i],"--duration")&&i+1<argc)duration=atof(argv[++i]);
+        else if(!strcmp(argv[i],"--b3-kind")&&i+1<argc){b3_kind=atoi(argv[++i]);hold_ms=1200;}}
     if(!nf_security_init()||!nf_net_global_init())return 2;
     NfNetHost net;if(!nf_net_client_open(&net))return 2;
     /* Loss/jitter here exercise existing transport, not a B5 recovery claim. */
@@ -36,7 +38,7 @@ int main(int argc,char **argv){
             /* One push attempt, followed by withdrawal. Repeated wire packets
                carry the same action ID and must not cause a second debit. */
             const uint32_t age=now-welcome_ms;
-            c->move.strafe=age<450?1:0;c->move.interact_held=age<450;
+            c->move.strafe=(b3_kind<0?age<hold_ms:b3_kind==3&&age<350)?1:0;c->move.interact_held=age<hold_ms;
             uint8_t data[NF_NET_MAX_PACKET_BYTES];size_t n=nf_protocol_encode_input(data,sizeof data,&b);
             nf_net_send(&net,peer,NF_NET_CHANNEL_STATE,data,n,false);
             if(sequence%3==0)nf_net_send(&net,peer,NF_NET_CHANNEL_STATE,data,n,false);
@@ -48,5 +50,5 @@ int main(int argc,char **argv){
         welcomed?"yes":"no",snapshots,packets,(unsigned long long)tick,initial.x,latest.x);
     if(peer)nf_net_disconnect(peer,0);
     nf_net_flush(&net);nf_net_close(&net);nf_net_global_shutdown();
-    return welcomed&&snapshots>3&&latest.x>initial.x?0:1;
+    return welcomed&&snapshots>3&&(b3_kind>=0&&b3_kind!=3?true:latest.x>initial.x)?0:1;
 }

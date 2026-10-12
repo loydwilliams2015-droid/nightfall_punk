@@ -1,0 +1,11 @@
+{
+  "src/shared/nf_interaction18b3.c": "37ab06606d7ba331f44e4b322d5c196734f3e7aa4901d938099cd8bcd02d62eb",
+  "src/shared/nf_interaction18b3.h": "687aa21e0b1a0a0f61a3d034bb37b766beff91be56820551e08640f3bd8f6c13",
+  "src/shared/nf_embody18a6.c": "cfe6565df85b9b368e642cf7ae80cf6baca88aee3fcf32c89316649ff3f19fee",
+  "src/shared/nf_embody18a6.h": "ec7e6fcfe9c95fda0ae43fdacbd486b3cdfacfdf9686bff8dd9070d31e7c5192",
+  "src/tests/sample_v18b3_interaction.c": "b88c85c99a0878f1b76eae5911c9c5b04837ae3c8c406b06301ca9954dacc1dc",
+  "src/tests/v18b3_fixtures.h": "feeeaf99e996ea4b78f9b0ec98c318e809b434a81f3c8d4dcd0fef938c0c8102",
+  "src/tests/test_v18b3_interaction.c": "37fcb393c0089f86c3aa43acc692b6dbdf06e7558c27c7e09c1df22e191466bb",
+  "CMakeLists.txt": "63b02fa10fb376ee399a8cc880d82ff153d12b3bf62723dc11fb5870f8473ba1",
+  "docs/V18B3_EXPERIMENT_PLAN.md": "761a6c0136dc5827538d53b599ae1f05585e5e5f6bddb9fddee517f046fc68ff"
+}

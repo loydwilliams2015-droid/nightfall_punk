@@ -1,0 +1,253 @@
+{
+  "indexed_fixture_ids": 752,
+  "model_case_ids_per_repeat": 2256,
+  "timing_repeats_dependent": 3,
+  "paired_semantics_and_replay": "PASS",
+  "models": {
+    "M0": {
+      "dependent_rows": 2256,
+      "authored_errors": 2256,
+      "unsafe_effects": 1218,
+      "conservation_violations": 72,
+      "frame_overruns": 0,
+      "case_material_effect_detection": {
+        "true_positive": 1038,
+        "false_positive": 1218,
+        "false_negative": 0,
+        "precision": 0.4601063829787234,
+        "recall": 1.0,
+        "scope": "Authored case-level effect presence, not per-contact or general physics accuracy; forces separately checked by fixtures"
+      },
+      "all": {
+        "proposal_ns": {
+          "p50": 50,
+          "p95": 70,
+          "p99": 160
+        },
+        "total_owner_ns": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "max_frame_ns": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "frames": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "held-out": {
+        "proposal_ns": {
+          "p50": 50,
+          "p95": 70,
+          "p99": 160
+        },
+        "total_owner_ns": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "max_frame_ns": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "frames": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "positive": {
+        "proposal_ns": {
+          "p50": 41,
+          "p95": 71,
+          "p99": 170
+        },
+        "total_owner_ns": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "max_frame_ns": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "frames": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      }
+    },
+    "M3": {
+      "dependent_rows": 2256,
+      "authored_errors": 0,
+      "unsafe_effects": 0,
+      "conservation_violations": 0,
+      "frame_overruns": 0,
+      "case_material_effect_detection": {
+        "true_positive": 1038,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "scope": "Authored case-level effect presence, not per-contact or general physics accuracy; forces separately checked by fixtures"
+      },
+      "all": {
+        "proposal_ns": {
+          "p50": 1543,
+          "p95": 2504,
+          "p99": 3034
+        },
+        "total_owner_ns": {
+          "p50": 63675,
+          "p95": 2333775,
+          "p99": 2792974
+        },
+        "max_frame_ns": {
+          "p50": 63565,
+          "p95": 131587,
+          "p99": 407620
+        },
+        "frames": {
+          "p50": 1,
+          "p95": 34,
+          "p99": 40
+        }
+      },
+      "held-out": {
+        "proposal_ns": {
+          "p50": 1673,
+          "p95": 2604,
+          "p99": 3876
+        },
+        "total_owner_ns": {
+          "p50": 67641,
+          "p95": 2328897,
+          "p99": 3745800
+        },
+        "max_frame_ns": {
+          "p50": 67080,
+          "p95": 158547,
+          "p99": 1904123
+        },
+        "frames": {
+          "p50": 1,
+          "p95": 34,
+          "p99": 40
+        }
+      },
+      "positive": {
+        "proposal_ns": {
+          "p50": 1533,
+          "p95": 2554,
+          "p99": 3335
+        },
+        "total_owner_ns": {
+          "p50": 712577,
+          "p95": 2615598,
+          "p99": 4041205
+        },
+        "max_frame_ns": {
+          "p50": 76385,
+          "p95": 229544,
+          "p99": 2118363
+        },
+        "frames": {
+          "p50": 11,
+          "p95": 40,
+          "p99": 40
+        }
+      }
+    },
+    "M4": {
+      "dependent_rows": 2256,
+      "authored_errors": 0,
+      "unsafe_effects": 0,
+      "conservation_violations": 0,
+      "frame_overruns": 0,
+      "case_material_effect_detection": {
+        "true_positive": 1038,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "scope": "Authored case-level effect presence, not per-contact or general physics accuracy; forces separately checked by fixtures"
+      },
+      "all": {
+        "proposal_ns": {
+          "p50": 1543,
+          "p95": 2474,
+          "p99": 2895
+        },
+        "total_owner_ns": {
+          "p50": 62183,
+          "p95": 2270761,
+          "p99": 2641859
+        },
+        "max_frame_ns": {
+          "p50": 62123,
+          "p95": 117075,
+          "p99": 401501
+        },
+        "frames": {
+          "p50": 1,
+          "p95": 34,
+          "p99": 40
+        }
+      },
+      "held-out": {
+        "proposal_ns": {
+          "p50": 1672,
+          "p95": 2534,
+          "p99": 2984
+        },
+        "total_owner_ns": {
+          "p50": 65869,
+          "p95": 2255087,
+          "p99": 2739554
+        },
+        "max_frame_ns": {
+          "p50": 65328,
+          "p95": 121412,
+          "p99": 1437073
+        },
+        "frames": {
+          "p50": 1,
+          "p95": 34,
+          "p99": 40
+        }
+      },
+      "positive": {
+        "proposal_ns": {
+          "p50": 1552,
+          "p95": 2544,
+          "p99": 2984
+        },
+        "total_owner_ns": {
+          "p50": 685176,
+          "p95": 2501836,
+          "p99": 3563809
+        },
+        "max_frame_ns": {
+          "p50": 75563,
+          "p95": 205017,
+          "p99": 2112445
+        },
+        "frames": {
+          "p50": 11,
+          "p95": 40,
+          "p99": 40
+        }
+      }
+    }
+  },
+  "selection": "M4 provisional; assess whole-owner tails and separate release gates",
+  "scope": "Headless single-actor real owner CLOCK_MONOTONIC elapsed time, including scheduling; no H4, general rigid-body or B4/B5 inference"
+}
