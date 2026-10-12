@@ -1,0 +1,10 @@
+#include "nf_encounter18b2.h"
+#include <string.h>
+static bool fresh(const NfEncounter *e,NfEncounterEpochs n){return e->world_revision==n.world_revision&&e->material_epoch==n.material_epoch&&e->contract_revision==n.contract_revision;}
+void nf_encounter_init(NfEncounter *e,uint32_t a,uint32_t o,uint32_t x,uint32_t t,NfEncounterEpochs n){if(!e)return;memset(e,0,sizeof(*e));e->actor_id=a;e->object_id=o;e->action_id=x;e->tick=t;e->world_revision=n.world_revision;e->material_epoch=n.material_epoch;e->contract_revision=n.contract_revision;e->phase=NF_E_PROPOSED;}
+NfEncounterResult nf_encounter_eligible(NfEncounter *e,bool p,bool c,bool uncertain,NfEncounterEpochs n){if(!e||!e->actor_id||!e->object_id||!e->action_id||e->phase!=NF_E_PROPOSED)return NF_E_BAD_INPUT;if(!fresh(e,n)){e->phase=NF_E_EXPIRED;return NF_E_STALE;}if(uncertain){e->phase=NF_E_PENDING;return NF_E_DENIED;}if(!p||!c){e->phase=NF_E_BLOCKED;return NF_E_DENIED;}e->phase=NF_E_ELIGIBLE;return NF_E_OK;}
+NfEncounterResult nf_encounter_reserve(NfEncounter *e,NfEncounterEpochs n){if(!e||e->phase!=NF_E_ELIGIBLE)return NF_E_BAD_INPUT;if(!fresh(e,n)){e->phase=NF_E_EXPIRED;return NF_E_STALE;}e->phase=NF_E_RESERVED;return NF_E_OK;}
+NfEncounterResult nf_encounter_commit(NfEncounter *e,NfEncounterEpochs n,bool durable){if(!e)return NF_E_BAD_INPUT;if(e->published)return NF_E_DUPLICATE;if(e->phase!=NF_E_RESERVED)return NF_E_BAD_INPUT;if(!fresh(e,n)){e->phase=NF_E_EXPIRED;return NF_E_STALE;}if(!durable){e->phase=NF_E_FAILED;return NF_E_DENIED;}e->published=1;e->phase=NF_E_COMMITTED;return NF_E_OK;}
+NfEncounterResult nf_encounter_execute(NfEncounter *e){if(!e||e->phase!=NF_E_COMMITTED)return NF_E_BAD_INPUT;e->phase=NF_E_EXECUTING;return NF_E_OK;}
+NfEncounterResult nf_encounter_complete(NfEncounter *e,bool done){if(!e||e->phase!=NF_E_EXECUTING)return NF_E_BAD_INPUT;e->phase=done?NF_E_COMPLETED:NF_E_INTERRUPTED;return NF_E_OK;}
+NfEncounterResult nf_encounter_cancel(NfEncounter *e){if(!e||e->published||!(e->phase==NF_E_ELIGIBLE||e->phase==NF_E_RESERVED||e->phase==NF_E_PENDING))return NF_E_DENIED;e->phase=NF_E_CANCELLED;return NF_E_OK;}
