@@ -129,8 +129,14 @@ are observations, not latency distributions or human feedback. See the committed
 `nightfall_v18b3_demo` reads actual bodies/colliders/resources and provides local
 use, cancel/release, reset and jam injection. It is an H2 native fixture viewer;
 the legacy network FPS client does not yet replicate B3 object/ability snapshots
-into its UI. Automated Xvfb rendering/current-head CI are recorded separately
-after execution. No local display or human H4 trial was performed.
+into its UI. Engineering head `b56bd9da8a628f769c5c348749c8e820bfbe34d8` passed all
+**ten GitHub checks**, including all seven native M4 Xvfb scenes and 14 B3
+network action/model cases. The retrieved seven screenshots were visually
+inspected by the assistant. [CI_ENGINEERING.md](evidence/1.8B3/CI_ENGINEERING.md)
+records exact source head and results; this is automated/H2 evidence. No local
+display or human H4 trial was performed. The separate B3 corpus artifact ZIP
+remains blocked at an added Azure hostname; local raw data are committed and
+system evidence/logs were successfully retrieved.
 
 ## PAR — balanced selection
 
@@ -174,7 +180,7 @@ population-zero failure. M0 cannot be rescued by cheap immediate mutation.
 | No denied/stale effects, duplicate transfers/debits, orphan terminal slots or observer differences | PASS in executed cases |
 | Independent five-stratum comparison, negative-control sensitivity, replay and resource conservation | PASS |
 | Strict compilers/sanitizers/full Linux engine and authenticated network proof | PASS |
-| Native automated rendering and current-head remote CI | Recorded separately after execution; no unexecuted pass claimed |
+| Native automated rendering and engineering-head remote CI | PASS at b56bd9d; exact-head records linked above; no H4 inferred |
 | General scene PAR, rotation/falling/traversal realization | OPEN; explicit declared limits/unsupported domains |
 | Full FPS client B3 replication and human play-feel | OPEN |
 | B4 shared actors/fairness, B5 durable aggregate recovery | OPEN / deferred |
