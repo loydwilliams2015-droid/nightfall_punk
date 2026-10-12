@@ -1,0 +1,5 @@
+NfWorld=350656
+Nf18a6Runtime=65952
+Nf18b2EncounterRuntime=105256
+Nf18b3Runtime=1039056
+Nf18b3State=27600

@@ -1,0 +1,86 @@
+[
+  {
+    "log": "network-M3-kind0-server.log",
+    "receipt_to_disposition_ms": 0,
+    "receipt_to_completion_ms": 544,
+    "summary": "[b3-summary] kind=0 state=COMPLETED motor_steps=34 contacts=0 events=34 inventory=0 health=0 salvage=8 balance=10 slots=0 carried_by=0 power=9996.400000 spent=3.600000"
+  },
+  {
+    "log": "network-M3-kind1-server.log",
+    "receipt_to_disposition_ms": 4,
+    "receipt_to_completion_ms": 171,
+    "summary": "[b3-summary] kind=1 state=COMPLETED motor_steps=11 contacts=0 events=12 inventory=0 health=0 salvage=8 balance=10 slots=0 carried_by=0 power=9999.100000 spent=0.900000"
+  },
+  {
+    "log": "network-M3-kind2-server.log",
+    "receipt_to_disposition_ms": 3,
+    "receipt_to_completion_ms": 3,
+    "summary": "[b3-summary] kind=2 state=COMPLETED motor_steps=0 contacts=0 events=1 inventory=1 health=0 salvage=8 balance=10 slots=0 carried_by=0 power=10000.000000 spent=0.000000"
+  },
+  {
+    "log": "network-M3-kind3-server.log",
+    "receipt_to_disposition_ms": 0,
+    "receipt_to_completion_ms": 0,
+    "summary": "[b3-summary] kind=3 state=COMPLETED motor_steps=0 contacts=1 events=1 inventory=0 health=0 salvage=8 balance=10 slots=0 carried_by=0 power=10000.000000 spent=0.000000"
+  },
+  {
+    "log": "network-M3-kind4-server.log",
+    "receipt_to_disposition_ms": 4,
+    "receipt_to_completion_ms": 1204,
+    "summary": "[b3-summary] kind=4 state=COMPLETED motor_steps=72 contacts=72 events=72 inventory=0 health=0 salvage=8 balance=10 slots=0 carried_by=0 power=9986.599524 spent=13.400476"
+  },
+  {
+    "log": "network-M3-kind5-server.log",
+    "receipt_to_disposition_ms": 3,
+    "receipt_to_completion_ms": 653,
+    "summary": "[b3-summary] kind=5 state=COMPLETED motor_steps=40 contacts=0 events=43 inventory=0 health=3 salvage=5 balance=7 slots=0 carried_by=0 power=9998.000000 spent=2.000000"
+  },
+  {
+    "log": "network-M3-kind6-server.log",
+    "receipt_to_disposition_ms": 4,
+    "receipt_to_completion_ms": 554,
+    "summary": "[b3-summary] kind=6 state=COMPLETED motor_steps=34 contacts=0 events=34 inventory=0 health=0 salvage=8 balance=10 slots=0 carried_by=0 power=9996.400000 spent=3.600000"
+  },
+  {
+    "log": "network-M4-kind0-server.log",
+    "receipt_to_disposition_ms": 4,
+    "receipt_to_completion_ms": 554,
+    "summary": "[b3-summary] kind=0 state=COMPLETED motor_steps=34 contacts=0 events=34 inventory=0 health=0 salvage=8 balance=10 slots=0 carried_by=0 power=9996.400000 spent=3.600000"
+  },
+  {
+    "log": "network-M4-kind1-server.log",
+    "receipt_to_disposition_ms": 4,
+    "receipt_to_completion_ms": 171,
+    "summary": "[b3-summary] kind=1 state=COMPLETED motor_steps=11 contacts=0 events=12 inventory=0 health=0 salvage=8 balance=10 slots=0 carried_by=0 power=9999.100000 spent=0.900000"
+  },
+  {
+    "log": "network-M4-kind2-server.log",
+    "receipt_to_disposition_ms": 3,
+    "receipt_to_completion_ms": 3,
+    "summary": "[b3-summary] kind=2 state=COMPLETED motor_steps=0 contacts=0 events=1 inventory=1 health=0 salvage=8 balance=10 slots=0 carried_by=0 power=10000.000000 spent=0.000000"
+  },
+  {
+    "log": "network-M4-kind3-server.log",
+    "receipt_to_disposition_ms": 3,
+    "receipt_to_completion_ms": 3,
+    "summary": "[b3-summary] kind=3 state=COMPLETED motor_steps=0 contacts=1 events=1 inventory=0 health=0 salvage=8 balance=10 slots=0 carried_by=0 power=10000.000000 spent=0.000000"
+  },
+  {
+    "log": "network-M4-kind4-server.log",
+    "receipt_to_disposition_ms": 3,
+    "receipt_to_completion_ms": 1203,
+    "summary": "[b3-summary] kind=4 state=COMPLETED motor_steps=72 contacts=72 events=72 inventory=0 health=0 salvage=8 balance=10 slots=0 carried_by=0 power=9986.599524 spent=13.400476"
+  },
+  {
+    "log": "network-M4-kind5-server.log",
+    "receipt_to_disposition_ms": 4,
+    "receipt_to_completion_ms": 655,
+    "summary": "[b3-summary] kind=5 state=COMPLETED motor_steps=40 contacts=0 events=43 inventory=0 health=3 salvage=5 balance=7 slots=0 carried_by=0 power=9998.000000 spent=2.000000"
+  },
+  {
+    "log": "network-M4-kind6-server.log",
+    "receipt_to_disposition_ms": 3,
+    "receipt_to_completion_ms": 553,
+    "summary": "[b3-summary] kind=6 state=COMPLETED motor_steps=34 contacts=0 events=34 inventory=0 health=0 salvage=8 balance=10 slots=0 carried_by=0 power=9996.400000 spent=3.600000"
+  }
+]

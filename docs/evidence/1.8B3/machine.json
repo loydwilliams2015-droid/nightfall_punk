@@ -1,0 +1,9 @@
+{
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "gcc": "gcc (Debian 14.2.0-19) 14.2.0",
+  "clang": "Debian clang version 19.1.7 (3+b1)",
+  "cmake": "cmake version 3.31.6",
+  "flags": "C11 -Wall -Wextra -Wpedantic -Werror -O2 (assertions retained); production A6/B3, no unsafe runtime models",
+  "scope": "isolated headless owner CPU after compilation and networking; three dependent repeats, CLOCK_MONOTONIC elapsed includes scheduling; no player latency/FPS inference"
+}

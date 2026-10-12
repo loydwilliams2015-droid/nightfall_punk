@@ -36,3 +36,18 @@ PR #34 = H0 B1-B5 programme; PR #35 = stewardship; PR #39 = RP-01; PR #40 = clea
 PRAXIS: replace one-point screening with tested physical/contract witnesses under world tick ownership; wire real prepublish gate/WAL; independent full M0–M4 reproduction.
 SIGNAL: run adversarial, boundary, randomized and held-out corpora and real timing; check causal fidelity and player-observable consequences.
 STEWARD: SHA-256 source/data identities, toolchain/platform flags, archived logs and failure cases, branch CI and no unsupported promotions.
+
+## Executed 1.8B.3 handoff — 2026-10-11 America/Chicago
+
+See [LEDGER_V18B3_PHYSICAL_INTERACTION.md](LEDGER_V18B3_PHYSICAL_INTERACTION.md)
+for the new H2 source on agent/v18b3-physical-interaction, descendant of the
+pinned f30ef6b B2 laboratory and PR44's 16949c4 live prerequisite. Doors, switches,
+pickups, pushing, carrying, repair and interruption now have modeled execution,
+independent comparisons and source-linked evidence. 216 targeted checks, 11
+offline tests per compiler/sanitizer, 30 full engine tests per GCC/Clang, and 14
+authenticated network action/model runs pass locally. First-corpus 12 calibration/
+pathological failures are retained and fixed; final M3/M4 corpora have zero
+authored mismatches or unsafe effects. M4 provisional, M3 mandatory/admissible.
+Release HOLD: provenance, broader rigid-body/traversal, B4/B5 and human H4 remain
+open. B2's locked recommendation is not changed. Remote CI/native automated
+rendering is reported separately at the precise executed head.

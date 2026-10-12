@@ -59,6 +59,9 @@ typedef struct Nf18a6Runtime {
     const char *tick_journal;
     Nf18a6TickTrace tick_trace;
     Nf18a6OwnerHooks owner_hooks;
+    /* Last successful tick's real contact, exposed for B3 transaction staging.
+       Zero when no contact was applied; it is not an additional world commit. */
+    Nf18a4Receipt last_applied_contact;
 } Nf18a6Runtime;
 typedef struct Nf18a6Outcome {
     Nf18a6Status status;
@@ -104,4 +107,5 @@ Nf18a6Snapshot nf18a6_snapshot(const Nf18a6Runtime *r,const NfWorld *world);
 /* Read-only diagnostic agreement: no client state can become world authority. */
 bool nf18a6_snapshot_matches(const Nf18a6Snapshot *a,const Nf18a6Snapshot *b);
 const char *nf18a6_status_name(Nf18a6Status s);
+uint32_t nf18a6_current_body_hash(const Nf18a6Runtime *);
 #endif

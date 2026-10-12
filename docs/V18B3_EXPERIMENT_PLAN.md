@@ -49,11 +49,12 @@ No held-out failure may be discarded or silently used to tune an exit claim.
 
 Independent fixtures assert material poses, inventories, consumed salvage,
 token/power conservation, released slots and actual receipts. Compare paired
-semantic results, replay stability and causal attribution. CPU clock excludes
+semantic results, replay stability and causal attribution. Monotonic elapsed timing excludes
 fixture setup and output; measures complete real owner calls at dt=1/60,
 with proposal and completion-tick latency reported separately. Use isolated
-timing after compilation and network checks; 16.667ms CPU overruns are a
-headless budget check, not FPS or perceived latency.
+timing after compilation and network checks; 16.667ms owner-call overruns are a
+headless budget check, not FPS or perceived latency. CLOCK_MONOTONIC includes
+scheduling delays; these samples do not measure thread CPU utilization.
 
 ## Exit gates
 

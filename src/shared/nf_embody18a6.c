@@ -16,6 +16,9 @@ static uint32_t hash_body(const Nf18a4Body *a,const Nf18a4Body *b,uint32_t tick,
     for(size_t i=0;i<sizeof(f)/sizeof(f[0]);++i)h=mix(h^quant(f[i]));
     return h;
 }
+uint32_t nf18a6_current_body_hash(const Nf18a6Runtime *r){
+    return r?hash_body(&r->physical.actor,&r->physical.object,r->physical.world.tick,r->physical.world.revision):0;
+}
 static bool actor_consistent(const NfActor *a,const Nf18a4Body *b){
     if(!a||!b||a->id!=b->id||!a->active)return false;
     const NfVec3 feet={b->center.x,b->center.y-b->height*.5f,b->center.z};
@@ -246,6 +249,7 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
     NfActor *dst=nf_world_find_actor(w,r->actor_id);
     if(!dst)return outcome(NF18A6_INVALID,r);
     r->physical=next;
+    r->last_applied_contact=result.applied;
     NfCollider *cr=&w->colliders[r->object_collider_index];
     cr->previous_min=cr->min;cr->previous_max=cr->max;
     cr->min=vsub(next.object.center,next.object.box_half);
