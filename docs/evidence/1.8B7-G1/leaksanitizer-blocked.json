@@ -1,0 +1,106 @@
+{
+  "source_sha": "b5870171f3d2ed6794c349944b3ec2eda70e6219",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "runs": [
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Werror",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "-Isrc/shared",
+        "src/shared/nf_interact18b3.c",
+        "src/tests/test_interact18b3.c",
+        "-o",
+        "/tmp/tmpbt0h6s1i/gcc-interact18b3"
+      ],
+      "compile_exit": 0,
+      "compile_output": "",
+      "run_exit": 1,
+      "run_output": "==14==Can't open /proc/13/task for reading.\n==13==LeakSanitizer has encountered a fatal error.\n==13==HINT: For debugging, try setting environment variable LSAN_OPTIONS=verbosity=1:log_threads=1\n==13==HINT: LeakSanitizer does not work under ptrace (strace, gdb, etc)\n",
+      "compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Werror",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "-Isrc/shared",
+        "src/shared/nf_hf18b4.c",
+        "src/tests/test_hf18b4.c",
+        "-o",
+        "/tmp/tmpbt0h6s1i/gcc-hf18b4"
+      ],
+      "compile_exit": 0,
+      "compile_output": "",
+      "run_exit": 1,
+      "run_output": "==24==Can't open /proc/23/task for reading.\n==23==LeakSanitizer has encountered a fatal error.\n==23==HINT: For debugging, try setting environment variable LSAN_OPTIONS=verbosity=1:log_threads=1\n==23==HINT: LeakSanitizer does not work under ptrace (strace, gdb, etc)\n",
+      "compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Werror",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "-Isrc/shared",
+        "src/shared/nf_persist18b5.c",
+        "src/tests/test_persist18b5.c",
+        "-o",
+        "/tmp/tmpbt0h6s1i/gcc-persist18b5"
+      ],
+      "compile_exit": 0,
+      "compile_output": "",
+      "run_exit": 1,
+      "run_output": "==34==Can't open /proc/33/task for reading.\n==33==LeakSanitizer has encountered a fatal error.\n==33==HINT: For debugging, try setting environment variable LSAN_OPTIONS=verbosity=1:log_threads=1\n==33==HINT: LeakSanitizer does not work under ptrace (strace, gdb, etc)\n",
+      "compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Werror",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "-Isrc/shared",
+        "src/shared/nf_persist18b5.c",
+        "src/tests/test_corpus18b5.c",
+        "-o",
+        "/tmp/tmpbt0h6s1i/gcc-corpus18b5"
+      ],
+      "compile_exit": 0,
+      "compile_output": "",
+      "run_exit": 1,
+      "run_output": "==44==Can't open /proc/43/task for reading.\n==43==LeakSanitizer has encountered a fatal error.\n==43==HINT: For debugging, try setting environment variable LSAN_OPTIONS=verbosity=1:log_threads=1\n==43==HINT: LeakSanitizer does not work under ptrace (strace, gdb, etc)\n",
+      "compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+    },
+    {
+      "compiler": "clang",
+      "status": "BLOCKED: compiler unavailable"
+    }
+  ]
+}
