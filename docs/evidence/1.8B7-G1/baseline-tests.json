@@ -1,0 +1,107 @@
+{
+  "source_sha": "b5870171f3d2ed6794c349944b3ec2eda70e6219",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "asan_options": "detect_leaks=0",
+  "runs": [
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Werror",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "-Isrc/shared",
+        "src/shared/nf_interact18b3.c",
+        "src/tests/test_interact18b3.c",
+        "-o",
+        "/tmp/tmp4jxxaqru/gcc-interact18b3"
+      ],
+      "compile_exit": 0,
+      "compile_output": "",
+      "run_exit": 0,
+      "run_output": "B3 typed H0 unit assertions=71 PASS (not integrated physics)\n",
+      "compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Werror",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "-Isrc/shared",
+        "src/shared/nf_hf18b4.c",
+        "src/tests/test_hf18b4.c",
+        "-o",
+        "/tmp/tmp4jxxaqru/gcc-hf18b4"
+      ],
+      "compile_exit": 0,
+      "compile_output": "",
+      "run_exit": 0,
+      "run_output": "b4_hf_unit=22 PASS\n",
+      "compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Werror",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "-Isrc/shared",
+        "src/shared/nf_persist18b5.c",
+        "src/tests/test_persist18b5.c",
+        "-o",
+        "/tmp/tmp4jxxaqru/gcc-persist18b5"
+      ],
+      "compile_exit": 0,
+      "compile_output": "",
+      "run_exit": 0,
+      "run_output": "B5 snapshot-first unit: 76 checks PASS\n",
+      "compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+    },
+    {
+      "command": [
+        "gcc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Werror",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "-Isrc/shared",
+        "src/shared/nf_persist18b5.c",
+        "src/tests/test_corpus18b5.c",
+        "-o",
+        "/tmp/tmp4jxxaqru/gcc-corpus18b5"
+      ],
+      "compile_exit": 0,
+      "compile_output": "",
+      "run_exit": 0,
+      "run_output": "canonical cases=128 errors=0\nrandomized cases=1024 errors=0\npathological cases=256 errors=0\nboundary cases=256 errors=0\nheldout cases=1024 errors=0\ntotal=2688 mismatch=0\n",
+      "compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+    },
+    {
+      "compiler": "clang",
+      "status": "BLOCKED: compiler unavailable"
+    }
+  ]
+}
