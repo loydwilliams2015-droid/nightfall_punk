@@ -1,0 +1,33 @@
+name: B1 H2 C02 contract map acceptance
+on:
+  push:
+    branches: [audit/v18b7a-g1-authority-contracts]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  contract-map:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and run C02 strict C11 contract tests
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          set -eux
+          "$CC" -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -Isrc/reproduction/v18b1 src/reproduction/v18b1/nf_smart18b1.c src/reproduction/v18b1/test_contract_map18b1.c -o /tmp/nf_c02
+          /tmp/nf_c02
+          "$CC" -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -Isrc/reproduction/v18b1 src/reproduction/v18b1/nf_smart18b1.c src/reproduction/v18b1/test_smart18b1.c -o /tmp/nf_b1
+          /tmp/nf_b1
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Address and UB sanitizers
+        run: |
+          set -eux
+          gcc -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/reproduction/v18b1 src/reproduction/v18b1/nf_smart18b1.c src/reproduction/v18b1/test_contract_map18b1.c -o /tmp/nf_c02_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/nf_c02_san
