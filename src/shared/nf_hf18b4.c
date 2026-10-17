@@ -11,6 +11,11 @@ bool nf_hf_input(NfHfClient *c,NfHfEvent e,uint32_t seq){
 }
 bool nf_hf_server(NfHfClient *c,NfHfEvent e,uint32_t seq){
  if(!c||!c->actor||!c->action||!seq||seq!=c->seq)return false;
+ /* Authoritative terminal feedback cannot be overwritten by late packets. */
+ if(c->state==NF_HF_APPLIED||c->state==NF_HF_INTERRUPTED||c->state==NF_HF_REFUSED){
+  if(e==NF_HF_SERVER_INTERRUPTED&&c->state==NF_HF_APPLIED){c->state=NF_HF_INTERRUPTED;return true;}
+  return false;
+ }
  switch(e){
  case NF_HF_SERVER_PENDING:c->state=NF_HF_PENDING;break;
  case NF_HF_SERVER_CONTESTED:c->state=NF_HF_CONTESTED;break;
