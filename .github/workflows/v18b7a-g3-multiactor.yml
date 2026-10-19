@@ -1,0 +1,39 @@
+name: 1.8B.7A Group 3 multi-actor laboratory
+on:
+  push:
+    branches:
+      - build/v18b7a-g3-multiactor-h0
+  pull_request:
+  workflow_dispatch:
+jobs:
+  corpus:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record exact source identities
+        run: sha256sum src/shared/nf_multi18b7.h src/shared/nf_multi18b7.c src/tests/test_multi18b7.c src/shared/nf_hf18b4.c src/shared/nf_hf18b4.h
+      - name: Strict C11 multi-actor and client tests
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          set -eux
+          "$CC" -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror \
+            -Isrc/shared src/shared/nf_multi18b7.c src/shared/nf_hf18b4.c \
+            src/tests/test_multi18b7.c -o /tmp/nf7_g3
+          /tmp/nf7_g3
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: GCC ASan and UBSan
+        run: |
+          set -eux
+          gcc -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            -Isrc/shared src/shared/nf_multi18b7.c src/shared/nf_hf18b4.c \
+            src/tests/test_multi18b7.c -o /tmp/nf7_g3_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/nf7_g3_san
