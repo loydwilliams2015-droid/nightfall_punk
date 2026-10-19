@@ -207,10 +207,46 @@ static bool adversarial_corpus(void){
  printf("adversarial_invalid_inputs=2048 stale_or_forged_frames=256 PASS\\n");
  return true;
 }
+static bool conservation_corpus(void){
+ /* Independently check the two-body contact's linear impulse accounting.
+    The motor is excluded so there is no hidden external momentum source.
+    The resulting receipt is a physics observation, not a B3 publication. */
+ unsigned seed=0xC06E5E17u;
+ for(unsigned j=0;j<2048;++j){
+  const unsigned s=rng_next(&seed);
+  const float ma=10.f+(float)(s%79u), mb=10.f+(float)((s>>9)%79u);
+  const float impact=0.25f+(float)((s>>17)%300u)*.01f;
+  Nf18a4Body a={0},b={0};
+  a.id=1;a.center=(NfVec3){0,0,0};
+  a.velocity=(NfVec3){-impact,0,0};
+  a.inverse_mass=1.f/ma;
+  a.inverse_inertia=(NfVec3){1,1,1};
+  a.radius=.3f;a.height=1.8f;
+  b.id=2;b.center=(NfVec3){-1,0,0};
+  b.inverse_mass=1.f/mb;
+  b.inverse_inertia=(NfVec3){1,1,1};
+  b.box_half=(NfVec3){.5f,.5f,.5f};
+  const Nf18a4Constraint constraint={1,2,5,{1,0,0},{-.5f,0,0},0,0};
+  const float p0=ma*a.velocity.x+mb*b.velocity.x;
+  const float e0=.5f*ma*a.velocity.x*a.velocity.x;
+  const Nf18a4Receipt receipt=nf18a4_apply_contact(
+      &a,&b,constraint,NF18A4_RECIPROCAL_LINEAR,17,9);
+  CK(receipt.status==NF18A4_ACCEPTED&&receipt.impulses_applied);
+  const float p1=ma*a.velocity.x+mb*b.velocity.x;
+  const float e1=.5f*ma*a.velocity.x*a.velocity.x+
+                 .5f*mb*b.velocity.x*b.velocity.x;
+  CK(fabsf(p1-p0)<=.002f);
+  CK(e1<=e0+.002f);
+  CK(a.velocity.x> -impact&&b.velocity.x<0);
+ }
+ printf("conservation_paired_impulses=2048 PASS\\n");
+ return true;
+}
 int main(void){
  clock_t begin=clock();
  if(!test_contract_and_replay()||!test_missing_material_and_remote_actor()||
-    !test_no_behavior_regression(32)||!adversarial_corpus())return 1;
+    !test_no_behavior_regression(32)||!adversarial_corpus()||
+    !conservation_corpus())return 1;
  printf("assertions=%llu cpu_seconds=%.6f PASS\n",checks,
        (double)(clock()-begin)/CLOCKS_PER_SEC);
  return 0;
