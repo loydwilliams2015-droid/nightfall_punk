@@ -64,7 +64,7 @@ static void finish(const NfWorld *world,const Nf18a6Outcome *out,void *arg){
     ctx->last_result=NF18B3_PENDING;
     if(!world||!out||out->status!=NF18A6_COMMITTED)return;
     if(!out->actual_impulse)return;
-    if(ctx->receipt_count==NF18B6_PUSH_RECEIPTS){
+    if(ctx->receipt_count>=NF18B6_PUSH_RECEIPTS){
         /* The capacity gate was checked during arming; this cannot silently
          * evict a receipt.  A6 motion is already committed independently.
          */
@@ -103,7 +103,7 @@ Nf18b3Result nf18b6_push_arm(Nf18b6Push *ctx,const NfWorld *w,
        w->tick_in_progress||w->tick_owner_context!=ctx->runtime||
        w->tick!=ctx->runtime->last_commit_tick||w->tick>=UINT32_MAX-1u)
         return NF18B3_INVALID;
-    if(ctx->receipt_count==NF18B6_PUSH_RECEIPTS)return NF18B3_INVALID;
+    if(ctx->receipt_count>=NF18B6_PUSH_RECEIPTS)return NF18B3_INVALID;
     for(uint32_t j=0;j<ctx->receipt_count;++j)
         if(ctx->receipts[j].actor==ctx->runtime->actor_id &&
            ctx->receipts[j].action==action)return NF18B3_DUPLICATE;
