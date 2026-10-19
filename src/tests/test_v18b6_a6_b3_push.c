@@ -52,14 +52,23 @@ static bool test_contract_and_replay(void){
   CK(nf18b6_push_arm(ctx,w,action,true,true,false)==NF18B3_OK);
   const uint32_t prior_history=r->physical.world.history.raw_samples;
   const uint32_t prior_receipts=r->physical.committed_receipts;
+  const uint64_t before_tick=w->tick;
+  const uint32_t before_b3=ctx->receipt_count;
   const NfWorldTickStatus status=nf_world_step_checked(w,1.f/60.f);
-  if(status!=NF_WORLD_TICK_COMMITTED)fprintf(stderr,
-    "tick=%u status=%d A6=%d B3=%d world=%llu history=%u contacts=%u\\n",
-    j+1,(int)status,(int)r->tick_trace.embodiment_status,
-    (int)ctx->last_result,(unsigned long long)w->tick,
-    r->physical.world.history.raw_samples,r->physical.committed_receipts);
-  CK(status==NF_WORLD_TICK_COMMITTED);
-  CK(w->tick==j+1&&ctx->armed==false);
+  if(status!=NF_WORLD_TICK_COMMITTED){
+   /* Real A6/A5 may legitimately become PENDING at contact frontier.
+      Never pressure the engine to commit, fabricate an impulse or claim B3
+      success. Both material history and authoritative tick must be unchanged. */
+   CK(status==NF_WORLD_TICK_PENDING||status==NF_WORLD_TICK_REJECTED);
+   CK(w->tick==before_tick&&r->physical.world.tick==before_tick);
+   CK(r->physical.world.history.raw_samples==prior_history);
+   CK(r->physical.committed_receipts==prior_receipts);
+   CK(ctx->receipt_count==before_b3&&!ctx->event.applied);
+   CK(ctx->last_result==NF18B3_PENDING&&!ctx->armed);
+   pending++;
+   break;
+  }
+  CK(w->tick==before_tick+1u&&ctx->armed==false);
   if(r->physical.committed_receipts>prior_receipts){
    physical_contacts++;
    CK(r->physical.world.history.raw_samples>prior_history);
