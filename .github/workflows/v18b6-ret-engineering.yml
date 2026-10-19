@@ -1,0 +1,67 @@
+name: 1.8B.6 RET engineering readiness and WAL cleanup
+on:
+  push:
+    branches:
+      - engineering/v18b6-ret-readiness-h0
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  source-and-migration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Baseline and provenance validation
+        run: |
+          set -eux
+          git rev-parse HEAD
+          sha256sum docs/evidence/v18b7a_g5_master_ledger.json docs/evidence/v18b6_master_ledger.json src/shared/nf_wal18b7.c src/tests/test_wal18b7.c
+          python3 tools/verify_v18b6_transfer.py
+          python3 tools/verify_v18b7a_ledger.py
+          if test -f LICENSE && test -f REUSE.toml; then
+            echo "Tracked license files present; their legal adequacy requires review."
+          else
+            echo "::warning::GPL direction is recorded in issue #36 but root licensing files are absent on this research branch; release HOLD."
+          fi
+
+  wal-regression:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Strict C11 POSIX N01 WAL replay and failed-open regression
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          set -eux
+          "$CC" -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -DNF4_TESTING \
+            -Isrc/shared src/shared/nf_wal18b7.c src/tests/test_wal18b7.c \
+            -o /tmp/nf_b6_wal_regression
+          /tmp/nf_b6_wal_regression
+
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: GCC ASan UBSan WAL regression
+        run: |
+          set -eux
+          gcc -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror -DNF4_TESTING \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            -Isrc/shared src/shared/nf_wal18b7.c src/tests/test_wal18b7.c \
+            -o /tmp/nf_b6_wal_regression_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/nf_b6_wal_regression_san
+
+  contact-lab:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure offline contact and A6 H1 laboratory
+        run: |
+          set -eux
+          cmake -S . -B /tmp/nf-b6-contact-lab -DNF_CONTACT_LAB_ONLY=ON -DNF_BUILD_CLIENT=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/nf-b6-contact-lab --parallel 2
+          ctest --test-dir /tmp/nf-b6-contact-lab --output-on-failure
