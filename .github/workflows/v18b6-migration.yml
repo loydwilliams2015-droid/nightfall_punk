@@ -1,0 +1,62 @@
+name: 1.8B.6 corrected research transfer and source reproduction
+on:
+  push:
+    branches:
+      - migration/v18b6-corrected-research-transfer
+  pull_request:
+  workflow_dispatch:
+jobs:
+  ledger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin both old and migrated programme ledgers
+        run: sha256sum docs/evidence/v18b7a_g5_master_ledger.json docs/evidence/v18b6_master_ledger.json tools/verify_v18b6_transfer.py
+      - name: Verify transfer completeness, source provenance, and eight negative controls
+        run: |
+          set -eux
+          python3 -m py_compile tools/verify_v18b6_transfer.py
+          python3 tools/verify_v18b6_transfer.py
+          python3 tools/verify_v18b7a_ledger.py
+  reference-reproduction:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reproduce inherited source H0 suites under the corrected B6 branch
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          set -eux
+          CFLAGS="-std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -Isrc/shared"
+          "$CC" $CFLAGS src/shared/nf_authority18b7.c src/tests/test_authority18b7.c -o /tmp/b6_g1
+          /tmp/b6_g1
+          "$CC" $CFLAGS src/shared/nf_physical18b7.c src/tests/test_physical18b7.c -o /tmp/b6_g2
+          /tmp/b6_g2
+          "$CC" $CFLAGS src/shared/nf_multi18b7.c src/shared/nf_hf18b4.c src/tests/test_multi18b7.c -o /tmp/b6_g3
+          /tmp/b6_g3
+          "$CC" $CFLAGS -DNF4_TESTING src/shared/nf_wal18b7.c src/tests/test_wal18b7.c -o /tmp/b6_g4wal
+          /tmp/b6_g4wal
+          "$CC" $CFLAGS src/shared/nf_governor18b7.c src/tests/test_governor18b7.c -o /tmp/b6_g4governor
+          /tmp/b6_g4governor
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ASan and UBSan migration smoke regressions
+        run: |
+          set -eux
+          CFLAGS="-std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/shared"
+          gcc $CFLAGS src/shared/nf_authority18b7.c src/tests/test_authority18b7.c -o /tmp/b6_g1_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/b6_g1_san
+          gcc $CFLAGS src/shared/nf_physical18b7.c src/tests/test_physical18b7.c -o /tmp/b6_g2_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/b6_g2_san
+          gcc $CFLAGS src/shared/nf_multi18b7.c src/shared/nf_hf18b4.c src/tests/test_multi18b7.c -o /tmp/b6_g3_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/b6_g3_san
+          gcc $CFLAGS -DNF4_TESTING src/shared/nf_wal18b7.c src/tests/test_wal18b7.c -o /tmp/b6_g4wal_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/b6_g4wal_san
+          gcc $CFLAGS src/shared/nf_governor18b7.c src/tests/test_governor18b7.c -o /tmp/b6_g4governor_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/b6_g4governor_san
