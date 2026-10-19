@@ -1,0 +1,16 @@
+# B1 H2 High-Fidelity Acceptance — 2026-10-17
+
+Source is byte-identical to PR #41 head 3fb792eab6e035e1a9736db7dbcf22fc36bac410 by git blob IDs: C 65718a65189d1ee6805b1854f4766f0e9e6c6170, H 427b6a0e2d7476b1035925169bee40d0d3efa228, original test 953132e473f81617d8768bdc952fb15a036487e1. Git clone had DNS failure; reconstructed all three files from exact GitHub connector content and verified git blob IDs locally.
+
+Executed on local runtime:
+- GCC -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror original suite: PASS, 6000 original fixtures plus capacity.
+- Clang same strict flags original suite: PASS, 6000 plus capacity.
+- GCC -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined original suite: PASS, 6000 plus capacity (ASAN_OPTIONS=detect_leaks=0).
+- New separately authored independent-expected status oracle: exhaustive 1024 ten-flag combinations + randomized 8192 calibration seed 0x182B1001 + held-out 4096 seed 0xB1E1D0A7 = **13,312** indexed cases. 59 positive commits, 3226 blocked, 9952 pending, 75 duplicate, **zero status oracle mismatches**, zero counted forged-witness/receipt/no-side-effect errors. Same output under GCC optimized, Clang optimized, GCC ASan/UBSan. These repeats are dependent, not 39,936 independent worlds. Oracle shares the declared rule specification, so systematic specification flaws remain possible.
+- **Found critical boundary failure:** when world_revision==UINT32_MAX and material_revision==UINT32_MAX, nf_b1_commit returns NF_B1_OK and increments both to 0. This violates monotonic version/replay assumptions and may permit stale witness re-use on eventual wrap; no exploit was demonstrated. This one diagnostic case is OUTSIDE the 13,312 pass corpus. Defect reproduced on GCC, Clang and sanitizer run. Fail-closed overflow guard REQUIRED before unconditional acceptance.
+- Original LCG 6000 fixtures has no positive commits; new 59 positive cases improve positive path observation but do not reproduce historical H1 M0–M4 results.
+- Local exact reconstructed SHA256 C 838654b756826e359eb3e19e9736f09f6053e1957dc56b924e73cc250c586b9f; H dca2c601cb6174cbe770e1cfd6bb7acebe6fa7b4b7ceeca4385a63ed527abc2b; original test 27cc8e822d755babc60098b100cd0408270c8e0662791814319e46f6859d6cc1; new acceptance test 32c718d4c7e267170791d25813bfe1bfce8efad93f3c301b88194a2dea601878. Local archive SHA256 785565467019e76b7173030da0291f459cb79dd2a2450b54138923b74b80987b.
+
+RET: empirical successes are limited to the specified exact PR #41 source and tests. A priori distinct H2 identity remains; no recovered H1. Formal narrow invariants in corpus pass, but revision overflow violates expected version safety. Highly predictable correction is saturation/rejection before mutation. Uncertain: long-run replay, real actor/material integration, performance, crash recoverability and independent world truth. C01 H2 forward-source ADOPTION CONDITIONAL, C01 acceptance FAIL on overflow gate, issue #37 and release HOLD stay OPEN.
+
+Reproduce with new test harness (separately attached archive in coordinating chat): gcc or clang -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror nf_smart18b1.c test_accept.c -o test_accept && ./test_accept. The edge-case prints overflow_edge_status=0 world_revision=0 material_revision=0 on current unfixed source.

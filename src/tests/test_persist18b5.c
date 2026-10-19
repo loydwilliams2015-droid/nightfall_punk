@@ -9,6 +9,12 @@ int main(void){unsigned checks=0;NfB5State s={.epoch=1,.balance=100},disk={0},be
  C(nf_b5_apply(&s,e,yes,&disk)==NF_B5_APPLIED);
  C(nf_b5_equal(&s,&disk));C(s.balance==90);
  C(nf_b5_apply(&s,e,yes,&disk)==NF_B5_DUPLICATE);
+ NfB5Event forged=e;forged.object=99;
+ C(nf_b5_apply(&s,forged,yes,&disk)==NF_B5_INVALID);
+ C(nf_b5_equal(&s,&disk));
+ forged=e;forged.debit=11;
+ C(nf_b5_apply(&s,forged,yes,&disk)==NF_B5_INVALID);
+ C(nf_b5_equal(&s,&disk));
  before=s;e.action=2;e.epoch=1;
  C(nf_b5_apply(&s,e,yes,&disk)==NF_B5_STALE);C(nf_b5_equal(&s,&before));
  e.epoch=s.epoch;
