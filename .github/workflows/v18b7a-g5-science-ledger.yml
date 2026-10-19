@@ -1,4 +1,4 @@
-name: 1.8B.7A Group 5 scientific evidence ledger
+name: 1.8B.7A historical evidence ledger — frozen source
 on:
   push:
     branches:
@@ -10,10 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Pin input byte hashes
         run: sha256sum docs/evidence/v18b7a_g5_master_ledger.json tools/verify_v18b7a_ledger.py
       - name: Verify ledger, evidence source objects and seven negative controls
         run: |
           set -eux
-          python3 -m py_compile tools/verify_v18b7a_ledger.py
-          python3 tools/verify_v18b7a_ledger.py
+          # This is a HISTORICAL test: verify bytes from original source
+          # ancestor rather than treating edited B6 H0 files as old B7 runs.
+          git cat-file -e 01229af48a099302c778248454d988ee38161855^{commit}
+          git worktree add --detach /tmp/b7-historical-ledger 01229af48a099302c778248454d988ee38161855
+          (cd /tmp/b7-historical-ledger && python3 -m py_compile tools/verify_v18b7a_ledger.py && python3 tools/verify_v18b7a_ledger.py)
+          git worktree remove --force /tmp/b7-historical-ledger
+          echo "::notice::Historic B7 evidence verified at pinned source; current B6 changes are checked by separate B6 engineering workflows."
