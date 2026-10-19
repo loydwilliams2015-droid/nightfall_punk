@@ -54,3 +54,21 @@ Retained holds:
 5. **Security/rights**: network session authentication, code/asset software license graft reviewed from `stewardship/2026-10-10-project-reconciliation`, issues #30, #36, #37 and human/cooperative authorization.
 
 **Decision:** A6/A4/A5 physical core **retained byte-identical** to 1.8B.5, additive B3 PUSH semantic observer H1 selected conditionally on strict CI. No H3/full-B6 production acceptance or master-ledger rewrite. Continue on draft research PR; release HOLD.
+
+## 6. Fresh fully expanded H1 execution — source-exact evidence
+The adversarial + independently formulated two-body conservation extension **actually executed and passed** at source commit `9c79ab8b5b3d8f00a5da596a3cb042732e932dd8`, GitHub Actions run `39344311869`:
+- strict GCC job `118373117864` — SUCCESS;
+- strict Clang job `118373117873` — SUCCESS;
+- GCC AddressSanitizer / UndefinedBehaviorSanitizer job `118373117680` — SUCCESS.
+- Each compiled offline CMake/CTest suite **11/11 PASS**; direct integration executable **21,583 assertion checks PASS**, with 32 × 50 paired A6 comparisons, 2,048 input mutations, 256 forged-frame cases, 2,048 independent A4 momentum/energy checks, five actual coupled impacts and five B3 receipts. The negative/failure-data limit is unchanged: deterministic configured fixture corpus, not a 95% reliability statement for the live game.
+- Paired process `clock()` diagnostics from this expanded run (GCC) bare A6 0.016476 s versus unarmed B3 hook 0.016413 s; Clang bare 0.005886 s versus hook 0.005901 s. **No well-supported speed winner**; noise and runner variance far exceed these differences. No actual FPS/game latency or production throughput was measured.
+
+Exact SHA-256 from the GCC CI log at the executed source:
+- `src/shared/nf_b6_push18b6.h` `7293b377b8f74e2b897c6f08af2d10402c0c61e8cab82d99945b6230a33bf04a`
+- `src/shared/nf_b6_push18b6.c` `a48d38005ca7c1efcc66aae72e4a6c0b4a460d7d2754b043a23351b949b182c8`
+- `src/tests/test_v18b6_a6_b3_push.c` `ec1efd75cde04e3e116954103a7c07c666bd9d2125d7d6e27a93027e19acf8dd`
+- `CMakeLists.txt` `55f0f19eea4c66c5950130d14a97337ef8a33455dadd011876948dfb11c07f67`
+
+The apparent early failure at tick 18 remains part of the test history: the true A6 owner **PENDING** state leaves the world tick and A5 history unchanged. The initial test incorrectly demanded uninterrupted 55-tick publication and failed; the revised correctness-first assertion accepts a verified pending/no-receipt boundary. Never convert a stalled physical state into fictitious B3 success just to achieve higher measured FPS.
+
+**Outcome:** Within specified one-actor/one-crate H1 scope, incumbent A6 physics is empirically non-regressed, the B3 semantic event is causally tied to real contact, and conservation/adversarial tests pass. **Production physical engine finalization, independent contract-oracle closure, atomic cross-domain B5 recovery, four-actor networking, performance acceptance and release remain HOLD.**
