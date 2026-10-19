@@ -1,0 +1,38 @@
+name: 1.8B.7A Group 2 discrete physical interaction lab
+on:
+  push:
+    branches:
+      - build/v18b7a-g2-physical-interactions-h0
+  pull_request:
+  workflow_dispatch:
+jobs:
+  corpus:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record source hashes
+        run: sha256sum src/shared/nf_physical18b7.h src/shared/nf_physical18b7.c src/tests/test_physical18b7.c
+      - name: Compile and execute five-stratum corpus
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          set -eux
+          "$CC" -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror \
+            -Isrc/shared src/shared/nf_physical18b7.c src/tests/test_physical18b7.c -o /tmp/g2_interact
+          /tmp/g2_interact
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: GCC ASan + UBSan
+        run: |
+          set -eux
+          gcc -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            -Isrc/shared src/shared/nf_physical18b7.c src/tests/test_physical18b7.c \
+            -o /tmp/g2_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/g2_san
