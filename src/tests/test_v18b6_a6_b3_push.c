@@ -52,7 +52,13 @@ static bool test_contract_and_replay(void){
   CK(nf18b6_push_arm(ctx,w,action,true,true,false)==NF18B3_OK);
   const uint32_t prior_history=r->physical.world.history.raw_samples;
   const uint32_t prior_receipts=r->physical.committed_receipts;
-  CK(nf_world_step_checked(w,1.f/60.f)==NF_WORLD_TICK_COMMITTED);
+  const NfWorldTickStatus status=nf_world_step_checked(w,1.f/60.f);
+  if(status!=NF_WORLD_TICK_COMMITTED)fprintf(stderr,
+    "tick=%u status=%d A6=%d B3=%d world=%llu history=%u contacts=%u\\n",
+    j+1,(int)status,(int)r->tick_trace.embodiment_status,
+    (int)ctx->last_result,(unsigned long long)w->tick,
+    r->physical.world.history.raw_samples,r->physical.committed_receipts);
+  CK(status==NF_WORLD_TICK_COMMITTED);
   CK(w->tick==j+1&&ctx->armed==false);
   if(r->physical.committed_receipts>prior_receipts){
    physical_contacts++;
