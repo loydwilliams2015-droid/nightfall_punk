@@ -100,6 +100,14 @@ if(NF_CONTACT_LAB_ONLY)
     target_link_libraries(nightfall_v18a6_tick_owner_test PRIVATE nightfall_embody_h1)
     nf_project_warnings(nightfall_v18a6_tick_owner_test)
     add_test(NAME contradictory_tick_owner_v18a6 COMMAND nightfall_v18a6_tick_owner_test)
+    # Corrected 1.8B.6: real A6-owned A4/A5 impulse + B3 PUSH receipt
+    # scientific integration. No new world tick owner or graphics/net dependency.
+    add_executable(nightfall_v18b6_physics_push_test
+        src/tests/test_v18b6_a6_b3_push.c)
+    target_link_libraries(nightfall_v18b6_physics_push_test PRIVATE nightfall_embody_prod)
+    nf_project_warnings(nightfall_v18b6_physics_push_test)
+    add_test(NAME real_a6_a4_a5_b3_push_v18b6
+        COMMAND nightfall_v18b6_physics_push_test)
     # Normal build forbids the two controls that bypass world embodiment.
     add_library(nightfall_embody_prod STATIC ${NF_EMBODY_SHARED} src/client/nf_camera.c)
     target_include_directories(nightfall_embody_prod PUBLIC src/shared src/client)

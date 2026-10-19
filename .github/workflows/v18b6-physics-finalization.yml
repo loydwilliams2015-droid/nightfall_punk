@@ -1,0 +1,40 @@
+name: 1.8B.6 Physics Finalization — A6 A4 A5 B3 truth
+on:
+  push:
+    branches:
+      - engineering/v18b6-physics-finalization-h1
+  pull_request:
+  workflow_dispatch:
+jobs:
+  offline-physics:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin exact integration source
+        run: |
+          git rev-parse HEAD
+          sha256sum src/shared/nf_b6_push18b6.h src/shared/nf_b6_push18b6.c src/tests/test_v18b6_a6_b3_push.c CMakeLists.txt
+      - name: Full offline contact A6/B3 CTest
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          set -eux
+          cmake -S . -B /tmp/b6-physics-build -DCMAKE_C_COMPILER="$CC" -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/b6-physics-build --parallel 2
+          ctest --test-dir /tmp/b6-physics-build --output-on-failure
+          /tmp/b6-physics-build/nightfall_v18b6_physics_push_test
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: GCC ASan UBSan H1 physics CTest
+        run: |
+          set -eux
+          cmake -S . -B /tmp/b6-san -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_FLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer"
+          cmake --build /tmp/b6-san --parallel 2
+          ASAN_OPTIONS=detect_leaks=0 ctest --test-dir /tmp/b6-san --output-on-failure
