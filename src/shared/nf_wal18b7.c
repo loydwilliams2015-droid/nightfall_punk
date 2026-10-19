@@ -104,10 +104,14 @@ Nf4Status nf4_open(Nf4Wal *w,const char *path,int64_t initial_balance){
  if(fd<0&&errno==EEXIST)fd=open(path,O_RDWR);
  if(fd<0)return NF4_IO_ERROR;
  w->fd=fd;
- if(flock(fd,LOCK_EX|LOCK_NB)!=0)return NF4_IO_ERROR;
- if(created&&!parent_sync(path))return NF4_IO_ERROR;
- struct stat st;if(fstat(fd,&st)!=0||!S_ISREG(st.st_mode)||st.st_size<0)
-  return NF4_IO_ERROR;
+ /* Once the descriptor is acquired, a failed open must not leak either
+    the file handle or its advisory lock.  Quarantined, parseable but
+    corrupt journals intentionally retain an inspection handle below. */
+ if(flock(fd,LOCK_EX|LOCK_NB)!=0){nf4_close(w);return NF4_IO_ERROR;}
+ if(created&&!parent_sync(path)){nf4_close(w);return NF4_IO_ERROR;}
+ struct stat st;if(fstat(fd,&st)!=0||!S_ISREG(st.st_mode)||st.st_size<0){
+  nf4_close(w);return NF4_IO_ERROR;
+ }
  w->ledger.epoch=1;w->ledger.balance=initial_balance;
  if(st.st_size%(off_t)NF4_RECORD_BYTES!=0||
     st.st_size>(off_t)(NF4_MAX_RECORDS*NF4_RECORD_BYTES)){
