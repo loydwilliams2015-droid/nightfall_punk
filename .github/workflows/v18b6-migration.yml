@@ -1,4 +1,4 @@
-name: 1.8B.6 corrected research transfer and source reproduction
+name: 1.8B.6 research transfer and current H0 reproduction
 on:
   push:
     branches:
@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Pin both old and migrated programme ledgers
         run: sha256sum docs/evidence/v18b7a_g5_master_ledger.json docs/evidence/v18b6_master_ledger.json tools/verify_v18b6_transfer.py
       - name: Verify transfer completeness, source provenance, and eight negative controls
@@ -17,7 +19,12 @@ jobs:
           set -eux
           python3 -m py_compile tools/verify_v18b6_transfer.py
           python3 tools/verify_v18b6_transfer.py
-          python3 tools/verify_v18b7a_ledger.py
+          # Original historical object pins apply to the frozen source, not to
+          # later intentional B6 repairs. Validate both domains distinctly.
+          git cat-file -e aaae30e7082f5ceaea198fe4a37f6c02692bab84^{commit}
+          git worktree add --detach /tmp/b6-migration-historic aaae30e7082f5ceaea198fe4a37f6c02692bab84
+          (cd /tmp/b6-migration-historic && python3 tools/verify_v18b7a_ledger.py)
+          git worktree remove --force /tmp/b6-migration-historic
   reference-reproduction:
     runs-on: ubuntu-latest
     strategy:
