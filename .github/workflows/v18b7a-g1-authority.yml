@@ -1,0 +1,40 @@
+name: 1.8B.7A Group 1 authority lab
+on:
+  push:
+    branches:
+      - audit/v18b7a-g1-authority-contracts
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  authority-models:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record exact tested source hashes
+        run: sha256sum src/shared/nf_authority18b7.h src/shared/nf_authority18b7.c src/tests/test_authority18b7.c
+      - name: Strict C11 five-stratum tests
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          set -eux
+          "$CC" -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror \
+            -Isrc/shared src/shared/nf_authority18b7.c src/tests/test_authority18b7.c \
+            -o /tmp/nf7_group1
+          /tmp/nf7_group1
+  sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: GCC ASan and UBSan
+        run: |
+          set -eux
+          gcc -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            -Isrc/shared src/shared/nf_authority18b7.c src/tests/test_authority18b7.c \
+            -o /tmp/nf7_group1_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/nf7_group1_san
