@@ -34,3 +34,8 @@ P01 real profiling; P02 owner tick budget; P03 physical frontier islands; P04 se
 6. Full engine CI (GCC/Clang/ASan/UBSan), independent sources/rights, maintainer signoff, historical H1 ledger reconciliation.
 
 **PUBLIC COMMITMENT:** N01–N12, P01–P14 normative contracts LOCKED for research; N01 POSIX H0 journal introduced as a challenger to B5 mock callback, not yet a production replacement. All full-integrated engineering acceptance, merge and release HOLD.
+
+## Additional bounded background-admission H0
+- src/shared/nf_governor18b7.h/.c: pure C11, no threads or timers; caller-provided tick usage, authoritative critical backlog, optional backlog and verified WAL health. Modes NORMAL/THROTTLED/READ_ONLY; no background work if critical pressure/unknown telemetry/uncertain journal, four consecutive healthy owner samples before optional admission, bounded optional allotment <=250us per tick. Caller still verifies actual job safety and controls A6 scheduling.
+- src/tests/test_governor18b7.c: explicit pressure/quarantine/recovery cases and 10,000 deterministic randomized metric inputs; source-head GitHub compiler/sanitizer CI controls real PASS. This is a policy model, **not** measured 60Hz frame time or independent background worker.
+- This addition evidences selected aspects of N10/N11/P08/P10 only within a pure admission policy. It does NOT implement actual checkpoint compaction, queue servicing, disk IO scheduling, latency p99 or a production load governor.
