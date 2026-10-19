@@ -44,7 +44,7 @@ def check_blob(path: str, expected: object, errors: list[str], context: str) -> 
     if not p.is_file():
         return
     data = p.read_bytes()
-    actual = hashlib.sha1(b"blob " + str(len(data)).encode("ascii") + b"\\0" + data).hexdigest()
+    actual = hashlib.sha1(b"blob " + str(len(data)).encode("ascii") + b"\x00" + data).hexdigest()
     if actual != expected:
         errors.append(f"{context}: source drift {actual} != {expected}")
 
