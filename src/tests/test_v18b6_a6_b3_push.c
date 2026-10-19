@@ -117,6 +117,7 @@ static bool test_no_behavior_regression(unsigned seeds){
  NfWorld *a=malloc(sizeof *a),*b=malloc(sizeof *b);
  Nf18a6Runtime *ra=malloc(sizeof *ra),*rb=malloc(sizeof *rb);
  Nf18b6Push *ctx=calloc(1,sizeof *ctx);CK(a&&b&&ra&&rb&&ctx);
+ clock_t incumbent_cost=0,candidate_cost=0;
  for(unsigned k=0;k<seeds;++k){
   CK(setup(a,ra,2.0f+0.02f*(k%9u)));
   CK(setup(b,rb,2.0f+0.02f*(k%9u)));
@@ -130,8 +131,12 @@ static bool test_no_behavior_regression(unsigned seeds){
     */
    if(j%17u==0){in.strafe=0;}
    nf_world_set_input(a,10,in);nf_world_set_input(b,10,in);
+   clock_t t=clock();
    const NfWorldTickStatus sa=nf_world_step_checked(a,1.f/60.f);
+   incumbent_cost+=clock()-t;
+   t=clock();
    const NfWorldTickStatus sb=nf_world_step_checked(b,1.f/60.f);
+   candidate_cost+=clock()-t;
    CK(sa==sb&&a->tick==b->tick);
    CK(nf18a5_history_hash(&ra->physical.world.history)==
       nf18a5_history_hash(&rb->physical.world.history));
@@ -146,10 +151,64 @@ static bool test_no_behavior_regression(unsigned seeds){
  printf("paired_seeds=%u paired_ticks=%u\n",seeds,seeds*50);
  return true;
 }
+static unsigned rng_next(unsigned *s){
+ *s^=*s<<13;*s^=*s>>17;*s^=*s<<5;return *s;
+}
+static bool adversarial_corpus(void){
+ NfWorld *w=malloc(sizeof *w);Nf18a6Runtime *r=malloc(sizeof *r);
+ Nf18b6Push *ctx=calloc(1,sizeof *ctx);
+ CK(w&&r&&ctx);
+ CK(setup(w,r,2.2f));
+ CK(nf18b6_push_attach(ctx,r,w,7));
+ CK(nf18a6_bind_world_tick(w,r,NULL,NULL,NULL));
+ unsigned seed=0xB618A6C1u;
+ for(unsigned j=0;j<2048;++j){
+  const unsigned bits=rng_next(&seed);
+  const uint32_t action=(j%17u==0u)?0u:4000+j;
+  const bool unknown=(bits&3u)==0u;
+  const bool physical=false,contract=(bits&4u)!=0u;
+  Nf18b3Result v=nf18b6_push_arm(ctx,w,action,physical,contract,unknown);
+  CK(v==(!action?NF18B3_INVALID:
+     unknown?NF18B3_PENDING:NF18B3_DENIED));
+  CK(!ctx->armed&&w->tick==0&&ctx->receipt_count==0);
+ }
+ ctx->receipt_count=NF18B6_PUSH_RECEIPTS+1u;
+ CK(nf18b6_push_arm(ctx,w,9000,true,true,false)==NF18B3_INVALID);
+ CK(!ctx->armed&&w->tick==0);
+ ctx->receipt_count=0;
+ CK(nf18a6_unbind_world_tick(w,r));
+ CK(nf18b6_push_detach(ctx,r,w));
+ for(unsigned j=0;j<256;++j){
+  CK(setup(w,r,2.2f));
+  CK(nf18b6_push_attach(ctx,r,w,7));
+  CK(nf18a6_bind_world_tick(w,r,NULL,NULL,NULL));
+  CK(nf18b6_push_arm(ctx,w,9000+j,true,true,false)==NF18B3_OK);
+  switch(j%8u){
+   case 0: ctx->event.actor++;break;
+   case 1: ctx->event.object++;break;
+   case 2: ctx->event.tick++;break;
+   case 3: ctx->event.world_epoch++;break;
+   case 4: ctx->event.material_epoch++;break;
+   case 5: ctx->event.contract_epoch++;break;
+   case 6: ctx->event.kind=NF18B3_CARRY;break;
+   default: ctx->event.authorized=0;break;
+  }
+  const uint32_t rev=r->physical.world.revision;
+  CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
+  CK(w->tick==0&&r->physical.world.revision==rev);
+  CK(!ctx->event.applied&&ctx->receipt_count==0);
+  CK(!ctx->armed);
+  CK(nf18a6_unbind_world_tick(w,r));
+  CK(nf18b6_push_detach(ctx,r,w));
+ }
+ free(ctx);free(r);free(w);
+ printf("adversarial_invalid_inputs=2048 stale_or_forged_frames=256 PASS\\n");
+ return true;
+}
 int main(void){
  clock_t begin=clock();
  if(!test_contract_and_replay()||!test_missing_material_and_remote_actor()||
-    !test_no_behavior_regression(32))return 1;
+    !test_no_behavior_regression(32)||!adversarial_corpus())return 1;
  printf("assertions=%llu cpu_seconds=%.6f PASS\n",checks,
        (double)(clock()-begin)/CLOCKS_PER_SEC);
  return 0;
