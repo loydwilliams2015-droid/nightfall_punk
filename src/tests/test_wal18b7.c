@@ -40,6 +40,25 @@ static bool basics(void){
  CK(nf4_apply(&w,event(3,8,1,71))==NF4_INVALID);
  nf4_close(&w);unlink(path);return true;
 }
+/* B6 source-level correction: a failed lock must not retain a descriptor
+   or accidentally turn an unavailable journal into a writable instance. */
+static bool test_failed_open_cleanup(void){
+ char path[64];CK(pathnew(path,sizeof path)==0);
+ Nf4Wal first,blocked;
+ CK(nf4_open(&first,path,100)==NF4_APPLIED);
+ CK(first.fd>=0&&!first.quarantine);
+ CK(nf4_open(&blocked,path,100)==NF4_IO_ERROR);
+ CK(blocked.fd==-1&&blocked.quarantine);
+ CK(nf4_apply(&blocked,event(1,9,1,1))==NF4_INVALID);
+ CK(nf4_apply(&first,event(1,7,1,4))==NF4_APPLIED);
+ CK(first.ledger.balance==96&&first.ledger.count==1);
+ nf4_close(&first);
+ CK(nf4_open(&blocked,path,100)==NF4_APPLIED);
+ CK(blocked.ledger.balance==96&&blocked.ledger.count==1);
+ CK(nf4_apply(&blocked,event(1,7,1,4))==NF4_DUPLICATE);
+ nf4_close(&blocked);unlink(path);
+ return true;
+}
 static bool uncertain(void){
  char path[64];CK(pathnew(path,sizeof path)==0);
  Nf4Wal w;CK(nf4_open(&w,path,100)==NF4_APPLIED);
@@ -121,7 +140,7 @@ static bool corpus(uint32_t seed,unsigned count,unsigned mode,unsigned *applied)
 }
 int main(void){
  unsigned applied=0;
- if(!basics()||!uncertain()||!corrupt_and_torn()||!full())return 1;
+ if(!basics()||!test_failed_open_cleanup()||!uncertain()||!corrupt_and_torn()||!full())return 1;
  const struct {const char*name;uint32_t seed,count,mode;} strata[]={
   {"canonical",0x41000001u,64,0},
   {"randomized",0x41000002u,256,0},
