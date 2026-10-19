@@ -1,0 +1,19 @@
+name: 1.8B.7A Group 5 scientific evidence ledger
+on:
+  push:
+    branches:
+      - audit/v18b7a-g5-scientific-stewardship-h0
+  pull_request:
+  workflow_dispatch:
+jobs:
+  evidence-traceability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin input byte hashes
+        run: sha256sum docs/evidence/v18b7a_g5_master_ledger.json tools/verify_v18b7a_ledger.py
+      - name: Verify ledger, evidence source objects and seven negative controls
+        run: |
+          set -eux
+          python3 -m py_compile tools/verify_v18b7a_ledger.py
+          python3 tools/verify_v18b7a_ledger.py
