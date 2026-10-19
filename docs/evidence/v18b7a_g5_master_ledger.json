@@ -1,0 +1,856 @@
+{
+  "schema_version": "1.8B.7A-G5-S01-v1",
+  "repository": "loydwilliams2015-droid/nightfall_punk",
+  "lineage_parent_commit": "6e83b35e5e9eb544f5446749e8fe363e5fc4cc72",
+  "head_review_branch": "audit/v18b7a-g5-scientific-stewardship-h0",
+  "release_status": "HOLD",
+  "design_rule": "A locked design is not a passing end-to-end implementation",
+  "determinations": [
+    {
+      "id": "C01",
+      "owner": "G1",
+      "design_status": "locked",
+      "source_document": "docs/PUBLIC_COMMITMENT_C01_B1H2_20261017.md",
+      "scope_evidence_group": "G1_AUTHORITY",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "C02",
+      "owner": "G1",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_C02_CONTRACT_MAP.md",
+      "scope_evidence_group": "G1_AUTHORITY",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "C03",
+      "owner": "G1",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_C03_M3_M4_TRIPARTITE_LOCK.md",
+      "scope_evidence_group": "G1_AUTHORITY",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "C04",
+      "owner": "G1",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_C04_LIFECYCLE_LOCK.md",
+      "scope_evidence_group": "G1_AUTHORITY",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "C05",
+      "owner": "G1",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_C05_SELECTIVE_REFINEMENT_LOCK.md",
+      "scope_evidence_group": "G1_AUTHORITY",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "C06",
+      "owner": "G1",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_C06_RELATIONS_TICK_LOCK.md",
+      "scope_evidence_group": "G1_AUTHORITY",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "C07",
+      "owner": "G1",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_C07_LOCK.md",
+      "scope_evidence_group": "G1_AUTHORITY",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "C08",
+      "owner": "G1",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_C08_LOCK.md",
+      "scope_evidence_group": "G1_AUTHORITY",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "C09",
+      "owner": "G1",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_C09_LOCK.md",
+      "scope_evidence_group": "G1_AUTHORITY",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "C10",
+      "owner": "G1",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_C10_LOCK.md",
+      "scope_evidence_group": "G1_AUTHORITY",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "C11",
+      "owner": "G1",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_C11_LOCK.md",
+      "scope_evidence_group": "G1_AUTHORITY",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "C12",
+      "owner": "G1",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_C12_LOCK.md",
+      "scope_evidence_group": "G1_AUTHORITY",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "F01",
+      "owner": "G2",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G2_F01_LOCK.md",
+      "scope_evidence_group": "G2_PHYSICAL",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "F02",
+      "owner": "G2",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G2_F02_LOCK.md",
+      "scope_evidence_group": "G2_PHYSICAL",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "F03",
+      "owner": "G2",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G2_F03_LOCK.md",
+      "scope_evidence_group": "G2_PHYSICAL",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "F04",
+      "owner": "G2",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G2_F04_LOCK.md",
+      "scope_evidence_group": "G2_PHYSICAL",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "F05",
+      "owner": "G2",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G2_F05_LOCK.md",
+      "scope_evidence_group": "G2_PHYSICAL",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "F06",
+      "owner": "G2",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G2_F06_LOCK.md",
+      "scope_evidence_group": "G2_PHYSICAL",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "F07",
+      "owner": "G2",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G2_F07_LOCK.md",
+      "scope_evidence_group": "G2_PHYSICAL",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "F08",
+      "owner": "G2",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G2_F08_LOCK.md",
+      "scope_evidence_group": "G2_PHYSICAL",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "F09",
+      "owner": "G2",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G2_F09_LOCK.md",
+      "scope_evidence_group": "G2_PHYSICAL",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "M01",
+      "owner": "G3",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G3_M01_LOCK.md",
+      "scope_evidence_group": "G3_MULTI",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "M02",
+      "owner": "G3",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G3_M02_LOCK.md",
+      "scope_evidence_group": "G3_MULTI",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "M03",
+      "owner": "G3",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G3_M03_LOCK.md",
+      "scope_evidence_group": "G3_MULTI",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "M04",
+      "owner": "G3",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G3_M04_LOCK.md",
+      "scope_evidence_group": "G3_MULTI",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "M05",
+      "owner": "G3",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G3_M05_LOCK.md",
+      "scope_evidence_group": "G3_MULTI",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "M06",
+      "owner": "G3",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G3_M06_LOCK.md",
+      "scope_evidence_group": "G3_MULTI",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "M07",
+      "owner": "G3",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G3_M07_LOCK.md",
+      "scope_evidence_group": "G3_MULTI",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "M08",
+      "owner": "G3",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G3_M08_LOCK.md",
+      "scope_evidence_group": "G3_MULTI",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "M09",
+      "owner": "G3",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G3_M09_LOCK.md",
+      "scope_evidence_group": "G3_MULTI",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "M10",
+      "owner": "G3",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G3_M10_LOCK.md",
+      "scope_evidence_group": "G3_MULTI",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "M11",
+      "owner": "G3",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G3_M11_LOCK.md",
+      "scope_evidence_group": "G3_MULTI",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "N01",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_N01_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "N02",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_N02_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "N03",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_N03_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "N04",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_N04_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "N05",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_N05_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "N06",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_N06_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "N07",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_N07_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "N08",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_N08_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "N09",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_N09_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "N10",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_N10_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "N11",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_N11_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "N12",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_N12_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "P01",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_P01_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "P02",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_P02_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "P03",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_P03_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "P04",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_P04_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "P05",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_P05_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "P06",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_P06_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "P07",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_P07_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "P08",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_P08_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "P09",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_P09_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "P10",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_P10_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "P11",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_P11_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "P12",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_P12_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "P13",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_P13_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "P14",
+      "owner": "G4",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G4_P14_LOCK.md",
+      "scope_evidence_group": "G4_WAL_GOVERNOR",
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "S01",
+      "owner": "G5",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G5_S01_LOCK.md",
+      "scope_evidence_group": null,
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "S02",
+      "owner": "G5",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G5_S02_LOCK.md",
+      "scope_evidence_group": null,
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "S03",
+      "owner": "G5",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G5_S03_LOCK.md",
+      "scope_evidence_group": null,
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "S04",
+      "owner": "G5",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G5_S04_LOCK.md",
+      "scope_evidence_group": null,
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "S05",
+      "owner": "G5",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G5_S05_LOCK.md",
+      "scope_evidence_group": null,
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "S06",
+      "owner": "G5",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G5_S06_LOCK.md",
+      "scope_evidence_group": null,
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "S07",
+      "owner": "G5",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G5_S07_LOCK.md",
+      "scope_evidence_group": null,
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "S08",
+      "owner": "G5",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G5_S08_LOCK.md",
+      "scope_evidence_group": null,
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "S09",
+      "owner": "G5",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G5_S09_LOCK.md",
+      "scope_evidence_group": null,
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "S10",
+      "owner": "G5",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G5_S10_LOCK.md",
+      "scope_evidence_group": null,
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "S11",
+      "owner": "G5",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G5_S11_LOCK.md",
+      "scope_evidence_group": null,
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "S12",
+      "owner": "G5",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G5_S12_LOCK.md",
+      "scope_evidence_group": null,
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "S13",
+      "owner": "G5",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G5_S13_LOCK.md",
+      "scope_evidence_group": null,
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    },
+    {
+      "id": "S14",
+      "owner": "G5",
+      "design_status": "locked",
+      "source_document": "docs/RET_V18B7A_G5_S14_LOCK.md",
+      "scope_evidence_group": null,
+      "full_engine_acceptance": "open",
+      "retest_on_integration": true
+    }
+  ],
+  "evidence_groups": {
+    "G1_AUTHORITY": {
+      "workflow_run_id": 39327086834,
+      "source_branch": "audit/v18b7a-g1-authority-contracts",
+      "tested_source_commit": "6e83b35e5e9eb544f5446749e8fe363e5fc4cc72",
+      "test_file": "src/tests/test_authority18b7.c",
+      "cases": 5248,
+      "assertions_per_configuration": 17556,
+      "scope": "bounded authority transaction laboratory; not real A6",
+      "test_blob_sha1": "7f914702cf0a025409d2488e49ed72cd470f4743"
+    },
+    "G2_PHYSICAL": {
+      "workflow_run_id": 39327086824,
+      "source_branch": "build/v18b7a-g2-physical-interactions-h0",
+      "tested_source_commit": "6e83b35e5e9eb544f5446749e8fe363e5fc4cc72",
+      "test_file": "src/tests/test_physical18b7.c",
+      "cases": 5248,
+      "assertions_per_configuration": 18153,
+      "scope": "discrete seven-family physical analogues; not A4/A5",
+      "test_blob_sha1": "c7e87aafeeb9bcd8ff320bdb86e59a877bf5ce74"
+    },
+    "G3_MULTI": {
+      "workflow_run_id": 39324058293,
+      "source_branch": "build/v18b7a-g3-multiactor-h0",
+      "tested_source_commit": "d8b9195e7edc0bd898b85682a4ad064aa15f0830",
+      "test_file": "src/tests/test_multi18b7.c",
+      "cases": 5248,
+      "assertions_per_configuration": 46303,
+      "scope": "prospective grants plus HF-01 client model; not live multiplayer",
+      "test_blob_sha1": "f4001cebd619286a396950e13d35c665cac7cf95"
+    },
+    "G4_WAL_GOVERNOR": {
+      "workflow_run_id": 39326789518,
+      "source_branch": "build/v18b7a-g4-persistence-performance-h0",
+      "tested_source_commit": "89a945c18f8b5ab0782b426d0c6a1a385abb126a",
+      "test_file": "src/tests/test_wal18b7.c",
+      "additional_test_file": "src/tests/test_governor18b7.c",
+      "cases": 704,
+      "additional_cases": 10000,
+      "assertions_per_configuration": 6150,
+      "additional_assertions": 39056,
+      "scope": "POSIX single-process debit WAL recovery and synthetic admission governor; not full engine durability or performance",
+      "test_blob_sha1": "555a6dd8db1fb4b3803baadb15ce2865171a82ca",
+      "additional_test_blob_sha1": "550cf5d1489dd2fb5397fa0c1b12f91a4e22aaa2"
+    }
+  },
+  "open_gate_families": [
+    {
+      "id": "G01",
+      "description": "Recover original B1 H1 source and reconcile 38-vs-55 historical erratum",
+      "owner": "G1",
+      "kind": "provenance",
+      "priority": 1,
+      "status": "open"
+    },
+    {
+      "id": "G02",
+      "description": "Independent B2 M3-versus-M4 implementations and separate correctness oracle",
+      "owner": "G1",
+      "kind": "correctness",
+      "priority": 1,
+      "status": "open"
+    },
+    {
+      "id": "G03",
+      "description": "One real A6 writer with atomic A3/A4/A5/B3/B4/B5 publication",
+      "owner": "G1",
+      "kind": "integration",
+      "priority": 1,
+      "status": "open"
+    },
+    {
+      "id": "G04",
+      "description": "Real collision, sweep, support and selective refinement in changing worlds",
+      "owner": "G2",
+      "kind": "physics",
+      "priority": 1,
+      "status": "open"
+    },
+    {
+      "id": "G05",
+      "description": "Real applied 3D impulses and causal A5 material/contact history",
+      "owner": "G2",
+      "kind": "physics",
+      "priority": 1,
+      "status": "open"
+    },
+    {
+      "id": "G06",
+      "description": "Seven real B3 interaction families integrated with interrupt/compensation",
+      "owner": "G2",
+      "kind": "physics",
+      "priority": 1,
+      "status": "open"
+    },
+    {
+      "id": "G07",
+      "description": "Same-tick multi-actor physical effects, cooperation, alias and fairness",
+      "owner": "G3",
+      "kind": "multiplayer",
+      "priority": 1,
+      "status": "open"
+    },
+    {
+      "id": "G08",
+      "description": "Authenticated sessions and network loss/duplicate/reorder/reconnect proof",
+      "owner": "G3",
+      "kind": "network",
+      "priority": 1,
+      "status": "open"
+    },
+    {
+      "id": "G09",
+      "description": "Crash-atomic full-world A6+B5 transaction with actual power-loss fault tests",
+      "owner": "G4",
+      "kind": "persistence",
+      "priority": 1,
+      "status": "open"
+    },
+    {
+      "id": "G10",
+      "description": "Portable checkpoint, snapshot+WAL replay and safe compaction",
+      "owner": "G4",
+      "kind": "persistence",
+      "priority": 2,
+      "status": "open"
+    },
+    {
+      "id": "G11",
+      "description": "Measured background maintenance scheduling and graceful recoverability under load",
+      "owner": "G4",
+      "kind": "stability",
+      "priority": 2,
+      "status": "open"
+    },
+    {
+      "id": "G12",
+      "description": "Representative 60Hz CPU/tick/network/IO p50/p95/p99, memory and backlog",
+      "owner": "G4",
+      "kind": "performance",
+      "priority": 1,
+      "status": "open"
+    },
+    {
+      "id": "G13",
+      "description": "Diagnose 337 pending of 360 attempted EEC owner frames",
+      "owner": "G1",
+      "kind": "responsiveness",
+      "priority": 1,
+      "status": "open"
+    },
+    {
+      "id": "G14",
+      "description": "Independent five-stratum pathological, boundary and held-out integrated truth",
+      "owner": "G5",
+      "kind": "science",
+      "priority": 1,
+      "status": "open"
+    },
+    {
+      "id": "G15",
+      "description": "Actual client observer noninterference and input-to-visible evidence",
+      "owner": "G3",
+      "kind": "client",
+      "priority": 2,
+      "status": "open"
+    },
+    {
+      "id": "G16",
+      "description": "Consented H4 human usability, access and privacy evaluation",
+      "owner": "G5",
+      "kind": "human",
+      "priority": 2,
+      "status": "open"
+    },
+    {
+      "id": "G17",
+      "description": "Licensing, contributor attribution, rights review and #36 closure",
+      "owner": "G5",
+      "kind": "governance",
+      "priority": 1,
+      "status": "open"
+    },
+    {
+      "id": "G18",
+      "description": "Branch ancestry/default adoption #30, draft reviews and authorized release signoff",
+      "owner": "G5",
+      "kind": "release",
+      "priority": 1,
+      "status": "open"
+    }
+  ],
+  "notes": [
+    "Historical H1 source remains missing; H2 must remain separately identified.",
+    "Lab corpus executions with shared seeds are repeat reproductions, not independent statistical samples.",
+    "Actual A6/A4/A5/B5 integration and network security remain open.",
+    "Existing draft PRs #53–#56 are unmerged."
+  ]
+}
