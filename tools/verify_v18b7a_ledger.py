@@ -8,6 +8,7 @@ truth, GitHub job completion or legal ownership.
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import re
 import sys
@@ -33,6 +34,19 @@ def check_tree_path(value: object, errors: list[str], context: str) -> bool:
         errors.append(f"{context}: source file absent {value}")
         return False
     return True
+
+
+def check_blob(path: str, expected: object, errors: list[str], context: str) -> None:
+    if not isinstance(expected, str) or not SHA.fullmatch(expected):
+        errors.append(f"{context}: missing pinned Git blob SHA-1")
+        return
+    p = ROOT / path
+    if not p.is_file():
+        return
+    data = p.read_bytes()
+    actual = hashlib.sha1(b"blob " + str(len(data)).encode("ascii") + b"\\0" + data).hexdigest()
+    if actual != expected:
+        errors.append(f"{context}: source drift {actual} != {expected}")
 
 
 def validate(doc: dict) -> list[str]:
@@ -97,9 +111,12 @@ def validate(doc: dict) -> list[str]:
             problems.append(f"{key}: invalid test case count")
         if not isinstance(entry.get("assertions_per_configuration"), int) or entry["assertions_per_configuration"] < 1:
             problems.append(f"{key}: invalid assertion count")
-        check_tree_path(entry.get("test_file"), problems, key)
+        if check_tree_path(entry.get("test_file"), problems, key):
+            check_blob(entry["test_file"], entry.get("test_blob_sha1"), problems, key)
         if entry.get("additional_test_file"):
-            check_tree_path(entry["additional_test_file"], problems, key)
+            if check_tree_path(entry["additional_test_file"], problems, key):
+                check_blob(entry["additional_test_file"],
+                           entry.get("additional_test_blob_sha1"), problems, key)
         scope = entry.get("scope", "")
         if not isinstance(scope, str) or "not " not in scope:
             problems.append(f"{key}: missing evidence scope exclusion")
@@ -132,6 +149,8 @@ def main() -> int:
         ("deleted gate", lambda d: d["open_gate_families"].pop()),
         ("invented workflow proof", lambda d: d["evidence_groups"]["G1_AUTHORITY"].update(
             workflow_run_id=0)),
+        ("source drift", lambda d: d["evidence_groups"]["G2_PHYSICAL"].update(
+            test_blob_sha1="0" * 40)),
     ]:
         clone = copy.deepcopy(ledger)
         mutation(clone)
@@ -145,7 +164,7 @@ def main() -> int:
             d["full_engine_acceptance"] == "passed"
             for d in ledger["determinations"]),
         "unresolved_gate_families": len(ledger.get("open_gate_families", [])),
-        "negative_controls": 6,
+        "negative_controls": 7,
         "errors": problems,
         "result": "PASS" if not problems else "FAIL",
     }
