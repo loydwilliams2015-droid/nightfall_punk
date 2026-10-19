@@ -663,7 +663,8 @@
       "test_file": "src/tests/test_authority18b7.c",
       "cases": 5248,
       "assertions_per_configuration": 17556,
-      "scope": "bounded authority transaction laboratory; not real A6"
+      "scope": "bounded authority transaction laboratory; not real A6",
+      "test_blob_sha1": "7f914702cf0a025409d2488e49ed72cd470f4743"
     },
     "G2_PHYSICAL": {
       "workflow_run_id": 39327086824,
@@ -672,7 +673,8 @@
       "test_file": "src/tests/test_physical18b7.c",
       "cases": 5248,
       "assertions_per_configuration": 18153,
-      "scope": "discrete seven-family physical analogues; not A4/A5"
+      "scope": "discrete seven-family physical analogues; not A4/A5",
+      "test_blob_sha1": "c7e87aafeeb9bcd8ff320bdb86e59a877bf5ce74"
     },
     "G3_MULTI": {
       "workflow_run_id": 39324058293,
@@ -681,7 +683,8 @@
       "test_file": "src/tests/test_multi18b7.c",
       "cases": 5248,
       "assertions_per_configuration": 46303,
-      "scope": "prospective grants plus HF-01 client model; not live multiplayer"
+      "scope": "prospective grants plus HF-01 client model; not live multiplayer",
+      "test_blob_sha1": "f4001cebd619286a396950e13d35c665cac7cf95"
     },
     "G4_WAL_GOVERNOR": {
       "workflow_run_id": 39326789518,
@@ -693,7 +696,9 @@
       "additional_cases": 10000,
       "assertions_per_configuration": 6150,
       "additional_assertions": 39056,
-      "scope": "POSIX single-process debit WAL recovery and synthetic admission governor; not full engine durability or performance"
+      "scope": "POSIX single-process debit WAL recovery and synthetic admission governor; not full engine durability or performance",
+      "test_blob_sha1": "555a6dd8db1fb4b3803baadb15ce2865171a82ca",
+      "additional_test_blob_sha1": "550cf5d1489dd2fb5397fa0c1b12f91a4e22aaa2"
     }
   },
   "open_gate_families": [
