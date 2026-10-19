@@ -148,7 +148,8 @@ static bool test_no_behavior_regression(unsigned seeds){
   memset(ctx,0,sizeof *ctx);
  }
  free(ctx);free(ra);free(rb);free(a);free(b);
- printf("paired_seeds=%u paired_ticks=%u\n",seeds,seeds*50);
+ printf("paired_seeds=%u paired_ticks=%u incumbent_cpu_s=%.6f hook_cpu_s=%.6f (diagnostic only)\n",
+        seeds,seeds*50,(double)incumbent_cost/CLOCKS_PER_SEC,\n        (double)candidate_cost/CLOCKS_PER_SEC);
  return true;
 }
 static unsigned rng_next(unsigned *s){
