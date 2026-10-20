@@ -125,6 +125,11 @@ if(NF_CONTACT_LAB_ONLY)
     target_link_libraries(nightfall_v18c3_joint_test PRIVATE nightfall_embody_h1)
     nf_project_warnings(nightfall_v18c3_joint_test)
     add_test(NAME ucw_joint_a5_contract_journal_v18c3 COMMAND nightfall_v18c3_joint_test)
+    # Research-only ABI-independent TLV mechanic codec, not production world migration.
+    add_executable(nightfall_ucw_codec_test src/tests/test_ucw_codec18c.c)
+    target_link_libraries(nightfall_ucw_codec_test PRIVATE nightfall_embody_h1)
+    nf_project_warnings(nightfall_ucw_codec_test)
+    add_test(NAME ucw_mechanic_codec_housekeeping COMMAND nightfall_ucw_codec_test)
     # Normal build forbids the two controls that bypass world embodiment.
     add_library(nightfall_embody_prod STATIC ${NF_EMBODY_SHARED} src/client/nf_camera.c)
     target_include_directories(nightfall_embody_prod PUBLIC src/shared src/client)
