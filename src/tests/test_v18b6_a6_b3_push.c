@@ -305,6 +305,23 @@ static bool b2_real_server_gate(void){
  CK(nf18b6_push_arm_b2(ctx,w,5)==NF18B3_DENIED);
  CK(ctx->last_b2_status==NF18B2_BLOCKED);
  f->deny=false;
+ /* Compare the distinct B2 jurisdiction orderings on identical live A6
+    server snapshots, without conflating this with real-world H3 admission. */
+ unsigned m3_shape_queries=0,m4_shape_queries=0;
+ for(unsigned i=0;i<256;++i){
+  f->deny=(i&1u)!=0u;
+  Nf18b2Scene scene={0};Nf18b2Use use={0};
+  CK(b2_owned_snapshot(f,w,r,500+i,&scene,&use));
+  const Nf18b2UseDecision a=nf18b2_evaluate(&scene,use,NF18B2_M3_EXHAUSTIVE);
+  const Nf18b2UseDecision b=nf18b2_evaluate(&scene,use,NF18B2_M4_MATERIAL_FIRST);
+  CK(a.status==b.status&&a.contract==b.contract&&a.physical==b.physical);
+  m3_shape_queries+=a.geometry_queries;
+  m4_shape_queries+=b.geometry_queries;
+ }
+ CK(m3_shape_queries==m4_shape_queries);
+ f->deny=false;
+ printf("b2_m3_m4_same_frame=256 shape_queries_m3=%u m4=%u\\n",
+        m3_shape_queries,m4_shape_queries);
  Nf18b3Result decision=nf18b6_push_arm_b2(ctx,w,5);
  fprintf(stderr,"B2 valid snapshot returned %d B2 status %d\\n",
          (int)decision,(int)ctx->last_b2_status);
