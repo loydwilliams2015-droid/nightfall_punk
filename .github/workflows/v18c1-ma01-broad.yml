@@ -1,0 +1,26 @@
+name: 1.8C MA01 swept broadphase laboratory
+on:
+  push:
+    branches: [engineering/v18c1-ma01-swept-broadphase-h1]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cmake -S . -B /tmp/ma01 -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }} -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/ma01 --parallel 2
+          ctest --test-dir /tmp/ma01 --output-on-failure
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          gcc -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/shared src/shared/nf_multi_broad18c1.c src/tests/test_multi_broad18c1.c -lm -o /tmp/ma01san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/ma01san
