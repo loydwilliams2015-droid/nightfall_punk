@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <fcntl.h>
 static int fail(int line){fprintf(stderr,"FAIL:%d\n",line);return 1;}
 #define CHECK(x) do { if(!(x))return fail(__LINE__); }while(0)
 int main(void){
@@ -25,7 +26,22 @@ int main(void){
    CHECK(journal.state.receipts[step].action==action.action);
    CHECK(ucw2_commit(&journal,&candidate)==UCW_STALE);
   }
-  ucw2_close(&journal);unlink(path);
+  ucw2_close(&journal);
+  if(family==3){
+   fd=open(path,O_WRONLY|O_APPEND);CHECK(fd>=0);
+   CHECK(write(fd,"cut",3)==3);close(fd);
+   CHECK(ucw2_open(&journal,path,1000,1000)==UCW_UNCERTAIN);
+   CHECK(journal.quarantine);ucw2_close(&journal);
+  }else if(family==4){
+   fd=open(path,O_RDWR);CHECK(fd>=0);
+   unsigned char byte=0;
+   CHECK(pread(fd,&byte,1,32)==1);
+   byte^=1u;
+   CHECK(pwrite(fd,&byte,1,32)==1);close(fd);
+   CHECK(ucw2_open(&journal,path,1000,1000)==UCW_UNCERTAIN);
+   CHECK(journal.quarantine);ucw2_close(&journal);
+  }
+  unlink(path);
  }
  puts("UCW2_320_SCENARIOS_PASS");return 0;
 }
