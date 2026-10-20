@@ -1,0 +1,135 @@
+{
+  "schema": "nightfall-punk-1.8B.6-frontier-v1",
+  "build": "1.8B.6",
+  "workflow": "engineering/v18b6-b2-authority-finalization-h1",
+  "origin_pr": 60,
+  "reference_baseline": "build/v18b5-persistence-h0",
+  "release_status": "HOLD",
+  "production_baseline_accepted": false,
+  "full_engine_acceptance": false,
+  "atomic_b5_implemented": false,
+  "multi_actor_world_owner_implemented": false,
+  "representative_frame_latency_verified": false,
+  "verified_h1": [
+    {
+      "id": "B6-FN01",
+      "title": "B5-to-B6 physical incumbent preserved",
+      "status": "h1_scoped_pass",
+      "scope": "Verified source blob identity, not new production behavior",
+      "requires_production_retest": true
+    },
+    {
+      "id": "B6-FN02",
+      "title": "Server-owned B2 snapshot and A6 geometry/pose binding",
+      "status": "h1_scoped_pass",
+      "scope": "Verified in scoped H1 test, provider source trust remains an integration dependency",
+      "requires_production_retest": true
+    },
+    {
+      "id": "B6-FN03",
+      "title": "B2 proposal, begin and prepublication revalidation",
+      "status": "h1_scoped_pass",
+      "scope": "Verified H1: denied/forged/stale and late-revoked gates fail closed",
+      "requires_production_retest": true
+    },
+    {
+      "id": "B6-FN04",
+      "title": "A6/A4/A5 real PUSH causality to B3",
+      "status": "h1_scoped_pass",
+      "scope": "Verified H1: five coupled impacts, five actual B3 receipts",
+      "requires_production_retest": true
+    },
+    {
+      "id": "B6-FN05",
+      "title": "Same-snapshot M3/M4 consistency check",
+      "status": "h1_scoped_pass",
+      "scope": "Verified 256 paired fixture decisions, not independent M3 implementation proof",
+      "requires_production_retest": true
+    },
+    {
+      "id": "B6-FN06",
+      "title": "Adversarial/deterministic/conservation regressions",
+      "status": "h1_scoped_pass",
+      "scope": "Verified authored H1 corpus, not representative production field failure rate",
+      "requires_production_retest": true
+    }
+  ],
+  "unresolved": [
+    {
+      "id": "B6-OPEN01",
+      "priority": "P0",
+      "title": "Production authenticated B2 server snapshot source and independent M3 oracle",
+      "status": "open",
+      "release_blocker": true
+    },
+    {
+      "id": "B6-OPEN02",
+      "priority": "P0",
+      "title": "One versioned A6+A4+A5+B3+B5 crash-atomic durable envelope",
+      "status": "open",
+      "release_blocker": true
+    },
+    {
+      "id": "B6-OPEN03",
+      "priority": "P0",
+      "title": "Power-loss / torn record / missing ACK / restart-replay independent fault matrix",
+      "status": "open",
+      "release_blocker": true
+    },
+    {
+      "id": "B6-OPEN04",
+      "priority": "P0",
+      "title": "True multi-actor A6 single-writer physical arbitration and starvation analysis",
+      "status": "open",
+      "release_blocker": true
+    },
+    {
+      "id": "B6-OPEN05",
+      "priority": "P0",
+      "title": "Legacy combat/AI/contamination/energy and remaining B3 categories in one tick",
+      "status": "open",
+      "release_blocker": true
+    },
+    {
+      "id": "B6-OPEN06",
+      "priority": "P1",
+      "title": "Representative 60Hz p50/p95/p99 latency, backlog, memory and held-out stress",
+      "status": "open",
+      "release_blocker": false
+    },
+    {
+      "id": "B6-OPEN07",
+      "priority": "P0",
+      "title": "Original B1 H1 provenance, independent M3/M4 and main ancestry #30",
+      "status": "open",
+      "release_blocker": true
+    },
+    {
+      "id": "B6-OPEN08",
+      "priority": "P0",
+      "title": "GPL/REUSE rights #36, contributor governance and human privacy review",
+      "status": "open",
+      "release_blocker": true
+    },
+    {
+      "id": "B6-OPEN09",
+      "priority": "P1",
+      "title": "Production runtime link, strict removal/isolation of H1 Boolean test controls",
+      "status": "open",
+      "release_blocker": false
+    },
+    {
+      "id": "B6-OPEN10",
+      "priority": "P1",
+      "title": "Entity generation, action replay and disaster recovery on real world snapshots",
+      "status": "open",
+      "release_blocker": false
+    }
+  ],
+  "evidence": {
+    "headless_ci_source": "193fc99ebf40e4864978459b16e66a3a8b65fddd",
+    "workflow_run": 39480022053,
+    "notes": "GCC, Clang and sanitizer 11/11 CTest; H1 laboratory. Original G1-G5 ledgers were not overwritten."
+  },
+  "policy": "Development decisions may be review-locked; full engineering gates remain open until independently executed and reviewed."
+}

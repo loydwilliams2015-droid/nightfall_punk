@@ -242,11 +242,148 @@ static bool conservation_corpus(void){
  printf("conservation_paired_impulses=2048 PASS\\n");
  return true;
 }
+typedef struct B2OwnerFixture {
+ Nf18b2Actor actor;
+ Nf18b2Object object;
+ Nf18aCollider solids[2];
+ unsigned provider_calls,deny_call;
+ bool unavailable,forged,deny;
+} B2OwnerFixture;
+static bool b2_owned_snapshot(void *p,const NfWorld *w,
+    const Nf18a6Runtime *r,uint32_t action,
+    Nf18b2Scene *scene,Nf18b2Use *use){
+ B2OwnerFixture *f=p;
+ f->provider_calls++;
+ if(f->unavailable)return false;
+ const NfActor *a=nf_world_find_actor_const(w,r->actor_id);
+ if(!a)return false;
+ f->actor=(Nf18b2Actor){.id=a->id,.revision=1,
+     .credentials=(f->deny||f->provider_calls==f->deny_call)?0u:1u,.inventory=0,
+     .support_id=101,.feet=a->transform.position,.radius=r->physical.actor.radius,
+     .height=r->physical.actor.height,.eye_height=a->movement.eye_height,
+     .active=a->active?1u:0u,.grounded=a->movement.grounded?1u:0u};
+ const Nf18a4Body *o=&r->physical.object;
+ f->object=(Nf18b2Object){.id=o->id,.revision=1,.cell_id=1,
+     .nexus_id=1,.slot_id=1,.target={o->center.x-o->box_half.x,
+         o->center.y+o->box_half.y-.1f,o->center.z},
+     .max_reach=2.5f,.required_credentials=1,.capacity=1,
+     .preconditions=1,.requires_support=1};
+ f->solids[0]=(Nf18aCollider){.body_id=101,
+     .min=w->colliders[0].min,.max=w->colliders[0].max};
+ if(f->forged)f->solids[0].max.x-=.25f;
+ *scene=(Nf18b2Scene){.material=(Nf18a5World *)&r->physical.world,
+     .geometry={.solids=f->solids,.solid_count=1,
+                .world_version=r->physical.world.revision,
+                .tick=(uint32_t)w->tick+1},
+     .actors=&f->actor,.objects=&f->object,.actor_count=1,.object_count=1};
+ *use=(Nf18b2Use){.actor_id=a->id,.object_id=o->id,
+      .action_id=action,.tick=(uint32_t)w->tick+1,
+      .world_revision=r->physical.world.revision,
+      .material_epoch=r->physical.world.grid.global_revision,
+      .actor_revision=1,.object_revision=1};
+ return true;
+}
+static bool b2_real_server_gate(void){
+ NfWorld *w=malloc(sizeof *w);
+ Nf18a6Runtime *r=malloc(sizeof *r);
+ Nf18b6Push *ctx=calloc(1,sizeof *ctx);
+ B2OwnerFixture *f=calloc(1,sizeof *f);
+ CK(w&&r&&ctx&&f);
+ CK(setup(w,r,2.2f));
+ CK(nf18b6_push_attach(ctx,r,w,7));
+ CK(nf18b6_push_require_b2(ctx,b2_owned_snapshot,f,
+                           NF18B2_M4_MATERIAL_FIRST));
+ CK(nf18a6_bind_world_tick(w,r,NULL,NULL,NULL));
+ CK(nf18b6_push_arm(ctx,w,5,true,true,false)==NF18B3_INVALID);
+ f->unavailable=true;
+ CK(nf18b6_push_arm_b2(ctx,w,5)==NF18B3_PENDING);
+ CK(!ctx->armed&&ctx->receipt_count==0);
+ f->unavailable=false;f->forged=true;
+ CK(nf18b6_push_arm_b2(ctx,w,5)==NF18B3_DENIED);
+ CK(ctx->last_b2_status==NF18B2_STALE);
+ f->forged=false;f->deny=true;
+ CK(nf18b6_push_arm_b2(ctx,w,5)==NF18B3_DENIED);
+ CK(ctx->last_b2_status==NF18B2_BLOCKED);
+ f->deny=false;
+ /* Compare the distinct B2 jurisdiction orderings on identical live A6
+    server snapshots, without conflating this with real-world H3 admission. */
+ unsigned m3_shape_queries=0,m4_shape_queries=0;
+ for(unsigned i=0;i<256;++i){
+  f->deny=(i&1u)!=0u;
+  Nf18b2Scene scene={0};Nf18b2Use use={0};
+  CK(b2_owned_snapshot(f,w,r,500+i,&scene,&use));
+  const Nf18b2UseDecision a=nf18b2_evaluate(&scene,use,NF18B2_M3_EXHAUSTIVE);
+  const Nf18b2UseDecision b=nf18b2_evaluate(&scene,use,NF18B2_M4_MATERIAL_FIRST);
+  CK(a.status==b.status&&a.contract==b.contract&&a.physical==b.physical);
+  m3_shape_queries+=a.geometry_queries;
+  m4_shape_queries+=b.geometry_queries;
+ }
+ CK(m3_shape_queries==m4_shape_queries);
+ f->deny=false;
+ printf("b2_m3_m4_same_frame=256 shape_queries_m3=%u m4=%u\\n",
+        m3_shape_queries,m4_shape_queries);
+ Nf18b3Result decision=nf18b6_push_arm_b2(ctx,w,5);
+ fprintf(stderr,"B2 valid snapshot returned %d B2 status %d\\n",
+         (int)decision,(int)ctx->last_b2_status);
+ CK(decision==NF18B3_OK);
+ CK(ctx->armed);
+ const uint32_t prior_epoch=r->physical.world.grid.global_revision;
+ f->deny=true; /* requirement changed after arming: fail closed */
+ CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
+ CK(!ctx->armed&&w->tick==0&&ctx->receipt_count==0);
+ CK(r->physical.world.grid.global_revision==prior_epoch);
+ f->deny=false;
+ CK(nf18b6_push_arm_b2(ctx,w,6)==NF18B3_OK);
+ f->deny_call=f->provider_calls+2u; /* begin still eligible; prepublish revoked */
+ const uint32_t revision_before=r->physical.world.revision;
+ CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
+ CK(w->tick==0&&ctx->receipt_count==0&&!ctx->event.applied);
+ CK(revision_before==r->physical.world.revision);
+ CK(!ctx->armed);
+ f->deny_call=0;
+ CK(nf18b6_push_arm_b2(ctx,w,7)==NF18B3_OK);
+ CK(nf_world_step_checked(w,1.f/60.f)==NF_WORLD_TICK_COMMITTED);
+ CK(w->tick==1&&ctx->receipt_count==0&&!ctx->event.applied);
+ unsigned b2_real_contact=0,verified_ticks=1;
+ for(unsigned j=0;j<40;++j){
+  nf_world_set_input(w,10,rightward());
+  const uint32_t old_raw=r->physical.world.history.raw_samples;
+  const uint32_t old_applied=ctx->receipt_count;
+  const uint64_t old_tick=w->tick;
+  const Nf18b3Result allowed=nf18b6_push_arm_b2(ctx,w,1000+j);
+  if(allowed!=NF18B3_OK){
+   CK(allowed==NF18B3_PENDING||allowed==NF18B3_DENIED);
+   CK(w->tick==old_tick&&ctx->receipt_count==old_applied);
+   break;
+  }
+  const NfWorldTickStatus status=nf_world_step_checked(w,1.f/60.f);
+  if(status!=NF_WORLD_TICK_COMMITTED){
+   CK(status==NF_WORLD_TICK_PENDING||status==NF_WORLD_TICK_REJECTED);
+   CK(w->tick==old_tick&&ctx->receipt_count==old_applied);
+   CK(r->physical.world.history.raw_samples==old_raw);
+   break;
+  }
+  verified_ticks++;
+  if(r->physical.world.history.raw_samples>old_raw){
+   CK(ctx->last_result==NF18B3_OK);
+   CK(ctx->receipt_count==old_applied+1u&&ctx->event.applied);
+   b2_real_contact++;
+  }else CK(ctx->receipt_count==old_applied&&!ctx->event.applied);
+ }
+ CK(b2_real_contact>0);
+ printf("b2_verified_ticks=%u b2_real_contact_receipts=%u\\n",
+        verified_ticks,b2_real_contact);
+ CK(f->provider_calls>=7);
+ CK(nf18a6_unbind_world_tick(w,r)&&nf18b6_push_detach(ctx,r,w));
+ free(f);free(ctx);free(r);free(w);
+ return true;
+}
+
 int main(void){
  clock_t begin=clock();
  if(!test_contract_and_replay()||!test_missing_material_and_remote_actor()||
     !test_no_behavior_regression(32)||!adversarial_corpus()||
-    !conservation_corpus())return 1;
+    !conservation_corpus()||!b2_real_server_gate())return 1;
  printf("assertions=%llu cpu_seconds=%.6f PASS\n",checks,
        (double)(clock()-begin)/CLOCKS_PER_SEC);
  return 0;
