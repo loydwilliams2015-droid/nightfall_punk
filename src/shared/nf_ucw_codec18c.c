@@ -44,12 +44,23 @@ NfucCodecStatus nfuc_codec_read(const NfucRegistry *r,const unsigned char *b,siz
   else{
    if(seen&(size_t)(1u<<slot))return NFUC_CODEC_CORRUPT;
    if(ver!=codec->version)return NFUC_CODEC_BAD_VERSION;
-   if(!codec->decode(codec->state,b+off+16u,sz))return NFUC_CODEC_CORRUPT;
    seen|=(size_t)(1u<<slot);
   }
   off+=16u+sz;
  }
  for(size_t i=0;i<r->count;i++)if(r->items[i].required&&!(seen&(size_t)(1u<<i)))
   return NFUC_CODEC_UNKNOWN_REQUIRED;
+ /* Only after complete metadata validation may a mechanic decode a section.
+  * Decode callbacks should stage their own state: an arbitrary callback
+  * failure can still mutate its private object and is NOT atomic rollback. */
+ for(size_t off=0;off<n;){
+  uint32_t id=rd(b+off),sz=rd(b+off+12);
+  for(size_t i=0;i<r->count;i++)if(r->items[i].id==id){
+   if(!r->items[i].decode(r->items[i].state,b+off+16u,sz))
+    return NFUC_CODEC_CORRUPT;
+   break;
+  }
+  off+=16u+sz;
+ }
  return NFUC_CODEC_OK;
 }
