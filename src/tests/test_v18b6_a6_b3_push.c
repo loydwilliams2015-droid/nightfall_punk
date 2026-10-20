@@ -319,6 +319,35 @@ static bool b2_real_server_gate(void){
  CK(nf18b6_push_arm_b2(ctx,w,6)==NF18B3_OK);
  CK(nf_world_step_checked(w,1.f/60.f)==NF_WORLD_TICK_COMMITTED);
  CK(w->tick==1&&ctx->receipt_count==0&&!ctx->event.applied);
+ unsigned b2_real_contact=0,verified_ticks=1;
+ for(unsigned j=0;j<40;++j){
+  nf_world_set_input(w,10,rightward());
+  const uint32_t old_raw=r->physical.world.history.raw_samples;
+  const uint32_t old_applied=ctx->receipt_count;
+  const uint64_t old_tick=w->tick;
+  const Nf18b3Result allowed=nf18b6_push_arm_b2(ctx,w,1000+j);
+  if(allowed!=NF18B3_OK){
+   CK(allowed==NF18B3_PENDING||allowed==NF18B3_DENIED);
+   CK(w->tick==old_tick&&ctx->receipt_count==old_applied);
+   break;
+  }
+  const NfWorldTickStatus status=nf_world_step_checked(w,1.f/60.f);
+  if(status!=NF_WORLD_TICK_COMMITTED){
+   CK(status==NF_WORLD_TICK_PENDING||status==NF_WORLD_TICK_REJECTED);
+   CK(w->tick==old_tick&&ctx->receipt_count==old_applied);
+   CK(r->physical.world.history.raw_samples==old_raw);
+   break;
+  }
+  verified_ticks++;
+  if(r->physical.world.history.raw_samples>old_raw){
+   CK(ctx->last_result==NF18B3_OK);
+   CK(ctx->receipt_count==old_applied+1u&&ctx->event.applied);
+   b2_real_contact++;
+  }else CK(ctx->receipt_count==old_applied&&!ctx->event.applied);
+ }
+ CK(b2_real_contact>0);
+ printf("b2_verified_ticks=%u b2_real_contact_receipts=%u\\n",
+        verified_ticks,b2_real_contact);
  CK(f->provider_calls>=7);
  CK(nf18a6_unbind_world_tick(w,r)&&nf18b6_push_detach(ctx,r,w));
  free(f);free(ctx);free(r);free(w);
