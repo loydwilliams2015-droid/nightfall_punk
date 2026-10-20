@@ -1,0 +1,129 @@
+nightfall!punk v1.5 — PAC-MAN RELATIONAL / METABOLIC DEMO
+Deterministic 10-tick toy harness
+Purpose: stress-test Information Topography, nested accounts, relational health,
+metabolic energy accounting, communication, and Sustainable Passage.
+This is NOT a reconstruction of historical Pac-Man ghost source code.
+
+MAP
+A-B-C
+| | |
+D-E-F
+| | |
+G-H-I
+
+Key:
+P = Pac-Man
+A/B/C = three nightfall-style test ghosts
+G = contested pellet/resource node
+H = strategically important route/corridor
+I = metabolic recovery/resource node
+
+RELATIONAL HEALTH
+Viability = bounded function of systemic + locomotor + sensory relations.
+Energy is a separate metabolic account.
+A ghost can therefore be:
+- functionally healthy but metabolically unsustainable;
+- functionally damaged but metabolically well-resourced.
+
+COMMUNICATION
+Direct sight = precise actor-relative evidence.
+Relayed position = delayed and coarse region.
+Relay never gains precision.
+Reports alter recipient belief; they are not commands.
+
+TRACE
+T1  P=B
+ A F GUARD   viability=1.00 energy=60.7 belief=NONE
+ B H GUARD   viability=1.00 energy=34.0 belief=NONE
+ C D GUARD   viability=1.00 energy=83.7 belief=NONE
+
+T2  P=E
+ A E CHASE   viability=1.00 energy=56.7 belief=DIRECT(E)
+ B H GUARD   viability=1.00 energy=33.0 belief=DIRECT(E)
+ C E CHASE   viability=1.00 energy=79.7 belief=DIRECT(E)
+
+T3  P=H
+ A E GUARD   viability=1.00 energy=55.4 belief=DIRECT(H)
+ B H GUARD   viability=1.00 energy=32.0 belief=DIRECT(H)
+ C H CHASE   viability=1.00 energy=75.7 belief=DIRECT(H)
+
+T4  P=G
+ A E GUARD   viability=1.00 energy=54.1 belief=RELAY_REGION{B,D,E,F,H}
+ B H GUARD   viability=1.00 energy=31.0 belief=DIRECT(G)
+ C G CHASE   viability=1.00 energy=71.7 belief=DIRECT(G)
+
+Result: same world truth, different actor knowledge. A does not receive G as an
+exact coordinate. Its action remains GUARD while direct observers act differently.
+
+T5  P=G  POWER ACTIVE
+ A E GUARD   viability=1.00 energy=52.8 belief=COARSE
+ B H GUARD   viability=1.00 energy=30.0 belief=DIRECT(G)
+ C G CHASE   viability falls 1.00 -> 0.81 after contact; energy remains 70.7
+
+Result: relational damage changes functional viability WITHOUT subtracting the
+same quantity from metabolic energy.
+
+T6  P=H  POWER ACTIVE
+ A E GUARD   viability=1.00 energy=51.5 belief=DIRECT(H)
+ B H GUARD   viability=0.81 energy=29.0 belief=DIRECT(H)
+ C G GUARD   viability=0.81 energy=69.4 belief=DIRECT(H)
+
+Result:
+- B is damaged AND metabolically poor but still holds H because Crew/route value
+  currently exceeds withdrawal value.
+- C is equally damaged but metabolically rich; its future options differ from B.
+Same "health", different strategic state.
+
+T7  P=I  POWER ACTIVE
+ A E GUARD   viability=1.00 energy=50.2 belief=COARSE
+ B H GUARD   viability=0.81 energy=28.0 belief=DIRECT(I)
+ C G GUARD   viability=0.81 energy=68.1 belief=COARSE
+
+T8  P=I  POWER ENDS
+ A E GUARD   viability=1.00 energy=48.9 belief=COARSE
+ B H GUARD   viability=0.81 energy=27.0 belief=DIRECT(I)
+ C G GUARD   viability=0.81 energy=66.8 belief=COARSE
+
+T9  P=H
+ A E GUARD   viability=1.00 energy=47.6 belief=DIRECT(H)
+ B H GUARD   viability=0.81 energy=26.0 belief=DIRECT(H)
+ C G GUARD   viability=0.81 energy=65.5 belief=DIRECT(H)
+
+T10 P=E
+ A E CHASE   viability=1.00 energy=46.6 belief=DIRECT(E)
+ B H GUARD   viability=0.81 energy=25.0 belief=DIRECT(E)
+ C G GUARD   viability=0.81 energy=64.2 belief=RELAY_REGION{F,H,I}
+
+SUMMARY
+- 30 ghost-decisions: 24 GUARD, 6 CHASE.
+- No actor used omniscient shared target truth.
+- Direct and relayed beliefs produced different actions in the same world state.
+- Relational viability and metabolic energy diverged successfully.
+- Route/resource value could outweigh immediate pursuit.
+- Power/contact altered functional relations, not an abstract energy pool.
+- Target = NONE / guard / continue current task remained legitimate.
+- The toy balance is too guard-heavy. This is a TUNING signal, not an architectural
+  failure: route/Crew terms should be measured against pursuit/information value in
+  the actual v1.5 greybox.
+
+PAC-MAN COMPARISON
+Simplified classic-like baseline:
+    global/current target -> chase/scatter/frightened movement rule
+nightfall-style test:
+    evidence -> belief -> nested accounts -> metabolic/viability appraisal
+    -> interaction choice -> embodied move -> new relation
+
+MOST IMPORTANT RESULT
+Same functional viability does not imply same future ability:
+    B viability=0.81, energy=29
+    C viability=0.81, energy=69.4
+Therefore:
+    Health != Energy
+and:
+    Current Function != Capacity To Reproduce Current Function
+
+Q419-Q423 NOTE
+Pac-Man can stress-test causal confirmation, communications, observability,
+route/resource proof, and non-elimination logic. It cannot meaningfully validate
+the physical feel of Q423 carbine recoil/hip-fire/ADS; that remains a first-person
+human-proof question for the v1.5 greybox.
