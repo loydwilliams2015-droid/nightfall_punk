@@ -26,7 +26,7 @@ NfNarrowResult nf_multi_narrow18c1(const NfMulti18c1World *w,const NfMultiBroad 
   Nf18a2ShapePolicy shape={0};
   shape.radius=actor->radius;shape.height=actor->height;
   shape.foot_flat_radius=0.1f;shape.step_height=0.35f;
-  shape.min_support_normal_y=.7071067f;
+  shape.walkable_normal_y=.7071067f;
   Nf18aCollider collider={0};
   collider.body_id=box->id;collider.min=(NfVec3){box->center.x-box->box_half.x,box->center.y-box->box_half.y,box->center.z-box->box_half.z};
   collider.max=(NfVec3){box->center.x+box->box_half.x,box->center.y+box->box_half.y,box->center.z+box->box_half.z};
