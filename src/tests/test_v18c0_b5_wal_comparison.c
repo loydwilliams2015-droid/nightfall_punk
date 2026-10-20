@@ -70,7 +70,7 @@ static int trial(unsigned family,unsigned seed,unsigned *checks){
  /* A rejected B5 callback does not publish state.  The WAL's own
   * uncertainty semantics remain distinct; we do not equate them. */
  NfB5State snapshot=*inc;
- NfB5Event declined={9,9999,77,oracle.epoch,1};
+ NfB5Event declined={9,9999,77,oracle.epoch,0};
  REQUIRE(nf_b5_apply(inc,declined,reject_save,NULL)==NF_B5_PERSIST_FAIL);
  REQUIRE(nf_b5_equal(inc,&snapshot));
  nf4_close(wal);
