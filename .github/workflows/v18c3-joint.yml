@@ -1,0 +1,30 @@
+name: C3 joint A5 contract journal
+on:
+  push:
+    branches: [engineering/v18c3-unified-typed-journal-h0]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  joint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -eux
+          cmake -S . -B /tmp/c3build -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=${{ matrix.compiler }}
+          cmake --build /tmp/c3build --parallel 2
+          ctest --test-dir /tmp/c3build --output-on-failure
+          ${{ matrix.compiler }} -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -Isrc/shared -Isrc/client src/tests/test_ucw18c3.c /tmp/c3build/libnightfall_embody_h1.a -lm -o /tmp/ucw3
+          /tmp/ucw3
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -eux
+          gcc -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/shared -Isrc/client src/shared/nf_ucw18c1.c src/shared/nf_ucw18c3.c src/tests/test_ucw18c3.c -lm -o /tmp/ucw3san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/ucw3san
