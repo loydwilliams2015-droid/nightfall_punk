@@ -98,7 +98,7 @@ static bool prepublish(const NfWorld *world,const Nf18a5Integrated *candidate,vo
      * frame has changed.  This is a staged A5 body, not a client projection.
      */
     const Nf18b3Event *e=&ctx->event;
-    return (!ctx->b2_snapshot || b2_check((Nf18b6Push *)ctx,w,candidate->world.tick)==NF18B2_ELIGIBLE) &&
+    return (!ctx->b2_snapshot || b2_check((Nf18b6Push *)ctx,world,candidate->world.tick)==NF18B2_ELIGIBLE) &&
         e->authorized && e->phase==NF18B3_WAITING &&
         e->tick==candidate->world.tick && candidate->world.tick==world->tick+1u &&
         e->world_epoch==(uint32_t)world->tick &&
