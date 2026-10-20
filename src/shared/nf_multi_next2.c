@@ -68,6 +68,12 @@ NfMa01c2Result nf_ma01c2_integrate(const Nf18a4Body *b,size_t n,float dt,
    r.status=NF_NARROW_PENDING;return r;
   }
   r.impacts++;
+  /* For exactly two bodies a separating zero-restitution collision cannot
+   * generate a second impulse during this constant-velocity substep. */
+  if(n==2){
+   advance(r.bodies,n,left);r.advanced_seconds+=left;
+   r.status=NF_NARROW_OK;return r;
+  }
  }
  if(left<=0){r.status=NF_NARROW_OK;return r;}
  /* Bounded causal frontier not resolved: no caller should publish bodies. */
