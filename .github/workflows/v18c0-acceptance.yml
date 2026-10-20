@@ -1,0 +1,62 @@
+name: 1.8C.0 baseline acceptance laboratory
+on:
+  push:
+    branches:
+      - research/v18c0-baseline-acceptance-h0
+  pull_request:
+  workflow_dispatch:
+jobs:
+  comparison:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Provenance and experimental input hash
+        run: |
+          git rev-parse HEAD
+          sha256sum src/tests/test_v18c0_b5_wal_comparison.c src/shared/nf_persist18b5.c src/shared/nf_wal18b7.c
+      - name: Build and run paired incumbent/challenger test
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          set -eux
+          "$CC" -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -Isrc/shared \
+            src/tests/test_v18c0_b5_wal_comparison.c src/shared/nf_persist18b5.c \
+            src/shared/nf_wal18b7.c -o /tmp/nf18c0_b5_wal
+          /tmp/nf18c0_b5_wal
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: GCC ASan and UBSan
+        run: |
+          set -eux
+          gcc -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror \
+            -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/shared \
+            src/tests/test_v18c0_b5_wal_comparison.c src/shared/nf_persist18b5.c \
+            src/shared/nf_wal18b7.c -o /tmp/nf18c0_b5_wal_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/nf18c0_b5_wal_san
+  physics-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Headless authoritative physics and B2 CTest
+        run: |
+          cmake -S . -B /tmp/nf18c0_phys -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/nf18c0_phys --parallel 2
+          ctest --test-dir /tmp/nf18c0_phys --output-on-failure
+  ledger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Corrected B6 transfer provenance
+        run: |
+          python3 tools/verify_v18b6_transfer.py
+          git worktree add --detach /tmp/nf18c0_hist aaae30e7082f5ceaea198fe4a37f6c02692bab84
+          (cd /tmp/nf18c0_hist && python3 tools/verify_v18b7a_ledger.py)
+          git worktree remove --force /tmp/nf18c0_hist
