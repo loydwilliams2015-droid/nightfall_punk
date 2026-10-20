@@ -37,3 +37,27 @@ The parent ledger's 18 unresolved groups and 10 production questions survive. No
 
 ## Proposed exit
 Promote the B5 callback model as a *simple reference oracle* and the WAL as *isolated file durability challenger* only if their common-subset test passes. Do not call either a production exit candidate; choose **H0 comparative research ACCEPT / H3 production HOLD** if tests pass. Use the demonstrated missing object/action/contract envelope and independent true A6 integration as the first C.1 engineering frontier. Keep canonical ledgers untouched; this document is a review-branch overlay, not historical rewriting.
+
+## Executed comparison and traceable erratum (2026-10-20)
+The original CI runs `39485996791` and `39486127764` **FAILED** because the test's synthetic `reject_save` candidate attempted debit=1 after some scenario balances were exhausted. That proved an insufficient-balance rejection, not the persistence callback-failure boundary. **Test-only correction** set the probe debit to 0 and reran CI; no production incumbent or WAL algorithm was modified. The failed executions remain in workflow history.
+
+**Fresh PASS:** corrected source commit `ee47d3d87d09260e6541a100d81caf9c2a58bc54`, GitHub Actions run **`39486210546`**, all five jobs SUCCESS:
+- GCC optimized strict C11 (job `118847162718`): **320 scenarios, 11,200 action attempts, 62,763 assertions**, process CPU wall-sensitive diagnostic **0.209933 s**.
+- Clang optimized strict C11 (job `118847162406`): same authored corpus and assertions, diagnostic **0.188514 s**.
+- GCC AddressSanitizer+UndefinedBehaviorSanitizer (job `118847162252`): same authored corpus and assertions, diagnostic **0.114769 s**. Different system-runner measurements are **not** comparable algorithmic speeds.
+- Offline authoritative physics/regression (job `118847162689`): CTest **11/11 PASS**, not integrated multi-actor or durable network.
+- Provenance ledger (job `118847162072`): corrected B6 transfer **72 determinations, eight negative controls, 18 open gate families, PASS**; frozen historical record **72 determinations, seven negative controls, zero full-engine acceptances, PASS**.
+- Each stratum (canonical/randomized/pathological/boundary/heldout) contains **64 scenarios**. The 320 per-compiler runs are repeated identical populations across toolchains, not 960 statistically independent samples.
+
+### Comparative decision table
+| Requirement | B5 snapshot callback incumbent | POSIX WAL challenger | Decision |
+|---|---|---|---|
+| Shared valid-debit state conservation | PASS (320 H0 cases) | PASS (320 H0 cases) | equivalent only on shared subset |
+| Changed-payload duplicate / stale revision | PASS | PASS | retain |
+| Persistence failure | callback refuses and memory unchanged | uncertainty quarantines, requires journal reconciliation | different semantics, neither is complete crash proof |
+| Durable file replay | no real disk writer, only callback abstraction | reopened file matches independent oracle for bounded ledger | **WAL more representative for file recovery** |
+| Object/contract identity & A5 physics state | B5 event carries object but has no full material snapshot | WAL record omits object/contract/physics | **both FAIL mandatory complete envelope** |
+| Full A6/B2/B3/B5 atomic publication | NOT IMPLEMENTED | NOT IMPLEMENTED | release HOLD |
+| Representative 60Hz and latency tails | NOT MEASURED | NOT MEASURED | no performance winner |
+
+**Exit selection:** keep the simple callback B5 incumbent as a limited deterministic comparison oracle, and the file WAL as a storage-semantics challenger for subsequent envelope research. Do not promote either as the full 1.8C.0 production exit or claim all B6 handoff gates closed. The new H0 source/test artifact can be incorporated into subsequent proposals only with a source-verified H3 integration plan.
