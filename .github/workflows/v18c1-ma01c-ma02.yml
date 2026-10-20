@@ -1,0 +1,28 @@
+name: 1.8C MA01C MA02 bounded authority tests
+on:
+  push:
+    branches: [engineering/v18c1-ma01c-ma02-contact-witness-h1]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -eux
+          cmake -S . -B /tmp/ma02 -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }} -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/ma02 --parallel 2
+          ctest --test-dir /tmp/ma02 --output-on-failure
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -eux
+          gcc -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/shared src/shared/nf_contact18a.c src/shared/nf_contact18a2.c src/shared/nf_contact18a3.c src/shared/nf_contact18a4.c src/shared/nf_multi_c1_next.c src/tests/test_multi_c1_next.c -lm -o /tmp/ma02_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/ma02_san
