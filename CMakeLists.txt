@@ -114,6 +114,13 @@ if(NF_CONTACT_LAB_ONLY)
     target_link_libraries(nightfall_v18c1_ucw_test PRIVATE nightfall_embody_h1)
     nf_project_warnings(nightfall_v18c1_ucw_test)
     add_test(NAME ucw_transaction_frontier_v18c1 COMMAND nightfall_v18c1_ucw_test)
+    # Complete bounded logical UCW envelope: replayable B3-like receipt identities.
+    # Does not yet serialize live A4/A5 rigid-body state.
+    add_executable(nightfall_v18c2_envelope_test src/tests/test_ucw18c2.c)
+    target_link_libraries(nightfall_v18c2_envelope_test PRIVATE nightfall_embody_h1)
+    nf_project_warnings(nightfall_v18c2_envelope_test)
+    add_test(NAME ucw_complete_logical_envelope_v18c2
+        COMMAND nightfall_v18c2_envelope_test)
     # Normal build forbids the two controls that bypass world embodiment.
     add_library(nightfall_embody_prod STATIC ${NF_EMBODY_SHARED} src/client/nf_camera.c)
     target_include_directories(nightfall_embody_prod PUBLIC src/shared src/client)
