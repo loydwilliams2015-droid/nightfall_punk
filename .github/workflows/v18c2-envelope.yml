@@ -1,0 +1,40 @@
+name: 1.8C.2 logical receipt envelope tests
+on:
+  push:
+    branches: [engineering/v18c2-complete-envelope-h0]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  logical-recovery:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Strict C11 replay validation
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          set -eux
+          "$CC" -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -Isrc/shared src/shared/nf_ucw18c1.c src/shared/nf_ucw18c2.c src/tests/test_ucw18c2.c -o /tmp/ucw2
+          /tmp/ucw2
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -eux
+          gcc -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/shared src/shared/nf_ucw18c1.c src/shared/nf_ucw18c2.c src/tests/test_ucw18c2.c -o /tmp/ucw2_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/ucw2_san
+  predecessor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Real A6/B2 and new C2 headless regression
+        run: |
+          set -eux
+          cmake -S . -B /tmp/c2phys -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/c2phys --parallel 2
+          ctest --test-dir /tmp/c2phys --output-on-failure
