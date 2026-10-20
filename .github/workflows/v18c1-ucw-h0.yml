@@ -1,0 +1,48 @@
+name: 1.8C.1 UCW-1 C11 transaction and causal frontier H0
+on:
+  push:
+    branches:
+      - engineering/v18c1-ucw1-c-transaction-core-h0
+  pull_request:
+  workflow_dispatch:
+jobs:
+  ucw-h0:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -eux
+          git rev-parse HEAD
+          sha256sum src/shared/nf_ucw18c1.c src/shared/nf_ucw18c1.h src/tests/test_ucw18c1.c
+      - name: Strict C11 arbitration and journal test
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          set -eux
+          "$CC" -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror \
+             -Isrc/shared src/shared/nf_ucw18c1.c src/tests/test_ucw18c1.c \
+             -o /tmp/ucw_h0
+          /tmp/ucw_h0
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -eux
+          gcc -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror \
+           -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/shared \
+           src/shared/nf_ucw18c1.c src/tests/test_ucw18c1.c -o /tmp/ucw_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/ucw_san
+  predecessor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -eux
+          cmake -S . -B /tmp/nf_ucw_phys -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/nf_ucw_phys --parallel 2
+          ctest --test-dir /tmp/nf_ucw_phys --output-on-failure
