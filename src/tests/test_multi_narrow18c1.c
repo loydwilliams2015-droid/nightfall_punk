@@ -21,6 +21,16 @@ int main(void){
   NfNarrowResult n=nf_multi_narrow18c1(&w,&broad,1.f/60.f);
   CK(!memcmp(&original,&w,sizeof w));
   if(family==1)CK(n.status==NF_NARROW_OK&&n.count==0);
+  if(family==2){
+   CK(broad.count==1&&n.status==NF_NARROW_OK&&n.count==1);
+   Nf18a4Body bodies[2]={w.bodies[0],w.bodies[1]};
+   Nf18a4IslandResult solved=nf18a4_solve_island(
+     bodies,2,n.constraints,n.count,NF18A4_RECIPROCAL_LINEAR,1,1);
+   CK(solved.status==NF18A4_ACCEPTED);
+   CK(solved.receipts[0].impulses_applied);
+   CK(bodies[0].velocity.x<w.bodies[0].velocity.x);
+   CK(bodies[1].velocity.x>w.bodies[1].velocity.x);
+  }
   if(family==3&&broad.count)CK(n.status==NF_NARROW_PENDING&&n.count==0);
   if(family==4&&broad.count)CK(n.status==NF_NARROW_PENDING&&n.count==0);
   CK(n.count<=NF18A4_MAX_CONSTRAINTS);
