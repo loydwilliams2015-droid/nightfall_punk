@@ -18,6 +18,24 @@ jobs:
         run: |
           git rev-parse HEAD
           sha256sum src/shared/nf_eligibility18b2.c src/shared/nf_b6_push18b6.h src/shared/nf_b6_push18b6.c src/tests/test_v18b6_a6_b3_push.c CMakeLists.txt
+      - name: Enforce scope of completed and remaining determinations
+        run: |
+          python3 - <<'PY'
+          import json
+          with open("docs/ret/v18b6_frontier_determinations.json",encoding="utf-8") as fh:
+              d=json.load(fh)
+          assert d["build"]=="1.8B.6"
+          assert d["release_status"]=="HOLD"
+          for key in ("production_baseline_accepted","full_engine_acceptance",
+                      "atomic_b5_implemented","multi_actor_world_owner_implemented",
+                      "representative_frame_latency_verified"):
+              assert d[key] is False, key
+          assert len(d["verified_h1"])==6
+          assert len(d["unresolved"])==10
+          assert all(x["status"]=="open" for x in d["unresolved"])
+          assert all(x["requires_production_retest"] for x in d["verified_h1"])
+          print("B6 frontier provenance and ten open gates: PASS")
+          PY
       - name: Full offline contact A6/B3 CTest
         env:
           CC: ${{ matrix.cc }}
