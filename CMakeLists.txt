@@ -121,6 +121,10 @@ if(NF_CONTACT_LAB_ONLY)
     nf_project_warnings(nightfall_v18c2_envelope_test)
     add_test(NAME ucw_complete_logical_envelope_v18c2
         COMMAND nightfall_v18c2_envelope_test)
+    add_executable(nightfall_v18c3_joint_test src/tests/test_ucw18c3.c)
+    target_link_libraries(nightfall_v18c3_joint_test PRIVATE nightfall_embody_h1)
+    nf_project_warnings(nightfall_v18c3_joint_test)
+    add_test(NAME ucw_joint_a5_contract_journal_v18c3 COMMAND nightfall_v18c3_joint_test)
     # Normal build forbids the two controls that bypass world embodiment.
     add_library(nightfall_embody_prod STATIC ${NF_EMBODY_SHARED} src/client/nf_camera.c)
     target_include_directories(nightfall_embody_prod PUBLIC src/shared src/client)
