@@ -246,7 +246,7 @@ typedef struct B2OwnerFixture {
  Nf18b2Actor actor;
  Nf18b2Object object;
  Nf18aCollider solids[2];
- unsigned provider_calls;
+ unsigned provider_calls,deny_call;
  bool unavailable,forged,deny;
 } B2OwnerFixture;
 static bool b2_owned_snapshot(void *p,const NfWorld *w,
@@ -258,7 +258,7 @@ static bool b2_owned_snapshot(void *p,const NfWorld *w,
  const NfActor *a=nf_world_find_actor_const(w,r->actor_id);
  if(!a)return false;
  f->actor=(Nf18b2Actor){.id=a->id,.revision=1,
-     .credentials=f->deny?0u:1u,.inventory=0,
+     .credentials=(f->deny||f->provider_calls==f->deny_call)?0u:1u,.inventory=0,
      .support_id=101,.feet=a->transform.position,.radius=r->physical.actor.radius,
      .height=r->physical.actor.height,.eye_height=a->movement.eye_height,
      .active=a->active?1u:0u,.grounded=a->movement.grounded?1u:0u};
@@ -334,6 +334,14 @@ static bool b2_real_server_gate(void){
  CK(r->physical.world.grid.global_revision==prior_epoch);
  f->deny=false;
  CK(nf18b6_push_arm_b2(ctx,w,6)==NF18B3_OK);
+ f->deny_call=f->provider_calls+2u; /* begin still eligible; prepublish revoked */
+ const uint32_t revision_before=r->physical.world.revision;
+ CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
+ CK(w->tick==0&&ctx->receipt_count==0&&!ctx->event.applied);
+ CK(revision_before==r->physical.world.revision);
+ CK(!ctx->armed);
+ f->deny_call=0;
+ CK(nf18b6_push_arm_b2(ctx,w,7)==NF18B3_OK);
  CK(nf_world_step_checked(w,1.f/60.f)==NF_WORLD_TICK_COMMITTED);
  CK(w->tick==1&&ctx->receipt_count==0&&!ctx->event.applied);
  unsigned b2_real_contact=0,verified_ticks=1;
