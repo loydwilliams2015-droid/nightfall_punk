@@ -130,6 +130,11 @@ if(NF_CONTACT_LAB_ONLY)
     target_link_libraries(nightfall_ucw_codec_test PRIVATE nightfall_embody_h1)
     nf_project_warnings(nightfall_ucw_codec_test)
     add_test(NAME ucw_mechanic_codec_housekeeping COMMAND nightfall_ucw_codec_test)
+    # 1.8C.1 genuine A4 multi-body island authority scientific challenger.
+    add_executable(nightfall_v18c1_multi_test src/tests/test_multi18c1.c)
+    target_link_libraries(nightfall_v18c1_multi_test PRIVATE nightfall_embody_h1)
+    nf_project_warnings(nightfall_v18c1_multi_test)
+    add_test(NAME multi_a4_authority_v18c1 COMMAND nightfall_v18c1_multi_test)
     # Normal build forbids the two controls that bypass world embodiment.
     add_library(nightfall_embody_prod STATIC ${NF_EMBODY_SHARED} src/client/nf_camera.c)
     target_include_directories(nightfall_embody_prod PUBLIC src/shared src/client)
