@@ -108,6 +108,12 @@ if(NF_CONTACT_LAB_ONLY)
     nf_project_warnings(nightfall_v18b6_physics_push_test)
     add_test(NAME real_a6_a4_a5_b3_push_v18b6
         COMMAND nightfall_v18b6_physics_push_test)
+    # UCW-1 C.1 source-integrated bounded transactional kernel (H0).
+    # This does NOT give the live A6/B3 game a durable publication hook.
+    add_executable(nightfall_v18c1_ucw_test src/tests/test_ucw18c1.c)
+    target_link_libraries(nightfall_v18c1_ucw_test PRIVATE nightfall_embody_h1)
+    nf_project_warnings(nightfall_v18c1_ucw_test)
+    add_test(NAME ucw_transaction_frontier_v18c1 COMMAND nightfall_v18c1_ucw_test)
     # Normal build forbids the two controls that bypass world embodiment.
     add_library(nightfall_embody_prod STATIC ${NF_EMBODY_SHARED} src/client/nf_camera.c)
     target_include_directories(nightfall_embody_prod PUBLIC src/shared src/client)
