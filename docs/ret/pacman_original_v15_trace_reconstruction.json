@@ -1,0 +1,172 @@
+{
+  "source": "user-owned historical v1.5 Pac-Man relational/metabolic text artifact, dated 2026-08-15; not original Namco source",
+  "scope": "archived deterministic 10-tick toy trace transcribed into machine-readable benchmark; no original executable ghost code located",
+  "map": [
+    "ABC",
+    "DEF",
+    "GHI"
+  ],
+  "positions": "3x3",
+  "energy_end": [
+    46.6,
+    25,
+    64.2
+  ],
+  "two_equal_viability_distinct_energy": {
+    "viability": 0.81,
+    "actor_B_energy_t6": 29,
+    "actor_C_energy_t6": 69.4
+  },
+  "player_power_ticks": [
+    5,
+    6,
+    7
+  ],
+  "ghosts": [
+    "A",
+    "B",
+    "C"
+  ],
+  "records": [
+    {
+      "tick": 1,
+      "player": "B",
+      "ghost_positions": [
+        "F",
+        "E",
+        "D"
+      ],
+      "ghost_actions": [
+        "GUARD",
+        "GUARD",
+        "GUARD"
+      ]
+    },
+    {
+      "tick": 2,
+      "player": "E",
+      "ghost_positions": [
+        "E",
+        "H",
+        "E"
+      ],
+      "ghost_actions": [
+        "CHASE",
+        "GUARD",
+        "CHASE"
+      ]
+    },
+    {
+      "tick": 3,
+      "player": "H",
+      "ghost_positions": [
+        "E",
+        "H",
+        "H"
+      ],
+      "ghost_actions": [
+        "GUARD",
+        "GUARD",
+        "CHASE"
+      ]
+    },
+    {
+      "tick": 4,
+      "player": "G",
+      "ghost_positions": [
+        "E",
+        "H",
+        "G"
+      ],
+      "ghost_actions": [
+        "GUARD",
+        "GUARD",
+        "CHASE"
+      ]
+    },
+    {
+      "tick": 5,
+      "player": "G",
+      "ghost_positions": [
+        "E",
+        "H",
+        "G"
+      ],
+      "ghost_actions": [
+        "GUARD",
+        "GUARD",
+        "CHASE"
+      ]
+    },
+    {
+      "tick": 6,
+      "player": "H",
+      "ghost_positions": [
+        "E",
+        "H",
+        "G"
+      ],
+      "ghost_actions": [
+        "GUARD",
+        "GUARD",
+        "GUARD"
+      ]
+    },
+    {
+      "tick": 7,
+      "player": "I",
+      "ghost_positions": [
+        "E",
+        "H",
+        "G"
+      ],
+      "ghost_actions": [
+        "GUARD",
+        "GUARD",
+        "GUARD"
+      ]
+    },
+    {
+      "tick": 8,
+      "player": "I",
+      "ghost_positions": [
+        "E",
+        "H",
+        "G"
+      ],
+      "ghost_actions": [
+        "GUARD",
+        "GUARD",
+        "GUARD"
+      ]
+    },
+    {
+      "tick": 9,
+      "player": "H",
+      "ghost_positions": [
+        "E",
+        "H",
+        "G"
+      ],
+      "ghost_actions": [
+        "GUARD",
+        "GUARD",
+        "GUARD"
+      ]
+    },
+    {
+      "tick": 10,
+      "player": "E",
+      "ghost_positions": [
+        "E",
+        "H",
+        "G"
+      ],
+      "ghost_actions": [
+        "CHASE",
+        "GUARD",
+        "GUARD"
+      ]
+    }
+  ]
+}

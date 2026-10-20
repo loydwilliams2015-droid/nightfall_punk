@@ -1,0 +1,78 @@
+name: Corrected 1.8B.6 Pac-Man three-era source comparison
+on:
+  push:
+    branches:
+      - benchmark/v18b6-pacman-three-era-h1
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  three-era-reproducibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Record source identity
+        run: |
+          set -eux
+          git rev-parse HEAD
+          git cat-file -e e0d6aa1334df92c7f8e4425cac96a9f1d4bb4243^{commit}
+          sha256sum src/tests/pacman_three_era_native_probe.c tools/pacman_three_era_report.py \
+            docs/archive/nightfall_punk_v15_pacman_metabolic_demo.txt \
+            docs/ret/pacman_original_v15_trace_reconstruction.json
+      - name: Preserve original 1.8A.6 native source in detached worktree
+        run: git worktree add --detach /tmp/nf_a6_source e0d6aa1334df92c7f8e4425cac96a9f1d4bb4243
+      - name: Compile actual historical 1.8A.6 headless physics
+        run: |
+          set -eux
+          cmake -S /tmp/nf_a6_source -B /tmp/nf_a6_build -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/nf_a6_build --parallel 2
+          ctest --test-dir /tmp/nf_a6_build --output-on-failure
+          cc -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror \
+            -I/tmp/nf_a6_source/src/shared -I/tmp/nf_a6_source/src/client \
+            src/tests/pacman_three_era_native_probe.c \
+            /tmp/nf_a6_build/libnightfall_embody_prod.a -lm \
+            -o /tmp/nf_pacman_a6
+          /tmp/nf_pacman_a6 > /tmp/pacman_a6.txt
+          tail -n 2 /tmp/pacman_a6.txt
+      - name: Compile corrected 1.8B.6 headless physics
+        run: |
+          set -eux
+          cmake -S . -B /tmp/nf_b6_build -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/nf_b6_build --parallel 2
+          ctest --test-dir /tmp/nf_b6_build --output-on-failure
+          cc -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror \
+            -Isrc/shared -Isrc/client src/tests/pacman_three_era_native_probe.c \
+            /tmp/nf_b6_build/libnightfall_embody_prod.a -lm \
+            -o /tmp/nf_pacman_b6
+          /tmp/nf_pacman_b6 > /tmp/pacman_b6.txt
+          tail -n 2 /tmp/pacman_b6.txt
+      - name: Compare classic-like, v1.5 archived trace and paired native physics
+        run: |
+          set -eux
+          python3 tools/pacman_three_era_report.py \
+            --a6 /tmp/pacman_a6.txt --b6 /tmp/pacman_b6.txt \
+            --out /tmp/pacman_three_era_result.json
+          cat /tmp/pacman_three_era_result.json | head -n 60
+      - name: Display bounded scientific comparison in workflow summary
+        if: always()
+        run: |
+          echo '## Pac-Man 3-era evidence comparison' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The classic control is reconstructed; v1.5 original is a user-owned text trace, not Namco code.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Native A6 and B6 use a source-identical one-actor H1 world probe on five strata of 32 seeds.' >> "$GITHUB_STEP_SUMMARY"
+          if test -f /tmp/pacman_three_era_result.json; then
+            echo '\`\`\`json' >> "$GITHUB_STEP_SUMMARY"
+            head -n 100 /tmp/pacman_three_era_result.json >> "$GITHUB_STEP_SUMMARY"
+            echo '\`\`\`' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pacman-three-era-h1-scientific-data
+          path: |
+            /tmp/pacman_a6.txt
+            /tmp/pacman_b6.txt
+            /tmp/pacman_three_era_result.json
+          if-no-files-found: ignore
