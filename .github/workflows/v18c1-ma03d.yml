@@ -1,0 +1,27 @@
+name: MA03D MA02-5 bounded three-body scheduler
+on:
+  push:
+    branches: [engineering/v18c1-ma03d-ma025-h1]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  ctest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cmake -S . -B /tmp/ma03d -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=${{ matrix.compiler }}
+          cmake --build /tmp/ma03d --parallel 2
+          ctest --test-dir /tmp/ma03d --output-on-failure
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cmake -S . -B /tmp/ma03ds -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          cmake --build /tmp/ma03ds --parallel 2
+          ASAN_OPTIONS=detect_leaks=0 ctest --test-dir /tmp/ma03ds --output-on-failure
