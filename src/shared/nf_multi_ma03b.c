@@ -23,11 +23,11 @@ NfMa03bChain nf_ma03b_oracle(const double x[3],const double v[3],
   for(int i=0;i<3;i++)o.x[i]+=o.v[i]*event;
   left-=event;
   if(pair<0){o.complete=true;return o;}
-  /* Perfectly inelastic pair collision: momentum conserved; lost
-   * kinetic energy is intentional and independently measurable. */
-  const double shared=(m[pair]*o.v[pair]+m[pair+1]*o.v[pair+1])/
-                      (m[pair]+m[pair+1]);
-  o.v[pair]=shared;o.v[pair+1]=shared;
+  /* Closed-form elastic unequal-mass collision, independent of A4. */
+  const double left_v=o.v[pair],right_v=o.v[pair+1];
+  const double total=m[pair]+m[pair+1];
+  o.v[pair]=((m[pair]-m[pair+1])*left_v+2*m[pair+1]*right_v)/total;
+  o.v[pair+1]=(2*m[pair]*left_v+(m[pair+1]-m[pair])*right_v)/total;
   o.impacts++;
   if(left<=0){o.complete=true;return o;}
  }
