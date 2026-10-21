@@ -24,5 +24,6 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
           set -eux
-          gcc -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/shared -Isrc/client src/shared/nf_contact18a.c src/shared/nf_contact18a2.c src/shared/nf_contact18a3.c src/shared/nf_contact18a4.c src/shared/nf_contact18a5.c src/shared/nf_contact18a5_close.c src/shared/nf_contact18a5_wal.c src/shared/nf_eligibility18b2.c src/shared/nf_multi_c1_next.c src/shared/nf_multi_next2.c src/shared/nf_multi_ma03.c src/tests/test_multi_ma03.c -lm -o /tmp/ma03_san
-          ASAN_OPTIONS=detect_leaks=0 /tmp/ma03_san
+          cmake -S . -B /tmp/ma03_san -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          cmake --build /tmp/ma03_san --parallel 2
+          ASAN_OPTIONS=detect_leaks=0 ctest --test-dir /tmp/ma03_san --output-on-failure
