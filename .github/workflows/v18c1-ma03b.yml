@@ -1,0 +1,29 @@
+name: 1.8C MA03B MA023 physics and owner validation
+on:
+  push:
+    branches: [engineering/v18c1-ma03b-ma023-h1]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -eux
+          cmake -S . -B /tmp/ma03b -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=${{ matrix.compiler }}
+          cmake --build /tmp/ma03b --parallel 2
+          ctest --test-dir /tmp/ma03b --output-on-failure
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -eux
+          cmake -S . -B /tmp/ma03bsan -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          cmake --build /tmp/ma03bsan --parallel 2
+          ASAN_OPTIONS=detect_leaks=0 ctest --test-dir /tmp/ma03bsan --output-on-failure
