@@ -1,0 +1,29 @@
+name: 1.8C MA03 independent chain and A6 B2 owner
+on:
+  push:
+    branches: [engineering/v18c1-ma03-chain-a6-provider-h1]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -eux
+          cmake -S . -B /tmp/ma03 -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }} -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/ma03 --parallel 2
+          ctest --test-dir /tmp/ma03 --output-on-failure
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -eux
+          cmake -S . -B /tmp/ma03_san -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          cmake --build /tmp/ma03_san --parallel 2
+          ASAN_OPTIONS=detect_leaks=0 ctest --test-dir /tmp/ma03_san --output-on-failure
