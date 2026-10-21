@@ -1,0 +1,27 @@
+name: MA03C MA02-4 actual scheduler and provider H1
+on:
+  push:
+    branches: [engineering/v18c1-ma03c-ma024-h1]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cmake -S . -B /tmp/ma03c -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=${{ matrix.compiler }}
+          cmake --build /tmp/ma03c --parallel 2
+          ctest --test-dir /tmp/ma03c --output-on-failure
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cmake -S . -B /tmp/ma03cs -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          cmake --build /tmp/ma03cs --parallel 2
+          ASAN_OPTIONS=detect_leaks=0 ctest --test-dir /tmp/ma03cs --output-on-failure
