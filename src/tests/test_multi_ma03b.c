@@ -15,7 +15,7 @@ int main(void){
   if(family==2)x[1]=.1;
   if(family==3)v[0]=24;
   if(family==4)x[2]=5;
-  const double radius=.25,dt=.25;
+  const double radius=.25,dt=.6;
   NfMa03bChain expected=nf_ma03b_oracle(x,v,m,radius,dt);
   if(family==2){CK(!expected.complete);continue;}
   CK(expected.complete);
