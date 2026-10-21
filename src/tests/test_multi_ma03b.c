@@ -39,6 +39,7 @@ int main(void){
    Nf18a4Constraint c={0};c.body_a=b[pair].id;c.body_b=b[pair+1].id;
    c.feature_id=10+pair;c.normal_b_to_a=(NfVec3){-1,0,0};
    c.contact_point=(NfVec3){b[pair+1].center.x-(float)radius,1,0};
+   c.restitution=1.f;
    Nf18a4Receipt r=nf18a4_apply_contact(&b[pair],&b[pair+1],c,NF18A4_RECIPROCAL_LINEAR,1,1);
    CK(r.status==NF18A4_ACCEPTED&&r.impulses_applied);hits++;
    if(left<=0)break;
