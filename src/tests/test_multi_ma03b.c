@@ -44,6 +44,7 @@ int main(void){
    CK(r.status==NF18A4_ACCEPTED&&r.impulses_applied);hits++;
    if(left<=0)break;
   }
+  if(hits!=expected.impacts)fprintf(stderr,"chain mismatch family=%u seed=%u A4=%u oracle=%u\\n",family,seed,hits,expected.impacts);
   CK(hits==expected.impacts);
   double p0=0,p1=0;
   for(int i=0;i<3;i++){p0+=m[i]*v[i];p1+=m[i]*b[i].velocity.x;
