@@ -1,0 +1,28 @@
+name: 1.8C MA03 independent chain and A6 B2 owner
+on:
+  push:
+    branches: [engineering/v18c1-ma03-chain-a6-provider-h1]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -eux
+          cmake -S . -B /tmp/ma03 -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_C_COMPILER=${{ matrix.compiler }} -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/ma03 --parallel 2
+          ctest --test-dir /tmp/ma03 --output-on-failure
+  sanitizer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -eux
+          gcc -std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/shared -Isrc/client src/shared/nf_contact18a.c src/shared/nf_contact18a2.c src/shared/nf_contact18a3.c src/shared/nf_contact18a4.c src/shared/nf_contact18a5.c src/shared/nf_contact18a5_close.c src/shared/nf_contact18a5_wal.c src/shared/nf_eligibility18b2.c src/shared/nf_multi_c1_next.c src/shared/nf_multi_next2.c src/shared/nf_multi_ma03.c src/tests/test_multi_ma03.c -lm -o /tmp/ma03_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/ma03_san
