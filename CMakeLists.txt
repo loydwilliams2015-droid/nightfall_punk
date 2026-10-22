@@ -179,6 +179,16 @@ if(NF_CONTACT_LAB_ONLY)
     target_link_libraries(nightfall_v18c1_ma03e_test PRIVATE nightfall_embody_h1)
     nf_project_warnings(nightfall_v18c1_ma03e_test)
     add_test(NAME offaxis_contact_ma03e COMMAND nightfall_v18c1_ma03e_test)
+    # 1.8C.1 research closeout: source-exact standalone oracle/gate CTests.
+    # These are negative/reference laboratories, NOT live A4/A6 integration.
+    foreach(nf_case IN ITEMS multi_ma03f_reference ma03g_ma028_gates ma03h_ma029_guards)
+        add_executable(nightfall_${nf_case}_test src/tests/test_${nf_case}.c)
+        nf_project_warnings(nightfall_${nf_case}_test)
+        if(UNIX)
+            target_link_libraries(nightfall_${nf_case}_test PRIVATE m)
+        endif()
+        add_test(NAME research_${nf_case} COMMAND nightfall_${nf_case}_test)
+    endforeach()
     # Normal build forbids the two controls that bypass world embodiment.
     add_library(nightfall_embody_prod STATIC ${NF_EMBODY_SHARED} src/client/nf_camera.c)
     target_include_directories(nightfall_embody_prod PUBLIC src/shared src/client)

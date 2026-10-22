@@ -1,0 +1,31 @@
+name: v18c1 research closeout evidence
+on:
+  push:
+    branches: [integration/v18c1-research-closeout-h1]
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/v18c1-research-closeout.yml'
+  workflow_dispatch:
+jobs:
+  offline:
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+        sanitizer: [none, asan-ubsan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          FLAGS="-O1 -g"
+          if [ "${{ matrix.sanitizer }}" = "asan-ubsan" ]; then FLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer"; fi
+          cmake -S . -B build -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_C_FLAGS="$FLAGS" -DCMAKE_EXE_LINKER_FLAGS="$FLAGS"
+      - name: Compile exact source
+        run: cmake --build build --parallel 2
+      - name: Full offline CTest
+        run: ctest --test-dir build --output-on-failure
