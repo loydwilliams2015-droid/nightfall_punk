@@ -25,11 +25,16 @@ int main(void){
  Snapshot a={1,7,5,12,9,3,true},b=a;
  if(!same_owner(a,a,true))return 3;
  b.tick++;if(same_owner(a,b,true))return 4;b=a;b.revision++;
- if(same_owner(a,b,true))return 5;b=a;b.material++;
- if(same_owner(a,b,true))return 6;b=a;b.owner++;
- if(same_owner(a,b,true))return 7;b=a;b.action++;
- if(same_owner(a,b,true))return 8;b=a;b.actor++;
- if(same_owner(a,b,true))return 9;b=a;b.active=false;
+ if(same_owner(a,b,true))return 5;
+ b=a;b.material++;
+ if(same_owner(a,b,true))return 6;
+ b=a;b.owner++;
+ if(same_owner(a,b,true))return 7;
+ b=a;b.action++;
+ if(same_owner(a,b,true))return 8;
+ b=a;b.actor++;
+ if(same_owner(a,b,true))return 9;
+ b=a;b.active=false;
  if(same_owner(a,b,true)||same_owner(a,a,false))return 10;
  puts("MA03G/MA02-8 H1 gate corpus PASS: 20000 simultaneous seeds, 4 collision controls, 9 owner controls");return 0;
 }
