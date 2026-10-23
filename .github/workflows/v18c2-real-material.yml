@@ -1,0 +1,31 @@
+name: v18c2 real material B3 acceptance H1
+on:
+  push:
+    branches: [engineering/v18c2-concurrent-materials-h1]
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/v18c2-real-material.yml'
+  workflow_dispatch:
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+        mode: [strict, sanitized]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          FLAGS="-O1 -g"
+          if [ "${{ matrix.mode }}" = "sanitized" ]; then FLAGS="$FLAGS -fsanitize=address,undefined -fno-omit-frame-pointer"; fi
+          cmake -S . -B build -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_C_FLAGS="$FLAGS" -DCMAKE_EXE_LINKER_FLAGS="$FLAGS"
+      - name: Compile
+        run: cmake --build build --parallel 2
+      - name: All regression and new material tests
+        run: ctest --test-dir build --output-on-failure
