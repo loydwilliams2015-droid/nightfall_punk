@@ -189,6 +189,11 @@ if(NF_CONTACT_LAB_ONLY)
         endif()
         add_test(NAME research_${nf_case} COMMAND nightfall_${nf_case}_test)
     endforeach()
+    # C.2 actual incumbent A4/A5/B3 type-level integration acceptance laboratory.
+    add_executable(nightfall_v18c2_real_material_test src/tests/test_v18c2_real_a4_a5_b3_gate.c)
+    target_link_libraries(nightfall_v18c2_real_material_test PRIVATE nightfall_embody_h1)
+    nf_project_warnings(nightfall_v18c2_real_material_test)
+    add_test(NAME concurrent_real_a4_a5_b3_v18c2 COMMAND nightfall_v18c2_real_material_test)
     # Normal build forbids the two controls that bypass world embodiment.
     add_library(nightfall_embody_prod STATIC ${NF_EMBODY_SHARED} src/client/nf_camera.c)
     target_include_directories(nightfall_embody_prod PUBLIC src/shared src/client)
