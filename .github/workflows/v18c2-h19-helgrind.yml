@@ -1,0 +1,24 @@
+name: H19 alternate race detector
+on:
+  push:
+    branches:
+      - engineering/v18c2-h19-lease-journal-lab
+  pull_request:
+    paths:
+      - 'src/shared/nf_c2_h19_lab.*'
+      - 'src/tests/test_v18c2_h19_lease_journal.c'
+      - '.github/workflows/v18c2-h19-helgrind.yml'
+jobs:
+  helgrind:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Valgrind race detector
+        run: sudo apt-get update && sudo apt-get install -y valgrind
+      - name: Compile and link headless concurrency test
+        run: |
+          cmake -S . -B build-race -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build-race --parallel 4 --target nightfall_v18c2_h19_lease_journal_test
+      - name: Validate Helgrind on bounded lease/journal reference
+        run: valgrind --tool=helgrind --error-exitcode=66 --history-level=approx ./build-race/nightfall_v18c2_h19_lease_journal_test
