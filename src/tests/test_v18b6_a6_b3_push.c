@@ -548,12 +548,36 @@ static bool test_h11_owner_capability_prepublication(void){
  free(f);free(ctx);free(r);free(w);
  return true;
 }
+static bool test_h36_capacity_precommit(void){
+ NfWorld *w=calloc(1,sizeof *w);
+ Nf18a6Runtime *r=calloc(1,sizeof *r);
+ Nf18b6Push *ctx=calloc(1,sizeof *ctx);
+ CK(w&&r&&ctx);
+ CK(setup(w,r,2.2f));
+ CK(nf18b6_push_attach(ctx,r,w,7));
+ CK(nf18a6_bind_world_tick(w,r,NULL,NULL,NULL));
+ CK(nf18b6_push_arm(ctx,w,990,true,true,false)==NF18B3_OK);
+ ctx->receipt_count=NF18B6_PUSH_RECEIPTS;
+ const uint32_t old_tick=(uint32_t)w->tick;
+ const uint32_t old_a4=r->physical.committed_receipts;
+ const uint32_t old_a5=r->physical.world.history.raw_samples;
+ nf_world_set_input(w,10,rightward());
+ CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
+ CK(w->tick==old_tick&&r->physical.committed_receipts==old_a4);
+ CK(r->physical.world.history.raw_samples==old_a5);
+ CK(ctx->receipt_count==NF18B6_PUSH_RECEIPTS);
+ CK(nf18a6_unbind_world_tick(w,r));
+ CK(nf18b6_push_detach(ctx,r,w));
+ free(ctx);free(r);free(w);
+ return true;
+}
 int main(void){
  clock_t begin=clock();
  if(!test_contract_and_replay()||!test_missing_material_and_remote_actor()||
     !test_no_behavior_regression(32)||!adversarial_corpus()||
     !conservation_corpus()||!b2_real_server_gate()||
-    !test_h11_owner_capability_prepublication())return 1;
+    !test_h11_owner_capability_prepublication()||
+    !test_h36_capacity_precommit())return 1;
  printf("assertions=%llu cpu_seconds=%.6f PASS\n",checks,
        (double)(clock()-begin)/CLOCKS_PER_SEC);
  return 0;
