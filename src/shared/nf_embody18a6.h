@@ -44,6 +44,7 @@ typedef struct Nf18a6OwnerHooks {
     void (*finish)(const NfWorld *,const struct Nf18a6Outcome *,void *);
     void *context;
 } Nf18a6OwnerHooks;
+struct Nf18c2AuthState; /* private allocation; no public credential fields */
 typedef struct Nf18a6Runtime {
     Nf18a5Integrated physical;
     NfCameraState camera;
@@ -59,6 +60,7 @@ typedef struct Nf18a6Runtime {
     const char *tick_journal;
     Nf18a6TickTrace tick_trace;
     Nf18a6OwnerHooks owner_hooks;
+    struct Nf18c2AuthState *auth_state; /* owned; lifecycle at bind/unbind */
 } Nf18a6Runtime;
 typedef struct Nf18a6Outcome {
     Nf18a6Status status;
