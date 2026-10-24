@@ -407,11 +407,57 @@ static bool b2_real_server_gate(void){
  return true;
 }
 
+static bool test_h11_owner_capability_prepublication(void){
+ NfWorld *w=malloc(sizeof *w);
+ Nf18a6Runtime *r=malloc(sizeof *r);
+ Nf18b6Push *ctx=calloc(1,sizeof *ctx);
+ B2OwnerFixture *f=calloc(1,sizeof *f);
+ CK(w&&r&&ctx&&f);
+ CK(setup(w,r,2.2f));
+ CK(nf18b6_push_attach(ctx,r,w,7));
+ CK(nf18b6_push_require_b2(ctx,b2_owned_snapshot,f,
+                            NF18B2_M4_MATERIAL_FIRST));
+ CK(nf18b6_push_require_h9(ctx));
+ CK(nf18a6_bind_world_tick(w,r,NULL,NULL,NULL));
+ const NfVec3 probe={1.f,.1f,1.f};
+ /* Missing capability: B2 alone never permits physical publication. */
+ CK(nf18b6_push_arm_b2(ctx,w,600)==NF18B3_OK);
+ CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
+ CK(w->tick==0&&ctx->receipt_count==0);
+ CK(!ctx->armed);
+ /* Revoked capability: prepublication refuses it. */
+ CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,601,probe)==NF_C2W_READY);
+ CK(nf18b6_push_arm_b2(ctx,w,601)==NF18B3_OK);
+ r->h9_issued=0;
+ CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
+ CK(w->tick==0&&ctx->receipt_count==0);
+ /* Stale material dependency must fail closed. */
+ CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,602,probe)==NF_C2W_READY);
+ CK(nf18b6_push_arm_b2(ctx,w,602)==NF18B3_OK);
+ ++r->h9_material_epoch;
+ CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
+ CK(w->tick==0&&ctx->receipt_count==0);
+ /* Already-consumed capability may not be replayed. */
+ CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,603,probe)==NF_C2W_READY);
+ CK(nf_c2_h9_consume(w,r,603));
+ CK(nf18b6_push_arm_b2(ctx,w,603)==NF18B3_OK);
+ CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
+ CK(w->tick==0&&ctx->receipt_count==0);
+ CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,604,probe)==NF_C2W_READY);
+ CK(nf18b6_push_arm_b2(ctx,w,604)==NF18B3_OK);
+ CK(nf_world_step_checked(w,1.f/60.f)==NF_WORLD_TICK_COMMITTED);
+ CK(w->tick==1);
+ CK(nf18a6_unbind_world_tick(w,r));
+ CK(nf18b6_push_detach(ctx,r,w));
+ free(f);free(ctx);free(r);free(w);
+ return true;
+}
 int main(void){
  clock_t begin=clock();
  if(!test_contract_and_replay()||!test_missing_material_and_remote_actor()||
     !test_no_behavior_regression(32)||!adversarial_corpus()||
-    !conservation_corpus()||!b2_real_server_gate())return 1;
+    !conservation_corpus()||!b2_real_server_gate()||
+    !test_h11_owner_capability_prepublication())return 1;
  printf("assertions=%llu cpu_seconds=%.6f PASS\n",checks,
        (double)(clock()-begin)/CLOCKS_PER_SEC);
  return 0;
