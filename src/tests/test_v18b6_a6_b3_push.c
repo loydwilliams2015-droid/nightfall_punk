@@ -1,6 +1,7 @@
 #include "nf_b6_push18b6.h"
 #include "nf_v18c2_h9_auth.h"
 #include "nf_c2_h21_reconcile.h"
+#include "nf_c2_h22_envelope.h"
 #include <unistd.h>
 #include <math.h>
 #include <stdio.h>
@@ -503,6 +504,17 @@ static bool test_h11_owner_capability_prepublication(void){
   } else CK(!ctx->event.applied);
  }
  CK(positive_contacts>0);
+ Nf18a5Integrated *h25_restored=calloc(1,sizeof *h25_restored);
+ Nf18b3Event h25_event={0};
+ CK(h25_restored!=NULL);
+ CK(nf_c2_h23_restore_full(envelope_path,h25_restored,&h25_event));
+ CK(h25_restored->world.tick==w->tick);
+ CK(h25_restored->committed_receipts==r->physical.committed_receipts);
+ CK(h25_restored->world.history.raw_samples==
+    r->physical.world.history.raw_samples);
+ CK(h25_event.phase==NF18B3_APPLIED&&h25_event.applied);
+ free(h25_restored);
+ CK(remove(envelope_path)==0);
  FILE *receipt_file=fopen(receipt_path,"rb");CK(receipt_file!=NULL);
  uint32_t receipt_fields[7];unsigned recorded=0;
  while(fread(receipt_fields,sizeof receipt_fields,1,receipt_file)==1){
