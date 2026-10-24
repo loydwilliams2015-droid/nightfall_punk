@@ -48,3 +48,10 @@ The Candidate A frame now binds a copy of actual B2 declarations from `nf_eligib
 - `nf_camera_follow_actor` accepts an arbitrary live `NfWorld` and `NfActor`, reads world colliders and actor transforms; publication epoch is not enforced.
 - `nf_net.c` contains transport-level code without direct actor/world access in the file inspected; this does not establish safety of protocol and server call sites.
 - AI, visual renderer and network server call-graph completeness remain unverified. Do not label the authority inventory 'complete' until a repository-wide code-symbol search or full checkout call-graph scan closes these gaps.
+
+## Source-backed PUSH realizer increment
+- `nf_retc_stage_source_push` now constructs one complete **bounded immutable PUSH candidate** by combining actual A5 integrated physical state, the actual B3 applied event and actual B2 actor/object/use/decision/authority snapshots; it rejects source/epoch mismatches and any unimplemented non-PUSH event.
+- It has **no side effects** on external A6, B2 or B3 state, and the frame is invisible until `nf_retc_publish` changes the accepted pointer. It is a scientific staging seam, not a real-world consequence or a durable commit.
+- The second-epoch regression exercises this source-backed constructor before atomic prototype publication, while retaining stale-epoch refusal and deterministic frame-content assertions.
+- **Outstanding blocker:** the actual live A6 owner still uses A5 publication followed by B3 finish. Do not route normal gameplay through the prototype or claim real-world atomicity before an atomic journal + reader migration.
+- **Authority inventory completeness:** repository-wide server/AI/render call graph still unverified. Identified raw prediction and camera accesses are blockers; `nf_net.c` alone is insufficient to certify network readers.
