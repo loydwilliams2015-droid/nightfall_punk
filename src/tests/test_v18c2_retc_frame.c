@@ -11,7 +11,7 @@ int main(void){
  Nf18b3Event event={0};
  event.actor=10;event.object=2010;event.tick=1;event.action=91;
  event.contract_epoch=7;event.phase=NF18B3_APPLIED;
- event.authorized=1;event.applied=1;
+ event.authorized=1;event.applied=1;event.kind=NF18B3_PUSH;
  NfRetcObligation obligation={.obligation_id=99,.holder=10,
    .beneficiary=20,.kind=1,.quantity=2,.status=1};
  CK(!nf_retc_stage(p,&event,1,0,&obligation,9));
@@ -35,6 +35,12 @@ int main(void){
  CK(f->has_b2_contract&&f->b2_actor.inventory==7);
  CK(!nf_retc_bind_b2(f,&use,&decision,&actor,&object,&authority));
  actor.inventory=99;CK(f->b2_actor.inventory==7);
+ CK(nf_retc_seal_b2_b3(f));
+ f->event.kind=NF18B3_PICKUP;
+ CK(!nf_retc_seal_b2_b3(f));
+ CK(!nf_retc_publish(&publisher,f));
+ CK(nf_retc_read(&publisher)==NULL);
+ f->event.kind=NF18B3_PUSH;
  CK(nf_retc_publish(&publisher,f));
  CK(nf_retc_read(&publisher)==f&&nf_retc_read(&publisher)->epoch==1);
  CK(!nf_retc_publish(&publisher,f)); /* no replay */
