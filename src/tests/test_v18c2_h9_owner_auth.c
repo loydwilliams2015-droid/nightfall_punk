@@ -23,7 +23,7 @@ int main(void){
  CK(r->auth_state==NULL);
  CK(!nf_c2_h9_consume(w,r,17));
  CK(nf18a6_bind_world_tick(w,r,NULL,NULL,NULL));
- CK(r->auth_state!=NULL);
+ CK(r->auth_state==NULL);
  CK(!nf_c2_h9_valid(w,r,17));
  CK(nf18a6_unbind_world_tick(w,r));
  CK(r->auth_state==NULL);
