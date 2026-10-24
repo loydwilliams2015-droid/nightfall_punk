@@ -1,5 +1,6 @@
 #include "nf_b6_push18b6.h"
 #include "nf_v18c2_h9_auth.h"
+#include "nf_c2_h21_reconcile.h"
 #include <unistd.h>
 #include <math.h>
 #include <stdio.h>
@@ -504,6 +505,12 @@ static bool test_h11_owner_capability_prepublication(void){
  while(fread(receipt_fields,sizeof receipt_fields,1,receipt_file)==1){
   CK(receipt_fields[0]>0&&receipt_fields[1]==10&&receipt_fields[3]>0);
   CK(receipt_fields[4]>0&&receipt_fields[5]>0);
+  CK(nf_c2_h21_reconcile(receipt_path,receipt_fields[0],receipt_fields[1],
+       receipt_fields[2],receipt_fields[3],receipt_fields[4],receipt_fields[5])
+       ==NF_C2_H21_MATCHED);
+  CK(nf_c2_h21_reconcile(receipt_path,receipt_fields[0],receipt_fields[1],
+       receipt_fields[2],receipt_fields[3],receipt_fields[4]+1,receipt_fields[5])
+       ==NF_C2_H21_REJECT);
   CK(receipt_fields[6]==(receipt_fields[0]^receipt_fields[1]^receipt_fields[2]^
      receipt_fields[3]^receipt_fields[4]^receipt_fields[5]^0xA5B318C2u));
   ++recorded;
@@ -511,6 +518,7 @@ static bool test_h11_owner_capability_prepublication(void){
  CK(fclose(receipt_file)==0);
  CK(recorded==positive_contacts);
  CK(remove(receipt_path)==0);
+ CK(nf_c2_h21_reconcile(receipt_path,1,10,700,1,1,1)==NF_C2_H21_UNRESOLVED);
  printf("h20_persisted_a4_a5_b3_receipts=%u\\n",recorded);
  CK(nf18a6_unbind_world_tick(w,r));
  CK(nf18b6_push_detach(ctx,r,w));
