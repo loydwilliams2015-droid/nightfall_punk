@@ -25,6 +25,7 @@ typedef struct Nf18b6Push {
     Nf18b3Event event;
     Nf18b3Event staged_commit; /* proposed joint physical-contract event */
     bool staged_commit_valid;
+    uint32_t published_epoch; /* joint accepted read epoch; zero is unavailable */
     Nf18b3Result last_result;
     uint32_t contract_epoch;
     uint32_t before_contacts, before_history;
