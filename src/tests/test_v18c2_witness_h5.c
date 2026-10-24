@@ -18,7 +18,7 @@ int main(void){
  CK(nf18a5_load_canonical(&r->physical.world.grid,0,0,0,free_cells,1));
  NfVec3 point={.1f,.1f,.1f};
  uint32_t epoch=r->physical.world.grid.global_revision;
- CK(nf_c2_witness(w,r,unavailable,NULL,5,point,epoch)==NF_C2W_PENDING);
+ /* Existing owner-bound MA03 returns INVALID when the provider fails.\n    Fail closed as DENIED, never reinterpret absent credentials as pending. */\n CK(nf_c2_witness(w,r,unavailable,NULL,5,point,epoch)==NF_C2W_DENIED);
  CK(nf_c2_witness(w,r,unavailable,NULL,5,point,epoch+1)==NF_C2W_STALE);
  free_cells[0]=NF18A5_MIXED;
  CK(nf18a5_load_canonical(&r->physical.world.grid,0,0,0,free_cells,1));
