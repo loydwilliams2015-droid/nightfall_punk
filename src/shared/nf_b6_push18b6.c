@@ -193,6 +193,7 @@ static void finish(const NfWorld *world,const Nf18a6Outcome *out,void *arg){
     Nf18b6Push *ctx=arg;
     if(!ctx||!ctx->armed)return;
     ctx->armed=false;
+    ctx->published_epoch=0; /* cannot expose prior epoch during a new finish */
     if(ctx->require_h9)nf_c2_h9_revoke(ctx->runtime);
     ctx->last_result=NF18B3_PENDING;
     if(!world||!out||out->status!=NF18A6_COMMITTED)return;
@@ -240,6 +241,7 @@ static void finish(const NfWorld *world,const Nf18a6Outcome *out,void *arg){
 #endif
     ctx->receipts[ctx->receipt_count++]=(Nf18b6PushReceipt){
         ctx->event.actor,ctx->event.action,ctx->event.tick};
+    if(ctx->h24_envelope_path)ctx->published_epoch=ctx->event.tick;
     if(ctx->h20_receipt_journal){
         const Nf18a6Runtime *runtime=ctx->runtime;
         /* Evidence after actual A6 physical publication and B3 realization.
@@ -416,6 +418,7 @@ bool nf18b6_push_h26_recover(NfWorld *w,Nf18a6Runtime *runtime,
  push->receipts[push->receipt_count++]=(Nf18b6PushReceipt){
  event.actor,event.action,event.tick};
  push->last_result=NF18B3_OK;
+ push->published_epoch=event.tick;
  free(s);return true;
 }
 
@@ -429,6 +432,7 @@ bool nf18b6_push_h37_committed_view(const NfWorld *w,
  if(!w||!r||!p||!physical||!contract||p->runtime!=r||
     !p->h24_envelope_path||w->tick_in_progress||p->armed||
     p->last_result!=NF18B3_OK||p->receipt_count==0||
+    p->published_epoch==0||p->published_epoch!=w->tick||
     p->event.phase!=NF18B3_APPLIED||!p->event.applied||
     p->event.tick!=w->tick||r->physical.world.tick!=w->tick)return false;
  Nf18a5Integrated *saved=malloc(sizeof *saved);
