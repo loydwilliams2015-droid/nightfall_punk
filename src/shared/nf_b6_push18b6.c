@@ -241,7 +241,10 @@ static void finish(const NfWorld *world,const Nf18a6Outcome *out,void *arg){
 #endif
     ctx->receipts[ctx->receipt_count++]=(Nf18b6PushReceipt){
         ctx->event.actor,ctx->event.action,ctx->event.tick};
-    if(ctx->h24_envelope_path)ctx->published_epoch=ctx->event.tick;
+    if(ctx->h24_envelope_path){
+        ctx->runtime->joint_commit_epoch=ctx->event.tick;
+        ctx->published_epoch=ctx->runtime->joint_commit_epoch;
+    }
     if(ctx->h20_receipt_journal){
         const Nf18a6Runtime *runtime=ctx->runtime;
         /* Evidence after actual A6 physical publication and B3 realization.
@@ -418,7 +421,8 @@ bool nf18b6_push_h26_recover(NfWorld *w,Nf18a6Runtime *runtime,
  push->receipts[push->receipt_count++]=(Nf18b6PushReceipt){
  event.actor,event.action,event.tick};
  push->last_result=NF18B3_OK;
- push->published_epoch=event.tick;
+ runtime->joint_commit_epoch=event.tick;
+ push->published_epoch=runtime->joint_commit_epoch;
  free(s);return true;
 }
 
@@ -433,6 +437,7 @@ bool nf18b6_push_h37_committed_view(const NfWorld *w,
     !p->h24_envelope_path||w->tick_in_progress||p->armed||
     p->last_result!=NF18B3_OK||p->receipt_count==0||
     p->published_epoch==0||p->published_epoch!=w->tick||
+    r->joint_commit_epoch!=p->published_epoch||
     p->event.phase!=NF18B3_APPLIED||!p->event.applied||
     p->event.tick!=w->tick||r->physical.world.tick!=w->tick)return false;
  Nf18a5Integrated *saved=malloc(sizeof *saved);
