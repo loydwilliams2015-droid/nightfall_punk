@@ -15,16 +15,19 @@ static bool init_locked(Nf18a6Runtime *r){
  r->auth_state=calloc(1,sizeof *r->auth_state);return r->auth_state!=NULL;
 }
 bool nf_c2_h9_owner_init(Nf18a6Runtime *r){
- if(!r)return false;lock(r);bool ok=init_locked(r);unlock(r);return ok;
+ if(!r)return false;
+ lock(r);bool ok=init_locked(r);unlock(r);return ok;
 }
 void nf_c2_h9_owner_destroy(Nf18a6Runtime *r){
- if(!r)return;lock(r);
+ if(!r)return;
+ lock(r);
  atomic_store(&r->auth_shutdown,true);
  free(r->auth_state);r->auth_state=NULL;
  unlock(r);
 }
 void nf_c2_h9_revoke(const Nf18a6Runtime *r){
- if(!r)return;Nf18a6Runtime *owner=(Nf18a6Runtime *)r;
+ if(!r)return;
+ Nf18a6Runtime *owner=(Nf18a6Runtime *)r;
  lock(owner);if(r->auth_state)r->auth_state->issued=false;unlock(owner);
 }
 static bool matches(const NfWorld *w,const Nf18a6Runtime *r,
@@ -37,12 +40,14 @@ static bool matches(const NfWorld *w,const Nf18a6Runtime *r,
   r->physical.world.grid.global_revision==s->material;
 }
 bool nf_c2_h9_valid(const NfWorld *w,const Nf18a6Runtime *r,uint32_t action){
- if(!r)return false;Nf18a6Runtime *owner=(Nf18a6Runtime *)r;
+ if(!r)return false;
+ Nf18a6Runtime *owner=(Nf18a6Runtime *)r;
  lock(owner);bool ok=!atomic_load(&r->auth_shutdown)&&matches(w,r,r->auth_state,action,true);
  unlock(owner);return ok;
 }
 bool nf_c2_h9_take_prepublication(const NfWorld *w,const Nf18a6Runtime *r,uint32_t action){
- if(!r)return false;Nf18a6Runtime *owner=(Nf18a6Runtime *)r;
+ if(!r)return false;
+ Nf18a6Runtime *owner=(Nf18a6Runtime *)r;
  lock(owner);
  bool ok=!atomic_load(&r->auth_shutdown)&&w&&w->tick_in_progress&&
    matches(w,r,r->auth_state,action,true);
@@ -76,7 +81,8 @@ NfC2WitnessStatus nf_c2_h9_issue(NfWorld *w,Nf18a6Runtime *r,
  unlock(r);return result;
 }
 bool nf_c2_h9_consume(NfWorld *w,Nf18a6Runtime *r,uint32_t action){
- if(!r)return false;lock(r);
+ if(!r)return false;
+ lock(r);
  bool ok=!atomic_load(&r->auth_shutdown)&&w&&!w->tick_in_progress&&
    matches(w,r,r->auth_state,action,false);
  if(r->auth_state)r->auth_state->issued=false;
