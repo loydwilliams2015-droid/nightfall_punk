@@ -509,6 +509,10 @@ static bool test_h11_owner_capability_prepublication(void){
    CK(ctx->staged_commit.action==ctx->event.action);
    CK(ctx->staged_commit.tick==ctx->event.tick);
    Nf18a6Snapshot accepted_world={0};Nf18b3Event accepted_contract={0};
+   atomic_store(&r->joint_publication_active,true);
+   CK(!nf18b6_push_h37_committed_view(w,r,ctx,
+      &accepted_world,&accepted_contract));
+   atomic_store(&r->joint_publication_active,false);
    CK(nf18b6_push_h37_committed_view(w,r,ctx,
       &accepted_world,&accepted_contract));
    CK(ctx->published_epoch==w->tick);
