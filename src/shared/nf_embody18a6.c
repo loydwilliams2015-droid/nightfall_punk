@@ -413,10 +413,7 @@ bool nf18a6_bind_world_tick(NfWorld *world,Nf18a6Runtime *runtime,
        runtime->model>NF18A6_WORLD_CAMERA||
        world->tick!=runtime->last_commit_tick||
        !nf_world_find_actor_const(world,runtime->actor_id))return false;
-    if(!nf_c2_h9_owner_init(runtime))return false;
-    if(!nf_world_bind_tick_owner(world,nf18a6_tick_dispatch,runtime)){
-        nf_c2_h9_owner_destroy(runtime);return false;
-    }
+    if(!nf_world_bind_tick_owner(world,nf18a6_tick_dispatch,runtime))return false;
     runtime->tick_provider=provider;
     runtime->tick_provider_context=context;
     runtime->tick_journal=journal;

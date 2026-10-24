@@ -68,7 +68,8 @@ bool nf_c2_h9_take_prepublication(const NfWorld *w,
 }
 NfC2WitnessStatus nf_c2_h9_issue(NfWorld *w,Nf18a6Runtime *r,
  NfMa03Provider provider,void *ctx,uint32_t action,NfVec3 point){
- if(!r||!r->auth_state)return NF_C2W_STALE;
+ if(!r)return NF_C2W_STALE;
+ if(!r->auth_state && !nf_c2_h9_owner_init(r))return NF_C2W_PENDING;
  nf_c2_h9_revoke(r);
  if(!w||!provider||!action)return NF_C2W_DENIED;
  const uint32_t epoch=r->physical.world.grid.global_revision;
