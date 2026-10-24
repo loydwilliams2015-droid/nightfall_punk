@@ -118,9 +118,6 @@ static bool prepublish(const NfWorld *world,const Nf18a5Integrated *candidate,vo
        candidate->world.history.raw_samples>ctx->before_history){
         /* Validation only. A staging checkpoint must never become authority.
            Live commit + contractual publication still need one atomic WAL. */
-        char staging[1024];
-        if(snprintf(staging,sizeof staging,"%s.precheck",ctx->h24_envelope_path)>=
-           (int)sizeof staging)return false;
         NfC2H22Receipt receipt={0};
         receipt.tick=candidate->world.tick;receipt.actor=e->actor;
         receipt.action=e->action;receipt.a4_receipts=candidate->committed_receipts;
@@ -129,12 +126,14 @@ static bool prepublish(const NfWorld *world,const Nf18a5Integrated *candidate,vo
         receipt.b3_event=*e;receipt.b3_event.phase=NF18B3_APPLIED;
         receipt.b3_event.applied=1;
         Nf18a5Integrated restored={0};Nf18b3Event recovered={0};
-        const bool prepared=nf_c2_h22_save(staging,candidate,receipt);
+        /* H25: one durable publication candidate, not a disposable probe.
+           Never expose this as committed unless complete A5 and B3 recover. */
+        if(ctx->runtime->tick_journal)return false; /* forbid a second WAL */
+        const bool prepared=nf_c2_h22_save(ctx->h24_envelope_path,candidate,receipt);
         const bool verified=prepared &&
-            nf_c2_h23_restore_full(staging,&restored,&recovered)&&
+            nf_c2_h23_restore_full(ctx->h24_envelope_path,&restored,&recovered)&&
             recovered.action==e->action &&
             restored.world.tick==candidate->world.tick;
-        remove(staging);
         if(!verified)return false;
     }
     return (!ctx->b2_snapshot || b2_check((Nf18b6Push *)ctx,world,candidate->world.tick)==NF18B2_ELIGIBLE) &&
@@ -177,6 +176,18 @@ static void finish(const NfWorld *world,const Nf18a6Outcome *out,void *arg){
     ctx->last_result=NF18B3_PENDING;
     if(!world||!out||out->status!=NF18A6_COMMITTED)return;
     if(!out->actual_impulse)return;
+    if(ctx->h24_envelope_path){
+        Nf18a5Integrated restored={0};Nf18b3Event authorized={0};
+        if(!nf_c2_h23_restore_full(ctx->h24_envelope_path,&restored,&authorized)||
+           authorized.action!=ctx->event.action||
+           restored.world.tick!=world->tick||
+           restored.committed_receipts!=ctx->runtime->physical.committed_receipts||
+           restored.world.history.raw_samples!=
+             ctx->runtime->physical.world.history.raw_samples){
+            ctx->last_result=NF18B3_PENDING;
+            return;
+        }
+    }
     if(ctx->receipt_count>=NF18B6_PUSH_RECEIPTS){
         /* The capacity gate was checked during arming; this cannot silently
          * evict a receipt.  A6 motion is already committed independently.
