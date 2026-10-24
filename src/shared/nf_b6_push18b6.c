@@ -436,6 +436,7 @@ bool nf18b6_push_h37_committed_view(const NfWorld *w,
  if(!w||!r||!p||!physical||!contract||p->runtime!=r||
     !p->h24_envelope_path||w->tick_in_progress||p->armed||
     p->last_result!=NF18B3_OK||p->receipt_count==0||
+    atomic_load_explicit(&r->joint_publication_active,memory_order_acquire)||
     p->published_epoch==0||p->published_epoch!=w->tick||
     r->joint_commit_epoch!=p->published_epoch||
     p->event.phase!=NF18B3_APPLIED||!p->event.applied||
