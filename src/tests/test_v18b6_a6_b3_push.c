@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "nf_b6_push18b6.h"
 #include "nf_v18c2_h9_auth.h"
 #include "nf_c2_h21_reconcile.h"
@@ -474,6 +475,8 @@ static bool test_h11_owner_capability_prepublication(void){
  /* H18 positive source-bound publication: only count physical B3 successes
     when A4 reciprocal impulse and actual A5 contact history both advance. */
  unsigned positive_contacts=0;
+ bool split_observed=false;
+ CK(setenv("NF_H29_FAIL_AFTER_PHYSICAL","1",1)==0);
  for(unsigned j=0;j<40;++j){
   nf_world_set_input(w,10,rightward());
   const uint32_t tick_before=(uint32_t)w->tick;
@@ -501,8 +504,19 @@ static bool test_h11_owner_capability_prepublication(void){
    CK(r->physical.world.history.raw_samples>a5_before);
    CK(ctx->event.applied);
    ++positive_contacts;
-  } else CK(!ctx->event.applied);
+  } else {
+   CK(!ctx->event.applied);
+   if(r->physical.committed_receipts>a4_before){
+    CK(w->tick==tick_before+1u);
+    CK(r->physical.world.history.raw_samples>a5_before);
+    CK(ctx->receipt_count==b3_before);
+    split_observed=true;
+    CK(unsetenv("NF_H29_FAIL_AFTER_PHYSICAL")==0);
+   }
+  }
  }
+ CK(unsetenv("NF_H29_FAIL_AFTER_PHYSICAL")==0);
+ CK(split_observed);
  CK(positive_contacts>0);
  Nf18a5Integrated *h25_restored=calloc(1,sizeof *h25_restored);
  Nf18b3Event h25_event={0};

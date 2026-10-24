@@ -177,6 +177,10 @@ static void finish(const NfWorld *world,const Nf18a6Outcome *out,void *arg){
     ctx->last_result=NF18B3_PENDING;
     if(!world||!out||out->status!=NF18A6_COMMITTED)return;
     if(!out->actual_impulse)return;
+#ifdef NF_CONTACT_LAB_ONLY
+    /* H29: forensic cutpoint AFTER A6 physical commit, BEFORE B3 receipt. */
+    if(getenv("NF_H29_FAIL_AFTER_PHYSICAL"))return;
+#endif
     if(ctx->h24_envelope_path){
         Nf18a5Integrated restored={0};Nf18b3Event authorized={0};
         if(!nf_c2_h23_restore_full(ctx->h24_envelope_path,&restored,&authorized)||
