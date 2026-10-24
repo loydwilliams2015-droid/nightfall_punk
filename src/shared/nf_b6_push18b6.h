@@ -29,6 +29,7 @@ typedef struct Nf18b6Push {
     Nf18b6PushReceipt receipts[NF18B6_PUSH_RECEIPTS];
     uint32_t receipt_count;
     bool armed;
+    const char *h20_receipt_journal; /* borrowed, optional append-only physical receipt file */
     bool require_h9; /* opt-in single-use owner-held authorization */
     Nf18b6B2Snapshot b2_snapshot;
     void *b2_context;
@@ -57,6 +58,8 @@ bool nf18b6_push_require_b2(Nf18b6Push *ctx,Nf18b6B2Snapshot provider,
 Nf18b3Result nf18b6_push_arm_b2(Nf18b6Push *ctx,const NfWorld *world,
     uint32_t action);
 /* Once enabled, requires a source-bound H9 authorization inside A6 prepublish. */
+/* Source-bound postcommit receipt journal (not a joint atomic WAL). */
+bool nf18b6_push_h20_journal(Nf18b6Push *ctx,const char *path);
 bool nf18b6_push_require_h9(Nf18b6Push *ctx);
 bool nf18b6_push_detach(Nf18b6Push *ctx,Nf18a6Runtime *runtime,
                          const NfWorld *world);
