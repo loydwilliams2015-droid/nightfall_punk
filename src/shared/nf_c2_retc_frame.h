@@ -44,6 +44,9 @@ bool nf_retc_bind_b2(NfRetcFrame *candidate,
  const Nf18b2Use *use,const Nf18b2UseDecision *decision,
  const Nf18b2Actor *actor,const Nf18b2Object *object,
  const Nf18b2Authority *authority);
+/* Source-derived transition seal, before publication: preserve pre-commit
+ * authority, reject unsupported debit/transfer claims rather than infer them. */
+bool nf_retc_seal_b2_b3(NfRetcFrame *candidate);
 bool nf_retc_publish(NfRetcPublisher *pub,NfRetcFrame *candidate);
 const NfRetcFrame *nf_retc_read(const NfRetcPublisher *pub);
 void nf_retc_dispose(NfRetcPublisher *pub);
