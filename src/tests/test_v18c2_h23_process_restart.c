@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include "nf_c2_h22_envelope.h"
 #include "nf_embody18a6.h"
+#include "nf_b6_push18b6.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -35,6 +36,14 @@ int main(void){
  int status=0;CK(waitpid(child,&status,0)==child&&WIFEXITED(status)&&WEXITSTATUS(status)==0);
  CK(nf_c2_h23_restore_full(path,restored,&event));
  CK(event.action==91&&event.contract_epoch==7&&restored->committed_receipts==1);
+ Nf18b6Push *push=calloc(1,sizeof *push);CK(push!=NULL);
+ CK(nf18b6_push_attach(push,runtime,world,7));
+ CK(nf18b6_push_h26_recover(world,runtime,push,path));
+ CK(world->tick==1&&runtime->last_commit_tick==1);
+ CK(push->receipt_count==1&&push->event.action==91&&
+    push->event.phase==NF18B3_APPLIED&&push->last_result==NF18B3_OK);
+ CK(!nf18b6_push_h26_recover(world,runtime,push,path)); /* replay */
+ free(push);
  /* A crash before publication is denied, not fabricated. */
  CK(remove(path)==0);
  child=fork();CK(child>=0);
