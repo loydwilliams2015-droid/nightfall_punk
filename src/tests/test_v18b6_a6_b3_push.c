@@ -422,8 +422,12 @@ static bool test_h11_owner_capability_prepublication(void){
  const NfVec3 probe={1.f,.1f,1.f};
  /* Missing capability: B2 alone never permits physical publication. */
  CK(nf18b6_push_arm_b2(ctx,w,600)==NF18B3_OK);
+ const uint32_t before_physical=r->physical.committed_receipts;
+ const uint32_t before_samples=r->physical.world.history.raw_samples;
  CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
  CK(w->tick==0&&ctx->receipt_count==0);
+ CK(r->physical.committed_receipts==before_physical);
+ CK(r->physical.world.history.raw_samples==before_samples);
  CK(!ctx->armed);
  /* Revoked capability: prepublication refuses it. */
  CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,601,probe)==NF_C2W_READY);
@@ -431,12 +435,16 @@ static bool test_h11_owner_capability_prepublication(void){
  nf_c2_h9_revoke(r);
  CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
  CK(w->tick==0&&ctx->receipt_count==0);
+ CK(r->physical.committed_receipts==before_physical);
+ CK(r->physical.world.history.raw_samples==before_samples);
  /* Stale material dependency must fail closed. */
  CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,602,probe)==NF_C2W_READY);
  CK(nf18b6_push_arm_b2(ctx,w,602)==NF18B3_OK);
  nf_c2_h9_revoke(r); /* emulate revoked/stale authorization */
  CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
  CK(w->tick==0&&ctx->receipt_count==0);
+ CK(r->physical.committed_receipts==before_physical);
+ CK(r->physical.world.history.raw_samples==before_samples);
  /* Already-consumed capability may not be replayed. */
  CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,603,probe)==NF_C2W_READY);
  CK(nf_c2_h9_consume(w,r,603));
