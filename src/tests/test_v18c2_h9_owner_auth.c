@@ -10,7 +10,8 @@ int main(void){
  object.box_half=(NfVec3){.2f,.5f,.35f};object.inverse_mass=1.f/24.f;
  CK(nf18a6_init(r,w,10,object,3,NF18A6_WORLD_BRIDGE));
  CK(nf18a6_bind_world_tick(w,r,NULL,NULL,NULL));
- CK(r->auth_state!=NULL);
+ CK(r->auth_state==NULL);
+ CK(nf_c2_h9_owner_init(r));
  CK(!nf_c2_h9_owner_init(r));
  CK(nf_c2_h9_issue(w,r,NULL,NULL,17,(NfVec3){.1f,.1f,.1f})==NF_C2W_DENIED);
  CK(!nf_c2_h9_valid(w,r,17)&&!nf_c2_h9_consume(w,r,17));
