@@ -37,6 +37,9 @@ int main(void){
  }
  {int result=-1;if(thrd_join(closer,&result)!=thrd_success||result)return 12;}
  if(atomic_load(&done)!=4||r->auth_state)return 6;
+ /* World mutation/destruction is permitted only AFTER worker joins.
+    Authorization shutdown above does not mutate the shared world. */
+ if(w->tick!=0||r->physical.world.tick!=0)return 13;
  /* Destruction is permitted only AFTER all worker threads are joined.
     A6 unbinding during active tick is rejected by existing owner API. */
  w->tick_in_progress=true;
@@ -44,6 +47,7 @@ int main(void){
  w->tick_in_progress=false;
  if(!nf18a6_unbind_world_tick(w,r)||r->auth_state)return 8;
  if(!nf18a6_bind_world_tick(w,r,NULL,NULL,NULL)||r->auth_state)return 9;
+ if(nf_c2_h9_valid(w,r,71)||nf_c2_h9_consume(w,r,71))return 14;
  if(!nf18a6_unbind_world_tick(w,r))return 10;
  free(r);free(w);
  puts("H14 4-thread credential stress 12000 ops + active-tick unbind denial PASS");
