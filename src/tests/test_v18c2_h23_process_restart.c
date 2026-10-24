@@ -37,6 +37,9 @@ int main(void){
  CK(nf_c2_h23_restore_full(path,restored,&event));
  CK(event.action==91&&event.contract_epoch==7&&restored->committed_receipts==1);
  Nf18b6Push *push=calloc(1,sizeof *push);CK(push!=NULL);
+ /* Recovery begins from the preceding uncommitted physical frame. */
+ runtime->physical.committed_receipts=0;
+ runtime->physical.world.history.raw_samples=0;
  CK(nf18b6_push_attach(push,runtime,world,7));
  CK(nf18b6_push_h26_recover(world,runtime,push,path));
  CK(world->tick==1&&runtime->last_commit_tick==1);
