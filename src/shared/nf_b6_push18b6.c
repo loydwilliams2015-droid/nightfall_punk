@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -203,11 +204,19 @@ static void finish(const NfWorld *world,const Nf18a6Outcome *out,void *arg){
          */
         ctx->last_result=NF18B3_INVALID;return;
     }
+#ifdef NF_CONTACT_LAB_ONLY
+    if(getenv("NF_H31_KILL_BOUNDARY")&&
+       strcmp(getenv("NF_H31_KILL_BOUNDARY"),"before_b3_realize")==0)_exit(94);
+#endif
     const Nf18b6ReceiptGate gate={ctx,world,out};
     ctx->last_result=nf18b3_realize(&ctx->event,
         ctx->event.world_epoch,ctx->event.material_epoch,ctx->contract_epoch,
         applied_receipt,(void *)&gate);
     if(ctx->last_result!=NF18B3_OK)return;
+#ifdef NF_CONTACT_LAB_ONLY
+    if(getenv("NF_H31_KILL_BOUNDARY")&&
+       strcmp(getenv("NF_H31_KILL_BOUNDARY"),"after_b3_realize")==0)_exit(94);
+#endif
     ctx->receipts[ctx->receipt_count++]=(Nf18b6PushReceipt){
         ctx->event.actor,ctx->event.action,ctx->event.tick};
     if(ctx->h20_receipt_journal){
