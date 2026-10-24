@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include "nf_c2_h22_envelope.h"
+#include "nf_embody18a6.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -9,9 +10,15 @@ int main(void){
  Nf18a5Integrated *physical=calloc(1,sizeof *physical);
  Nf18a5Integrated *restored=calloc(1,sizeof *restored);
  CK(physical&&restored);
- nf18a5_integrated_init(physical,3,
-   (Nf18a4Body){.id=10,.radius=.3f,.height=1.7f,.inverse_mass=.0125f},
-   (Nf18a4Body){.id=2010,.box_half={.2f,.5f,.35f},.inverse_mass=.04f});
+ NfWorld *world=calloc(1,sizeof *world);
+ Nf18a6Runtime *runtime=calloc(1,sizeof *runtime);
+ CK(world&&runtime);
+ nf_world_init(world,42);
+ CK(nf_world_spawn_actor_with_id(world,10,NF_FACTION_PLAYER,(NfVec3){1,0,1})==10);
+ Nf18a4Body crate={0};crate.id=2010;crate.center=(NfVec3){2,1,1};
+ crate.inverse_mass=1.f/24.f;crate.box_half=(NfVec3){.2f,.5f,.35f};
+ CK(nf18a6_init(runtime,world,10,crate,3,NF18A6_WORLD_BRIDGE));
+ *physical=runtime->physical;
  physical->world.tick=1;physical->committed_receipts=1;
  physical->world.history.raw_samples=1;
  NfC2H22Receipt r={.tick=1,.actor=10,.action=91,
@@ -34,6 +41,6 @@ int main(void){
  if(child==0)_exit(0);
  CK(waitpid(child,&status,0)==child&&WIFEXITED(status));
  CK(!nf_c2_h23_restore_full(path,restored,&event));
- free(restored);free(physical);
+ free(runtime);free(world);free(restored);free(physical);
  puts("H23 child restart B3/A5 envelope complete and missing refusal PASS");return 0;
 }
