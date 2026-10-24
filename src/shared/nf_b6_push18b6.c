@@ -111,6 +111,7 @@ static bool prepublish(const NfWorld *world,const Nf18a5Integrated *candidate,vo
        ctx->runtime->physical.world.tick!=world->tick)
         return false;
     if(!ctx->armed)return true;
+    ((Nf18b6Push *)ctx)->staged_commit_valid=false;
 #ifdef NF_CONTACT_LAB_ONLY
     /* Refuse an unavailable contractual completion BEFORE A5 publication. */
     if(getenv("NF_H29_FAIL_AFTER_PHYSICAL"))return false;
@@ -121,6 +122,13 @@ static bool prepublish(const NfWorld *world,const Nf18a5Integrated *candidate,vo
      * frame has changed.  This is a staged A5 body, not a client projection.
      */
     const Nf18b3Event *e=&ctx->event;
+    if((ctx->b2_snapshot && b2_check((Nf18b6Push *)ctx,world,candidate->world.tick)!=NF18B2_ELIGIBLE)||
+       !e->authorized||e->phase!=NF18B3_WAITING||
+       e->tick!=candidate->world.tick||
+       e->world_epoch!=(uint32_t)world->tick||
+       e->material_epoch!=ctx->runtime->physical.world.grid.global_revision||
+       e->contract_epoch!=ctx->contract_epoch||
+       e->actor!=candidate->actor.id||e->object!=candidate->object.id)return false;
     if(ctx->h24_envelope_path && candidate->committed_receipts>ctx->before_contacts &&
        candidate->world.history.raw_samples>ctx->before_history){
         /* Validation only. A staging checkpoint must never become authority.
@@ -142,6 +150,8 @@ static bool prepublish(const NfWorld *world,const Nf18a5Integrated *candidate,vo
             recovered.action==e->action &&
             restored.world.tick==candidate->world.tick;
         if(!verified)return false;
+        ((Nf18b6Push *)ctx)->staged_commit=receipt.b3_event;
+        ((Nf18b6Push *)ctx)->staged_commit_valid=true;
     }
     return (!ctx->b2_snapshot || b2_check((Nf18b6Push *)ctx,world,candidate->world.tick)==NF18B2_ELIGIBLE) &&
         e->authorized && e->phase==NF18B3_WAITING &&
@@ -183,6 +193,12 @@ static void finish(const NfWorld *world,const Nf18a6Outcome *out,void *arg){
     ctx->last_result=NF18B3_PENDING;
     if(!world||!out||out->status!=NF18A6_COMMITTED)return;
     if(!out->actual_impulse)return;
+    if(ctx->h24_envelope_path &&
+       (!ctx->staged_commit_valid||
+        ctx->staged_commit.action!=ctx->event.action||
+        ctx->staged_commit.tick!=world->tick)){
+        ctx->last_result=NF18B3_PENDING;return;
+    }
 #ifdef NF_CONTACT_LAB_ONLY
     /* H29: forensic cutpoint AFTER A6 physical commit, BEFORE B3 receipt. */
     if(getenv("NF_H29_FAIL_AFTER_PHYSICAL"))return;
