@@ -455,6 +455,40 @@ static bool test_h11_owner_capability_prepublication(void){
  CK(nf18b6_push_arm_b2(ctx,w,604)==NF18B3_OK);
  CK(nf_world_step_checked(w,1.f/60.f)==NF_WORLD_TICK_COMMITTED);
  CK(w->tick==1);
+ /* H18 positive source-bound publication: only count physical B3 successes
+    when A4 reciprocal impulse and actual A5 contact history both advance. */
+ unsigned positive_contacts=0;
+ for(unsigned j=0;j<40;++j){
+  nf_world_set_input(w,10,rightward());
+  const uint32_t tick_before=(uint32_t)w->tick;
+  const uint32_t a4_before=r->physical.committed_receipts;
+  const uint32_t a5_before=r->physical.world.history.raw_samples;
+  const uint32_t b3_before=ctx->receipt_count;
+  uint32_t action=700+j;
+  NfC2WitnessStatus grant=nf_c2_h9_issue(w,r,b2_owned_snapshot,f,action,probe);
+  if(grant!=NF_C2W_READY){
+   CK(grant==NF_C2W_DENIED||grant==NF_C2W_PENDING);
+   CK(w->tick==tick_before&&ctx->receipt_count==b3_before);
+   break;
+  }
+  Nf18b3Result armed=nf18b6_push_arm_b2(ctx,w,action);
+  if(armed!=NF18B3_OK){CK(armed==NF18B3_DENIED||armed==NF18B3_PENDING);break;}
+  NfWorldTickStatus outcome=nf_world_step_checked(w,1.f/60.f);
+  if(outcome!=NF_WORLD_TICK_COMMITTED){
+   CK(w->tick==tick_before&&ctx->receipt_count==b3_before);
+   CK(r->physical.committed_receipts==a4_before);
+   CK(r->physical.world.history.raw_samples==a5_before);
+   break;
+  }
+  if(ctx->receipt_count>b3_before){
+   CK(r->physical.committed_receipts>a4_before);
+   CK(r->physical.world.history.raw_samples>a5_before);
+   CK(ctx->event.applied);
+   ++positive_contacts;
+  } else CK(!ctx->event.applied);
+ }
+ CK(positive_contacts>0);
+ printf("h18_authorized_real_a4_a5_b3_contacts=%u\\n",positive_contacts);
  CK(nf18a6_unbind_world_tick(w,r));
  CK(nf18b6_push_detach(ctx,r,w));
  free(f);free(ctx);free(r);free(w);
