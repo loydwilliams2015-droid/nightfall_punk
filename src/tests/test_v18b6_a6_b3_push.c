@@ -38,10 +38,13 @@ static bool test_contract_and_replay(void){
  Nf18a5Integrated candidate=r->physical;
  candidate.world.tick=(uint32_t)w->tick+1u;
  CK(!r->owner_hooks.prepublish(w,&candidate,ctx));
- NfWorld spoof=*w;
- spoof.tick_in_progress=true;
- spoof.tick_owner_context=NULL;
- CK(!r->owner_hooks.prepublish(&spoof,&candidate,ctx));
+ NfWorld *spoof=malloc(sizeof *spoof);
+ CK(spoof);
+ *spoof=*w;
+ spoof->tick_in_progress=true;
+ spoof->tick_owner_context=NULL;
+ CK(!r->owner_hooks.prepublish(spoof,&candidate,ctx));
+ free(spoof);
  CK(ctx->receipt_count==0&&r->physical.committed_receipts==0);
  CK(nf18b6_push_arm(ctx,w,1,true,true,true)==NF18B3_PENDING);
  CK(!ctx->armed&&ctx->receipt_count==0);
