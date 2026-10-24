@@ -59,6 +59,10 @@ typedef struct Nf18a6Runtime {
     const char *tick_journal;
     Nf18a6TickTrace tick_trace;
     Nf18a6OwnerHooks owner_hooks;
+    /* H9 research one-use B2/A5 authorization, held only by the A6 runtime.
+       Not an authentication secret and not a physical/durable commit. */
+    uint32_t h9_action, h9_world_tick, h9_revision, h9_material_epoch;
+    uint8_t h9_issued;
 } Nf18a6Runtime;
 typedef struct Nf18a6Outcome {
     Nf18a6Status status;
