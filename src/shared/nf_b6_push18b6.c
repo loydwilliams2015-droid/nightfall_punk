@@ -1,4 +1,5 @@
 #include "nf_b6_push18b6.h"
+#include "nf_v18c2_h9_auth.h"
 #include <string.h>
 #include <limits.h>
 #include <math.h>
@@ -81,6 +82,14 @@ static Nf18a6OwnerGate begin(const NfWorld *world,uint32_t tick,void *arg){
        e->material_epoch!=ctx->runtime->physical.world.grid.global_revision ||
        e->contract_epoch!=ctx->contract_epoch)
         return NF18A6_GATE_STALE;
+    if(ctx->require_h9){
+        const Nf18a6Runtime *r=ctx->runtime;
+        if(!r->h9_issued || r->h9_action!=e->action ||
+           r->h9_world_tick!=world->tick ||
+           r->h9_revision!=r->physical.world.revision ||
+           r->h9_material_epoch!=r->physical.world.grid.global_revision)
+            return NF18A6_GATE_BLOCKED;
+    }
     if(ctx->b2_snapshot){
         ctx->last_b2_status=b2_check(ctx,world,tick);
         if(ctx->last_b2_status!=NF18B2_ELIGIBLE)
@@ -101,6 +110,17 @@ static bool prepublish(const NfWorld *world,const Nf18a5Integrated *candidate,vo
        ctx->runtime->physical.world.tick!=world->tick)
         return false;
     if(!ctx->armed)return true;
+    if(ctx->require_h9){
+        Nf18a6Runtime *r=ctx->runtime;
+        const bool valid=r->h9_issued &&
+            r->h9_action==ctx->event.action &&
+            r->h9_world_tick==world->tick &&
+            r->h9_revision==r->physical.world.revision &&
+            r->h9_material_epoch==r->physical.world.grid.global_revision;
+        /* A6 prepublish is the sole consumer, never a second publisher. */
+        r->h9_issued=0;
+        if(!valid)return false;
+    }
     /* Fail closed before physics publication if the bound material target or
      * frame has changed.  This is a staged A5 body, not a client projection.
      */
@@ -141,6 +161,7 @@ static void finish(const NfWorld *world,const Nf18a6Outcome *out,void *arg){
     Nf18b6Push *ctx=arg;
     if(!ctx||!ctx->armed)return;
     ctx->armed=false;
+    if(ctx->require_h9)ctx->runtime->h9_issued=0;
     ctx->last_result=NF18B3_PENDING;
     if(!world||!out||out->status!=NF18A6_COMMITTED)return;
     if(!out->actual_impulse)return;
@@ -210,6 +231,10 @@ Nf18b3Result nf18b6_push_arm(Nf18b6Push *ctx,const NfWorld *w,
                   uint32_t action,bool physical,bool contract,bool uncertain){
     if(ctx&&ctx->b2_snapshot)return NF18B3_INVALID;
     return arm_internal(ctx,w,action,physical,contract,uncertain);
+}
+bool nf18b6_push_require_h9(Nf18b6Push *ctx){
+    if(!ctx||!ctx->runtime||!ctx->b2_snapshot||ctx->armed)return false;
+    ctx->require_h9=true;return true;
 }
 bool nf18b6_push_require_b2(Nf18b6Push *ctx,Nf18b6B2Snapshot provider,
     void *context,Nf18b2Model model){
