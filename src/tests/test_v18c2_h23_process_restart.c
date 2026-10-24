@@ -43,6 +43,7 @@ int main(void){
  CK(nf18b6_push_attach(push,runtime,world,7));
  CK(nf18b6_push_h26_recover(world,runtime,push,path));
  CK(world->tick==1&&runtime->last_commit_tick==1);
+ CK(runtime->joint_commit_epoch==1&&push->published_epoch==1);
  /* The rebuilt actor must be observable through A6's source-bound snapshot,
     not solely through disconnected A5/B3 checkpoint structs. */
  Nf18a6Snapshot recovered_view=nf18a6_snapshot(runtime,world);
