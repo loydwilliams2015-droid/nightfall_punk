@@ -15,7 +15,7 @@ int main(void){
  CK(nf18a6_init(a,w,10,crate,3,NF18A6_WORLD_BRIDGE));
  a->physical.world.tick=1;a->physical.committed_receipts=1;
  a->physical.world.history.raw_samples=1;
- NfC2H22Receipt source={1,10,77,1,1,1},rec={0};
+ NfC2H22Receipt source={.tick=1,.actor=10,.action=77,.a4_receipts=1,.a5_samples=1,.b3_receipts=1},rec={0};
  char path[160];snprintf(path,sizeof path,"/tmp/nightfall_h22_%ld.bin",(long)getpid());
  remove(path);
  CK(!nf_c2_h22_restore(path,recovered,&rec)); /* crash before publication */

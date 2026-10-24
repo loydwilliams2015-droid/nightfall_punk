@@ -424,6 +424,9 @@ static bool test_h11_owner_capability_prepublication(void){
    "/tmp/nightfall_h20_receipts_%ld.bin",(long)getpid());
  remove(receipt_path);
  CK(nf18b6_push_h20_journal(ctx,receipt_path));
+ char envelope_path[160];snprintf(envelope_path,sizeof envelope_path,
+   "/tmp/nightfall_h24_check_%ld.bin",(long)getpid());
+ CK(nf18b6_push_h24_envelope(ctx,envelope_path));
  CK(nf18a6_bind_world_tick(w,r,NULL,NULL,NULL));
  CK(nf_c2_lease_acquire(&r->world_lease));
  CK(!nf18a6_unbind_world_tick(w,r)); /* registered holder blocks teardown */

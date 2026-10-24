@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include "nf_b6_push18b6.h"
 #include "nf_v18c2_h9_auth.h"
+#include "nf_c2_h22_envelope.h"
 #include <string.h>
 #include <limits.h>
 #include <math.h>
@@ -113,6 +114,29 @@ static bool prepublish(const NfWorld *world,const Nf18a5Integrated *candidate,vo
      * frame has changed.  This is a staged A5 body, not a client projection.
      */
     const Nf18b3Event *e=&ctx->event;
+    if(ctx->h24_envelope_path && candidate->committed_receipts>ctx->before_contacts &&
+       candidate->world.history.raw_samples>ctx->before_history){
+        /* Validation only. A staging checkpoint must never become authority.
+           Live commit + contractual publication still need one atomic WAL. */
+        char staging[1024];
+        if(snprintf(staging,sizeof staging,"%s.precheck",ctx->h24_envelope_path)>=
+           (int)sizeof staging)return false;
+        NfC2H22Receipt receipt={0};
+        receipt.tick=candidate->world.tick;receipt.actor=e->actor;
+        receipt.action=e->action;receipt.a4_receipts=candidate->committed_receipts;
+        receipt.a5_samples=candidate->world.history.raw_samples;
+        receipt.b3_receipts=ctx->receipt_count+1u;
+        receipt.b3_event=*e;receipt.b3_event.phase=NF18B3_APPLIED;
+        receipt.b3_event.applied=1;
+        Nf18a5Integrated restored={0};Nf18b3Event recovered={0};
+        const bool prepared=nf_c2_h22_save(staging,candidate,receipt);
+        const bool verified=prepared &&
+            nf_c2_h23_restore_full(staging,&restored,&recovered)&&
+            recovered.action==e->action &&
+            restored.world.tick==candidate->world.tick;
+        remove(staging);
+        if(!verified)return false;
+    }
     return (!ctx->b2_snapshot || b2_check((Nf18b6Push *)ctx,world,candidate->world.tick)==NF18B2_ELIGIBLE) &&
         e->authorized && e->phase==NF18B3_WAITING &&
         e->tick==candidate->world.tick && candidate->world.tick==world->tick+1u &&
@@ -241,6 +265,10 @@ Nf18b3Result nf18b6_push_arm(Nf18b6Push *ctx,const NfWorld *w,
                   uint32_t action,bool physical,bool contract,bool uncertain){
     if(ctx&&ctx->b2_snapshot)return NF18B3_INVALID;
     return arm_internal(ctx,w,action,physical,contract,uncertain);
+}
+bool nf18b6_push_h24_envelope(Nf18b6Push *ctx,const char *path){
+    if(!ctx||!ctx->runtime||ctx->armed||!path)return false;
+    ctx->h24_envelope_path=path;return true;
 }
 bool nf18b6_push_h20_journal(Nf18b6Push *ctx,const char *path){
     if(!ctx||!ctx->runtime||ctx->armed)return false;
