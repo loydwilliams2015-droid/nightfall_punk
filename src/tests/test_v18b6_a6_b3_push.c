@@ -1,4 +1,5 @@
 #include "nf_b6_push18b6.h"
+#include "nf_v18c2_h9_auth.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -333,6 +334,19 @@ static bool b2_real_server_gate(void){
   m4_shape_queries+=b.geometry_queries;
  }
  CK(m3_shape_queries==m4_shape_queries);
+ f->deny=false;
+ /* H10 source-exact positive path: the existing A6-owned B2 fixture and
+    actual A5 canonical FREE point issue an H9 one-use witness. */
+ const NfVec3 exact_probe={1.f,.1f,1.f};
+ CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,40000,exact_probe)==NF_C2W_READY);
+ CK(r->h9_issued);
+ CK(!nf_c2_h9_consume(w,r,40001)); /* wrong action revokes */
+ CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,40002,exact_probe)==NF_C2W_READY);
+ CK(nf_c2_h9_consume(w,r,40002));
+ CK(!nf_c2_h9_consume(w,r,40002)); /* one-shot */
+ f->deny=true;
+ CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,40003,exact_probe)==NF_C2W_DENIED);
+ CK(!r->h9_issued);
  f->deny=false;
  printf("b2_m3_m4_same_frame=256 shape_queries_m3=%u m4=%u\\n",
         m3_shape_queries,m4_shape_queries);
