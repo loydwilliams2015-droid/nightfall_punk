@@ -109,6 +109,10 @@ static bool prepublish(const NfWorld *world,const Nf18a5Integrated *candidate,vo
        ctx->runtime->physical.world.tick!=world->tick)
         return false;
     if(!ctx->armed)return true;
+#ifdef NF_CONTACT_LAB_ONLY
+    /* Refuse an unavailable contractual completion BEFORE A5 publication. */
+    if(getenv("NF_H29_FAIL_AFTER_PHYSICAL"))return false;
+#endif
     if(ctx->require_h9 && !nf_c2_h9_take_prepublication(world,ctx->runtime,ctx->event.action))
         return false;
     /* Fail closed before physics publication if the bound material target or
