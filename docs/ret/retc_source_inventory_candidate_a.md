@@ -55,3 +55,17 @@ The Candidate A frame now binds a copy of actual B2 declarations from `nf_eligib
 - The second-epoch regression exercises this source-backed constructor before atomic prototype publication, while retaining stale-epoch refusal and deterministic frame-content assertions.
 - **Outstanding blocker:** the actual live A6 owner still uses A5 publication followed by B3 finish. Do not route normal gameplay through the prototype or claim real-world atomicity before an atomic journal + reader migration.
 - **Authority inventory completeness:** repository-wide server/AI/render call graph still unverified. Identified raw prediction and camera accesses are blockers; `nf_net.c` alone is insufficient to certify network readers.
+
+## Integrated convergence gate — source audit, 2026-10-24
+Verified primary source paths:
+- `nf_contact18a5_close.c:publish` calls `nf18a5_checkpoint` then updates `*dst` independently of A6/B3. This function has no frame-publication API.
+- `nf_embody18a6.c:nf18a6_step` computes a private `next` but then writes `r->physical`, collider bounds, live actor transform and `w->tick` in separate mutable operations. `nf18a6_tick_dispatch` invokes `owner_hooks.finish` after that step, before ending its lease.
+- `nf_b6_push18b6.c:prepublish` already persists a narrow H22/H23 A5+B3 event envelope for the actual contact branch; however, it is missing full B2 server authority, ownership/membership/debit and world-derived replay state. `finish` still calls B3 realization and writes receipts after A6 mutation. This is therefore not a complete transaction decision.
+- `nf_prediction.c:nf_prediction_simulate_command` mutates raw `NfWorld`/actor/weapon authority; `nf_camera.c:nf_camera_follow_actor` reads raw actor/collider state; `nf_world.c` exposes direct mutable actor retrieval. These are known reader/writer escape paths.
+- `nf_net.c` contains no direct actor/world read in the examined transport source. This is not proof about all server/network handlers. Repository-wide AI/renderer/server inventory remains **unverified**, so INV-4 is still blocked.
+
+**Fail-closed prototype rule:** `nf_retc_publish` now rejects frames missing source-backed `Nf18b2Use/Decision/Actor/Object/Authority` even when the epoch and B3 event are syntactically valid. It cannot make the legacy A6 pathway atomic. New regression asserts the unbound candidate is rejected without changing the published epoch.
+
+**Must not claim** full contractual realizers exist: B2 eligibility grants neither ownership nor an inventory delta. B3 `nf18b3_realize` sets an event phase only after a material receipt callback, but currently does not produce a complete ownership/inventory/contract journal. PUSH physical evidence can be staged; debit/transfer/repair/interruption semantics need explicit independently verified source-backed realization.
+
+**Replacement gate (not implemented):** A6 owner must pass *one* prepared `NfRetcFrame` with B2/B3 consequences and complete A6 world projections to an A6-owned durable commit writer; successful durable decision must precede *one* published frame pointer, and former A5/B3 mutable publications must cease being authoritative. Reader APIs must return leased immutable frame data, including network, AI, camera and server logic. Do not run whole-world crash matrix until this is true.
