@@ -194,6 +194,11 @@ if(NF_CONTACT_LAB_ONLY)
     target_link_libraries(nightfall_v18c2_real_material_test PRIVATE nightfall_embody_h1)
     nf_project_warnings(nightfall_v18c2_real_material_test)
     add_test(NAME concurrent_real_a4_a5_b3_v18c2 COMMAND nightfall_v18c2_real_material_test)
+    # H3 A6-bound A4 staging challenger (not an additional world owner).
+    add_executable(nightfall_v18c2_a6_stage_h3_test src/tests/test_v18c2_a6_stage_h3.c)
+    target_link_libraries(nightfall_v18c2_a6_stage_h3_test PRIVATE nightfall_embody_h1)
+    nf_project_warnings(nightfall_v18c2_a6_stage_h3_test)
+    add_test(NAME a6_bound_stage_h3_v18c2 COMMAND nightfall_v18c2_a6_stage_h3_test)
     # Normal build forbids the two controls that bypass world embodiment.
     add_library(nightfall_embody_prod STATIC ${NF_EMBODY_SHARED} src/client/nf_camera.c)
     target_include_directories(nightfall_embody_prod PUBLIC src/shared src/client)
