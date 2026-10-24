@@ -45,6 +45,27 @@ bool nf_retc_bind_b2(NfRetcFrame *f,
      f->obligation_count^u->object_revision^a->credentials^a->inventory);
  return true;
 }
+bool nf_retc_seal_b2_b3(NfRetcFrame *f){
+ if(!f||!f->has_b2_contract||f->event.phase!=NF18B3_APPLIED||
+    !f->event.applied||!f->event.authorized||
+    f->b2_use.tick!=f->epoch||
+    f->b2_use.world_revision!=f->physical.world.revision||
+    f->b2_use.material_epoch!=f->physical.world.grid.global_revision||
+    f->b2_decision.status!=NF18B2_ELIGIBLE||
+    f->b2_decision.physical!=NF18B2_ELIGIBLE||
+    f->b2_decision.contract!=NF18B2_ELIGIBLE||
+    f->b2_authority.publishing||
+    f->b2_authority.receipt_count>=64u)return false;
+ /* This experimental frame represents the admitted physical PUSH only.
+    B3 pickup/carry/repair/interrupt do not yet have source-bound debit
+    realizers; reject them instead of inventing contract side effects. */
+ if(f->event.kind!=NF18B3_PUSH)return false;
+ for(uint32_t i=0;i<f->b2_authority.receipt_count;++i)
+    if(f->b2_authority.ticks[i]==f->epoch &&
+       f->b2_authority.actors[i]==f->owner_actor &&
+       f->b2_authority.features[i]==f->object_id)return false;
+ return true;
+}
 bool nf_retc_publish(NfRetcPublisher *pub,NfRetcFrame *f){
  if(!pub||!f||pub->count>=NF_RETC_HISTORY)return false;
  const NfRetcFrame *prior=atomic_load_explicit(&pub->current,memory_order_acquire);
