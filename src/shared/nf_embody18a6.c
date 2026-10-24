@@ -59,6 +59,8 @@ bool nf18a6_init(Nf18a6Runtime *r,NfWorld *w,NfEntityId id,
     const int collider=nf_world_add_collider(w,NF_COLLIDER_SOLID,low,high);
     if(collider<0)return false;
     memset(r,0,sizeof(*r));
+    atomic_flag_clear(&r->auth_lifecycle_lock);
+    atomic_init(&r->auth_shutdown,false);
     r->object_collider_index=(uint32_t)collider;
     nf18a5_integrated_init(&r->physical,cap,body,object);
     r->actor_id=id;r->model=(uint32_t)model;
@@ -414,6 +416,7 @@ bool nf18a6_bind_world_tick(NfWorld *world,Nf18a6Runtime *runtime,
        world->tick!=runtime->last_commit_tick||
        !nf_world_find_actor_const(world,runtime->actor_id))return false;
     if(!nf_world_bind_tick_owner(world,nf18a6_tick_dispatch,runtime))return false;
+    atomic_store(&runtime->auth_shutdown,false);
     runtime->tick_provider=provider;
     runtime->tick_provider_context=context;
     runtime->tick_journal=journal;

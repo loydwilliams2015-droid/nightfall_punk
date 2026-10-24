@@ -3,6 +3,7 @@
 /* Opt-in, single-actor 1.8A.6 embodiment authority bridge.
    Not a replacement for the multiplayer/AI world scheduler. */
 #include "nf_contact18a5_close.h"
+#include <stdatomic.h>
 #include "nf_camera.h"
 #include "nf_logic17c.h"
 
@@ -60,7 +61,9 @@ typedef struct Nf18a6Runtime {
     const char *tick_journal;
     Nf18a6TickTrace tick_trace;
     Nf18a6OwnerHooks owner_hooks;
-    struct Nf18c2AuthState *auth_state; /* owned; lifecycle at bind/unbind */
+    struct Nf18c2AuthState *auth_state; /* accessed under lifecycle_lock */
+    atomic_flag auth_lifecycle_lock; /* operation registration & teardown boundary */
+    atomic_bool auth_shutdown;
 } Nf18a6Runtime;
 typedef struct Nf18a6Outcome {
     Nf18a6Status status;

@@ -1,0 +1,23 @@
+name: H15 authorization ThreadSanitizer
+on:
+  push:
+    branches:
+      - engineering/v18c2-h15-lifecycle-register
+  pull_request:
+    paths:
+      - 'src/shared/nf_v18c2_h9_auth.*'
+      - 'src/shared/nf_embody18a6.*'
+      - 'src/tests/test_v18c2_h14_concurrent.c'
+      - '.github/workflows/v18c2-h15-tsan.yml'
+jobs:
+  tsan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build strict Clang ThreadSanitizer research test
+        run: |
+          cmake -S . -B build-tsan -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_C_COMPILER=clang -DCMAKE_C_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -g" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread"
+          cmake --build build-tsan --parallel 4 --target nightfall_v18c2_h14_concurrent_test
+      - name: Run concurrent lifecycle with TSAN
+        run: ctest --test-dir build-tsan --output-on-failure -R '^h14_concurrent_lifecycle_v18c2$'

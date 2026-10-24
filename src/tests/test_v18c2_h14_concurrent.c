@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 typedef struct {NfWorld *w;Nf18a6Runtime *r;atomic_uint *done;} Worker;
+static int shutdown_worker(void *arg){
+ Worker *x=arg;
+ nf_c2_h9_owner_destroy(x->r);
+ return 0;
+}
 static int work(void *arg){
  Worker *x=arg;
  for(unsigned i=0;i<3000;i++){
@@ -25,10 +30,13 @@ int main(void){
     !nf_c2_h9_owner_init(r))return 3;
  atomic_uint done=0;Worker data={w,r,&done};thrd_t threads[4];
  for(unsigned i=0;i<4;i++)if(thrd_create(&threads[i],work,&data)!=thrd_success)return 4;
+ thrd_t closer;
+ if(thrd_create(&closer,shutdown_worker,&data)!=thrd_success)return 11;
  for(unsigned i=0;i<4;i++){int result=-1;
   if(thrd_join(threads[i],&result)!=thrd_success||result)return 5;
  }
- if(atomic_load(&done)!=4)return 6;
+ {int result=-1;if(thrd_join(closer,&result)!=thrd_success||result)return 12;}
+ if(atomic_load(&done)!=4||r->auth_state)return 6;
  /* Destruction is permitted only AFTER all worker threads are joined.
     A6 unbinding during active tick is rejected by existing owner API. */
  w->tick_in_progress=true;
