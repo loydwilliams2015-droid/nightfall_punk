@@ -1,0 +1,39 @@
+#define _POSIX_C_SOURCE 200809L
+#include "nf_c2_h22_envelope.h"
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <stdio.h>
+#define CK(x) do{if(!(x)){fprintf(stderr,"H23 failure line %d\n",__LINE__);return 1;}}while(0)
+int main(void){
+ Nf18a5Integrated *physical=calloc(1,sizeof *physical);
+ Nf18a5Integrated *restored=calloc(1,sizeof *restored);
+ CK(physical&&restored);
+ nf18a5_integrated_init(physical,3,
+   (Nf18a4Body){.id=10,.radius=.3f,.height=1.7f,.inverse_mass=.0125f},
+   (Nf18a4Body){.id=2010,.box_half={.2f,.5f,.35f},.inverse_mass=.04f});
+ physical->world.tick=1;physical->committed_receipts=1;
+ physical->world.history.raw_samples=1;
+ NfC2H22Receipt r={.tick=1,.actor=10,.action=91,
+  .a4_receipts=1,.a5_samples=1,.b3_receipts=1};
+ r.b3_event=(Nf18b3Event){.actor=10,.object=2010,.action=91,
+  .tick=1,.world_epoch=0,.material_epoch=0,.contract_epoch=7,
+  .kind=NF18B3_PUSH,.phase=NF18B3_APPLIED,.authorized=1,.applied=1};
+ char path[160];snprintf(path,sizeof path,"/tmp/nightfall_h23_%ld.bin",(long)getpid());
+ remove(path);Nf18b3Event event={0};
+ CK(!nf_c2_h23_restore_full(path,restored,&event));
+ /* Restart from a separate child process: only persisted bytes survive. */
+ pid_t child=fork();CK(child>=0);
+ if(child==0)_exit(nf_c2_h22_save(path,physical,r)?0:9);
+ int status=0;CK(waitpid(child,&status,0)==child&&WIFEXITED(status)&&WEXITSTATUS(status)==0);
+ CK(nf_c2_h23_restore_full(path,restored,&event));
+ CK(event.action==91&&event.contract_epoch==7&&restored->committed_receipts==1);
+ /* A crash before publication is denied, not fabricated. */
+ CK(remove(path)==0);
+ child=fork();CK(child>=0);
+ if(child==0)_exit(0);
+ CK(waitpid(child,&status,0)==child&&WIFEXITED(status));
+ CK(!nf_c2_h23_restore_full(path,restored,&event));
+ free(restored);free(physical);
+ puts("H23 child restart B3/A5 envelope complete and missing refusal PASS");return 0;
+}
