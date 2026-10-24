@@ -1,6 +1,9 @@
 #ifndef NF_V18C2_H9_AUTH_H
 #define NF_V18C2_H9_AUTH_H
 #include "nf_v18c2_witness.h"
+/* Allocated on A6 bind, invalidated and destroyed on unbind. */
+bool nf_c2_h9_owner_init(Nf18a6Runtime *runtime);
+void nf_c2_h9_owner_destroy(Nf18a6Runtime *runtime);
 /* Owner-held research authorization; cannot be minted by H3 Boolean grant.
  * A trusted server provider is still required for credential provenance. */
 NfC2WitnessStatus nf_c2_h9_issue(NfWorld *world,Nf18a6Runtime *runtime,
