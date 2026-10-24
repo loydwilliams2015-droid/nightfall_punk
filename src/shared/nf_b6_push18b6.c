@@ -113,6 +113,10 @@ static bool prepublish(const NfWorld *world,const Nf18a5Integrated *candidate,vo
         return false;
     if(!ctx->armed)return true;
     ((Nf18b6Push *)ctx)->staged_commit_valid=false;
+    /* B3 receipt allocation must be guaranteed before any physical state is
+       durable. Refuse capacity overflow at the owner gate, not at finish. */
+    if(ctx->receipt_count>=NF18B6_PUSH_RECEIPTS)return false;
+    if(ctx->h24_envelope_path && ctx->h20_receipt_journal)return false;
 #ifdef NF_CONTACT_LAB_ONLY
     /* Refuse an unavailable contractual completion BEFORE A5 publication. */
     if(getenv("NF_H29_FAIL_AFTER_PHYSICAL"))return false;
