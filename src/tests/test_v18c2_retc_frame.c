@@ -48,6 +48,9 @@ int main(void){
  NfRetcFrame *other=nf_retc_stage(p,&event,2,0,&obligation,1);CK(other);
  CK(!nf_retc_publish(&publisher,other)); /* stale epoch */
  CK(nf_retc_read(&publisher)==f);free(other);
+ other=nf_retc_stage(p,&event,2,1,NULL,0);CK(other);
+ CK(!nf_retc_publish(&publisher,other)); /* no generic-only authority */
+ CK(nf_retc_read(&publisher)==f);free(other);
  use.tick=2;use.action_id=92;
  other=nf_retc_stage_source_push(p,&event,2,1,
      &use,&decision,&actor,&object,&authority);CK(other);
