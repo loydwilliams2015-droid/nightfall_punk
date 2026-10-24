@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - engineering/v18c2-h15-lifecycle-register
+      - engineering/v18c2-h17-tsan-isolation
   pull_request:
     paths:
       - 'src/shared/nf_v18c2_h9_auth.*'
@@ -19,5 +20,9 @@ jobs:
         run: |
           cmake -S . -B build-tsan -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_C_COMPILER=gcc -DCMAKE_C_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -g" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread"
           cmake --build build-tsan --parallel 4 --target nightfall_v18c2_h14_concurrent_test
+      - name: Build independent TSAN runtime control
+        run: gcc -std=c11 -Wall -Wextra -Werror -fsanitize=thread -g src/tests/test_v18c2_h17_tsan_smoke.c -o build-tsan/tsan-smoke -pthread
+      - name: Run independent TSAN runtime control
+        run: build-tsan/tsan-smoke
       - name: Run concurrent lifecycle with TSAN
         run: ctest --test-dir build-tsan --output-on-failure -R '^h14_concurrent_lifecycle_v18c2$'
