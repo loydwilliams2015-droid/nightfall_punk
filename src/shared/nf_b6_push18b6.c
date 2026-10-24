@@ -3,6 +3,8 @@
 #include <string.h>
 #include <limits.h>
 #include <math.h>
+#include <stdio.h>
+#include <unistd.h>
 
 /* Reconstruct the B2 material/geometry/pose proof from the existing A6
  * authority. A fabricated, omitted or stale static collider is rejected.
@@ -163,6 +165,27 @@ static void finish(const NfWorld *world,const Nf18a6Outcome *out,void *arg){
     if(ctx->last_result!=NF18B3_OK)return;
     ctx->receipts[ctx->receipt_count++]=(Nf18b6PushReceipt){
         ctx->event.actor,ctx->event.action,ctx->event.tick};
+    if(ctx->h20_receipt_journal){
+        /* Evidence after actual A6 physical publication and B3 realization.
+           Not crash-atomic with the A5 WAL; failure leaves an open gate. */
+        const uint32_t fields[7]={
+            ctx->event.tick,ctx->event.actor,ctx->event.action,
+            runtime->physical.committed_receipts,
+            runtime->physical.world.history.raw_samples,
+            ctx->receipt_count,
+            ctx->event.tick^ctx->event.actor^ctx->event.action^
+             runtime->physical.committed_receipts^
+             runtime->physical.world.history.raw_samples^
+             ctx->receipt_count^0xA5B318C2u
+        };
+        FILE *fp=fopen(ctx->h20_receipt_journal,"ab");
+        if(!fp){ctx->last_result=NF18B3_PENDING;return;}
+        const bool wrote=fwrite(fields,sizeof(fields),1,fp)==1;
+        const bool flushed=wrote&&fflush(fp)==0;
+        const bool synced=flushed&&fsync(fileno(fp))==0;
+        const bool closed=fclose(fp)==0;
+        if(!synced||!closed)ctx->last_result=NF18B3_PENDING;
+    }
 }
 bool nf18b6_push_attach(Nf18b6Push *ctx,Nf18a6Runtime *r,
                         const NfWorld *w,uint32_t epoch){
@@ -216,6 +239,10 @@ Nf18b3Result nf18b6_push_arm(Nf18b6Push *ctx,const NfWorld *w,
                   uint32_t action,bool physical,bool contract,bool uncertain){
     if(ctx&&ctx->b2_snapshot)return NF18B3_INVALID;
     return arm_internal(ctx,w,action,physical,contract,uncertain);
+}
+bool nf18b6_push_h20_journal(Nf18b6Push *ctx,const char *path){
+    if(!ctx||!ctx->runtime||ctx->armed)return false;
+    ctx->h20_receipt_journal=path;return true;
 }
 bool nf18b6_push_require_h9(Nf18b6Push *ctx){
     if(!ctx||!ctx->runtime||!ctx->b2_snapshot||ctx->armed)return false;
