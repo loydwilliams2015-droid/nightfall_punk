@@ -474,9 +474,19 @@ static bool test_h11_owner_capability_prepublication(void){
  CK(w->tick==1);
  /* H18 positive source-bound publication: only count physical B3 successes
     when A4 reciprocal impulse and actual A5 contact history both advance. */
- unsigned positive_contacts=0;
- bool split_observed=false;
+ /* Fault refusal is exercised at A6 prepublication, not after commit. */
+ CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,699,probe)==NF_C2W_READY);
+ CK(nf18b6_push_arm_b2(ctx,w,699)==NF18B3_OK);
+ const uint32_t guarded_tick=(uint32_t)w->tick;
+ const uint32_t guarded_a4=r->physical.committed_receipts;
+ const uint32_t guarded_a5=r->physical.world.history.raw_samples;
+ const uint32_t guarded_b3=ctx->receipt_count;
  CK(setenv("NF_H29_FAIL_AFTER_PHYSICAL","1",1)==0);
+ CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
+ CK(w->tick==guarded_tick&&r->physical.committed_receipts==guarded_a4);
+ CK(r->physical.world.history.raw_samples==guarded_a5&&ctx->receipt_count==guarded_b3);
+ CK(unsetenv("NF_H29_FAIL_AFTER_PHYSICAL")==0);
+ unsigned positive_contacts=0;
  for(unsigned j=0;j<40;++j){
   nf_world_set_input(w,10,rightward());
   const uint32_t tick_before=(uint32_t)w->tick;
@@ -504,19 +514,8 @@ static bool test_h11_owner_capability_prepublication(void){
    CK(r->physical.world.history.raw_samples>a5_before);
    CK(ctx->event.applied);
    ++positive_contacts;
-  } else {
-   CK(!ctx->event.applied);
-   if(r->physical.committed_receipts>a4_before){
-    CK(w->tick==tick_before+1u);
-    CK(r->physical.world.history.raw_samples>a5_before);
-    CK(ctx->receipt_count==b3_before);
-    split_observed=true;
-    CK(unsetenv("NF_H29_FAIL_AFTER_PHYSICAL")==0);
-   }
-  }
+  } else CK(!ctx->event.applied);
  }
- CK(unsetenv("NF_H29_FAIL_AFTER_PHYSICAL")==0);
- CK(split_observed);
  CK(positive_contacts>0);
  Nf18a5Integrated *h25_restored=calloc(1,sizeof *h25_restored);
  Nf18b3Event h25_event={0};
