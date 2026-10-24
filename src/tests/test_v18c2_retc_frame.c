@@ -45,7 +45,9 @@ int main(void){
  CK(nf_retc_read(&publisher)==f&&nf_retc_read(&publisher)->epoch==1);
  CK(!nf_retc_publish(&publisher,f)); /* no replay */
  p->world.tick=2;event.tick=2;event.action=92;
+ p->world.tick=1;event.tick=1;
  NfRetcFrame *other=nf_retc_stage(p,&event,2,0,&obligation,1);CK(other);
+ p->world.tick=2;event.tick=2;
  CK(!nf_retc_publish(&publisher,other)); /* stale epoch */
  CK(nf_retc_read(&publisher)==f);free(other);
  other=nf_retc_stage(p,&event,2,1,NULL,0);CK(other);
