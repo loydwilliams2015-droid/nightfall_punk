@@ -66,6 +66,18 @@ bool nf_retc_seal_b2_b3(NfRetcFrame *f){
        f->b2_authority.features[i]==f->object_id)return false;
  return true;
 }
+NfRetcFrame *nf_retc_stage_source_push(
+ const Nf18a5Integrated *physical,const Nf18b3Event *event,
+ uint32_t tx,uint32_t prior_epoch,const Nf18b2Use *use,
+ const Nf18b2UseDecision *decision,const Nf18b2Actor *actor,
+ const Nf18b2Object *object,const Nf18b2Authority *authority){
+ if(!event||event->kind!=NF18B3_PUSH)return NULL;
+ NfRetcFrame *f=nf_retc_stage(physical,event,tx,prior_epoch,NULL,0);
+ if(!f)return NULL;
+ if(!nf_retc_bind_b2(f,use,decision,actor,object,authority)||
+    !nf_retc_seal_b2_b3(f)){free(f);return NULL;}
+ return f;
+}
 bool nf_retc_publish(NfRetcPublisher *pub,NfRetcFrame *f){
  if(!pub||!f||pub->count>=NF_RETC_HISTORY||
     (f->has_b2_contract&&!nf_retc_seal_b2_b3(f)))return false;
