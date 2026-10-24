@@ -79,8 +79,10 @@ NfRetcFrame *nf_retc_stage_source_push(
  return f;
 }
 bool nf_retc_publish(NfRetcPublisher *pub,NfRetcFrame *f){
+ /* Source-backed candidate authority is mandatory: generic obligation tuples
+    cannot stand in for typed B2 rights or material consequences. */
  if(!pub||!f||pub->count>=NF_RETC_HISTORY||
-    (f->has_b2_contract&&!nf_retc_seal_b2_b3(f)))return false;
+    !f->has_b2_contract||!nf_retc_seal_b2_b3(f))return false;
  const NfRetcFrame *prior=atomic_load_explicit(&pub->current,memory_order_acquire);
  if(f->prior_epoch!=(prior?prior->epoch:0)||f->epoch!=f->prior_epoch+1u)return false;
  if(prior&&f->transaction_id<=prior->transaction_id)return false;
