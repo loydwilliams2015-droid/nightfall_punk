@@ -249,7 +249,15 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
     }
     NfActor *dst=nf_world_find_actor(w,r->actor_id);
     if(!dst)return outcome(NF18A6_INVALID,r);
+#ifdef NF_CONTACT_LAB_ONLY
+    if(getenv("NF_H31_KILL_BOUNDARY")&&
+       strcmp(getenv("NF_H31_KILL_BOUNDARY"),"before_world_publish")==0)_exit(94);
+#endif
     r->physical=next;
+#ifdef NF_CONTACT_LAB_ONLY
+    if(getenv("NF_H31_KILL_BOUNDARY")&&
+       strcmp(getenv("NF_H31_KILL_BOUNDARY"),"after_physical_copy")==0)_exit(94);
+#endif
     NfCollider *cr=&w->colliders[r->object_collider_index];
     cr->previous_min=cr->min;cr->previous_max=cr->max;
     cr->min=vsub(next.object.center,next.object.box_half);
@@ -264,6 +272,10 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
     dst->movement.grounded=true;
     dst->movement.body_height=next.actor.height;
     w->tick=tick;
+#ifdef NF_CONTACT_LAB_ONLY
+    if(getenv("NF_H31_KILL_BOUNDARY")&&
+       strcmp(getenv("NF_H31_KILL_BOUNDARY"),"after_world_publish")==0)_exit(94);
+#endif
     r->last_commit_tick=tick;
     r->last_hash=hash_body(&next.actor,&next.object,tick,next.world.revision);
     if(r->model==NF18A6_WORLD_CAMERA){
