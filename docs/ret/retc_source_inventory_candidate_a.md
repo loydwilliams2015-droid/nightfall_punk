@@ -12,7 +12,10 @@ Baseline H40 and Candidate A research branch; status **partial inventory, releas
 | B3 receipts | `src/shared/nf_b6_push18b6.c` `finish` | Appends receipt / optional second journal | Separate postcommit consequence |
 | Composite view | `src/shared/nf_b6_push18b6.c` H37 | Reads A6+B3+envelope | Checked narrow view, not a replacement for raw world readers |
 | World API | `src/shared/nf_world.c` `nf_world_find_actor`, `nf_world_find_actor_const`, `nf_world_set_input`, `nf_world_step_checked` | Mutable source access/reader bypass | Must migrate or isolate |
-| Network/client, rendering, AI | Further repository-wide enumeration **required** | Unverified | Global reader coverage BLOCKED |
+| Network transport | `src/shared/nf_net.c` | Transport routines inspected; no direct world references seen in first-pass scan | Indirect call paths not audited |
+| Client prediction | `src/shared/nf_prediction.c` | Uses `nf_world_find_actor` and `nf_world_set_input` to mutate the raw world | Authoritative reader/writer escape; BLOCKER |
+| Camera/presentation | `src/client/nf_camera.c` | Reads raw `NfWorld` colliders and actor transform | Unversioned reader escape; BLOCKER |
+| AI and rendering | No validated source-wide call graph yet | Unverified | Global reader coverage BLOCKED |
 
 ## Candidate A bounded prototype
 - `src/shared/nf_c2_retc_frame.h/.c` defines an **immutable after-publication** `NfRetcFrame` carrying physical candidate, typed B3 consequence, owner IDs, monotonically increasing tick/transaction IDs, up to eight materialized obligation records and derived hash inputs.
@@ -28,3 +31,6 @@ Baseline H40 and Candidate A research branch; status **partial inventory, releas
 2. Upgrade typed obligations to full source-derived B2/B3 contract state, durability and versioned journal.
 3. Bind A6 owner to private frame staging and make authoritative readers observe the frame (not direct mutable world).
 4. After that, conduct process-kill matrix + fresh recovery + deterministic continued ticking.
+
+## Source-derived B2 schema update
+The Candidate A frame now binds a copy of actual B2 declarations from `nf_eligibility18b2.h`: `Nf18b2Use`, `Nf18b2UseDecision`, `Nf18b2Actor`, `Nf18b2Object`, and `Nf18b2Authority` (bounded replay receipts). `nf_retc_bind_b2` validates eligible physical and contractual decisions and frame actor/object/action/tick/revision identity, then copies all fields into the unpublished frame. Existing generic obligation tuples remain explicitly **unverified research fields**, not authoritative contractual rights. This is still insufficient for full B2/B3 obligation transitions, inventory debits, durable journal, or live A6 integration.
