@@ -345,7 +345,11 @@ bool nf18b6_push_h26_recover(NfWorld *w,Nf18a6Runtime *runtime,
   s->actor.id==runtime->actor_id&&
   s->object.id==runtime->physical.object.id&&
   event.contract_epoch==push->contract_epoch&&
-  push->receipt_count<NF18B6_PUSH_RECEIPTS&&
+  push->receipt_count==0&& /* no partial pre-existing B3 ledger */
+  push->event.phase==NF18B3_PROPOSED&&
+  event.world_epoch==(uint32_t)w->tick&&
+  event.contract_epoch==push->contract_epoch&&
+  event.phase==NF18B3_APPLIED&&event.authorized&&event.applied&&
   nf18a4_body_valid(&s->actor)&&nf18a4_body_valid(&s->object);
  NfActor *actor=ok?nf_world_find_actor(w,runtime->actor_id):NULL;
  if(!actor)ok=false;
@@ -363,6 +367,10 @@ bool nf18b6_push_h26_recover(NfWorld *w,Nf18a6Runtime *runtime,
  actor->movement.body_height=s->actor.height;
  actor->movement.grounded=true;
  w->tick=s->world.tick;runtime->last_commit_tick=s->world.tick;
+ /* Snapshot/trace values are derived projections; invalidate stale cache. */
+ runtime->last_hash=0;
+ runtime->tick_trace=(Nf18a6TickTrace){0};
+ runtime->camera=(NfCameraState){0};
  push->event=event;
  push->receipts[push->receipt_count++]=(Nf18b6PushReceipt){
  event.actor,event.action,event.tick};
