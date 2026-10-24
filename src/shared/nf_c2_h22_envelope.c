@@ -10,6 +10,12 @@ static uint32_t digest(const unsigned char *p,size_t n,NfC2H22Receipt r){
  uint32_t h=2166136261u;
  const uint32_t values[]={r.tick,r.actor,r.action,r.a4_receipts,r.a5_samples,r.b3_receipts};
  for(size_t i=0;i<6;i++){h^=values[i];h*=16777619u;}
+ const uint32_t b3[]={r.b3_event.actor,r.b3_event.object,r.b3_event.action,
+  r.b3_event.tick,r.b3_event.world_epoch,r.b3_event.material_epoch,
+  r.b3_event.contract_epoch,(uint32_t)r.b3_event.kind,
+  (uint32_t)r.b3_event.phase,(uint32_t)r.b3_event.authorized,
+  (uint32_t)r.b3_event.applied};
+ for(size_t i=0;i<11;i++){h^=b3[i];h*=16777619u;}
  for(size_t i=0;i<n;i++){h^=p[i];h*=16777619u;}
  return h;
 }
@@ -69,4 +75,17 @@ bool nf_c2_h22_restore(const char *path,Nf18a5Integrated *p,NfC2H22Receipt *r){
  remove(phys);
  if(!ok)return false;
  *p=restored;*r=h.receipt;return true;
+}
+
+bool nf_c2_h23_restore_full(const char *path,Nf18a5Integrated *physical,Nf18b3Event *event){
+ if(!physical||!event)return false;
+ Nf18a5Integrated staged={0};NfC2H22Receipt receipt={0};
+ if(!nf_c2_h22_restore(path,&staged,&receipt))return false;
+ const Nf18b3Event e=receipt.b3_event;
+ if(e.actor!=receipt.actor||e.actor!=staged.actor.id||
+    e.object!=staged.object.id||e.action!=receipt.action||
+    e.tick!=receipt.tick||e.tick!=staged.world.tick||
+    e.kind!=NF18B3_PUSH||e.phase!=NF18B3_APPLIED||
+    !e.authorized||!e.applied||!e.contract_epoch)return false;
+ *physical=staged;*event=e;return true;
 }
