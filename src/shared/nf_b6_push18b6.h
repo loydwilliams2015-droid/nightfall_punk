@@ -63,6 +63,10 @@ Nf18b3Result nf18b6_push_arm_b2(Nf18b6Push *ctx,const NfWorld *world,
 /* Once enabled, requires a source-bound H9 authorization inside A6 prepublish. */
 /* Source-bound postcommit receipt journal (not a joint atomic WAL). */
 /* H26: restore unified persisted physical and typed B3 consequences together. */
+/* Quiescent composite committed read: neither A6 nor B3 alone grants success. */
+bool nf18b6_push_h37_committed_view(const NfWorld *world,
+ const Nf18a6Runtime *runtime,const Nf18b6Push *push,
+ Nf18a6Snapshot *physical,Nf18b3Event *contract);
 bool nf18b6_push_h26_recover(NfWorld *world,Nf18a6Runtime *runtime,
  Nf18b6Push *push,const char *envelope);
 bool nf18b6_push_h24_envelope(Nf18b6Push *ctx,const char *path);
