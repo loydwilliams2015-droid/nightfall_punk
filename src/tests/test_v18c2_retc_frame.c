@@ -24,6 +24,17 @@ int main(void){
  p->committed_receipts=18;event.action=444;obligation.quantity=88;
  CK(f->physical.committed_receipts==1&&f->event.action==91&&
     f->obligations[0].quantity==2); /* immutable source copy */
+ Nf18b2Actor actor={.id=10,.revision=5,.credentials=3,.inventory=7};
+ Nf18b2Object object={.id=2010,.revision=6,.capacity=1};
+ Nf18b2Use use={.actor_id=10,.object_id=2010,.action_id=91,
+  .tick=1,.actor_revision=5,.object_revision=6};
+ Nf18b2UseDecision decision={.status=NF18B2_ELIGIBLE,
+  .physical=NF18B2_ELIGIBLE,.contract=NF18B2_ELIGIBLE};
+ Nf18b2Authority authority={0};
+ CK(nf_retc_bind_b2(f,&use,&decision,&actor,&object,&authority));
+ CK(f->has_b2_contract&&f->b2_actor.inventory==7);
+ CK(!nf_retc_bind_b2(f,&use,&decision,&actor,&object,&authority));
+ actor.inventory=99;CK(f->b2_actor.inventory==7);
  CK(nf_retc_publish(&publisher,f));
  CK(nf_retc_read(&publisher)==f&&nf_retc_read(&publisher)->epoch==1);
  CK(!nf_retc_publish(&publisher,f)); /* no replay */
