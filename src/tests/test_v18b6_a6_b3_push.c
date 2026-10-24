@@ -514,6 +514,9 @@ static bool test_h11_owner_capability_prepublication(void){
    CK(r->physical.committed_receipts>a4_before);
    CK(r->physical.world.history.raw_samples>a5_before);
    CK(ctx->event.applied);
+   CK(ctx->staged_commit_valid);
+   CK(ctx->staged_commit.action==ctx->event.action);
+   CK(ctx->staged_commit.tick==ctx->event.tick);
    ++positive_contacts;
   } else CK(!ctx->event.applied);
  }
