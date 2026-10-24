@@ -32,6 +32,20 @@ static bool test_contract_and_replay(void){
  CK(nf18b6_push_attach(ctx,r,w,3));
  CK(!nf18b6_push_attach(ctx,r,w,3));
  CK(nf18a6_bind_world_tick(w,r,NULL,NULL,NULL));
+ /* Source-exact A6 prepublication negative controls: idle or spoofed owner
+    cannot publish a B3 receipt, even if the candidate is plausible. */
+ CK(r->owner_hooks.prepublish != NULL);
+ Nf18a5Integrated candidate=r->physical;
+ candidate.world.tick=(uint32_t)w->tick+1u;
+ CK(!r->owner_hooks.prepublish(w,&candidate,ctx));
+ NfWorld *spoof=malloc(sizeof *spoof);
+ CK(spoof);
+ *spoof=*w;
+ spoof->tick_in_progress=true;
+ spoof->tick_owner_context=NULL;
+ CK(!r->owner_hooks.prepublish(spoof,&candidate,ctx));
+ free(spoof);
+ CK(ctx->receipt_count==0&&r->physical.committed_receipts==0);
  CK(nf18b6_push_arm(ctx,w,1,true,true,true)==NF18B3_PENDING);
  CK(!ctx->armed&&ctx->receipt_count==0);
  CK(nf18b6_push_arm(ctx,w,1,true,false,false)==NF18B3_DENIED);

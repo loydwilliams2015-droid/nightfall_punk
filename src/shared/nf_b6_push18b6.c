@@ -93,6 +93,13 @@ static Nf18a6OwnerGate begin(const NfWorld *world,uint32_t tick,void *arg){
 static bool prepublish(const NfWorld *world,const Nf18a5Integrated *candidate,void *arg){
     const Nf18b6Push *ctx=arg;
     if(!ctx||!world||!candidate||!ctx->runtime)return false;
+    /* Actual A6 dispatcher is the sole transaction owner. No external
+     * prepublication callback may confer authority outside its tick. */
+    if(!world->tick_in_progress ||
+       world->tick_owner_context!=ctx->runtime ||
+       candidate->world.tick!=world->tick+1u ||
+       ctx->runtime->physical.world.tick!=world->tick)
+        return false;
     if(!ctx->armed)return true;
     /* Fail closed before physics publication if the bound material target or
      * frame has changed.  This is a staged A5 body, not a client projection.
