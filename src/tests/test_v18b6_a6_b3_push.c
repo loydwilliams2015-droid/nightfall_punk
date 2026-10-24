@@ -1,5 +1,6 @@
 #include "nf_b6_push18b6.h"
 #include "nf_v18c2_h9_auth.h"
+#include <unistd.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -418,6 +419,16 @@ static bool test_h11_owner_capability_prepublication(void){
  CK(nf18b6_push_require_b2(ctx,b2_owned_snapshot,f,
                             NF18B2_M4_MATERIAL_FIRST));
  CK(nf18b6_push_require_h9(ctx));
+ char receipt_path[160];snprintf(receipt_path,sizeof receipt_path,
+   "/tmp/nightfall_h20_receipts_%ld.bin",(long)getpid());
+ remove(receipt_path);
+ CK(nf18b6_push_h20_journal(ctx,receipt_path));
+ CK(nf18a6_bind_world_tick(w,r,NULL,NULL,NULL));
+ CK(nf_c2_lease_acquire(&r->world_lease));
+ CK(!nf18a6_unbind_world_tick(w,r)); /* registered holder blocks teardown */
+ nf_c2_lease_release(&r->world_lease);
+ /* Unbind attempt closes lease; must rebind after fully draining. */
+ CK(nf18a6_unbind_world_tick(w,r));
  CK(nf18a6_bind_world_tick(w,r,NULL,NULL,NULL));
  const NfVec3 probe={1.f,.1f,1.f};
  /* Missing capability: B2 alone never permits physical publication. */
@@ -488,7 +499,19 @@ static bool test_h11_owner_capability_prepublication(void){
   } else CK(!ctx->event.applied);
  }
  CK(positive_contacts>0);
- printf("h18_authorized_real_a4_a5_b3_contacts=%u\\n",positive_contacts);
+ FILE *receipt_file=fopen(receipt_path,"rb");CK(receipt_file!=NULL);
+ uint32_t receipt_fields[7];unsigned recorded=0;
+ while(fread(receipt_fields,sizeof receipt_fields,1,receipt_file)==1){
+  CK(receipt_fields[0]>0&&receipt_fields[1]==10&&receipt_fields[3]>0);
+  CK(receipt_fields[4]>0&&receipt_fields[5]>0);
+  CK(receipt_fields[6]==(receipt_fields[0]^receipt_fields[1]^receipt_fields[2]^
+     receipt_fields[3]^receipt_fields[4]^receipt_fields[5]^0xA5B318C2u));
+  ++recorded;
+ }
+ CK(fclose(receipt_file)==0);
+ CK(recorded==positive_contacts);
+ CK(remove(receipt_path)==0);
+ printf("h20_persisted_a4_a5_b3_receipts=%u\\n",recorded);
  CK(nf18a6_unbind_world_tick(w,r));
  CK(nf18b6_push_detach(ctx,r,w));
  free(f);free(ctx);free(r);free(w);
