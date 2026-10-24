@@ -48,7 +48,11 @@ int main(void){
  NfRetcFrame *other=nf_retc_stage(p,&event,2,0,&obligation,1);CK(other);
  CK(!nf_retc_publish(&publisher,other)); /* stale epoch */
  CK(nf_retc_read(&publisher)==f);free(other);
- other=nf_retc_stage(p,&event,2,1,&obligation,1);CK(other);
+ use.tick=2;use.action_id=92;
+ other=nf_retc_stage_source_push(p,&event,2,1,
+     &use,&decision,&actor,&object,&authority);CK(other);
+ CK(other->has_b2_contract&&other->obligation_count==0);
+ CK(other->b2_actor.inventory==99);
  CK(nf_retc_publish(&publisher,other));
  CK(nf_retc_read(&publisher)->epoch==2);
  CK(nf_retc_read(&publisher)->event.action==92);
