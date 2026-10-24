@@ -25,11 +25,22 @@ static bool valid(NfC2H22Receipt r,const Nf18a5Integrated *p){
   r.a5_samples==p->world.history.raw_samples&&r.b3_receipts&&
   r.b3_receipts<=r.a4_receipts;
 }
+/* Test-only: a child writer terminates at a named publication boundary.
+ * Never enable faults outside isolated NF_CONTACT_LAB_ONLY test builds. */
+static void h28_kill(const char *boundary){
+#ifdef NF_CONTACT_LAB_ONLY
+ const char *requested=getenv("NF_H28_KILL_BOUNDARY");
+ if(requested&&strcmp(requested,boundary)==0)_exit(93);
+#else
+ (void)boundary;
+#endif
+}
 bool nf_c2_h22_save(const char *path,const Nf18a5Integrated *p,NfC2H22Receipt r){
  if(!path||strlen(path)>900||!valid(r,p))return false;
  char phys[1024],temp[1024];
  if(snprintf(phys,sizeof phys,"%s.phystmp",path)>=1024||
     snprintf(temp,sizeof temp,"%s.staging",path)>=1024)return false;
+ h28_kill("before_stage");
  if(!nf18a5_checkpoint(phys,p)){remove(phys);return false;}
  FILE *in=fopen(phys,"rb");if(!in){remove(phys);return false;}
  if(fseek(in,0,SEEK_END)!=0){fclose(in);remove(phys);return false;}
@@ -44,13 +55,17 @@ bool nf_c2_h22_save(const char *path,const Nf18a5Integrated *p,NfC2H22Receipt r)
  if(!ok){free(buf);return false;}
  Header h={0};h.magic=0xC222A5B3u;h.version=1;h.length=(uint32_t)sz;
  h.receipt=r;h.checksum=digest(buf,(size_t)sz,r);
+ h28_kill("after_physical_stage");
  FILE *out=fopen(temp,"wb");
  if(!out){free(buf);return false;}
  ok=fwrite(&h,sizeof h,1,out)==1&&fwrite(buf,1,(size_t)sz,out)==(size_t)sz;
+ if(ok)h28_kill("after_stage_write");
  if(ok)ok=fflush(out)==0&&fsync(fileno(out))==0;
+ if(ok)h28_kill("after_file_sync");
  if(fclose(out)!=0)ok=false;
  free(buf);
  if(ok)ok=rename(temp,path)==0;
+ if(ok)h28_kill("after_rename");
  if(!ok)remove(temp);
  return ok;
 }
