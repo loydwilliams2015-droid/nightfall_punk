@@ -418,3 +418,34 @@ bool nf18b6_push_h26_recover(NfWorld *w,Nf18a6Runtime *runtime,
  push->last_result=NF18B3_OK;
  free(s);return true;
 }
+
+/* A committed composite read is intentionally narrower than a raw A6
+ * snapshot. A durable typed event, live world projection and B3 receipt must
+ * agree; an A6-only physical publish cannot be reported as joint success.
+ * Caller must hold the owner/read lifetime: no concurrent writer contract. */
+bool nf18b6_push_h37_committed_view(const NfWorld *w,
+ const Nf18a6Runtime *r,const Nf18b6Push *p,
+ Nf18a6Snapshot *physical,Nf18b3Event *contract){
+ if(!w||!r||!p||!physical||!contract||p->runtime!=r||
+    !p->h24_envelope_path||w->tick_in_progress||p->armed||
+    p->last_result!=NF18B3_OK||p->receipt_count==0||
+    p->event.phase!=NF18B3_APPLIED||!p->event.applied||
+    p->event.tick!=w->tick||r->physical.world.tick!=w->tick)return false;
+ Nf18a5Integrated *saved=malloc(sizeof *saved);
+ Nf18b3Event accepted={0};
+ if(!saved)return false;
+ const bool valid=nf_c2_h23_restore_full(p->h24_envelope_path,saved,&accepted)&&
+    accepted.action==p->event.action&&accepted.actor==p->event.actor&&
+    accepted.object==p->event.object&&accepted.tick==p->event.tick&&
+    accepted.contract_epoch==p->event.contract_epoch&&
+    saved->world.tick==w->tick&&
+    saved->committed_receipts==r->physical.committed_receipts&&
+    saved->world.history.raw_samples==r->physical.world.history.raw_samples&&
+    p->receipts[p->receipt_count-1].action==accepted.action&&
+    p->receipts[p->receipt_count-1].tick==accepted.tick;
+ free(saved);
+ if(!valid)return false;
+ const Nf18a6Snapshot view=nf18a6_snapshot(r,w);
+ if(view.actor_id!=accepted.actor||view.tick!=accepted.tick)return false;
+ *physical=view;*contract=accepted;return true;
+}
