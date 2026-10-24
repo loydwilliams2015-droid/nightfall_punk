@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 /* Reconstruct the B2 material/geometry/pose proof from the existing A6
@@ -325,4 +326,46 @@ bool nf18b6_push_detach(Nf18b6Push *ctx,Nf18a6Runtime *r,const NfWorld *w){
     memset(&r->owner_hooks,0,sizeof r->owner_hooks);
     ctx->runtime=NULL;
     return true;
+}
+
+/* H26 restore is permitted only on a quiescent, unbound A6 owner and exactly
+ * one prior authoritative world frame. All validation precedes mutation. */
+bool nf18b6_push_h26_recover(NfWorld *w,Nf18a6Runtime *runtime,
+ Nf18b6Push *push,const char *path){
+ if(!w||!runtime||!push||!path||w->tick_owner||w->tick_in_progress||
+    runtime->owner_hooks.context!=push||
+    push->runtime!=runtime||push->armed||
+    runtime->object_collider_index>=w->collider_count)return false;
+ Nf18a5Integrated *s=malloc(sizeof *s);
+ Nf18b3Event event={0};
+ if(!s)return false;
+ bool ok=nf_c2_h23_restore_full(path,s,&event);
+ if(ok)ok=s->world.tick==w->tick+1u&&
+  runtime->last_commit_tick==w->tick&&
+  s->actor.id==runtime->actor_id&&
+  s->object.id==runtime->physical.object.id&&
+  event.contract_epoch==push->contract_epoch&&
+  push->receipt_count<NF18B6_PUSH_RECEIPTS&&
+  nf18a4_body_valid(&s->actor)&&nf18a4_body_valid(&s->object);
+ NfActor *actor=ok?nf_world_find_actor(w,runtime->actor_id):NULL;
+ if(!actor)ok=false;
+ if(!ok){free(s);return false;}
+ runtime->physical=*s;
+ NfCollider *collider=&w->colliders[runtime->object_collider_index];
+ collider->previous_min=collider->min;collider->previous_max=collider->max;
+ collider->min=(NfVec3){s->object.center.x-s->object.box_half.x,
+ s->object.center.y-s->object.box_half.y,s->object.center.z-s->object.box_half.z};
+ collider->max=(NfVec3){s->object.center.x+s->object.box_half.x,
+ s->object.center.y+s->object.box_half.y,s->object.center.z+s->object.box_half.z};
+ actor->transform.position=(NfVec3){s->actor.center.x,
+ s->actor.center.y-s->actor.height*.5f,s->actor.center.z};
+ actor->transform.velocity=s->actor.velocity;
+ actor->movement.body_height=s->actor.height;
+ actor->movement.grounded=true;
+ w->tick=s->world.tick;runtime->last_commit_tick=s->world.tick;
+ push->event=event;
+ push->receipts[push->receipt_count++]=(Nf18b6PushReceipt){
+ event.actor,event.action,event.tick};
+ push->last_result=NF18B3_OK;
+ free(s);return true;
 }
