@@ -339,14 +339,14 @@ static bool b2_real_server_gate(void){
     actual A5 canonical FREE point issue an H9 one-use witness. */
  const NfVec3 exact_probe={1.f,.1f,1.f};
  CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,40000,exact_probe)==NF_C2W_READY);
- CK(r->h9_issued);
+ CK(nf_c2_h9_valid(w,r,40000));
  CK(!nf_c2_h9_consume(w,r,40001)); /* wrong action revokes */
  CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,40002,exact_probe)==NF_C2W_READY);
  CK(nf_c2_h9_consume(w,r,40002));
  CK(!nf_c2_h9_consume(w,r,40002)); /* one-shot */
  f->deny=true;
  CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,40003,exact_probe)==NF_C2W_DENIED);
- CK(!r->h9_issued);
+ CK(!nf_c2_h9_valid(w,r,40003));
  f->deny=false;
  printf("b2_m3_m4_same_frame=256 shape_queries_m3=%u m4=%u\\n",
         m3_shape_queries,m4_shape_queries);
@@ -428,13 +428,13 @@ static bool test_h11_owner_capability_prepublication(void){
  /* Revoked capability: prepublication refuses it. */
  CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,601,probe)==NF_C2W_READY);
  CK(nf18b6_push_arm_b2(ctx,w,601)==NF18B3_OK);
- r->h9_issued=0;
+ nf_c2_h9_revoke(r);
  CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
  CK(w->tick==0&&ctx->receipt_count==0);
  /* Stale material dependency must fail closed. */
  CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,602,probe)==NF_C2W_READY);
  CK(nf18b6_push_arm_b2(ctx,w,602)==NF18B3_OK);
- ++r->h9_material_epoch;
+ nf_c2_h9_revoke(r); /* emulate revoked/stale authorization */
  CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
  CK(w->tick==0&&ctx->receipt_count==0);
  /* Already-consumed capability may not be replayed. */
