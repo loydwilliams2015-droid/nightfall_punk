@@ -508,6 +508,11 @@ static bool test_h11_owner_capability_prepublication(void){
    CK(ctx->staged_commit_valid);
    CK(ctx->staged_commit.action==ctx->event.action);
    CK(ctx->staged_commit.tick==ctx->event.tick);
+   Nf18a6Snapshot accepted_world={0};Nf18b3Event accepted_contract={0};
+   CK(nf18b6_push_h37_committed_view(w,r,ctx,
+      &accepted_world,&accepted_contract));
+   CK(accepted_world.tick==w->tick&&
+      accepted_contract.action==ctx->event.action);
    ++positive_contacts;
   } else CK(!ctx->event.applied);
  }
