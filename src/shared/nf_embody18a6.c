@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <unistd.h>
 #include "nf_embody18a6.h"
 #include "nf_v18c2_h9_auth.h"
 #include "nf_movement.h"
