@@ -512,6 +512,7 @@ static bool test_h11_owner_capability_prepublication(void){
    CK(nf18b6_push_h37_committed_view(w,r,ctx,
       &accepted_world,&accepted_contract));
    CK(ctx->published_epoch==w->tick);
+   CK(r->joint_commit_epoch==ctx->published_epoch);
    CK(accepted_world.tick==w->tick&&
       accepted_contract.action==ctx->event.action);
    ++positive_contacts;
