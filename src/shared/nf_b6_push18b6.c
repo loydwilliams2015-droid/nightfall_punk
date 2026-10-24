@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "nf_b6_push18b6.h"
 #include "nf_v18c2_h9_auth.h"
 #include <string.h>
@@ -166,6 +167,7 @@ static void finish(const NfWorld *world,const Nf18a6Outcome *out,void *arg){
     ctx->receipts[ctx->receipt_count++]=(Nf18b6PushReceipt){
         ctx->event.actor,ctx->event.action,ctx->event.tick};
     if(ctx->h20_receipt_journal){
+        const Nf18a6Runtime *runtime=ctx->runtime;
         /* Evidence after actual A6 physical publication and B3 realization.
            Not crash-atomic with the A5 WAL; failure leaves an open gate. */
         const uint32_t fields[7]={
