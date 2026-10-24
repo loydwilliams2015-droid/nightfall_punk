@@ -392,6 +392,7 @@ static NfWorldTickStatus nf18a6_tick_dispatch(NfWorld *world,float dt,void *cont
     if(nf_world_active_actor_count(world)!=1u){nf_c2_lease_release(&runtime->world_lease);return NF_WORLD_TICK_REJECTED;}
     const NfActor *actor=nf_world_find_actor_const(world,runtime->actor_id);
     if(!actor){nf_c2_lease_release(&runtime->world_lease);return NF_WORLD_TICK_REJECTED;}
+    atomic_store_explicit(&runtime->joint_publication_active,true,memory_order_release);
     const uint32_t candidate_tick=(uint32_t)(world->tick+1u);
     Nf18a6TickTrace trace={0};
     trace.tick=candidate_tick;trace.target_id=runtime->physical.object.id;
@@ -422,6 +423,7 @@ static NfWorldTickStatus nf18a6_tick_dispatch(NfWorld *world,float dt,void *cont
     }
     trace.world_status=status;
     runtime->tick_trace=trace;
+    atomic_store_explicit(&runtime->joint_publication_active,false,memory_order_release);
     nf_c2_lease_release(&runtime->world_lease);
     return status;
 }

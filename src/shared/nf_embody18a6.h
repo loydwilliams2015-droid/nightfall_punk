@@ -51,6 +51,7 @@ typedef struct Nf18a6Runtime {
     Nf18a5Integrated physical;
     NfCameraState camera;
     uint32_t last_commit_tick;
+    atomic_bool joint_publication_active; /* owner tick visibility exclusion */
     uint32_t joint_commit_epoch; /* owner-controlled A6/B3 completed transaction */
     uint32_t actor_id;
     uint32_t object_collider_index; /* NfWorld material/weapon geometry mirror */
