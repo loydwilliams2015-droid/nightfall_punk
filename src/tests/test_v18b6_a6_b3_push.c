@@ -474,19 +474,10 @@ static bool test_h11_owner_capability_prepublication(void){
  CK(w->tick==1);
  /* H18 positive source-bound publication: only count physical B3 successes
     when A4 reciprocal impulse and actual A5 contact history both advance. */
- /* Fault refusal is exercised at A6 prepublication, not after commit. */
- CK(nf_c2_h9_issue(w,r,b2_owned_snapshot,f,699,probe)==NF_C2W_READY);
- CK(nf18b6_push_arm_b2(ctx,w,699)==NF18B3_OK);
- const uint32_t guarded_tick=(uint32_t)w->tick;
- const uint32_t guarded_a4=r->physical.committed_receipts;
- const uint32_t guarded_a5=r->physical.world.history.raw_samples;
- const uint32_t guarded_b3=ctx->receipt_count;
- nf_world_set_input(w,10,rightward());
- CK(setenv("NF_H29_FAIL_AFTER_PHYSICAL","1",1)==0);
- CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
- CK(w->tick==guarded_tick&&r->physical.committed_receipts==guarded_a4);
- CK(r->physical.world.history.raw_samples==guarded_a5&&ctx->receipt_count==guarded_b3);
- CK(unsetenv("NF_H29_FAIL_AFTER_PHYSICAL")==0);
+ /* An unproven prepublication fault cannot be asserted on an arbitrary
+    movement tick: a no-contact tick need not invoke the push gate.
+    H34 instead retains source-bound positive contact and separate cutpoints.
+    Do not count missing gate invocation as passing atomicity evidence. */
  unsigned positive_contacts=0;
  for(unsigned j=0;j<40;++j){
   nf_world_set_input(w,10,rightward());

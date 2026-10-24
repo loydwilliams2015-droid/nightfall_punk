@@ -385,6 +385,9 @@ bool nf18b6_push_h26_recover(NfWorld *w,Nf18a6Runtime *runtime,
   event.world_epoch==(uint32_t)w->tick&&
   event.contract_epoch==push->contract_epoch&&
   event.phase==NF18B3_APPLIED&&event.authorized&&event.applied&&
+  event.actor==s->actor.id&&event.object==s->object.id&&
+  s->committed_receipts>runtime->physical.committed_receipts&&
+  s->world.history.raw_samples>runtime->physical.world.history.raw_samples&&
   nf18a4_body_valid(&s->actor)&&nf18a4_body_valid(&s->object);
  NfActor *actor=ok?nf_world_find_actor(w,runtime->actor_id):NULL;
  if(!actor)ok=false;
