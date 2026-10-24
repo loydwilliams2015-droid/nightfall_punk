@@ -252,6 +252,10 @@ if(NF_CONTACT_LAB_ONLY)
     nf_project_warnings(nightfall_v18c2_h31_outer_cuts_test)
     add_test(NAME h31_outer_publication_cutpoints_v18c2
              COMMAND nightfall_v18c2_h31_outer_cuts_test $<TARGET_FILE:nightfall_v18b6_h31_fault_writer>)
+    add_executable(nightfall_v18c2_retc_frame_test src/tests/test_v18c2_retc_frame.c)
+    target_link_libraries(nightfall_v18c2_retc_frame_test PRIVATE nightfall_embody_h1)
+    nf_project_warnings(nightfall_v18c2_retc_frame_test)
+    add_test(NAME retc_immutable_joint_frame_v18c2 COMMAND nightfall_v18c2_retc_frame_test)
     # Normal build forbids the two controls that bypass world embodiment.
     add_library(nightfall_embody_prod STATIC ${NF_EMBODY_SHARED} src/client/nf_camera.c)
     target_include_directories(nightfall_embody_prod PUBLIC src/shared src/client)
