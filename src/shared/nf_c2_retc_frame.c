@@ -25,6 +25,26 @@ NfRetcFrame *nf_retc_stage(const Nf18a5Integrated *p,
  f->derived_contract_hash=digest(event->action,event->contract_epoch,n);
  return f;
 }
+bool nf_retc_bind_b2(NfRetcFrame *f,
+ const Nf18b2Use *u,const Nf18b2UseDecision *d,
+ const Nf18b2Actor *a,const Nf18b2Object *o,
+ const Nf18b2Authority *auth){
+ if(!f||!u||!d||!a||!o||!auth||f->has_b2_contract||
+    d->status!=NF18B2_ELIGIBLE||d->physical!=NF18B2_ELIGIBLE||
+    d->contract!=NF18B2_ELIGIBLE||u->actor_id!=f->owner_actor||
+    u->object_id!=f->object_id||u->action_id!=f->event.action||
+    u->tick!=f->epoch||u->actor_revision!=a->revision||
+    u->object_revision!=o->revision||a->id!=u->actor_id||
+    o->id!=u->object_id||auth->publishing||
+    auth->receipt_count>64u)return false;
+ /* A B2 witness and bounded replay authority are a minimum: do not infer
+    full world ownership or future contract consequences from eligibility. */
+ f->b2_use=*u;f->b2_decision=*d;f->b2_actor=*a;
+ f->b2_object=*o;f->b2_authority=*auth;f->has_b2_contract=true;
+ f->derived_contract_hash=digest(f->event.action,f->event.contract_epoch,
+     f->obligation_count^u->object_revision^a->credentials^a->inventory);
+ return true;
+}
 bool nf_retc_publish(NfRetcPublisher *pub,NfRetcFrame *f){
  if(!pub||!f||pub->count>=NF_RETC_HISTORY)return false;
  const NfRetcFrame *prior=atomic_load_explicit(&pub->current,memory_order_acquire);
