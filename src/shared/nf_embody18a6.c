@@ -61,6 +61,7 @@ bool nf18a6_init(Nf18a6Runtime *r,NfWorld *w,NfEntityId id,
     memset(r,0,sizeof(*r));
     atomic_flag_clear(&r->auth_lifecycle_lock);
     atomic_init(&r->auth_shutdown,false);
+    nf_c2_lease_init(&r->world_lease);
     r->object_collider_index=(uint32_t)collider;
     nf18a5_integrated_init(&r->physical,cap,body,object);
     r->actor_id=id;r->model=(uint32_t)model;
@@ -372,10 +373,11 @@ Nf18a6TickTrace nf18a6_classify_tick(uint32_t tick,uint32_t red_target,
 static NfWorldTickStatus nf18a6_tick_dispatch(NfWorld *world,float dt,void *context){
     Nf18a6Runtime *runtime=(Nf18a6Runtime *)context;
     if(!world||!runtime)return NF_WORLD_TICK_INVALID;
+    if(!nf_c2_lease_acquire(&runtime->world_lease))return NF_WORLD_TICK_REJECTED;
     /* No remote actor is silently starved by a one-actor lab scheduler. */
-    if(nf_world_active_actor_count(world)!=1u)return NF_WORLD_TICK_REJECTED;
+    if(nf_world_active_actor_count(world)!=1u){nf_c2_lease_release(&runtime->world_lease);return NF_WORLD_TICK_REJECTED;}
     const NfActor *actor=nf_world_find_actor_const(world,runtime->actor_id);
-    if(!actor)return NF_WORLD_TICK_REJECTED;
+    if(!actor){nf_c2_lease_release(&runtime->world_lease);return NF_WORLD_TICK_REJECTED;}
     const uint32_t candidate_tick=(uint32_t)(world->tick+1u);
     Nf18a6TickTrace trace={0};
     trace.tick=candidate_tick;trace.target_id=runtime->physical.object.id;
@@ -406,6 +408,7 @@ static NfWorldTickStatus nf18a6_tick_dispatch(NfWorld *world,float dt,void *cont
     }
     trace.world_status=status;
     runtime->tick_trace=trace;
+    nf_c2_lease_release(&runtime->world_lease);
     return status;
 }
 bool nf18a6_bind_world_tick(NfWorld *world,Nf18a6Runtime *runtime,
@@ -416,6 +419,7 @@ bool nf18a6_bind_world_tick(NfWorld *world,Nf18a6Runtime *runtime,
        world->tick!=runtime->last_commit_tick||
        !nf_world_find_actor_const(world,runtime->actor_id))return false;
     if(!nf_world_bind_tick_owner(world,nf18a6_tick_dispatch,runtime))return false;
+    nf_c2_lease_init(&runtime->world_lease);
     atomic_store(&runtime->auth_shutdown,false);
     runtime->tick_provider=provider;
     runtime->tick_provider_context=context;
@@ -424,8 +428,12 @@ bool nf18a6_bind_world_tick(NfWorld *world,Nf18a6Runtime *runtime,
     return true;
 }
 bool nf18a6_unbind_world_tick(NfWorld *world,Nf18a6Runtime *runtime){
-    if(!world||!runtime||
-       !nf_world_unbind_tick_owner(world,nf18a6_tick_dispatch,runtime))return false;
+    if(!world||!runtime||world->tick_in_progress||
+       world->tick_owner_context!=runtime)return false;
+    nf_c2_lease_close(&runtime->world_lease);
+    /* Owner must retry after outstanding users exit; never free active state. */
+    if(!nf_c2_lease_drained(&runtime->world_lease))return false;
+    if(!nf_world_unbind_tick_owner(world,nf18a6_tick_dispatch,runtime))return false;
     nf_c2_h9_owner_destroy(runtime);
     runtime->tick_provider=NULL;
     runtime->tick_provider_context=NULL;
