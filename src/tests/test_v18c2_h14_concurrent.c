@@ -40,6 +40,8 @@ int main(void){
  /* World mutation/destruction is permitted only AFTER worker joins.
     Authorization shutdown above does not mutate the shared world. */
  if(w->tick!=0||r->physical.world.tick!=0)return 13;
+ /* Lifetime policy: no active world teardown while authorization workers
+    hold references; after join the owner can unbind safely. */
  /* Destruction is permitted only AFTER all worker threads are joined.
     A6 unbinding during active tick is rejected by existing owner API. */
  w->tick_in_progress=true;
