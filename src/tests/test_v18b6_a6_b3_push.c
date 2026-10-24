@@ -481,6 +481,7 @@ static bool test_h11_owner_capability_prepublication(void){
  const uint32_t guarded_a4=r->physical.committed_receipts;
  const uint32_t guarded_a5=r->physical.world.history.raw_samples;
  const uint32_t guarded_b3=ctx->receipt_count;
+ nf_world_set_input(w,10,rightward());
  CK(setenv("NF_H29_FAIL_AFTER_PHYSICAL","1",1)==0);
  CK(nf_world_step_checked(w,1.f/60.f)!=NF_WORLD_TICK_COMMITTED);
  CK(w->tick==guarded_tick&&r->physical.committed_receipts==guarded_a4);
