@@ -40,9 +40,13 @@ int main(void){
  CK(nf18b6_push_attach(push,runtime,world,7));
  CK(nf18b6_push_h26_recover(world,runtime,push,path));
  CK(world->tick==1&&runtime->last_commit_tick==1);
+ CK(runtime->last_hash==0&&runtime->tick_trace.tick==0);
  CK(push->receipt_count==1&&push->event.action==91&&
     push->event.phase==NF18B3_APPLIED&&push->last_result==NF18B3_OK);
  CK(!nf18b6_push_h26_recover(world,runtime,push,path)); /* replay */
+ CK(nf18a6_bind_world_tick(world,runtime,NULL,NULL,NULL));
+ CK(!nf18b6_push_h26_recover(world,runtime,push,path)); /* active owner */
+ CK(nf18a6_unbind_world_tick(world,runtime));
  free(push);
  /* A crash before publication is denied, not fabricated. */
  CK(remove(path)==0);
