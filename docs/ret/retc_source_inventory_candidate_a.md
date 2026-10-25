@@ -69,3 +69,9 @@ Verified primary source paths:
 **Must not claim** full contractual realizers exist: B2 eligibility grants neither ownership nor an inventory delta. B3 `nf18b3_realize` sets an event phase only after a material receipt callback, but currently does not produce a complete ownership/inventory/contract journal. PUSH physical evidence can be staged; debit/transfer/repair/interruption semantics need explicit independently verified source-backed realization.
 
 **Replacement gate (not implemented):** A6 owner must pass *one* prepared `NfRetcFrame` with B2/B3 consequences and complete A6 world projections to an A6-owned durable commit writer; successful durable decision must precede *one* published frame pointer, and former A5/B3 mutable publications must cease being authoritative. Reader APIs must return leased immutable frame data, including network, AI, camera and server logic. Do not run whole-world crash matrix until this is true.
+
+## A6 owner convergence seam — current implementation
+- The real A6 prepublication gate now invokes `owner_hooks.accept_candidate` over its exact private A5 candidate **after** geometry/B3 prepublication validation but **before** A5 checkpoint and physical publication.
+- The B6 PUSH adapter binds `accept_candidate` and rejects contact-producing joint-envelope candidates unless the staged B3 record is applied, identity-consistent and tick-aligned. Legacy non-envelope mode remains unchanged and is explicitly **not** joint authority.
+- This closes a prepublication ordering check, but **does not implement** the accepted immutable `NfRetcFrame` as the authoritative A6 world publisher. A5 still writes its own snapshot and B3 finish still changes live state. No single immutable journal record containing all B2/B3 rights exists.
+- CI and source-exact regression results are required before even the narrower owner-seam change is eligible for acceptance. Whole-world crash/replay/continued-tick matrix remains deferred.
