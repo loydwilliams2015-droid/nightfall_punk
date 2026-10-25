@@ -65,3 +65,30 @@ NfRetcFrame *nf_retc_joint_stage_owned(const NfWorld *w,
  derived.authority=authority;
  return nf_retc_joint_stage(w,p,&derived);
 }
+
+/* Exclusive owner binding deliberately supplies no independent finish hook:
+   only a future accepted-frame projector may update B2/B3 live state. */
+bool nf_retc_joint_attach(NfWorld *w,NfRetcJointContext *j){
+ if(!w||!j||!j->owner||!j->encounter||!j->push||
+    !j->owner->retc_publisher||!j->owner->retc_journal||
+    w->tick_in_progress||w->tick_owner_context!=j->owner||
+    j->encounter->world!=w||j->encounter->owner!=j->owner||
+    j->push->runtime!=j->owner||
+    j->owner->owner_hooks.context||
+    j->owner->owner_hooks.begin||j->owner->owner_hooks.prepublish||
+    j->owner->owner_hooks.accept_candidate||
+    j->owner->owner_hooks.stage_joint||
+    j->owner->owner_hooks.finish||
+    j->encounter->attached)return false;
+ j->owner->owner_hooks.stage_joint=nf_retc_joint_stage_owned;
+ j->owner->owner_hooks.context=j;
+ return true;
+}
+bool nf_retc_joint_detach(NfWorld *w,NfRetcJointContext *j){
+ if(!w||!j||!j->owner||w->tick_in_progress||
+    w->tick_owner_context!=j->owner||
+    j->owner->owner_hooks.context!=j||
+    j->owner->owner_hooks.stage_joint!=nf_retc_joint_stage_owned)return false;
+ j->owner->owner_hooks=(Nf18a6OwnerHooks){0};
+ return true;
+}
