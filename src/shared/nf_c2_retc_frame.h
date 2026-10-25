@@ -5,6 +5,7 @@
 #include "nf_contact18a5_close.h"
 #include "nf_interact18b3.h"
 #include "nf_eligibility18b2.h"
+#include "nf_encounter18b2.h"
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -25,6 +26,9 @@ typedef struct NfRetcFrame {
  Nf18b2Object b2_object;
  Nf18b2Authority b2_authority;
  bool has_b2_contract;
+ /* Exact source-backed encounter ledger: staged ownership, balances and object state. */
+ Nf18b2Registry encounter_registry;
+ bool has_encounter_registry;
  uint32_t obligation_count;
  NfRetcObligation obligations[NF_RETC_OBLIGATIONS];
  uint32_t derived_actor_hash,derived_contract_hash;
@@ -47,6 +51,8 @@ bool nf_retc_bind_b2(NfRetcFrame *candidate,
 /* Source-derived transition seal, before publication: preserve pre-commit
  * authority, reject unsupported debit/transfer claims rather than infer them. */
 bool nf_retc_seal_b2_b3(NfRetcFrame *candidate);
+bool nf_retc_bind_encounter(NfRetcFrame *candidate,
+ const Nf18b2EncounterRuntime *encounter);
 /* Bounded source-backed PUSH realizer: construct the accepted typed B2/B3
  * candidate without producing independent physical/contractual side effects. */
 NfRetcFrame *nf_retc_stage_source_push(
