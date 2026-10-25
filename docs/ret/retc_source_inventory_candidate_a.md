@@ -75,3 +75,9 @@ Verified primary source paths:
 - The B6 PUSH adapter binds `accept_candidate` and rejects contact-producing joint-envelope candidates unless the staged B3 record is applied, identity-consistent and tick-aligned. Legacy non-envelope mode remains unchanged and is explicitly **not** joint authority.
 - This closes a prepublication ordering check, but **does not implement** the accepted immutable `NfRetcFrame` as the authoritative A6 world publisher. A5 still writes its own snapshot and B3 finish still changes live state. No single immutable journal record containing all B2/B3 rights exists.
 - CI and source-exact regression results are required before even the narrower owner-seam change is eligible for acceptance. Whole-world crash/replay/continued-tick matrix remains deferred.
+
+## B2 encounter authority and RET-C compilation gate
+- `src/shared/nf_encounter18b2.c:nf18b2_attach` assigns its own `Nf18a6OwnerHooks` and `finish` mutates encounter receipt counts and transitions after the owner tick. This is an **additional contractual authority/publication path** independent of the B6 PUSH adapter.
+- Adding a positional field to `Nf18a6OwnerHooks` broke the encounter initializer, caught by strict Clang/GCC CI at prior source SHA `229186685388ea9a2a037087f3da6468c6435e36`. The initializer now uses designated members, avoiding silent ABI misbinding.
+- Full Candidate A requires migrating **both** the B6 PUSH owner and the B2 encounter owner to one owner-prepared frame contract; current implementation has not done so.
+- Do not claim source-access inventory complete, world reader isolation, or a durable authoritative frame decision until source-wide owner/call-site audit and exact-source CI acceptance.
