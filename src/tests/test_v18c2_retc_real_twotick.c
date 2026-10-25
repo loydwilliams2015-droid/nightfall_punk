@@ -55,9 +55,9 @@ int main(void){
  Nf18b2Object object={0};
  object.id=2010;object.revision=1;object.cell_id=1;
  object.nexus_id=1;object.slot_id=1;object.capacity=1;
- /* Interaction point sits just outside the actor-facing crate surface;
+ /* Interaction point sits on the actor-facing crate surface;
     the crate center is materially occluded and must not be used as a handle. */
- object.target=(NfVec3){crate.center.x-crate.box_half.x-.01f,crate.center.y,crate.center.z};
+ object.target=(NfVec3){crate.center.x-crate.box_half.x,crate.center.y,crate.center.z};
  object.max_reach=3.f;object.preconditions=1;
  CHECK(nf18b2_register_object(enc,object,r->physical.world.grid.global_revision,0,0));
  const char *journal="/tmp/nightfall_retc_real_twotick.bin";
