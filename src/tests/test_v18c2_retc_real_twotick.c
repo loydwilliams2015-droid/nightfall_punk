@@ -71,6 +71,8 @@ int main(void){
  CHECK(nf_retc_joint_attach(w,&joint));
  for(uint32_t tick=1;tick<=2;++tick){
    const uint32_t action=90u+tick;
+   /* A6 publisher requires a strictly increasing transaction identity. */
+   joint.transaction_id=tick;
    const Nf18b2Status proposed=nf18b2_propose(
      enc,(Nf18b2Intent){10,2010,action,NF18B2_PUSH});
    if(proposed!=NF18B2_ELIGIBLE){
