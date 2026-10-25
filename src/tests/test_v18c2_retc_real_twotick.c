@@ -72,6 +72,18 @@ int main(void){
    if(proposed!=NF18B2_ELIGIBLE){
      const Nf18b2EncounterTrace *trace=enc->trace_count?
        &enc->traces[enc->trace_count-1]:NULL;
+     const Nf18b2Actor *sample=&enc->frame.actors[0];
+     const Nf18a2ShapePolicy shape={sample->radius,sample->height,0,0,1};
+     const bool geometry_clear=nf18a3_capsule_clear(enc->frame.scene.geometry,
+         sample->feet,shape);
+     const Nf18a5Query material_body=nf18a5_sweep_query(
+         &r->physical.world.grid,sample->feet,(NfVec3){0,0,0},
+         shape,1,(uint32_t)w->tick+1,NULL,NULL,NULL);
+     fprintf(stderr,
+       "RET-C B2 body probe: radius=%.3f height=%.3f geometry_clear=%d material_query=%d solids=%zu material_epoch=%u\\n",
+       sample->radius,sample->height,(int)geometry_clear,
+       (int)material_body,enc->frame.scene.geometry.solid_count,
+       r->physical.world.grid.global_revision);
      fprintf(stderr,
        "RET-C B2 proposal tick=%u status=%d reason=%d physical=%d contract=%d queue=%zu traces=%zu actor=(%.3f,%.3f,%.3f) target=(%.3f,%.3f,%.3f)\\n",
        tick,(int)proposed,trace?(int)trace->authorization.reason:-1,
