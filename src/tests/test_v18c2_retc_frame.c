@@ -69,6 +69,7 @@ int main(void){
  joint.decision=decision;joint.actor=actor;joint.object=object;
  joint.authority=authority;joint.transaction_id=1;
  owner->retc_publisher=&publisher;
+ owner->retc_journal="/tmp/nightfall_retc_joint_owner_test.bin";
  encounter->prepared=0;
  CK(nf_retc_joint_stage(live,&f->physical,&joint)==NULL); /* unprepared */
  encounter->prepared=1;
