@@ -154,7 +154,7 @@ static NfRetcFrame *joint_stage_checked(const NfWorld *w,
  if(j->push->event.actor!=candidate->actor.id){fprintf(stderr,"RET-C joint_stage_checked predicate 11: j->push->event.actor!=candidate->actor.id\n");return NULL;}
  if(j->push->event.object!=candidate->object.id){fprintf(stderr,"RET-C joint_stage_checked predicate 12: j->push->event.object!=candidate->object.id\n");return NULL;}
  if(j->push->event.contract_epoch!=j->encounter->staged.contract_epoch){fprintf(stderr,"RET-C joint_stage_checked predicate 13: j->push->event.contract_epoch!=j->encounter->staged.contract_epoch\n");return NULL;}
- if(candidate->committed_receipts<=j->push->before_contacts){fprintf(stderr,"RET-C joint_stage_checked predicate 14: candidate->committed_receipts<=j->push->before_contacts\n");return NULL;}
+ if(candidate->committed_receipts<=j->push->before_contacts){fprintf(stderr,"RET-C receipt gate: candidate=%u before=%u samples=%u before_samples=%u tick=%u\n",candidate->committed_receipts,j->push->before_contacts,candidate->world.history.raw_samples,j->push->before_history,candidate->world.tick);return NULL;}
  if(candidate->world.history.raw_samples<=j->push->before_history){fprintf(stderr,"RET-C joint_stage_checked predicate 15: candidate->world.history.raw_samples<=j->push->before_history\n");return NULL;}
  /* Prepare, never realize: no independent B3 finish or secondary WAL. */
  const Nf18b3Event prior=j->push->staged_commit;
