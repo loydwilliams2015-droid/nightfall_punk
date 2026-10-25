@@ -75,6 +75,23 @@ int main(void){
  NfRetcFrame *combined=nf_retc_joint_stage(live,&f->physical,&joint);
  CK(combined&&combined->has_b2_contract&&combined->has_encounter_registry);
  CK(combined->encounter_registry.accounts[0].balance==1000);
+ /* The owner-derived API rejects missing actual encounter grant state. */
+ CK(!nf_retc_joint_stage_owned(live,&f->physical,&joint));
+ encounter->queue_count=1;encounter->granted[0]=1;
+ encounter->queue[0].intent=(Nf18b2Intent){10,2010,91,NF18B2_PUSH};
+ encounter->queue[0].witness=joint.use;
+ encounter->queue[0].trace_index=0;encounter->trace_count=1;
+ encounter->traces[0].revalidation=decision;
+ encounter->frame.scene.actor_count=1;
+ encounter->frame.scene.object_count=1;
+ encounter->frame.scene.actors=&encounter->frame.actors[0];
+ encounter->frame.scene.objects=&encounter->frame.objects[0];
+ encounter->frame.actors[0]=actor;encounter->frame.objects[0]=object;
+ NfRetcFrame *owned=nf_retc_joint_stage_owned(live,&f->physical,&joint);
+ CK(owned&&owned->has_encounter_registry&&owned->b2_actor.id==10);
+ free(owned);
+ encounter->queue[0].intent.action_id=999;
+ CK(!nf_retc_joint_stage_owned(live,&f->physical,&joint)); /* forged action */
  push.staged_commit_valid=false;
  CK(!nf_retc_joint_stage(live,&f->physical,&joint)); /* missing B3 */
  free(combined);free(live);
