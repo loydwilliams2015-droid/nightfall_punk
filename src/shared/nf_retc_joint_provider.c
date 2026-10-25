@@ -50,7 +50,8 @@ NfRetcFrame *nf_retc_joint_stage_owned(const NfWorld *w,
     t->revalidation.contract!=NF18B2_ELIGIBLE||
     q->intent.actor_id!=e->actor||q->intent.object_id!=e->object||
     q->intent.action_id!=e->action||q->witness.tick!=p->world.tick||
-    q->witness.world_revision!=p->world.revision||
+    q->witness.world_revision==UINT32_MAX||
+    q->witness.world_revision+1u!=p->world.revision||
     q->witness.material_epoch!=p->world.grid.global_revision||
     j->encounter->frame.scene.actors[0].id!=e->actor||
     j->encounter->frame.scene.objects[0].id!=e->object)return NULL;
