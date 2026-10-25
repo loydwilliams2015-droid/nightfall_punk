@@ -264,6 +264,7 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
                joint->prior_epoch!=(prior?prior->epoch:0u)||
                joint->epoch!=joint->prior_epoch+1u||
                (prior&&joint->transaction_id<=prior->transaction_id)){
+                fprintf(stderr,"RET-C A6 preflight tick=%u count=%u prior=%u joint_prior=%u joint_epoch=%u tx=%u prior_tx=%u\\n",tick,r->retc_publisher->count,prior?prior->epoch:0u,joint->prior_epoch,joint->epoch,joint->transaction_id,prior?prior->transaction_id:0u);
                 free(joint);return outcome(NF18A6_UNSUPPORTED,r);
             }
             /* The complete frame is accepted once, before deriving the
