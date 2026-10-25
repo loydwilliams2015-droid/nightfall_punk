@@ -63,15 +63,29 @@ static Nf18b2Status b2_check(Nf18b6Push *ctx,const NfWorld *w,uint32_t tick){
     if(scene.geometry.solid_count>NF_MAX_COLLIDERS||
        (scene.geometry.solid_count&&!scene.geometry.solids))
         return NF18B2_INVALID;
+    /* Accept the two documented trusted snapshot projections: full live
+       geometry (including A6 crate) and static-only B2 provider snapshots.
+       The ordered static sequence must match world authority exactly. */
     size_t solid_count=0;
     for(size_t i=0;i<w->collider_count;++i){
         const NfCollider *wc=&w->colliders[i];
         if(wc->kind==NF_COLLIDER_LADDER)continue;
+        if(i==r->object_collider_index){
+            if(solid_count<scene.geometry.solid_count &&
+               scene.geometry.solids[solid_count].body_id==(uint32_t)i+100000u){
+                const Nf18aCollider *c=&scene.geometry.solids[solid_count++];
+                if(!c->dynamic_body||
+                   c->min.x!=wc->min.x||c->min.y!=wc->min.y||
+                   c->min.z!=wc->min.z||c->max.x!=wc->max.x||
+                   c->max.y!=wc->max.y||c->max.z!=wc->max.z)
+                    return NF18B2_STALE;
+            }
+            continue;
+        }
+        if(wc->kind!=NF_COLLIDER_SOLID)continue;
         if(solid_count>=scene.geometry.solid_count)return NF18B2_STALE;
         const Nf18aCollider *c=&scene.geometry.solids[solid_count++];
-        if(c->body_id!=(uint32_t)i+100000u||
-           c->dynamic_body!=(i==r->object_collider_index||
-                             wc->kind==NF_COLLIDER_MOVING_PLATFORM)||
+        if(c->body_id!=(uint32_t)i+100000u||c->dynamic_body||
            c->min.x!=wc->min.x||c->min.y!=wc->min.y||
            c->min.z!=wc->min.z||c->max.x!=wc->max.x||
            c->max.y!=wc->max.y||c->max.z!=wc->max.z)
