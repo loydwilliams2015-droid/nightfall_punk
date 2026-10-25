@@ -15,6 +15,10 @@ typedef struct {
  Nf18b2Authority authority;
  uint32_t transaction_id;
 } NfRetcJointContext;
+/* Source-derived variant: requires exactly one granted encounter PUSH with
+ * matching B3 source receipt; rejects detached caller-supplied B2 fields. */
+NfRetcFrame *nf_retc_joint_stage_owned(const NfWorld *world,
+ const Nf18a5Integrated *candidate,void *context);
 NfRetcFrame *nf_retc_joint_stage(const NfWorld *world,
  const Nf18a5Integrated *candidate,void *context);
 #endif
