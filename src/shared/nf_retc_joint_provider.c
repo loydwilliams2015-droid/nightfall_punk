@@ -56,20 +56,23 @@ NfRetcFrame *nf_retc_joint_stage_owned(const NfWorld *w,
  if(!j->encounter->frame.scene.actors){fprintf(stderr,"RET-C joint_stage_owned predicate 13: !j->encounter->frame.scene.actors\n");return NULL;}
  if(!j->encounter->frame.scene.objects){fprintf(stderr,"RET-C joint_stage_owned predicate 14: !j->encounter->frame.scene.objects\n");return NULL;}
  const Nf18b2QueuedIntent *q=&j->encounter->queue[0];
- if(q->withdrawn||q->intent.kind!=NF18B2_PUSH||
-    q->trace_index>=j->encounter->trace_count)return NULL;
+ if(q->withdrawn){fprintf(stderr,"RET-C owned predicate 15: q->withdrawn\n");return NULL;}
+ if(q->intent.kind!=NF18B2_PUSH){fprintf(stderr,"RET-C owned predicate 16: q->intent.kind!=NF18B2_PUSH\n");return NULL;}
+ if(q->trace_index>=j->encounter->trace_count){fprintf(stderr,"RET-C owned predicate 17: q->trace_index>=j->encounter->trace_count\n");return NULL;}
  const Nf18b2EncounterTrace *t=&j->encounter->traces[q->trace_index];
  const Nf18b3Event *e=&j->push->staged_commit;
- if(t->revalidation.status!=NF18B2_ELIGIBLE||
-    t->revalidation.physical!=NF18B2_ELIGIBLE||
-    t->revalidation.contract!=NF18B2_ELIGIBLE||
-    q->intent.actor_id!=e->actor||q->intent.object_id!=e->object||
-    q->intent.action_id!=e->action||q->witness.tick!=p->world.tick||
-    q->witness.world_revision==UINT32_MAX||
-    q->witness.world_revision+1u!=p->world.revision||
-    q->witness.material_epoch!=p->world.grid.global_revision||
-    j->encounter->frame.scene.actors[0].id!=e->actor||
-    j->encounter->frame.scene.objects[0].id!=e->object)return NULL;
+ if(t->revalidation.status!=NF18B2_ELIGIBLE){fprintf(stderr,"RET-C owned predicate 18: t->revalidation.status!=NF18B2_ELIGIBLE\n");return NULL;}
+ if(t->revalidation.physical!=NF18B2_ELIGIBLE){fprintf(stderr,"RET-C owned predicate 19: t->revalidation.physical!=NF18B2_ELIGIBLE\n");return NULL;}
+ if(t->revalidation.contract!=NF18B2_ELIGIBLE){fprintf(stderr,"RET-C owned predicate 20: t->revalidation.contract!=NF18B2_ELIGIBLE\n");return NULL;}
+ if(q->intent.actor_id!=e->actor){fprintf(stderr,"RET-C owned predicate 21: q->intent.actor_id!=e->actor\n");return NULL;}
+ if(q->intent.object_id!=e->object){fprintf(stderr,"RET-C owned predicate 22: q->intent.object_id!=e->object\n");return NULL;}
+ if(q->intent.action_id!=e->action){fprintf(stderr,"RET-C owned predicate 23: q->intent.action_id!=e->action\n");return NULL;}
+ if(q->witness.tick!=p->world.tick){fprintf(stderr,"RET-C owned predicate 24: q->witness.tick!=p->world.tick\n");return NULL;}
+ if(q->witness.world_revision==UINT32_MAX){fprintf(stderr,"RET-C owned predicate 25: q->witness.world_revision==UINT32_MAX\n");return NULL;}
+ if(q->witness.world_revision+1u!=p->world.revision){fprintf(stderr,"RET-C owned predicate 26: q->witness.world_revision+1u!=p->world.revision\n");return NULL;}
+ if(q->witness.material_epoch!=p->world.grid.global_revision){fprintf(stderr,"RET-C owned predicate 27: q->witness.material_epoch!=p->world.grid.global_revision\n");return NULL;}
+ if(j->encounter->frame.scene.actors[0].id!=e->actor){fprintf(stderr,"RET-C owned predicate 28: j->encounter->frame.scene.actors[0].id!=e->actor\n");return NULL;}
+ if(j->encounter->frame.scene.objects[0].id!=e->object){fprintf(stderr,"RET-C owned predicate 29: j->encounter->frame.scene.objects[0].id!=e->object\n");return NULL;}
  /* Local B2 authority can only be empty: nonempty replay state must be
     provided by a genuine A6-owned persisted authority, not invented here. */
  Nf18b2Authority authority={0};
