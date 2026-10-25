@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "nf_c2_retc_frame.h"
 #include <stdlib.h>
 #include <string.h>
