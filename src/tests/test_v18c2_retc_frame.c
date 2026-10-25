@@ -94,7 +94,15 @@ int main(void){
  CK(!nf_retc_joint_stage_owned(live,&f->physical,&joint)); /* forged action */
  push.staged_commit_valid=false;
  CK(!nf_retc_joint_stage(live,&f->physical,&joint)); /* missing B3 */
- free(combined);free(live);
+ free(combined);
+ live->tick_in_progress=false;
+ CK(nf_retc_joint_attach(live,&joint));
+ CK(owner->owner_hooks.stage_joint==nf_retc_joint_stage_owned);
+ CK(owner->owner_hooks.finish==NULL); /* no split finish authority */
+ CK(!nf_retc_joint_attach(live,&joint));
+ CK(nf_retc_joint_detach(live,&joint));
+ CK(owner->owner_hooks.context==NULL);
+ free(live);
  CK(nf_retc_publish(&publisher,f));
  free(encounter);free(owner);
  CK(nf_retc_read(&publisher)==f&&nf_retc_read(&publisher)->epoch==1);
