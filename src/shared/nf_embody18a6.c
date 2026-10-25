@@ -473,7 +473,7 @@ bool nf18a6_retc_bind(Nf18a6Runtime *r,NfRetcPublisher *publisher,
  const char *joint_journal){
  if(!r||!publisher||!joint_journal||!joint_journal[0]||
     r->retc_publisher||r->tick_journal||
-    r->world_lease.users||r->joint_publication_active)return false;
+    atomic_load(&r->joint_publication_active))return false;
  r->retc_publisher=publisher;
  r->retc_journal=joint_journal;
  return true;
