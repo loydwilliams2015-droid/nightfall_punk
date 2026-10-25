@@ -89,7 +89,8 @@ static void joint_finish(const NfWorld *w,const Nf18a6Outcome *out,void *arg){
     NfRetcFrame *frame=j->owner->retc_pending;
     if(frame&&j->owner->retc_publisher&&
        j->owner->retc_publisher->count<NF_RETC_HISTORY&&
-       nf_retc_read(j->owner->retc_publisher)==NULL&&
+       (!nf_retc_read(j->owner->retc_publisher)||
+        nf_retc_read(j->owner->retc_publisher)->epoch+1u==frame->epoch)&&
        frame->epoch==out->tick&&frame->has_encounter_registry&&
        frame->event.kind==NF18B3_PUSH&&frame->event.phase==NF18B3_APPLIED){
        j->encounter->registry=frame->encounter_registry;
