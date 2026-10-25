@@ -230,7 +230,15 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
     }
     /* Until the A6 owner can source-bind an entire B2/B3 contract record,
        refuse to claim joint-frame publication in the live tick. */
-    if(r->retc_publisher)return outcome(NF18A6_UNSUPPORTED,r);
+    if(r->retc_publisher){
+        /* Execute the real A5 solver into private memory without its journal
+           or A6/B2/B3 live publication. Until full owner contract staging
+           is wired, fail closed regardless of the staged solver outcome. */
+        Nf18a5Integrated candidate=r->physical;
+        (void)nf18a5_integrated_pair_stage_checked(&candidate,version,tick,start,
+              loader,ctx,shape,motor,dt,0.0f,0.5f,NULL,NULL);
+        return outcome(NF18A6_UNSUPPORTED,r);
+    }
     Nf18a5Integrated next=r->physical;
     const Nf18a6GateContext gate={w,r->object_collider_index,shape,dt,start,&r->owner_hooks};
     Nf18a5CloseResult result=nf18a5_integrated_pair_step_checked(&next,version,tick,start,
