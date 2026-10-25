@@ -158,6 +158,23 @@ int main(void){
  remove(journal);
  CK(nf_retc_persist_file(&publisher,other,journal));
  CK(nf_retc_read(&publisher)==f); /* durable != reader-visible */
+ /* Simulated interrupted stage write: only .staging is truncated.
+    The prior completed durable file must remain independently restorable;
+    no new frame becomes visible before publisher activation. */
+ {
+   char staging[192];snprintf(staging,sizeof staging,"%s.staging",journal);
+   FILE *partial=fopen(staging,"wb");CK(partial);
+   const unsigned char fragment[3]={0x52,0x45,0x54};
+   CK(fwrite(fragment,1,sizeof fragment,partial)==sizeof fragment);
+   CK(fclose(partial)==0);
+   NfRetcFrame *incomplete=malloc(sizeof *incomplete);CK(incomplete);
+   CK(!nf_retc_restore_file(staging,incomplete));
+   CK(nf_retc_restore_file(journal,incomplete));
+   CK(incomplete->epoch==other->epoch&&incomplete->event.action==other->event.action);
+   CK(nf_retc_read(&publisher)==f);
+   free(incomplete);CK(remove(staging)==0);
+   puts("RET-C interrupted-stage fragment ignored, complete durable frame preserved PASS");
+ }
  CK(nf_retc_publish(&publisher,other));
  CK(nf_retc_read(&publisher)==other);
  NfRetcFrame *disk=malloc(sizeof *disk);CK(disk);
