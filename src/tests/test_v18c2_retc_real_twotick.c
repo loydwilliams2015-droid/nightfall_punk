@@ -100,7 +100,20 @@ int main(void){
        actor->transform.position.z,object.target.x,object.target.y,object.target.z);
      return 1;
    }
-   CHECK(nf18b6_push_arm_b2(push,w,action)==NF18B3_OK);
+   const Nf18b3Result armed=nf18b6_push_arm_b2(push,w,action);
+   if(armed!=NF18B3_OK){
+     const Nf18b2QueuedIntent *q=enc->queue_count?&enc->queue[0]:NULL;
+     fprintf(stderr,
+       "RET-C B3 arm tick=%u result=%d b2=%d event_phase=%d armed=%d contract_epoch=%u encounter_epoch=%u queue=%zu witness_revision=%u live_revision=%u target=(%.4f,%.4f,%.4f) crate=(%.4f,%.4f,%.4f)\\n",
+       tick,(int)armed,(int)push->last_b2_status,
+       (int)push->event.phase,(int)push->armed,
+       push->contract_epoch,enc->registry.contract_epoch,enc->queue_count,
+       q?q->witness.world_revision:0,r->physical.world.revision,
+       enc->frame.objects[0].target.x,enc->frame.objects[0].target.y,
+       enc->frame.objects[0].target.z,r->physical.object.center.x,
+       r->physical.object.center.y,r->physical.object.center.z);
+     return 1;
+   }
    NfMoveInput move={0};move.strafe=1;
    nf_world_set_input(w,10,move);
    const NfWorldTickStatus status=nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
