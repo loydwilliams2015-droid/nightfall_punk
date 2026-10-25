@@ -13,7 +13,8 @@ int main(int argc,char **argv){
    if(!recovered)return 81;
    const bool ok=nf_retc_restore_file(argv[2],recovered)&&
      recovered->epoch==2&&recovered->event.action==92&&
-     recovered->has_b2_contract&&recovered->has_encounter_registry;
+     recovered->has_b2_contract&&recovered->physical.world.tick==2&&
+     recovered->physical.actor.id==10&&recovered->physical.object.id==2010;
    free(recovered);return ok?0:82;
  }
 
