@@ -48,9 +48,12 @@ typedef struct Nf18a6OwnerHooks {
     void (*finish)(const NfWorld *,const struct Nf18a6Outcome *,void *);
     void *context;
 } Nf18a6OwnerHooks;
+struct NfRetcPublisher;
 struct Nf18c2AuthState; /* private allocation; no public credential fields */
 typedef struct Nf18a6Runtime {
     Nf18a5Integrated physical;
+    struct NfRetcPublisher *retc_publisher; /* opt-in A6-owned prototype */
+    const char *retc_journal; /* borrowed path, atomic joint file prototype */
     NfCameraState camera;
     uint32_t last_commit_tick;
     atomic_bool joint_publication_active; /* owner tick visibility exclusion */
@@ -111,6 +114,9 @@ Nf18a6TickTrace nf18a6_classify_tick(uint32_t tick,uint32_t red_target,
              uint32_t blue_target,bool red_to_blue,bool blue_to_red,
              uint32_t red_material_mask,uint32_t blue_material_mask);
 bool nf18a6_recover(Nf18a6Runtime *r,NfWorld *world,const char *journal);
+/* Bind only while unbound/quiescent. A6 owner alone will invoke frame commits. */
+bool nf18a6_retc_bind(Nf18a6Runtime *r,struct NfRetcPublisher *publisher,
+ const char *joint_journal);
 Nf18a6Snapshot nf18a6_snapshot(const Nf18a6Runtime *r,const NfWorld *world);
 /* Read-only diagnostic agreement: no client state can become world authority. */
 bool nf18a6_snapshot_matches(const Nf18a6Snapshot *a,const Nf18a6Snapshot *b);
