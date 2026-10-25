@@ -3,10 +3,20 @@
 #include "nf_retc_joint_provider.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #define CK(x) do {if(!(x)){fprintf(stderr,"RET-C fail line %d\n",__LINE__);return 1;}}while(0)
-int main(void){
+int main(int argc,char **argv){
+ if(argc==3&&strcmp(argv[1],"--recover")==0){
+   NfRetcFrame *recovered=malloc(sizeof *recovered);
+   if(!recovered)return 81;
+   const bool ok=nf_retc_restore_file(argv[2],recovered)&&
+     recovered->epoch==2&&recovered->event.action==92&&
+     recovered->has_b2_contract&&recovered->has_encounter_registry;
+   free(recovered);return ok?0:82;
+ }
+
  NfRetcPublisher publisher={0};
  CK(nf_retc_read(&publisher)==NULL);
  Nf18a5Integrated *p=calloc(1,sizeof *p);CK(p);
@@ -183,6 +193,11 @@ int main(void){
    CK(nf_retc_restore_file(journal,incomplete));
    CK(incomplete->epoch==other->epoch&&incomplete->event.action==other->event.action);
    CK(nf_retc_read(&publisher)==f);
+   /* exec replaces the address space: fresh process reconstructs disk state. */
+   pid_t child=fork();CK(child>=0);
+   if(child==0){char *const args[]={argv[0],"--recover",journal,NULL};execv(argv[0],args);_exit(111);}
+   int recovered_status=0;
+   CK(waitpid(child,&recovered_status,0)==child&&WIFEXITED(recovered_status)&&WEXITSTATUS(recovered_status)==0);
    free(incomplete);CK(remove(staging)==0);
    puts("RET-C interrupted-stage fragment ignored, complete durable frame preserved PASS");
  }
