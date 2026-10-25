@@ -254,14 +254,19 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
             if(!valid){free(joint);return outcome(NF18A6_UNSUPPORTED,r);}
             /* The complete frame is accepted once, before deriving the
                A6 projections. No independent A5 WAL is emitted. */
-            if(!nf_retc_commit_file(r->retc_publisher,joint,r->retc_journal)){
+            /* Verify all destination pointers BEFORE accepting a durable
+               decision: no post-commit lookup is allowed to fail. */
+            NfActor *dst=nf_world_find_actor(w,r->actor_id);
+            if(!dst||r->retc_pending||!r->owner_hooks.finish){
+                free(joint);return outcome(NF18A6_INVALID,r);
+            }
+            if(!nf_retc_persist_file(r->retc_publisher,joint,r->retc_journal)){
                 free(joint);return outcome(NF18A6_DISK_FAILED,r);
             }
-            const NfRetcFrame *accepted=nf_retc_read(r->retc_publisher);
-            if(accepted!=joint)return outcome(NF18A6_INVALID,r);
-            NfActor *dst=nf_world_find_actor(w,r->actor_id);
-            if(!dst)return outcome(NF18A6_INVALID,r);
-            const Nf18a5Integrated *next=&accepted->physical;
+            /* A6 owns the durable decision. Only the composite owner finish
+               can expose the pointer, after B2/B3 projection. */
+            r->retc_pending=joint;
+            const Nf18a5Integrated *next=&joint->physical;
             r->physical=*next;
             NfCollider *cr=&w->colliders[r->object_collider_index];
             cr->previous_min=cr->min;cr->previous_max=cr->max;
