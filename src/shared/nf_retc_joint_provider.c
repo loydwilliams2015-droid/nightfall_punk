@@ -70,9 +70,24 @@ NfRetcFrame *nf_retc_joint_stage_owned(const NfWorld *w,
 static Nf18a6OwnerGate joint_begin(const NfWorld *w,uint32_t tick,void *arg){
  NfRetcJointContext *j=arg;
  if(!j||!j->encounter||!j->push)return NF18A6_GATE_INVALID;
+ if(j->rollback_encounter)return NF18A6_GATE_INVALID;
+ j->rollback_encounter=malloc(sizeof *j->rollback_encounter);
+ if(!j->rollback_encounter)return NF18A6_GATE_INVALID;
+ *j->rollback_encounter=*j->encounter;
  const Nf18a6OwnerGate b3=nf18b6_push_prepare_joint(j->push,w,tick);
  if(b3!=NF18A6_GATE_READY)return b3;
  return nf18b2_encounter_prepare_joint(j->encounter,w,tick);
+}
+static void joint_finish(const NfWorld *w,const Nf18a6Outcome *out,void *arg){
+ NfRetcJointContext *j=arg;
+ if(!j||!j->rollback_encounter)return;
+ /* Composite owner does not authorize any successful publication yet. Roll
+    back speculative reservation, trace and grant changes on every refusal. */
+ if(!out||out->status!=NF18A6_COMMITTED)
+    *j->encounter=*j->rollback_encounter;
+ free(j->rollback_encounter);
+ j->rollback_encounter=NULL;
+ (void)w;
 }
 static NfRetcFrame *joint_stage_checked(const NfWorld *w,
  const Nf18a5Integrated *candidate,void *arg){
@@ -117,6 +132,7 @@ bool nf_retc_joint_attach(NfWorld *w,NfRetcJointContext *j){
     j->encounter->attached)return false;
  j->owner->owner_hooks.begin=joint_begin;
  j->owner->owner_hooks.stage_joint=joint_stage_checked;
+ j->owner->owner_hooks.finish=joint_finish;
  j->owner->owner_hooks.context=j;
  return true;
 }
@@ -125,7 +141,9 @@ bool nf_retc_joint_detach(NfWorld *w,NfRetcJointContext *j){
     w->tick_owner_context!=j->owner||
     j->owner->owner_hooks.context!=j||
     j->owner->owner_hooks.stage_joint!=joint_stage_checked||
-    j->owner->owner_hooks.begin!=joint_begin)return false;
+    j->owner->owner_hooks.begin!=joint_begin||
+    j->owner->owner_hooks.finish!=joint_finish||
+    j->rollback_encounter)return false;
  j->owner->owner_hooks=(Nf18a6OwnerHooks){0};
  return true;
 }
