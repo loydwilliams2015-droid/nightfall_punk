@@ -56,6 +56,13 @@ Nf18a5CloseResult nf18a5_integrated_pair_step_checked(
     Nf18a2ShapePolicy shape,Nf18a4Motor motor,float dt,
     float restitution,float friction,const char *world_journal,
     Nf18a5PrepublishGate gate,void *gate_ctx);
+/* Pure candidate staging: modifies only caller-owned staging state,
+ * without touching the A5 journal or authoritative original. */
+Nf18a5CloseResult nf18a5_integrated_pair_stage_checked(
+ Nf18a5Integrated *candidate,uint32_t expected_revision,uint32_t tick,
+ NfVec3 static_world_probe,Nf18a5FineProvider provider,void *provider_ctx,
+ Nf18a2ShapePolicy shape,Nf18a4Motor motor,float dt,
+ float restitution,float friction,Nf18a5PrepublishGate gate,void *gate_ctx);
 Nf18a5CloseResult nf18a5_integrated_pair_step(
     Nf18a5Integrated *state, uint32_t expected_revision, uint32_t tick,
     NfVec3 static_world_probe, Nf18a5FineProvider provider,void *provider_ctx,
