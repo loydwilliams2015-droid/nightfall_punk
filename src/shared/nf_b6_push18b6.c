@@ -268,10 +268,28 @@ static void finish(const NfWorld *world,const Nf18a6Outcome *out,void *arg){
         if(!synced||!closed)ctx->last_result=NF18B3_PENDING;
     }
 }
+static bool accept_candidate(const NfWorld *world,
+ const Nf18a5Integrated *candidate,void *arg){
+ const Nf18b6Push *ctx=arg;
+ if(!ctx||!world||!candidate||!ctx->runtime)return false;
+ if(!ctx->armed)return true;
+ if(!ctx->h24_envelope_path)return true; /* legacy mode, not joint authority */
+ if(candidate->committed_receipts<=ctx->before_contacts||
+    candidate->world.history.raw_samples<=ctx->before_history)return true;
+ /* Durable, typed A5/B3 decision must have been staged by this owner
+    before the A5 physical publisher can proceed. */
+ return ctx->staged_commit_valid &&
+    ctx->staged_commit.phase==NF18B3_APPLIED &&
+    ctx->staged_commit.applied &&
+    ctx->staged_commit.tick==candidate->world.tick &&
+    ctx->staged_commit.actor==candidate->actor.id &&
+    ctx->staged_commit.object==candidate->object.id;
+}
 bool nf18b6_push_attach(Nf18b6Push *ctx,Nf18a6Runtime *r,
                         const NfWorld *w,uint32_t epoch){
     if(!ctx||!r||!w||!epoch||w->tick_owner||w->tick_in_progress||
        r->owner_hooks.begin||r->owner_hooks.prepublish||
+       r->owner_hooks.accept_candidate||
        r->owner_hooks.finish||r->owner_hooks.context||
        r->model<NF18A6_WORLD_BRIDGE||r->model>NF18A6_WORLD_CAMERA||
        r->actor_id==0||r->physical.object.id==0||
@@ -283,6 +301,7 @@ bool nf18b6_push_attach(Nf18b6Push *ctx,Nf18a6Runtime *r,
     ctx->last_result=NF18B3_PENDING;
     r->owner_hooks.begin=begin;
     r->owner_hooks.prepublish=prepublish;
+    r->owner_hooks.accept_candidate=accept_candidate;
     r->owner_hooks.finish=finish;
     r->owner_hooks.context=ctx;
     return true;
