@@ -62,6 +62,8 @@ NfRetcFrame *nf_retc_stage_source_push(
  const Nf18b2Object *object,const Nf18b2Authority *authority);
 /* Fail closed: a frame is not durably accepted until this full-frame journal
  * has been written successfully. Bounded research format, same ABI only. */
+bool nf_retc_persist_file(NfRetcPublisher *pub,NfRetcFrame *candidate,
+ const char *path);
 bool nf_retc_commit_file(NfRetcPublisher *pub,NfRetcFrame *candidate,
  const char *path);
 bool nf_retc_restore_file(const char *path,NfRetcFrame *out);
