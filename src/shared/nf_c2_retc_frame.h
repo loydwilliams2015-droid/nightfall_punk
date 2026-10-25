@@ -60,6 +60,11 @@ NfRetcFrame *nf_retc_stage_source_push(
  uint32_t tx,uint32_t prior_epoch,const Nf18b2Use *use,
  const Nf18b2UseDecision *decision,const Nf18b2Actor *actor,
  const Nf18b2Object *object,const Nf18b2Authority *authority);
+/* Fail closed: a frame is not durably accepted until this full-frame journal
+ * has been written successfully. Bounded research format, same ABI only. */
+bool nf_retc_commit_file(NfRetcPublisher *pub,NfRetcFrame *candidate,
+ const char *path);
+bool nf_retc_restore_file(const char *path,NfRetcFrame *out);
 bool nf_retc_publish(NfRetcPublisher *pub,NfRetcFrame *candidate);
 const NfRetcFrame *nf_retc_read(const NfRetcPublisher *pub);
 void nf_retc_dispose(NfRetcPublisher *pub);
