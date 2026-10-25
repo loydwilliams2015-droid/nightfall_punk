@@ -190,7 +190,7 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
     if(in.crouch_held||in.jump_pressed||in.interact_held||
        a->movement.mode==NF_MOVE_LADDER||a->movement.mode==NF_MOVE_VAULT||
        a->movement.mode==NF_MOVE_MANTLE||
-       !a->movement.grounded)return outcome(NF18A6_UNSUPPORTED,r);
+       !a->movement.grounded){fprintf(stderr,"RET-C A6 scope tick=%u grounded=%d mode=%d input=%d%d%d\n",tick,(int)a->movement.grounded,(int)a->movement.mode,(int)in.crouch_held,(int)in.jump_pressed,(int)in.interact_held);return outcome(NF18A6_UNSUPPORTED,r);}
     const NfVec3 start=a->transform.position;
     if(invalid_nearby_actors(w,r->actor_id,start))return outcome(NF18A6_UNSUPPORTED,r);
     /* Standing requires a material support witness, not a cached bool. */
@@ -205,7 +205,7 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
             material_support=true;break;
         }
     }
-    if(!material_support)return outcome(NF18A6_UNSUPPORTED,r);
+    if(!material_support){fprintf(stderr,"RET-C A6 support tick=%u actor=(%.4f,%.4f,%.4f) colliders=%zu\n",tick,start.x,start.y,start.z,w->collider_count);return outcome(NF18A6_UNSUPPORTED,r);}
     const Nf18a2ShapePolicy shape={r->physical.actor.radius,r->physical.actor.height,
        .1f,w->movement.step_height,.7071067f};
     const float mass=1.0f/r->physical.actor.inverse_mass;
