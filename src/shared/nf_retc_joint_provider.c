@@ -81,13 +81,16 @@ static Nf18a6OwnerGate joint_begin(const NfWorld *w,uint32_t tick,void *arg){
 static void joint_finish(const NfWorld *w,const Nf18a6Outcome *out,void *arg){
  NfRetcJointContext *j=arg;
  if(!j||!j->rollback_encounter)return;
- /* Composite owner does not authorize any successful publication yet. Roll
-    back speculative reservation, trace and grant changes on every refusal. */
+ /* Roll back speculative preparation on rejection; committed state is
+    derived exclusively from the pending durable A6 frame. */
  if(!out||out->status!=NF18A6_COMMITTED){
     *j->encounter=*j->rollback_encounter;
  }else{
     NfRetcFrame *frame=j->owner->retc_pending;
-    if(frame&&frame->epoch==out->tick&&frame->has_encounter_registry&&
+    if(frame&&j->owner->retc_publisher&&
+       j->owner->retc_publisher->count<NF_RETC_HISTORY&&
+       nf_retc_read(j->owner->retc_publisher)==NULL&&
+       frame->epoch==out->tick&&frame->has_encounter_registry&&
        frame->event.kind==NF18B3_PUSH&&frame->event.phase==NF18B3_APPLIED){
        j->encounter->registry=frame->encounter_registry;
        j->push->event=frame->event;
