@@ -1,24 +1,32 @@
 #include "nf_retc_joint_provider.h"
 #include <stdlib.h>
+#include <stdio.h>
 NfRetcFrame *nf_retc_joint_stage(const NfWorld *w,
  const Nf18a5Integrated *p,void *context){
  NfRetcJointContext *j=context;
- if(!j||!w||!p||!j->owner||!j->encounter||!j->push||
-    !j->transaction_id||!w->tick_in_progress||
-    w->tick_owner_context!=j->owner||
-    j->encounter->world!=w||j->encounter->owner!=j->owner||
-    j->push->runtime!=j->owner||
-    j->owner->retc_publisher==NULL||
-    !j->encounter->prepared||!j->push->armed||
-    !j->push->staged_commit_valid||
-    j->push->staged_commit.kind!=NF18B3_PUSH||
-    j->push->staged_commit.phase!=NF18B3_APPLIED||
-    !j->push->staged_commit.applied||
-    j->push->staged_commit.tick!=p->world.tick||
-    j->encounter->staged.contract_epoch!=j->push->contract_epoch||
-    p->world.tick!=w->tick+1u||
-    j->owner->physical.world.tick!=w->tick)
-    return NULL;
+ if(!j){fprintf(stderr,"RET-C joint_stage predicate 1: !j\n");return NULL;}
+ if(!w){fprintf(stderr,"RET-C joint_stage predicate 2: !w\n");return NULL;}
+ if(!p){fprintf(stderr,"RET-C joint_stage predicate 3: !p\n");return NULL;}
+ if(!j->owner){fprintf(stderr,"RET-C joint_stage predicate 4: !j->owner\n");return NULL;}
+ if(!j->encounter){fprintf(stderr,"RET-C joint_stage predicate 5: !j->encounter\n");return NULL;}
+ if(!j->push){fprintf(stderr,"RET-C joint_stage predicate 6: !j->push\n");return NULL;}
+ if(!j->transaction_id){fprintf(stderr,"RET-C joint_stage predicate 7: !j->transaction_id\n");return NULL;}
+ if(!w->tick_in_progress){fprintf(stderr,"RET-C joint_stage predicate 8: !w->tick_in_progress\n");return NULL;}
+ if(w->tick_owner_context!=j->owner){fprintf(stderr,"RET-C joint_stage predicate 9: w->tick_owner_context!=j->owner\n");return NULL;}
+ if(j->encounter->world!=w){fprintf(stderr,"RET-C joint_stage predicate 10: j->encounter->world!=w\n");return NULL;}
+ if(j->encounter->owner!=j->owner){fprintf(stderr,"RET-C joint_stage predicate 11: j->encounter->owner!=j->owner\n");return NULL;}
+ if(j->push->runtime!=j->owner){fprintf(stderr,"RET-C joint_stage predicate 12: j->push->runtime!=j->owner\n");return NULL;}
+ if(j->owner->retc_publisher==NULL){fprintf(stderr,"RET-C joint_stage predicate 13: j->owner->retc_publisher==NULL\n");return NULL;}
+ if(!j->encounter->prepared){fprintf(stderr,"RET-C joint_stage predicate 14: !j->encounter->prepared\n");return NULL;}
+ if(!j->push->armed){fprintf(stderr,"RET-C joint_stage predicate 15: !j->push->armed\n");return NULL;}
+ if(!j->push->staged_commit_valid){fprintf(stderr,"RET-C joint_stage predicate 16: !j->push->staged_commit_valid\n");return NULL;}
+ if(j->push->staged_commit.kind!=NF18B3_PUSH){fprintf(stderr,"RET-C joint_stage predicate 17: j->push->staged_commit.kind!=NF18B3_PUSH\n");return NULL;}
+ if(j->push->staged_commit.phase!=NF18B3_APPLIED){fprintf(stderr,"RET-C joint_stage predicate 18: j->push->staged_commit.phase!=NF18B3_APPLIED\n");return NULL;}
+ if(!j->push->staged_commit.applied){fprintf(stderr,"RET-C joint_stage predicate 19: !j->push->staged_commit.applied\n");return NULL;}
+ if(j->push->staged_commit.tick!=p->world.tick){fprintf(stderr,"RET-C joint_stage predicate 20: j->push->staged_commit.tick!=p->world.tick\n");return NULL;}
+ if(j->encounter->staged.contract_epoch!=j->push->contract_epoch){fprintf(stderr,"RET-C joint_stage predicate 21: j->encounter->staged.contract_epoch!=j->push->contract_epoch\n");return NULL;}
+ if(p->world.tick!=w->tick+1u){fprintf(stderr,"RET-C joint_stage predicate 22: p->world.tick!=w->tick+1u\n");return NULL;}
+ if(j->owner->physical.world.tick!=w->tick){fprintf(stderr,"RET-C joint_stage predicate 23: j->owner->physical.world.tick!=w->tick\n");return NULL;}
  const Nf18b3Event *e=&j->push->staged_commit;
  NfRetcFrame *f=nf_retc_stage_source_push(p,e,j->transaction_id,
       (uint32_t)w->tick,&j->use,&j->decision,
@@ -33,13 +41,20 @@ NfRetcFrame *nf_retc_joint_stage(const NfWorld *w,
 NfRetcFrame *nf_retc_joint_stage_owned(const NfWorld *w,
  const Nf18a5Integrated *p,void *context){
  NfRetcJointContext *j=context;
- if(!j||!w||!p||!j->encounter||!j->push||!j->owner||
-    !j->encounter->prepared||!j->push->staged_commit_valid||
-    j->encounter->queue_count!=1u||!j->encounter->granted[0]||
-    j->encounter->frame.scene.actor_count!=1u||
-    j->encounter->frame.scene.object_count!=1u||
-    !j->encounter->frame.scene.actors||
-    !j->encounter->frame.scene.objects)return NULL;
+ if(!j){fprintf(stderr,"RET-C joint_stage_owned predicate 1: !j\n");return NULL;}
+ if(!w){fprintf(stderr,"RET-C joint_stage_owned predicate 2: !w\n");return NULL;}
+ if(!p){fprintf(stderr,"RET-C joint_stage_owned predicate 3: !p\n");return NULL;}
+ if(!j->encounter){fprintf(stderr,"RET-C joint_stage_owned predicate 4: !j->encounter\n");return NULL;}
+ if(!j->push){fprintf(stderr,"RET-C joint_stage_owned predicate 5: !j->push\n");return NULL;}
+ if(!j->owner){fprintf(stderr,"RET-C joint_stage_owned predicate 6: !j->owner\n");return NULL;}
+ if(!j->encounter->prepared){fprintf(stderr,"RET-C joint_stage_owned predicate 7: !j->encounter->prepared\n");return NULL;}
+ if(!j->push->staged_commit_valid){fprintf(stderr,"RET-C joint_stage_owned predicate 8: !j->push->staged_commit_valid\n");return NULL;}
+ if(j->encounter->queue_count!=1u){fprintf(stderr,"RET-C joint_stage_owned predicate 9: j->encounter->queue_count!=1u\n");return NULL;}
+ if(!j->encounter->granted[0]){fprintf(stderr,"RET-C joint_stage_owned predicate 10: !j->encounter->granted[0]\n");return NULL;}
+ if(j->encounter->frame.scene.actor_count!=1u){fprintf(stderr,"RET-C joint_stage_owned predicate 11: j->encounter->frame.scene.actor_count!=1u\n");return NULL;}
+ if(j->encounter->frame.scene.object_count!=1u){fprintf(stderr,"RET-C joint_stage_owned predicate 12: j->encounter->frame.scene.object_count!=1u\n");return NULL;}
+ if(!j->encounter->frame.scene.actors){fprintf(stderr,"RET-C joint_stage_owned predicate 13: !j->encounter->frame.scene.actors\n");return NULL;}
+ if(!j->encounter->frame.scene.objects){fprintf(stderr,"RET-C joint_stage_owned predicate 14: !j->encounter->frame.scene.objects\n");return NULL;}
  const Nf18b2QueuedIntent *q=&j->encounter->queue[0];
  if(q->withdrawn||q->intent.kind!=NF18B2_PUSH||
     q->trace_index>=j->encounter->trace_count)return NULL;
