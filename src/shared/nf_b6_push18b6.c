@@ -56,23 +56,42 @@ static Nf18b2Status b2_check(Nf18b6Push *ctx,const NfWorld *w,uint32_t tick){
        bo->target.z<ob->center.z-ob->box_half.z-.0001f||
        bo->target.z>ob->center.z+ob->box_half.z+.0001f)
         return NF18B2_STALE;
-    size_t static_count=0;
+    /* The B2 source includes the A6-owned movable crate in its solid list.
+       Validate every source collider by its stable world-index identity,
+       including the dynamic object, rather than mistaking it for an extra
+       untrusted static collider. */
     if(scene.geometry.solid_count>NF_MAX_COLLIDERS||
        (scene.geometry.solid_count&&!scene.geometry.solids))
         return NF18B2_INVALID;
+    /* Accept the two documented trusted snapshot projections: full live
+       geometry (including A6 crate) and static-only B2 provider snapshots.
+       The ordered static sequence must match world authority exactly. */
+    size_t solid_count=0;
     for(size_t i=0;i<w->collider_count;++i){
-        if(i==r->object_collider_index)continue;
         const NfCollider *wc=&w->colliders[i];
+        if(wc->kind==NF_COLLIDER_LADDER)continue;
+        if(i==r->object_collider_index){
+            if(solid_count<scene.geometry.solid_count &&
+               scene.geometry.solids[solid_count].body_id==(uint32_t)i+100000u){
+                const Nf18aCollider *c=&scene.geometry.solids[solid_count++];
+                if(!c->dynamic_body||
+                   c->min.x!=wc->min.x||c->min.y!=wc->min.y||
+                   c->min.z!=wc->min.z||c->max.x!=wc->max.x||
+                   c->max.y!=wc->max.y||c->max.z!=wc->max.z)
+                    return NF18B2_STALE;
+            }
+            continue;
+        }
         if(wc->kind!=NF_COLLIDER_SOLID)continue;
-        if(static_count>=scene.geometry.solid_count)return NF18B2_STALE;
-        const Nf18aCollider *c=&scene.geometry.solids[static_count++];
+        if(solid_count>=scene.geometry.solid_count)return NF18B2_STALE;
+        const Nf18aCollider *c=&scene.geometry.solids[solid_count++];
         if(c->dynamic_body||
            c->min.x!=wc->min.x||c->min.y!=wc->min.y||
            c->min.z!=wc->min.z||c->max.x!=wc->max.x||
            c->max.y!=wc->max.y||c->max.z!=wc->max.z)
             return NF18B2_STALE;
     }
-    if(static_count!=scene.geometry.solid_count)return NF18B2_STALE;
+    if(solid_count!=scene.geometry.solid_count)return NF18B2_STALE;
     return nf18b2_evaluate(&scene,use,ctx->b2_model).status;
 }
 
@@ -268,10 +287,28 @@ static void finish(const NfWorld *world,const Nf18a6Outcome *out,void *arg){
         if(!synced||!closed)ctx->last_result=NF18B3_PENDING;
     }
 }
+static bool accept_candidate(const NfWorld *world,
+ const Nf18a5Integrated *candidate,void *arg){
+ const Nf18b6Push *ctx=arg;
+ if(!ctx||!world||!candidate||!ctx->runtime)return false;
+ if(!ctx->armed)return true;
+ if(!ctx->h24_envelope_path)return true; /* legacy mode, not joint authority */
+ if(candidate->committed_receipts<=ctx->before_contacts||
+    candidate->world.history.raw_samples<=ctx->before_history)return true;
+ /* Durable, typed A5/B3 decision must have been staged by this owner
+    before the A5 physical publisher can proceed. */
+ return ctx->staged_commit_valid &&
+    ctx->staged_commit.phase==NF18B3_APPLIED &&
+    ctx->staged_commit.applied &&
+    ctx->staged_commit.tick==candidate->world.tick &&
+    ctx->staged_commit.actor==candidate->actor.id &&
+    ctx->staged_commit.object==candidate->object.id;
+}
 bool nf18b6_push_attach(Nf18b6Push *ctx,Nf18a6Runtime *r,
                         const NfWorld *w,uint32_t epoch){
     if(!ctx||!r||!w||!epoch||w->tick_owner||w->tick_in_progress||
        r->owner_hooks.begin||r->owner_hooks.prepublish||
+       r->owner_hooks.accept_candidate||
        r->owner_hooks.finish||r->owner_hooks.context||
        r->model<NF18A6_WORLD_BRIDGE||r->model>NF18A6_WORLD_CAMERA||
        r->actor_id==0||r->physical.object.id==0||
@@ -283,6 +320,7 @@ bool nf18b6_push_attach(Nf18b6Push *ctx,Nf18a6Runtime *r,
     ctx->last_result=NF18B3_PENDING;
     r->owner_hooks.begin=begin;
     r->owner_hooks.prepublish=prepublish;
+    r->owner_hooks.accept_candidate=accept_candidate;
     r->owner_hooks.finish=finish;
     r->owner_hooks.context=ctx;
     return true;
@@ -458,4 +496,11 @@ bool nf18b6_push_h37_committed_view(const NfWorld *w,
  const Nf18a6Snapshot view=nf18a6_snapshot(r,w);
  if(view.actor_id!=accepted.actor||view.tick!=accepted.tick)return false;
  *physical=view;*contract=accepted;return true;
+}
+
+Nf18a6OwnerGate nf18b6_push_prepare_joint(Nf18b6Push *r,
+ const NfWorld *w,uint32_t tick){
+ if(!r||!w||!r->runtime||w->tick_owner_context!=r->runtime||
+    r->runtime->owner_hooks.context==r)return NF18A6_GATE_INVALID;
+ return begin(w,tick,r);
 }

@@ -97,4 +97,7 @@ bool nf18b2_detach(Nf18b2EncounterRuntime *);
 bool nf18b2_interrupt(Nf18b2EncounterRuntime *,uint32_t,uint32_t);
 bool nf18b2_observe(const Nf18b2EncounterRuntime *,size_t,Nf18b2EncounterTrace *);
 const char *nf18b2_encounter_state_name(Nf18b2EncounterState);
+/* A6 composite owner invokes existing source preparation without independent hooks. */
+Nf18a6OwnerGate nf18b2_encounter_prepare_joint(Nf18b2EncounterRuntime *,const NfWorld *,uint32_t);
+bool nf18b2_encounter_validate_joint(Nf18b2EncounterRuntime *,const NfWorld *,const Nf18a5Integrated *);
 #endif

@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "nf_embody18a6.h"
+#include <stdio.h>
+#include "nf_c2_retc_frame.h"
 #include "nf_v18c2_h9_auth.h"
 #include "nf_movement.h"
 #include <math.h>
@@ -134,8 +136,13 @@ static bool prepublish_world_gate(const Nf18a5Integrated *next,void *context){
            low.y<ob->max.y-.0001f&&high.y>ob->min.y+.0001f &&
            low.z<ob->max.z-.0001f&&high.z>ob->min.z+.0001f)return false;
     }
-    return !g->hooks->prepublish ||
-        g->hooks->prepublish(w,next,g->hooks->context);
+    if(g->hooks->prepublish &&
+       !g->hooks->prepublish(w,next,g->hooks->context))return false;
+    /* One A6-owned acceptance seam over the exact private A5 candidate.
+       Returning false refuses physical publication. This is NOT yet
+       an atomic reader transition or a full durable contract journal. */
+    return !g->hooks->accept_candidate ||
+       g->hooks->accept_candidate(w,next,g->hooks->context);
 }
 static bool invalid_nearby_actors(const NfWorld *w,NfEntityId own,NfVec3 feet){
     for(size_t i=0;i<NF_MAX_ENTITIES;++i){
@@ -183,7 +190,7 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
     if(in.crouch_held||in.jump_pressed||in.interact_held||
        a->movement.mode==NF_MOVE_LADDER||a->movement.mode==NF_MOVE_VAULT||
        a->movement.mode==NF_MOVE_MANTLE||
-       !a->movement.grounded)return outcome(NF18A6_UNSUPPORTED,r);
+       !a->movement.grounded){fprintf(stderr,"RET-C A6 scope tick=%u grounded=%d mode=%d input=%d%d%d\n",tick,(int)a->movement.grounded,(int)a->movement.mode,(int)in.crouch_held,(int)in.jump_pressed,(int)in.interact_held);return outcome(NF18A6_UNSUPPORTED,r);}
     const NfVec3 start=a->transform.position;
     if(invalid_nearby_actors(w,r->actor_id,start))return outcome(NF18A6_UNSUPPORTED,r);
     /* Standing requires a material support witness, not a cached bool. */
@@ -198,7 +205,7 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
             material_support=true;break;
         }
     }
-    if(!material_support)return outcome(NF18A6_UNSUPPORTED,r);
+    if(!material_support){fprintf(stderr,"RET-C A6 support tick=%u actor=(%.4f,%.4f,%.4f) colliders=%zu\n",tick,start.x,start.y,start.z,w->collider_count);return outcome(NF18A6_UNSUPPORTED,r);}
     const Nf18a2ShapePolicy shape={r->physical.actor.radius,r->physical.actor.height,
        .1f,w->movement.step_height,.7071067f};
     const float mass=1.0f/r->physical.actor.inverse_mass;
@@ -221,6 +228,88 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
         r->last_commit_tick=tick;r->last_hash=hash_body(&r->physical.actor,
              &r->physical.object,tick,r->physical.world.revision);
         ++r->accepted;return outcome(NF18A6_COMMITTED,r);
+    }
+    /* Until the A6 owner can source-bind an entire B2/B3 contract record,
+       refuse to claim joint-frame publication in the live tick. */
+    if(r->retc_publisher){
+        /* Execute the real A5 solver into private memory without its journal
+           or A6/B2/B3 live publication. Until full owner contract staging
+           is wired, fail closed regardless of the staged solver outcome. */
+        Nf18a5Integrated candidate=r->physical;
+        const Nf18a5CloseResult staged=
+            nf18a5_integrated_pair_stage_checked(&candidate,version,tick,start,
+              loader,ctx,shape,motor,dt,0.0f,0.5f,NULL,NULL);
+        if(staged.status!=NF18A5_CLOSE_COMMITTED){
+            fprintf(stderr,"RET-C A6 stage rejected: close_status=%d tick=%u\\n",(int)staged.status,tick);
+            return outcome(NF18A6_UNSUPPORTED,r);
+        }
+        if(r->owner_hooks.stage_joint){
+            NfRetcFrame *joint=r->owner_hooks.stage_joint(w,&candidate,
+                                  r->owner_hooks.context);
+            if(!joint){fprintf(stderr,"RET-C A6 joint_stage rejected tick=%u\\n",tick);
+                return outcome(NF18A6_UNSUPPORTED,r); }
+            const bool valid=joint->has_b2_contract&&
+                joint->has_encounter_registry&&nf_retc_seal_b2_b3(joint)&&
+                joint->epoch==candidate.world.tick&&
+                joint->physical.world.revision==candidate.world.revision&&
+                joint->physical.committed_receipts==candidate.committed_receipts&&
+                joint->owner_actor==r->actor_id&&
+                joint->object_id==candidate.object.id;
+            if(!valid){fprintf(stderr,"RET-C A6 seal invalid tick=%u contract=%d registry=%d epoch=%u expected=%u\\n",tick,(int)joint->has_b2_contract,(int)joint->has_encounter_registry,joint->epoch,candidate.world.tick);
+                free(joint);return outcome(NF18A6_UNSUPPORTED,r);}
+            /* All possible publication failures must be rejected before the
+               durable rename; otherwise restart and live state can diverge. */
+            const NfRetcFrame *prior=nf_retc_read(r->retc_publisher);
+            if(r->retc_publisher->count>=NF_RETC_HISTORY||
+               joint->prior_epoch!=(prior?prior->epoch:0u)||
+               joint->epoch!=joint->prior_epoch+1u||
+               (prior&&joint->transaction_id<=prior->transaction_id)){
+                fprintf(stderr,"RET-C A6 preflight tick=%u count=%u prior=%u joint_prior=%u joint_epoch=%u tx=%u prior_tx=%u\\n",tick,r->retc_publisher->count,prior?prior->epoch:0u,joint->prior_epoch,joint->epoch,joint->transaction_id,prior?prior->transaction_id:0u);
+                free(joint);return outcome(NF18A6_UNSUPPORTED,r);
+            }
+            /* The complete frame is accepted once, before deriving the
+               A6 projections. No independent A5 WAL is emitted. */
+            /* Verify all destination pointers BEFORE accepting a durable
+               decision: no post-commit lookup is allowed to fail. */
+            NfActor *dst=nf_world_find_actor(w,r->actor_id);
+            if(!dst||r->retc_pending||!r->owner_hooks.finish){
+                free(joint);return outcome(NF18A6_INVALID,r);
+            }
+            if(!nf_retc_persist_file(r->retc_publisher,joint,r->retc_journal)){
+                free(joint);return outcome(NF18A6_DISK_FAILED,r);
+            }
+            /* A6 owns the durable decision. Only the composite owner finish
+               can expose the pointer, after B2/B3 projection. */
+            r->retc_pending=joint;
+            const Nf18a5Integrated *next=&joint->physical;
+            r->physical=*next;
+            NfCollider *cr=&w->colliders[r->object_collider_index];
+            cr->previous_min=cr->min;cr->previous_max=cr->max;
+            cr->min=vsub(next->object.center,next->object.box_half);
+            cr->max=(NfVec3){next->object.center.x+next->object.box_half.x,
+              next->object.center.y+next->object.box_half.y,
+              next->object.center.z+next->object.box_half.z};
+            dst->transform.position=(NfVec3){next->actor.center.x,
+                 next->actor.center.y-next->actor.height*.5f,next->actor.center.z};
+            dst->transform.velocity=next->actor.velocity;
+            dst->input=in;dst->input.jump_pressed=false;
+            dst->movement.mode=in.sprint_held?NF_MOVE_SPRINT:NF_MOVE_GROUND;
+            dst->movement.grounded=true;dst->movement.body_height=next->actor.height;
+            w->tick=tick;r->last_commit_tick=tick;
+            r->last_hash=hash_body(&next->actor,&next->object,tick,next->world.revision);
+            r->joint_commit_epoch=tick;
+            if(r->model==NF18A6_WORLD_CAMERA){
+                nf_camera_follow_actor(&r->camera,dst,w,dt);
+                nf_camera_step_presentation(&r->camera,dt);
+            }
+            ++r->accepted;
+            Nf18a6Outcome out=outcome(NF18A6_COMMITTED,r);
+            out.actual_impulse=staged.dynamic_contact;
+            out.cache_loads=(uint8_t)staged.cache_loads;
+            out.camera_updated=r->model==NF18A6_WORLD_CAMERA;
+            return out;
+        }
+        return outcome(NF18A6_UNSUPPORTED,r);
     }
     Nf18a5Integrated next=r->physical;
     const Nf18a6GateContext gate={w,r->object_collider_index,shape,dt,start,&r->owner_hooks};
@@ -293,7 +382,10 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
 bool nf18a6_recover(Nf18a6Runtime *r,NfWorld *w,const char *journal){
     /* A physical-only WAL cannot recover B2 reservations/receipts atomically.
        An attached B2 owner requires the future B5 recovery interface. */
-    if(r && r->owner_hooks.context)return false;
+    /* Once an A6 joint decision has been accepted, a physical-only WAL is
+       never permitted to advance the live world: contractual state would
+       be missing. Reconstruct the domains together from a joint record. */
+    if(r && (r->owner_hooks.context||r->joint_commit_epoch))return false;
     if(!r||!w||!journal||r->object_collider_index>=w->collider_count)return false;
     Nf18a5Integrated restored={0};
     if(!nf18a5_restore(journal,&restored)||restored.actor.id!=r->actor_id||
@@ -455,4 +547,14 @@ bool nf18a6_unbind_world_tick(NfWorld *world,Nf18a6Runtime *runtime){
     runtime->tick_provider_context=NULL;
     runtime->tick_journal=NULL;
     return true;
+}
+
+bool nf18a6_retc_bind(Nf18a6Runtime *r,NfRetcPublisher *publisher,
+ const char *joint_journal){
+ if(!r||!publisher||!joint_journal||!joint_journal[0]||
+    r->retc_publisher||r->tick_journal||
+    atomic_load(&r->joint_publication_active))return false;
+ r->retc_publisher=publisher;
+ r->retc_journal=joint_journal;
+ return true;
 }

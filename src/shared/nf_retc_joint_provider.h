@@ -1,0 +1,30 @@
+#ifndef NF_RETC_JOINT_PROVIDER_H
+#define NF_RETC_JOINT_PROVIDER_H
+#include "nf_c2_retc_frame.h"
+#include "nf_b6_push18b6.h"
+/* Composite source-backed staging adapter. Caller must hold the A6 tick lease.
+ * Neither B2 encounter nor B3 PUSH separately publishes through this API. */
+typedef struct {
+ Nf18a6Runtime *owner;
+ Nf18b2EncounterRuntime *encounter;
+ Nf18b6Push *push;
+ Nf18b2Use use;
+ Nf18b2UseDecision decision;
+ Nf18b2Actor actor;
+ Nf18b2Object object;
+ Nf18b2Authority authority;
+ uint32_t transaction_id;
+ /* Full pre-tick B2 state for rejection rollback; never authoritative WAL. */
+ Nf18b2EncounterRuntime *rollback_encounter;
+} NfRetcJointContext;
+/* Source-derived variant: requires exactly one granted encounter PUSH with
+ * matching B3 source receipt; rejects detached caller-supplied B2 fields. */
+/* A6 exclusive composite ownership: installs one RET-C hook, not B2/B3
+ * independent finish callbacks. Commit remains fail-closed until migration. */
+bool nf_retc_joint_attach(NfWorld *world,NfRetcJointContext *context);
+bool nf_retc_joint_detach(NfWorld *world,NfRetcJointContext *context);
+NfRetcFrame *nf_retc_joint_stage_owned(const NfWorld *world,
+ const Nf18a5Integrated *candidate,void *context);
+NfRetcFrame *nf_retc_joint_stage(const NfWorld *world,
+ const Nf18a5Integrated *candidate,void *context);
+#endif

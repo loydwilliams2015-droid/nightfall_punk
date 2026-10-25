@@ -306,7 +306,7 @@ static void finish(const NfWorld *w,const Nf18a6Outcome *out,void *ctx){
 bool nf18b2_attach(Nf18b2EncounterRuntime *r){
     if(!mutable_boundary(r)||r->attached||!r->world->tick_owner||
        r->world->tick_owner_context!=r->owner||r->owner->owner_hooks.context)return false;
-    r->owner->owner_hooks=(Nf18a6OwnerHooks){begin,prepublish,finish,r};r->attached=1;return true;
+    r->owner->owner_hooks=(Nf18a6OwnerHooks){.begin=begin,.prepublish=prepublish,.finish=finish,.context=r};r->attached=1;return true;
 }
 bool nf18b2_detach(Nf18b2EncounterRuntime *r){
     if(!mutable_boundary(r)||!r->attached||r->queue_count||r->owner->owner_hooks.context!=r)return false;
@@ -331,4 +331,17 @@ const char *nf18b2_encounter_state_name(Nf18b2EncounterState s){
         "RESERVED","REVALIDATING","CANCELLED","COMMIT_PENDING","COMMITTED","FAILED_NO_EFFECT",
         "EXECUTING","COMPLETED","INTERRUPTED","COMPENSATION_REQUIRED"};
     return s>=NF18B2_PROPOSED&&s<=NF18B2_COMPENSATION_REQUIRED?names[s]:"INVALID";
+}
+
+Nf18a6OwnerGate nf18b2_encounter_prepare_joint(Nf18b2EncounterRuntime *r,
+ const NfWorld *w,uint32_t tick){
+ if(!r||!w||!r->owner||w->tick_owner_context!=r->owner||
+    r->attached)return NF18A6_GATE_INVALID;
+ return begin(w,tick,r);
+}
+bool nf18b2_encounter_validate_joint(Nf18b2EncounterRuntime *r,
+ const NfWorld *w,const Nf18a5Integrated *candidate){
+ return r&&w&&candidate&&r->prepared&&
+   w->tick_owner_context==r->owner&&!r->attached&&
+   prepublish(w,candidate,r);
 }
