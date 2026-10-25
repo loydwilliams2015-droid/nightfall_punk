@@ -87,5 +87,5 @@ The real `nf_encounter18b2.c` owner maintains `registry` and a prepared `staged`
 
 ## RET-C whole-frame file prototype (limited durability)
 - `nf_retc_commit_file` writes the complete bounded `NfRetcFrame` (A5, applied B3, typed B2 and optionally encounter registry) to a local checksummed file, then publishes the immutable pointer only after write and flush report success. `nf_retc_restore_file` validates and returns a complete frame rather than piecemeal domains.
-- This file is **not yet a durable production commit decision**: direct overwrite may destroy a prior committed frame; no fsync or directory fsync, write-ahead recovery ordering, ABI-portable encoding, actual A6 owner integration, contractual consequence realization or all-reader isolation. The new test checks ordinary restart readability, not power loss.
+- This file is **not yet a durable production commit decision**: the experimental writer now flushes/fsyncs a temporary file before rename, but no directory fsync, write-ahead recovery ordering, ABI-portable encoding, actual A6 owner integration, contractual consequence realization or all-reader isolation. The new test checks ordinary restart readability, not power loss.
 - Current invariant is prototype file-before-pointer ordering; all RET-C atomicity and production gates remain HOLD.
