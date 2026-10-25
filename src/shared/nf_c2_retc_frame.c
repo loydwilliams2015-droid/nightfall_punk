@@ -1,6 +1,7 @@
 #include "nf_c2_retc_frame.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 static uint32_t digest(uint32_t a,uint32_t b,uint32_t c){
  uint32_t v=2166136261u;
  v=(v^a)*16777619u;v=(v^b)*16777619u;return (v^c)*16777619u;
@@ -115,4 +116,44 @@ void nf_retc_dispose(NfRetcPublisher *pub){
  atomic_store_explicit(&pub->current,NULL,memory_order_release);
  for(uint32_t i=0;i<pub->count;++i)free(pub->owned[i]);
  pub->count=0;
+}
+
+/* Bounded local research journal. No directory fsync / portable encoding:
+   explicitly NOT the final production durability protocol. */
+typedef struct {uint32_t magic,version,length,checksum;} RetcDiskHeader;
+static uint32_t frame_checksum(const unsigned char *p,size_t n){
+ uint32_t h=2166136261u;for(size_t i=0;i<n;++i)h=(h^p[i])*16777619u;return h;
+}
+bool nf_retc_restore_file(const char *path,NfRetcFrame *out){
+ if(!path||!out)return false;
+ FILE *fp=fopen(path,"rb");if(!fp)return false;
+ RetcDiskHeader h={0};NfRetcFrame *temp=malloc(sizeof *temp);
+ bool ok=temp&&fread(&h,sizeof h,1,fp)==1&&
+  h.magic==0x52455443u&&h.version==1&&h.length==sizeof *temp&&
+  fread(temp,sizeof *temp,1,fp)==1&&fgetc(fp)==EOF&&!ferror(fp);
+ if(fclose(fp)!=0)ok=false;
+ if(ok)ok=frame_checksum((const unsigned char *)temp,sizeof *temp)==h.checksum&&
+  temp->has_b2_contract&&nf_retc_seal_b2_b3(temp)&&
+  temp->owner_actor==temp->physical.actor.id&&
+  temp->object_id==temp->physical.object.id;
+ if(ok)*out=*temp;
+ free(temp);return ok;
+}
+bool nf_retc_commit_file(NfRetcPublisher *pub,NfRetcFrame *f,
+ const char *path){
+ if(!pub||!f||!path||!f->has_b2_contract||
+    !nf_retc_seal_b2_b3(f)||pub->count>=NF_RETC_HISTORY)return false;
+ const NfRetcFrame *prior=nf_retc_read(pub);
+ if(f->prior_epoch!=(prior?prior->epoch:0)||
+    f->epoch!=f->prior_epoch+1u||
+    (prior&&f->transaction_id<=prior->transaction_id))return false;
+ /* Full frame includes source-bound B2, B3 and A5; write before pointer. */
+ FILE *fp=fopen(path,"wb");if(!fp)return false;
+ const RetcDiskHeader h={0x52455443u,1u,(uint32_t)sizeof *f,
+   frame_checksum((const unsigned char *)f,sizeof *f)};
+ bool ok=fwrite(&h,sizeof h,1,fp)==1&&fwrite(f,sizeof *f,1,fp)==1;
+ if(ok)ok=fflush(fp)==0;
+ if(fclose(fp)!=0)ok=false;
+ if(!ok)return false;
+ return nf_retc_publish(pub,f);
 }
