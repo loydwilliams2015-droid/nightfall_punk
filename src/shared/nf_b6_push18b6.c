@@ -85,7 +85,7 @@ static Nf18b2Status b2_check(Nf18b6Push *ctx,const NfWorld *w,uint32_t tick){
         if(wc->kind!=NF_COLLIDER_SOLID)continue;
         if(solid_count>=scene.geometry.solid_count)return NF18B2_STALE;
         const Nf18aCollider *c=&scene.geometry.solids[solid_count++];
-        if(c->body_id!=(uint32_t)i+100000u||c->dynamic_body||
+        if(c->dynamic_body||
            c->min.x!=wc->min.x||c->min.y!=wc->min.y||
            c->min.z!=wc->min.z||c->max.x!=wc->max.x||
            c->max.y!=wc->max.y||c->max.z!=wc->max.z)
