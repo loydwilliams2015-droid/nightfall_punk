@@ -17,6 +17,10 @@ typedef struct {
 } NfRetcJointContext;
 /* Source-derived variant: requires exactly one granted encounter PUSH with
  * matching B3 source receipt; rejects detached caller-supplied B2 fields. */
+/* A6 exclusive composite ownership: installs one RET-C hook, not B2/B3
+ * independent finish callbacks. Commit remains fail-closed until migration. */
+bool nf_retc_joint_attach(NfWorld *world,NfRetcJointContext *context);
+bool nf_retc_joint_detach(NfWorld *world,NfRetcJointContext *context);
 NfRetcFrame *nf_retc_joint_stage_owned(const NfWorld *world,
  const Nf18a5Integrated *candidate,void *context);
 NfRetcFrame *nf_retc_joint_stage(const NfWorld *world,
