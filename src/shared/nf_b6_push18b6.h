@@ -75,4 +75,6 @@ bool nf18b6_push_h20_journal(Nf18b6Push *ctx,const char *path);
 bool nf18b6_push_require_h9(Nf18b6Push *ctx);
 bool nf18b6_push_detach(Nf18b6Push *ctx,Nf18a6Runtime *runtime,
                          const NfWorld *world);
+/* Existing B3 owner authorization checked inside one A6 composite lease. */
+Nf18a6OwnerGate nf18b6_push_prepare_joint(Nf18b6Push *,const NfWorld *,uint32_t);
 #endif
