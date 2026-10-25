@@ -141,7 +141,7 @@ bool nf_retc_restore_file(const char *path,NfRetcFrame *out){
  if(ok)*out=*temp;
  free(temp);return ok;
 }
-bool nf_retc_commit_file(NfRetcPublisher *pub,NfRetcFrame *f,
+bool nf_retc_persist_file(NfRetcPublisher *pub,NfRetcFrame *f,
  const char *path){
  if(!pub||!f||!path||!f->has_b2_contract||
     !nf_retc_seal_b2_b3(f)||pub->count>=NF_RETC_HISTORY)return false;
@@ -161,5 +161,9 @@ bool nf_retc_commit_file(NfRetcPublisher *pub,NfRetcFrame *f,
  if(!ok){remove(stage);return false;}
  /* Atomic rename protects previous complete frame from a partial write.
     Directory durability and crash-matrix proof are still outstanding. */
- return nf_retc_publish(pub,f);
+ return true;
+}
+bool nf_retc_commit_file(NfRetcPublisher *pub,NfRetcFrame *f,
+ const char *path){
+ return nf_retc_persist_file(pub,f,path)&&nf_retc_publish(pub,f);
 }
