@@ -4,7 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#define CHECK(x) do {if(!(x)){fprintf(stderr,"RET-C real dispatcher failure line %d: %s\\n",__LINE__,#x);return 1;}}while(0)
+#define CHECK(x) do {if(!(x)){fprintf(stderr,"RET-C real dispatcher failure line %d: %s\
+",__LINE__,#x);return 1;}}while(0)
 static bool b2_provider(void *ctx,const NfWorld *w,const Nf18a6Runtime *owner,
  uint32_t action,Nf18b2Scene *scene,Nf18b2Use *use){
  Nf18b2EncounterRuntime *r=ctx;
@@ -54,7 +55,10 @@ int main(void){
  Nf18b2Object object={0};
  object.id=2010;object.revision=1;object.cell_id=1;
  object.nexus_id=1;object.slot_id=1;object.capacity=1;
- /* Interaction point sits just outside the actor-facing crate surface;\n    the crate center is materially occluded and must not be used as a handle. */\n object.target=(NfVec3){crate.center.x-crate.box_half.x-.01f,crate.center.y,crate.center.z};\n object.max_reach=3.f;object.preconditions=1;
+ /* Interaction point sits just outside the actor-facing crate surface;
+    the crate center is materially occluded and must not be used as a handle. */
+ object.target=(NfVec3){crate.center.x-crate.box_half.x-.01f,crate.center.y,crate.center.z};
+ object.max_reach=3.f;object.preconditions=1;
  CHECK(nf18b2_register_object(enc,object,r->physical.world.grid.global_revision,0,0));
  const char *journal="/tmp/nightfall_retc_real_twotick.bin";
  remove(journal);
@@ -80,12 +84,14 @@ int main(void){
          &r->physical.world.grid,sample->feet,(NfVec3){0,0,0},
          shape,1,(uint32_t)w->tick+1,NULL,NULL,NULL);
      fprintf(stderr,
-       "RET-C B2 body probe: radius=%.3f height=%.3f geometry_clear=%d material_query=%d solids=%zu material_epoch=%u\\n",
+       "RET-C B2 body probe: radius=%.3f height=%.3f geometry_clear=%d material_query=%d solids=%zu material_epoch=%u\
+",
        sample->radius,sample->height,(int)geometry_clear,
        (int)material_body,enc->frame.scene.geometry.solid_count,
        r->physical.world.grid.global_revision);
      fprintf(stderr,
-       "RET-C B2 proposal tick=%u status=%d reason=%d physical=%d contract=%d queue=%zu traces=%zu actor=(%.3f,%.3f,%.3f) target=(%.3f,%.3f,%.3f)\\n",
+       "RET-C B2 proposal tick=%u status=%d reason=%d physical=%d contract=%d queue=%zu traces=%zu actor=(%.3f,%.3f,%.3f) target=(%.3f,%.3f,%.3f)\
+",
        tick,(int)proposed,trace?(int)trace->authorization.reason:-1,
        trace?(int)trace->authorization.physical:-1,
        trace?(int)trace->authorization.contract:-1,
@@ -99,7 +105,8 @@ int main(void){
    nf_world_set_input(w,10,move);
    const NfWorldTickStatus status=nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
    if(status!=NF_WORLD_TICK_COMMITTED){
-      fprintf(stderr,"real dispatcher tick %u status=%d lastA6=%d B2=%d B3=%d\\n",
+      fprintf(stderr,"real dispatcher tick %u status=%d lastA6=%d B2=%d B3=%d\
+",
        tick,(int)status,(int)r->tick_trace.embodiment_status,
        (int)enc->traces[enc->trace_count-1].revalidation.status,(int)push->last_result);
       return 1;
