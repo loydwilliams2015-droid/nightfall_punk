@@ -306,7 +306,7 @@ static void finish(const NfWorld *w,const Nf18a6Outcome *out,void *ctx){
 bool nf18b2_attach(Nf18b2EncounterRuntime *r){
     if(!mutable_boundary(r)||r->attached||!r->world->tick_owner||
        r->world->tick_owner_context!=r->owner||r->owner->owner_hooks.context)return false;
-    r->owner->owner_hooks=(Nf18a6OwnerHooks){begin,prepublish,finish,r};r->attached=1;return true;
+    r->owner->owner_hooks=(Nf18a6OwnerHooks){.begin=begin,.prepublish=prepublish,.finish=finish,.context=r};r->attached=1;return true;
 }
 bool nf18b2_detach(Nf18b2EncounterRuntime *r){
     if(!mutable_boundary(r)||!r->attached||r->queue_count||r->owner->owner_hooks.context!=r)return false;
