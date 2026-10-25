@@ -103,8 +103,17 @@ static void joint_finish(const NfWorld *w,const Nf18a6Outcome *out,void *arg){
        j->push->armed=false;
        /* The public pointer changes only after A6 physical projection AND
           B2/B3 projection, while the world tick owner is still active. */
-       if(nf_retc_publish(j->owner->retc_publisher,frame))
+       if(nf_retc_publish(j->owner->retc_publisher,frame)){
            j->owner->retc_pending=NULL;
+           /* One accepted encounter is consumed; history/receipt authority
+              persists, but stale pending intents may not block tick N+1. */
+           j->encounter->queue_count=0;
+           j->encounter->prepared=0;
+           for(size_t k=0;k<NF18B2_MAX_REQUESTS;++k)
+               j->encounter->granted[k]=0;
+           j->push->staged_commit_valid=false;
+           j->push->last_result=NF18B3_OK;
+       }
     }
  }
  free(j->rollback_encounter);
