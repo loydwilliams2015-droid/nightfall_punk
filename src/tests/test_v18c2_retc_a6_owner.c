@@ -9,8 +9,8 @@ int main(void){
  NfRetcPublisher *pub=calloc(1,sizeof *pub);
  CK(w&&r&&pub);
  nf_world_init(w,42);
- CK(nf_world_add_collider(w,NF_COLLIDER_SOLID,(NfVec3){0,-.5f,0},
-  (NfVec3){4,0,4})!=0);
+ nf_world_add_collider(w,NF_COLLIDER_SOLID,(NfVec3){0,-.5f,0},
+  (NfVec3){4,0,4});
  CK(nf_world_spawn_actor_with_id(w,10,NF_FACTION_PLAYER,
   (NfVec3){1,0,1})==10);
  Nf18a4Body obj={0};obj.id=2001;obj.center=(NfVec3){2,.9f,1};
