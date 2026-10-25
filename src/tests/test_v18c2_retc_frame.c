@@ -1,4 +1,5 @@
 #include "nf_c2_retc_frame.h"
+#include "nf_retc_joint_provider.h"
 #include <stdio.h>
 #include <stdlib.h>
 #define CK(x) do {if(!(x)){fprintf(stderr,"RET-C fail line %d\n",__LINE__);return 1;}}while(0)
@@ -54,6 +55,28 @@ int main(void){
  CK(!nf_retc_bind_encounter(f,encounter));
  encounter->staged.accounts[0].balance=1000;
  CK(f->encounter_registry.accounts[0].balance==41);
+ /* Composite provider requires one A6 lease and both source domains. */
+ NfWorld *live=calloc(1,sizeof *live);CK(live);
+ live->tick=0;live->tick_in_progress=true;live->tick_owner_context=owner;
+ Nf18b6Push push={0};push.runtime=owner;push.armed=true;
+ push.staged_commit_valid=true;push.contract_epoch=7;push.staged_commit=f->event;
+ NfRetcJointContext joint={0};
+ joint.owner=owner;joint.encounter=encounter;joint.push=&push;
+ joint.use=use;joint.use.tick=1;joint.use.action_id=91;
+ joint.use.world_revision=f->physical.world.revision;
+ joint.use.material_epoch=f->physical.world.grid.global_revision;
+ joint.decision=decision;joint.actor=actor;joint.object=object;
+ joint.authority=authority;joint.transaction_id=1;
+ owner->retc_publisher=&publisher;
+ encounter->prepared=0;
+ CK(nf_retc_joint_stage(live,&f->physical,&joint)==NULL); /* unprepared */
+ encounter->prepared=1;
+ NfRetcFrame *combined=nf_retc_joint_stage(live,&f->physical,&joint);
+ CK(combined&&combined->has_b2_contract&&combined->has_encounter_registry);
+ CK(combined->encounter_registry.accounts[0].balance==41);
+ push.staged_commit_valid=false;
+ CK(!nf_retc_joint_stage(live,&f->physical,&joint)); /* missing B3 */
+ free(combined);free(live);
  CK(nf_retc_publish(&publisher,f));
  free(encounter);free(owner);
  CK(nf_retc_read(&publisher)==f&&nf_retc_read(&publisher)->epoch==1);
