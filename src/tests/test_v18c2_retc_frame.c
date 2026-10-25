@@ -72,7 +72,15 @@ int main(void){
      &use,&decision,&actor,&object,&authority);CK(other);
  CK(other->has_b2_contract&&other->obligation_count==0);
  CK(other->b2_actor.inventory==99);
- CK(nf_retc_publish(&publisher,other));
+ char journal[160];snprintf(journal,sizeof journal,"/tmp/nightfall_retc_frame_%u.bin",(unsigned)other->transaction_id);
+ remove(journal);
+ CK(nf_retc_commit_file(&publisher,other,journal));
+ NfRetcFrame *disk=malloc(sizeof *disk);CK(disk);
+ CK(nf_retc_restore_file(journal,disk));
+ CK(disk->epoch==other->epoch&&disk->event.action==other->event.action&&
+    disk->has_b2_contract&&disk->b2_actor.inventory==other->b2_actor.inventory);
+ CK(!nf_retc_commit_file(&publisher,other,journal)); /* replay */
+ free(disk);CK(remove(journal)==0);
  CK(nf_retc_read(&publisher)->epoch==2);
  CK(nf_retc_read(&publisher)->event.action==92);
  nf_retc_dispose(&publisher);free(p);
