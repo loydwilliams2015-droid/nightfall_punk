@@ -58,6 +58,7 @@ int main(void){
  /* Composite provider requires one A6 lease and both source domains. */
  NfWorld *live=calloc(1,sizeof *live);CK(live);
  live->tick=0;live->tick_in_progress=true;live->tick_owner_context=owner;
+  encounter->world=live;
  Nf18b6Push push={0};push.runtime=owner;push.armed=true;
  push.staged_commit_valid=true;push.contract_epoch=7;push.staged_commit=f->event;
  NfRetcJointContext joint={0};
@@ -73,7 +74,7 @@ int main(void){
  encounter->prepared=1;
  NfRetcFrame *combined=nf_retc_joint_stage(live,&f->physical,&joint);
  CK(combined&&combined->has_b2_contract&&combined->has_encounter_registry);
- CK(combined->encounter_registry.accounts[0].balance==41);
+ CK(combined->encounter_registry.accounts[0].balance==1000);
  push.staged_commit_valid=false;
  CK(!nf_retc_joint_stage(live,&f->physical,&joint)); /* missing B3 */
  free(combined);free(live);
