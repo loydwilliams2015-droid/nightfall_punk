@@ -7,7 +7,7 @@ int main(void){
  NfRetcPublisher publisher={0};
  CK(nf_retc_read(&publisher)==NULL);
  Nf18a5Integrated *p=calloc(1,sizeof *p);CK(p);
- p->world.tick=1;p->actor.id=10;p->object.id=2010;
+ p->world.tick=1;p->world.revision=1;p->actor.id=10;p->object.id=2010;
  p->committed_receipts=1;
  Nf18b3Event event={0};
  event.actor=10;event.object=2010;event.tick=1;event.action=91;
@@ -64,7 +64,7 @@ int main(void){
  NfRetcJointContext joint={0};
  joint.owner=owner;joint.encounter=encounter;joint.push=&push;
  joint.use=use;joint.use.tick=1;joint.use.action_id=91;
- joint.use.world_revision=f->physical.world.revision;
+ joint.use.world_revision=f->physical.world.revision-1u;
  joint.use.material_epoch=f->physical.world.grid.global_revision;
  joint.decision=decision;joint.actor=actor;joint.object=object;
  joint.authority=authority;joint.transaction_id=1;
