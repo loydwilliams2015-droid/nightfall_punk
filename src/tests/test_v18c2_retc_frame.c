@@ -115,6 +115,26 @@ int main(void){
  live->tick_in_progress=false;
  CK(nf_retc_joint_detach(live,&joint));
  CK(owner->owner_hooks.context==NULL);
+ /* Accepted-frame projection contract under the real combined finish hook. */
+ NfRetcPublisher *p2=calloc(1,sizeof *p2);CK(p2);
+ NfRetcFrame *accepted=malloc(sizeof *accepted);CK(accepted);
+ *accepted=*f;accepted->epoch=1;accepted->prior_epoch=0;
+ accepted->transaction_id=1;
+ owner->retc_publisher=p2;owner->retc_pending=accepted;
+ joint.rollback_encounter=malloc(sizeof *encounter);CK(joint.rollback_encounter);
+ *joint.rollback_encounter=*encounter;
+ encounter->registry.accounts[0].balance=999;
+ push.event.phase=NF18B3_WAITING;
+ Nf18a6Outcome committed={0};committed.status=NF18A6_COMMITTED;
+ committed.tick=1;
+ CK(nf_retc_joint_attach(live,&joint));
+ owner->owner_hooks.finish(live,&committed,&joint);
+ CK(nf_retc_read(p2)==accepted);
+ CK(encounter->registry.accounts[0].balance==accepted->encounter_registry.accounts[0].balance);
+ CK(push.event.phase==NF18B3_APPLIED&&push.receipt_count==1);
+ CK(owner->retc_pending==NULL);
+ CK(nf_retc_joint_detach(live,&joint));
+ nf_retc_dispose(p2);free(p2);owner->retc_publisher=&publisher;
  free(live);
  CK(nf_retc_publish(&publisher,f));
  free(encounter);free(owner);
