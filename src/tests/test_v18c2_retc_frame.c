@@ -41,7 +41,21 @@ int main(void){
  CK(!nf_retc_publish(&publisher,f));
  CK(nf_retc_read(&publisher)==NULL);
  f->event.kind=NF18B3_PUSH;
+ Nf18a6Runtime *owner=calloc(1,sizeof *owner);CK(owner);
+ Nf18b2EncounterRuntime *encounter=calloc(1,sizeof *encounter);CK(encounter);
+ owner->actor_id=10;owner->physical.world.tick=0;
+ encounter->owner=owner;encounter->prepared=1;
+ encounter->staged.contract_epoch=7;
+ encounter->staged.revision=3;
+ encounter->staged.account_count=1;
+ encounter->staged.accounts[0].actor_id=10;
+ encounter->staged.accounts[0].balance=41;
+ CK(nf_retc_bind_encounter(f,encounter));
+ CK(!nf_retc_bind_encounter(f,encounter));
+ encounter->staged.accounts[0].balance=1000;
+ CK(f->encounter_registry.accounts[0].balance==41);
  CK(nf_retc_publish(&publisher,f));
+ free(encounter);free(owner);
  CK(nf_retc_read(&publisher)==f&&nf_retc_read(&publisher)->epoch==1);
  CK(!nf_retc_publish(&publisher,f)); /* no replay */
  p->world.tick=2;event.tick=2;event.action=92;
