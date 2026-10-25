@@ -43,6 +43,8 @@ struct Nf18a6Outcome;
 typedef struct Nf18a6OwnerHooks {
     Nf18a6OwnerGate (*begin)(const NfWorld *,uint32_t,void *);
     bool (*prepublish)(const NfWorld *,const Nf18a5Integrated *,void *);
+    /* Single A6 owner-invoked candidate approval; no live state mutation. */
+    bool (*accept_candidate)(const NfWorld *,const Nf18a5Integrated *,void *);
     void (*finish)(const NfWorld *,const struct Nf18a6Outcome *,void *);
     void *context;
 } Nf18a6OwnerHooks;
