@@ -67,7 +67,21 @@ int main(void){
  CHECK(nf_retc_joint_attach(w,&joint));
  for(uint32_t tick=1;tick<=2;++tick){
    const uint32_t action=90u+tick;
-   CHECK(nf18b2_propose(enc,(Nf18b2Intent){10,2010,action,NF18B2_PUSH})==NF18B2_ELIGIBLE);
+   const Nf18b2Status proposed=nf18b2_propose(
+     enc,(Nf18b2Intent){10,2010,action,NF18B2_PUSH});
+   if(proposed!=NF18B2_ELIGIBLE){
+     const Nf18b2EncounterTrace *trace=enc->trace_count?
+       &enc->traces[enc->trace_count-1]:NULL;
+     fprintf(stderr,
+       "RET-C B2 proposal tick=%u status=%d reason=%d physical=%d contract=%d queue=%zu traces=%zu actor=(%.3f,%.3f,%.3f) target=(%.3f,%.3f,%.3f)\\n",
+       tick,(int)proposed,trace?(int)trace->authorization.reason:-1,
+       trace?(int)trace->authorization.physical:-1,
+       trace?(int)trace->authorization.contract:-1,
+       enc->queue_count,enc->trace_count,
+       actor->transform.position.x,actor->transform.position.y,
+       actor->transform.position.z,object.target.x,object.target.y,object.target.z);
+     return 1;
+   }
    CHECK(nf18b6_push_arm_b2(push,w,action)==NF18B3_OK);
    NfMoveInput move={0};move.strafe=1;
    nf_world_set_input(w,10,move);
