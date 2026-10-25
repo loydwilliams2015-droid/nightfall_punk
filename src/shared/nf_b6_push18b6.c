@@ -478,3 +478,10 @@ bool nf18b6_push_h37_committed_view(const NfWorld *w,
  if(view.actor_id!=accepted.actor||view.tick!=accepted.tick)return false;
  *physical=view;*contract=accepted;return true;
 }
+
+Nf18a6OwnerGate nf18b6_push_prepare_joint(Nf18b6Push *r,
+ const NfWorld *w,uint32_t tick){
+ if(!r||!w||!r->runtime||w->tick_owner_context!=r->runtime||
+    r->runtime->owner_hooks.context==r)return NF18A6_GATE_INVALID;
+ return begin(w,tick,r);
+}
