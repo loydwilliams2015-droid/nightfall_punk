@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "nf_embody18a6.h"
+#include "nf_c2_retc_frame.h"
 #include "nf_v18c2_h9_auth.h"
 #include "nf_movement.h"
 #include <math.h>
@@ -227,6 +228,9 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
              &r->physical.object,tick,r->physical.world.revision);
         ++r->accepted;return outcome(NF18A6_COMMITTED,r);
     }
+    /* Until the A6 owner can source-bind an entire B2/B3 contract record,
+       refuse to claim joint-frame publication in the live tick. */
+    if(r->retc_publisher)return outcome(NF18A6_UNSUPPORTED,r);
     Nf18a5Integrated next=r->physical;
     const Nf18a6GateContext gate={w,r->object_collider_index,shape,dt,start,&r->owner_hooks};
     Nf18a5CloseResult result=nf18a5_integrated_pair_step_checked(&next,version,tick,start,
@@ -463,4 +467,14 @@ bool nf18a6_unbind_world_tick(NfWorld *world,Nf18a6Runtime *runtime){
     runtime->tick_provider_context=NULL;
     runtime->tick_journal=NULL;
     return true;
+}
+
+bool nf18a6_retc_bind(Nf18a6Runtime *r,NfRetcPublisher *publisher,
+ const char *joint_journal){
+ if(!r||!publisher||!joint_journal||!joint_journal[0]||
+    r->retc_publisher||r->tick_journal||
+    r->world_lease.users||r->joint_publication_active)return false;
+ r->retc_publisher=publisher;
+ r->retc_journal=joint_journal;
+ return true;
 }
