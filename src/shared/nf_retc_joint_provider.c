@@ -86,7 +86,7 @@ static void joint_finish(const NfWorld *w,const Nf18a6Outcome *out,void *arg){
  if(!out||out->status!=NF18A6_COMMITTED){
     *j->encounter=*j->rollback_encounter;
  }else{
-    const NfRetcFrame *frame=nf_retc_read(j->owner->retc_publisher);
+    NfRetcFrame *frame=j->owner->retc_pending;
     if(frame&&frame->epoch==out->tick&&frame->has_encounter_registry&&
        frame->event.kind==NF18B3_PUSH&&frame->event.phase==NF18B3_APPLIED){
        j->encounter->registry=frame->encounter_registry;
@@ -97,6 +97,10 @@ static void joint_finish(const NfWorld *w,const Nf18a6Outcome *out,void *arg){
        }
        j->push->published_epoch=frame->epoch;
        j->push->armed=false;
+       /* The public pointer changes only after A6 physical projection AND
+          B2/B3 projection, while the world tick owner is still active. */
+       if(nf_retc_publish(j->owner->retc_publisher,frame))
+           j->owner->retc_pending=NULL;
     }
  }
  free(j->rollback_encounter);
