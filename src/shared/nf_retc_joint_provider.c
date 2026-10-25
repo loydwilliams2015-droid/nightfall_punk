@@ -83,8 +83,22 @@ static void joint_finish(const NfWorld *w,const Nf18a6Outcome *out,void *arg){
  if(!j||!j->rollback_encounter)return;
  /* Composite owner does not authorize any successful publication yet. Roll
     back speculative reservation, trace and grant changes on every refusal. */
- if(!out||out->status!=NF18A6_COMMITTED)
+ if(!out||out->status!=NF18A6_COMMITTED){
     *j->encounter=*j->rollback_encounter;
+ }else{
+    const NfRetcFrame *frame=nf_retc_read(j->owner->retc_publisher);
+    if(frame&&frame->epoch==out->tick&&frame->has_encounter_registry&&
+       frame->event.kind==NF18B3_PUSH&&frame->event.phase==NF18B3_APPLIED){
+       j->encounter->registry=frame->encounter_registry;
+       j->push->event=frame->event;
+       if(j->push->receipt_count<NF18B6_PUSH_RECEIPTS){
+         j->push->receipts[j->push->receipt_count++]=(Nf18b6PushReceipt){
+           frame->event.actor,frame->event.action,frame->event.tick};
+       }
+       j->push->published_epoch=frame->epoch;
+       j->push->armed=false;
+    }
+ }
  free(j->rollback_encounter);
  j->rollback_encounter=NULL;
  (void)w;
