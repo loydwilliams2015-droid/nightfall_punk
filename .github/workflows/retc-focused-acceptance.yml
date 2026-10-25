@@ -1,0 +1,36 @@
+name: RET-C focused two-tick acceptance
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - engineering/retc-atomic-publication-convergence
+    paths:
+      - 'src/shared/**'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - 'CMakeLists.txt'
+      - '.github/workflows/retc-focused-acceptance.yml'
+concurrency:
+  group: retc-focused-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  two-tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build-retc -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug
+      - name: Build focused test
+        run: cmake --build build-retc --target nightfall_v18c2_retc_real_twotick_test --parallel 2
+      - name: Run real A6 two-tick gate
+        run: ctest --test-dir build-retc -R '^retc_real_dispatcher_two_joint_ticks_v18c2$' --output-on-failure --output-junit retc-two-tick.xml
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retc-two-tick-evidence
+          path: |
+            build-retc/Testing/Temporary/LastTest.log
+            build-retc/retc-two-tick.xml
+          if-no-files-found: warn
+          retention-days: 7
