@@ -31,9 +31,9 @@ NfRetcFrame *nf_retc_joint_stage(const NfWorld *w,
  NfRetcFrame *f=nf_retc_stage_source_push(p,e,j->transaction_id,
       (uint32_t)w->tick,&j->use,&j->decision,
       &j->actor,&j->object,&j->authority);
- if(!f)return NULL;
+ if(!f){fprintf(stderr,"RET-C joint_stage construction FAILED: nf_retc_stage_source_push\n");return NULL;}
  if(!nf_retc_bind_encounter(f,j->encounter)){
-    free(f);return NULL;
+    fprintf(stderr,"RET-C joint_stage bind FAILED: nf_retc_bind_encounter\n");free(f);return NULL;
  }
  return f;
 }
