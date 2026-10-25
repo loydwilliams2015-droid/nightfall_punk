@@ -52,7 +52,8 @@ bool nf_retc_seal_b2_b3(NfRetcFrame *f){
  if(!f||!f->has_b2_contract||f->event.phase!=NF18B3_APPLIED||
     !f->event.applied||!f->event.authorized||
     f->b2_use.tick!=f->epoch||
-    f->b2_use.world_revision!=f->physical.world.revision||
+    f->b2_use.world_revision==UINT32_MAX||
+    f->b2_use.world_revision+1u!=f->physical.world.revision||
     f->b2_use.material_epoch!=f->physical.world.grid.global_revision||
     f->b2_decision.status!=NF18B2_ELIGIBLE||
     f->b2_decision.physical!=NF18B2_ELIGIBLE||
