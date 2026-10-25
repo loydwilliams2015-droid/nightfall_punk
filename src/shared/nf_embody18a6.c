@@ -238,12 +238,15 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
         const Nf18a5CloseResult staged=
             nf18a5_integrated_pair_stage_checked(&candidate,version,tick,start,
               loader,ctx,shape,motor,dt,0.0f,0.5f,NULL,NULL);
-        if(staged.status!=NF18A5_CLOSE_COMMITTED)
+        if(staged.status!=NF18A5_CLOSE_COMMITTED){
+            fprintf(stderr,"RET-C A6 stage rejected: close_status=%d tick=%u\\n",(int)staged.status,tick);
             return outcome(NF18A6_UNSUPPORTED,r);
+        }
         if(r->owner_hooks.stage_joint){
             NfRetcFrame *joint=r->owner_hooks.stage_joint(w,&candidate,
                                   r->owner_hooks.context);
-            if(!joint)return outcome(NF18A6_UNSUPPORTED,r);
+            if(!joint){fprintf(stderr,"RET-C A6 joint_stage rejected tick=%u\\n",tick);
+                return outcome(NF18A6_UNSUPPORTED,r); }
             const bool valid=joint->has_b2_contract&&
                 joint->has_encounter_registry&&nf_retc_seal_b2_b3(joint)&&
                 joint->epoch==candidate.world.tick&&
@@ -251,7 +254,8 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
                 joint->physical.committed_receipts==candidate.committed_receipts&&
                 joint->owner_actor==r->actor_id&&
                 joint->object_id==candidate.object.id;
-            if(!valid){free(joint);return outcome(NF18A6_UNSUPPORTED,r);}
+            if(!valid){fprintf(stderr,"RET-C A6 seal invalid tick=%u contract=%d registry=%d epoch=%u expected=%u\\n",tick,(int)joint->has_b2_contract,(int)joint->has_encounter_registry,joint->epoch,candidate.world.tick);
+                free(joint);return outcome(NF18A6_UNSUPPORTED,r);}
             /* All possible publication failures must be rejected before the
                durable rename; otherwise restart and live state can diverge. */
             const NfRetcFrame *prior=nf_retc_read(r->retc_publisher);
