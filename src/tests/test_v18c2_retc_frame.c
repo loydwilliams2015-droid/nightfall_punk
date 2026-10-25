@@ -2,6 +2,8 @@
 #include "nf_retc_joint_provider.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
 #define CK(x) do {if(!(x)){fprintf(stderr,"RET-C fail line %d\n",__LINE__);return 1;}}while(0)
 int main(void){
  NfRetcPublisher publisher={0};
@@ -163,10 +165,18 @@ int main(void){
     no new frame becomes visible before publisher activation. */
  {
    char staging[192];snprintf(staging,sizeof staging,"%s.staging",journal);
-   FILE *partial=fopen(staging,"wb");CK(partial);
-   const unsigned char fragment[3]={0x52,0x45,0x54};
-   CK(fwrite(fragment,1,sizeof fragment,partial)==sizeof fragment);
-   CK(fclose(partial)==0);
+   /* Actual child-process exit before rename, leaving an incomplete write. */
+   pid_t pid=fork();CK(pid>=0);
+   if(pid==0){
+     FILE *partial=fopen(staging,"wb");
+     if(!partial)_exit(101);
+     const unsigned char fragment[3]={0x52,0x45,0x54};
+     if(fwrite(fragment,1,sizeof fragment,partial)!=sizeof fragment)_exit(102);
+     if(fflush(partial)!=0||fsync(fileno(partial))!=0)_exit(103);
+     _exit(77); /* no fclose, rename, or publisher activation */
+   }
+   int child_status=0;
+   CK(waitpid(pid,&child_status,0)==pid&&WIFEXITED(child_status)&&WEXITSTATUS(child_status)==77);
    NfRetcFrame *incomplete=malloc(sizeof *incomplete);CK(incomplete);
    CK(!nf_retc_restore_file(staging,incomplete));
    CK(nf_retc_restore_file(journal,incomplete));
