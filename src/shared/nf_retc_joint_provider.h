@@ -14,6 +14,8 @@ typedef struct {
  Nf18b2Object object;
  Nf18b2Authority authority;
  uint32_t transaction_id;
+ /* Full pre-tick B2 state for rejection rollback; never authoritative WAL. */
+ Nf18b2EncounterRuntime *rollback_encounter;
 } NfRetcJointContext;
 /* Source-derived variant: requires exactly one granted encounter PUSH with
  * matching B3 source receipt; rejects detached caller-supplied B2 fields. */
