@@ -45,7 +45,7 @@ int main(void){
  CHECK(nf_world_spawn_actor_with_id(w,10,NF_FACTION_PLAYER,(NfVec3){1,0,1})==10);
  NfActor *actor=nf_world_find_actor(w,10);CHECK(actor);
  actor->movement.grounded=true;actor->movement.mode=NF_MOVE_GROUND;
- Nf18a4Body crate={0};crate.id=2010;crate.center=(NfVec3){1.58f,.9f,1};
+ Nf18a4Body crate={0};crate.id=2010;crate.center=(NfVec3){1.5601f,.9f,1};
  crate.inverse_mass=1.f/24.f;crate.box_half=(NfVec3){.2f,.5f,.35f};
  CHECK(nf18a6_init(r,w,10,crate,3,NF18A6_WORLD_BRIDGE));
  uint8_t empty[NF18A5_CANON_VOXELS]={0};
