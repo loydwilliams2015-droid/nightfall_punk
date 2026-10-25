@@ -33,7 +33,7 @@ typedef struct NfRetcFrame {
  NfRetcObligation obligations[NF_RETC_OBLIGATIONS];
  uint32_t derived_actor_hash,derived_contract_hash;
 } NfRetcFrame;
-typedef struct {
+typedef struct NfRetcPublisher {
  _Atomic(const NfRetcFrame *) current;
  NfRetcFrame *owned[NF_RETC_HISTORY];
  uint32_t count;
