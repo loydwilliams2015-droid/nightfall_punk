@@ -56,6 +56,16 @@ int main(void){
  CK(nf18a6_bind_world_tick(world,runtime,NULL,NULL,NULL));
  CK(!nf18b6_push_h26_recover(world,runtime,push,path)); /* active owner */
  CK(nf18a6_unbind_world_tick(world,runtime));
+ /* Even a valid newer physical-only journal must not overwrite a committed
+    joint B3 epoch and orphan its contractual receipt. */
+ Nf18a5Integrated *newer=calloc(1,sizeof *newer);CK(newer);
+ *newer=runtime->physical;newer->world.tick=2;
+ char a5path[200];snprintf(a5path,sizeof a5path,"%s.a5",path);
+ CK(nf18a5_checkpoint(a5path,newer));
+ CK(!nf18a6_recover(runtime,world,a5path));
+ CK(world->tick==1&&runtime->joint_commit_epoch==1&&
+    push->receipt_count==1);
+ CK(remove(a5path)==0);free(newer);
  free(push);
  /* A crash before publication is denied, not fabricated. */
  CK(remove(path)==0);
