@@ -102,6 +102,17 @@ int main(void){
  CK(owner->owner_hooks.begin!=NULL&&owner->owner_hooks.stage_joint!=NULL);
  CK(owner->owner_hooks.finish!=NULL); /* composite rollback only */
  CK(!nf_retc_joint_attach(live,&joint));
+ live->tick_in_progress=true;
+ const uint32_t before_balance=encounter->staged.accounts[0].balance;
+ const Nf18a6OwnerGate prep=owner->owner_hooks.begin(live,1,&joint);
+ CK(prep!=NF18A6_GATE_READY);
+ CK(joint.rollback_encounter!=NULL);
+ encounter->staged.accounts[0].balance=123456;
+ Nf18a6Outcome rejected={0};rejected.status=NF18A6_UNSUPPORTED;
+ owner->owner_hooks.finish(live,&rejected,&joint);
+ CK(joint.rollback_encounter==NULL&&
+    encounter->staged.accounts[0].balance==before_balance);
+ live->tick_in_progress=false;
  CK(nf_retc_joint_detach(live,&joint));
  CK(owner->owner_hooks.context==NULL);
  free(live);
