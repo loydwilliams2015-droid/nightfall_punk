@@ -253,7 +253,7 @@ if(NF_CONTACT_LAB_ONLY)
     add_test(NAME h31_outer_publication_cutpoints_v18c2
              COMMAND nightfall_v18c2_h31_outer_cuts_test $<TARGET_FILE:nightfall_v18b6_h31_fault_writer>)
     add_executable(nightfall_v18c2_retc_a6_owner_test src/tests/test_v18c2_retc_a6_owner.c)
-    target_link_libraries(nightfall_v18c2_retc_a6_owner_test PRIVATE nightfall_embody_h1)
+    target_link_libraries(nightfall_v18c2_retc_a6_owner_test PRIVATE nightfall_embody_h1 nightfall_network)
     nf_project_warnings(nightfall_v18c2_retc_a6_owner_test)
     add_test(NAME retc_a6_owner_fails_closed_v18c2 COMMAND nightfall_v18c2_retc_a6_owner_test)
     add_executable(nightfall_v18c2_retc_real_twotick_test src/tests/test_v18c2_retc_real_twotick.c)
