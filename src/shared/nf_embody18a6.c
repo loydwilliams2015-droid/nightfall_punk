@@ -298,7 +298,10 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
 bool nf18a6_recover(Nf18a6Runtime *r,NfWorld *w,const char *journal){
     /* A physical-only WAL cannot recover B2 reservations/receipts atomically.
        An attached B2 owner requires the future B5 recovery interface. */
-    if(r && r->owner_hooks.context)return false;
+    /* Once an A6 joint decision has been accepted, a physical-only WAL is
+       never permitted to advance the live world: contractual state would
+       be missing. Reconstruct the domains together from a joint record. */
+    if(r && (r->owner_hooks.context||r->joint_commit_epoch))return false;
     if(!r||!w||!journal||r->object_collider_index>=w->collider_count)return false;
     Nf18a5Integrated restored={0};
     if(!nf18a5_restore(journal,&restored)||restored.actor.id!=r->actor_id||
