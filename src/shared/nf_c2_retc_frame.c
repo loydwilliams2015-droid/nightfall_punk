@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 static uint32_t digest(uint32_t a,uint32_t b,uint32_t c){
  uint32_t v=2166136261u;
  v=(v^a)*16777619u;v=(v^b)*16777619u;return (v^c)*16777619u;
@@ -148,12 +149,16 @@ bool nf_retc_commit_file(NfRetcPublisher *pub,NfRetcFrame *f,
     f->epoch!=f->prior_epoch+1u||
     (prior&&f->transaction_id<=prior->transaction_id))return false;
  /* Full frame includes source-bound B2, B3 and A5; write before pointer. */
- FILE *fp=fopen(path,"wb");if(!fp)return false;
+ char stage[1024];if(strlen(path)>990u||snprintf(stage,sizeof stage,"%s.staging",path)>=(int)sizeof stage)return false;
+ FILE *fp=fopen(stage,"wb");if(!fp)return false;
  const RetcDiskHeader h={0x52455443u,1u,(uint32_t)sizeof *f,
    frame_checksum((const unsigned char *)f,sizeof *f)};
  bool ok=fwrite(&h,sizeof h,1,fp)==1&&fwrite(f,sizeof *f,1,fp)==1;
- if(ok)ok=fflush(fp)==0;
+ if(ok)ok=fflush(fp)==0&&fsync(fileno(fp))==0;
  if(fclose(fp)!=0)ok=false;
- if(!ok)return false;
+ if(ok)ok=rename(stage,path)==0;
+ if(!ok){remove(stage);return false;}
+ /* Atomic rename protects previous complete frame from a partial write.
+    Directory durability and crash-matrix proof are still outstanding. */
  return nf_retc_publish(pub,f);
 }
