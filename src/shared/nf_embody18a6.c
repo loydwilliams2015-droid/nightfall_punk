@@ -252,6 +252,15 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
                 joint->owner_actor==r->actor_id&&
                 joint->object_id==candidate.object.id;
             if(!valid){free(joint);return outcome(NF18A6_UNSUPPORTED,r);}
+            /* All possible publication failures must be rejected before the
+               durable rename; otherwise restart and live state can diverge. */
+            const NfRetcFrame *prior=nf_retc_read(r->retc_publisher);
+            if(r->retc_publisher->count>=NF_RETC_HISTORY||
+               joint->prior_epoch!=(prior?prior->epoch:0u)||
+               joint->epoch!=joint->prior_epoch+1u||
+               (prior&&joint->transaction_id<=prior->transaction_id)){
+                free(joint);return outcome(NF18A6_UNSUPPORTED,r);
+            }
             /* The complete frame is accepted once, before deriving the
                A6 projections. No independent A5 WAL is emitted. */
             /* Verify all destination pointers BEFORE accepting a durable
