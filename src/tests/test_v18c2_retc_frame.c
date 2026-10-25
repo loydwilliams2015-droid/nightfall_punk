@@ -100,7 +100,7 @@ int main(void){
  live->tick_in_progress=false;
  CK(nf_retc_joint_attach(live,&joint));
  CK(owner->owner_hooks.begin!=NULL&&owner->owner_hooks.stage_joint!=NULL);
- CK(owner->owner_hooks.finish==NULL); /* no split finish authority */
+ CK(owner->owner_hooks.finish!=NULL); /* composite rollback only */
  CK(!nf_retc_joint_attach(live,&joint));
  CK(nf_retc_joint_detach(live,&joint));
  CK(owner->owner_hooks.context==NULL);
