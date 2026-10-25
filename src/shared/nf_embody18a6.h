@@ -55,6 +55,7 @@ struct NfRetcFrame;
 struct Nf18c2AuthState; /* private allocation; no public credential fields */
 typedef struct Nf18a6Runtime {
     Nf18a5Integrated physical;
+    struct NfRetcFrame *retc_pending; /* durable but not visible until joint finish */
     struct NfRetcPublisher *retc_publisher; /* opt-in A6-owned prototype */
     const char *retc_journal; /* borrowed path, atomic joint file prototype */
     NfCameraState camera;
