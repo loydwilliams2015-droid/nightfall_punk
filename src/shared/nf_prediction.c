@@ -58,6 +58,8 @@ NfInputCommand nf_prediction_make_command(
 void nf_prediction_simulate_command(
     NfWorld *world, NfEntityId id, const NfInputCommand *command) {
     if (world == NULL || command == NULL) return;
+    /* Prediction is a speculative writer, never a second A6 world owner. */
+    if (world->tick_owner || world->tick_in_progress) return;
     NfActor *actor = nf_world_find_actor(world, id);
     if (actor == NULL) return;
 
@@ -129,7 +131,8 @@ bool nf_prediction_reconcile_v16b(
     uint64_t server_tick,
     float position_threshold,
     float authority_threshold) {
-    if (p == NULL || world == NULL || authoritative == NULL) return false;
+    if (p == NULL || world == NULL || authoritative == NULL ||
+        world->tick_owner || world->tick_in_progress) return false;
 
     NfActor *actor = nf_world_find_actor(world, id);
     if (actor == NULL) return false;
