@@ -134,8 +134,13 @@ static bool prepublish_world_gate(const Nf18a5Integrated *next,void *context){
            low.y<ob->max.y-.0001f&&high.y>ob->min.y+.0001f &&
            low.z<ob->max.z-.0001f&&high.z>ob->min.z+.0001f)return false;
     }
-    return !g->hooks->prepublish ||
-        g->hooks->prepublish(w,next,g->hooks->context);
+    if(g->hooks->prepublish &&
+       !g->hooks->prepublish(w,next,g->hooks->context))return false;
+    /* One A6-owned acceptance seam over the exact private A5 candidate.
+       Returning false refuses physical publication. This is NOT yet
+       an atomic reader transition or a full durable contract journal. */
+    return !g->hooks->accept_candidate ||
+       g->hooks->accept_candidate(w,next,g->hooks->context);
 }
 static bool invalid_nearby_actors(const NfWorld *w,NfEntityId own,NfVec3 feet){
     for(size_t i=0;i<NF_MAX_ENTITIES;++i){
