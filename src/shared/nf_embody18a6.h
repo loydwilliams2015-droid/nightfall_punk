@@ -45,10 +45,13 @@ typedef struct Nf18a6OwnerHooks {
     bool (*prepublish)(const NfWorld *,const Nf18a5Integrated *,void *);
     /* Single A6 owner-invoked candidate approval; no live state mutation. */
     bool (*accept_candidate)(const NfWorld *,const Nf18a5Integrated *,void *);
+    /* Optional full contract supplier: must stage B2 and B3 from owner data. */
+    struct NfRetcFrame *(*stage_joint)(const NfWorld *,const Nf18a5Integrated *,void *);
     void (*finish)(const NfWorld *,const struct Nf18a6Outcome *,void *);
     void *context;
 } Nf18a6OwnerHooks;
 struct NfRetcPublisher;
+struct NfRetcFrame;
 struct Nf18c2AuthState; /* private allocation; no public credential fields */
 typedef struct Nf18a6Runtime {
     Nf18a5Integrated physical;
