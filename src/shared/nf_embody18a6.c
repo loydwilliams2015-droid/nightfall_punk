@@ -251,10 +251,43 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
                 joint->physical.committed_receipts==candidate.committed_receipts&&
                 joint->owner_actor==r->actor_id&&
                 joint->object_id==candidate.object.id;
-            free(joint);
-            if(!valid)return outcome(NF18A6_UNSUPPORTED,r);
-            /* Publication stays disabled until A6 world, all readers and
-               complete durable record commit can switch atomically. */
+            if(!valid){free(joint);return outcome(NF18A6_UNSUPPORTED,r);}
+            /* The complete frame is accepted once, before deriving the
+               A6 projections. No independent A5 WAL is emitted. */
+            if(!nf_retc_commit_file(r->retc_publisher,joint,r->retc_journal)){
+                free(joint);return outcome(NF18A6_DISK_FAILED,r);
+            }
+            const NfRetcFrame *accepted=nf_retc_read(r->retc_publisher);
+            if(accepted!=joint)return outcome(NF18A6_INVALID,r);
+            NfActor *dst=nf_world_find_actor(w,r->actor_id);
+            if(!dst)return outcome(NF18A6_INVALID,r);
+            const Nf18a5Integrated *next=&accepted->physical;
+            r->physical=*next;
+            NfCollider *cr=&w->colliders[r->object_collider_index];
+            cr->previous_min=cr->min;cr->previous_max=cr->max;
+            cr->min=vsub(next->object.center,next->object.box_half);
+            cr->max=(NfVec3){next->object.center.x+next->object.box_half.x,
+              next->object.center.y+next->object.box_half.y,
+              next->object.center.z+next->object.box_half.z};
+            dst->transform.position=(NfVec3){next->actor.center.x,
+                 next->actor.center.y-next->actor.height*.5f,next->actor.center.z};
+            dst->transform.velocity=next->actor.velocity;
+            dst->input=in;dst->input.jump_pressed=false;
+            dst->movement.mode=in.sprint_held?NF_MOVE_SPRINT:NF_MOVE_GROUND;
+            dst->movement.grounded=true;dst->movement.body_height=next->actor.height;
+            w->tick=tick;r->last_commit_tick=tick;
+            r->last_hash=hash_body(&next->actor,&next->object,tick,next->world.revision);
+            r->joint_commit_epoch=tick;
+            if(r->model==NF18A6_WORLD_CAMERA){
+                nf_camera_follow_actor(&r->camera,dst,w,dt);
+                nf_camera_step_presentation(&r->camera,dt);
+            }
+            ++r->accepted;
+            Nf18a6Outcome out=outcome(NF18A6_COMMITTED,r);
+            out.actual_impulse=staged.dynamic_contact;
+            out.cache_loads=(uint8_t)staged.cache_loads;
+            out.camera_updated=r->model==NF18A6_WORLD_CAMERA;
+            return out;
         }
         return outcome(NF18A6_UNSUPPORTED,r);
     }
