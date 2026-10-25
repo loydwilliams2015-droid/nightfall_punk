@@ -332,3 +332,16 @@ const char *nf18b2_encounter_state_name(Nf18b2EncounterState s){
         "EXECUTING","COMPLETED","INTERRUPTED","COMPENSATION_REQUIRED"};
     return s>=NF18B2_PROPOSED&&s<=NF18B2_COMPENSATION_REQUIRED?names[s]:"INVALID";
 }
+
+Nf18a6OwnerGate nf18b2_encounter_prepare_joint(Nf18b2EncounterRuntime *r,
+ const NfWorld *w,uint32_t tick){
+ if(!r||!w||!r->owner||w->tick_owner_context!=r->owner||
+    r->attached)return NF18A6_GATE_INVALID;
+ return begin(w,tick,r);
+}
+bool nf18b2_encounter_validate_joint(Nf18b2EncounterRuntime *r,
+ const NfWorld *w,const Nf18a5Integrated *candidate){
+ return r&&w&&candidate&&r->prepared&&
+   w->tick_owner_context==r->owner&&!r->attached&&
+   prepublish(w,candidate,r);
+}
