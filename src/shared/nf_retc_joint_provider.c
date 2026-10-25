@@ -141,18 +141,21 @@ static void joint_finish(const NfWorld *w,const Nf18a6Outcome *out,void *arg){
 static NfRetcFrame *joint_stage_checked(const NfWorld *w,
  const Nf18a5Integrated *candidate,void *arg){
  NfRetcJointContext *j=arg;
- if(!j||!candidate||!j->push||!j->encounter||
-    !nf18b2_encounter_validate_joint(j->encounter,w,candidate)||
-    !j->push->armed||!j->push->event.authorized||
-    j->push->event.phase!=NF18B3_WAITING||
-    j->push->event.kind!=NF18B3_PUSH||
-    j->push->event.tick!=candidate->world.tick||
-    j->push->event.actor!=candidate->actor.id||
-    j->push->event.object!=candidate->object.id||
-    j->push->event.contract_epoch!=j->encounter->staged.contract_epoch||
-    candidate->committed_receipts<=j->push->before_contacts||
-    candidate->world.history.raw_samples<=j->push->before_history)
-     return NULL;
+ if(!j){fprintf(stderr,"RET-C joint_stage_checked predicate 1: !j\n");return NULL;}
+ if(!candidate){fprintf(stderr,"RET-C joint_stage_checked predicate 2: !candidate\n");return NULL;}
+ if(!j->push){fprintf(stderr,"RET-C joint_stage_checked predicate 3: !j->push\n");return NULL;}
+ if(!j->encounter){fprintf(stderr,"RET-C joint_stage_checked predicate 4: !j->encounter\n");return NULL;}
+ if(!nf18b2_encounter_validate_joint(j->encounter,w,candidate)){fprintf(stderr,"RET-C joint_stage_checked predicate 5: !nf18b2_encounter_validate_joint(j->encounter,w,candidate)\n");return NULL;}
+ if(!j->push->armed){fprintf(stderr,"RET-C joint_stage_checked predicate 6: !j->push->armed\n");return NULL;}
+ if(!j->push->event.authorized){fprintf(stderr,"RET-C joint_stage_checked predicate 7: !j->push->event.authorized\n");return NULL;}
+ if(j->push->event.phase!=NF18B3_WAITING){fprintf(stderr,"RET-C joint_stage_checked predicate 8: j->push->event.phase!=NF18B3_WAITING\n");return NULL;}
+ if(j->push->event.kind!=NF18B3_PUSH){fprintf(stderr,"RET-C joint_stage_checked predicate 9: j->push->event.kind!=NF18B3_PUSH\n");return NULL;}
+ if(j->push->event.tick!=candidate->world.tick){fprintf(stderr,"RET-C joint_stage_checked predicate 10: j->push->event.tick!=candidate->world.tick\n");return NULL;}
+ if(j->push->event.actor!=candidate->actor.id){fprintf(stderr,"RET-C joint_stage_checked predicate 11: j->push->event.actor!=candidate->actor.id\n");return NULL;}
+ if(j->push->event.object!=candidate->object.id){fprintf(stderr,"RET-C joint_stage_checked predicate 12: j->push->event.object!=candidate->object.id\n");return NULL;}
+ if(j->push->event.contract_epoch!=j->encounter->staged.contract_epoch){fprintf(stderr,"RET-C joint_stage_checked predicate 13: j->push->event.contract_epoch!=j->encounter->staged.contract_epoch\n");return NULL;}
+ if(candidate->committed_receipts<=j->push->before_contacts){fprintf(stderr,"RET-C joint_stage_checked predicate 14: candidate->committed_receipts<=j->push->before_contacts\n");return NULL;}
+ if(candidate->world.history.raw_samples<=j->push->before_history){fprintf(stderr,"RET-C joint_stage_checked predicate 15: candidate->world.history.raw_samples<=j->push->before_history\n");return NULL;}
  /* Prepare, never realize: no independent B3 finish or secondary WAL. */
  const Nf18b3Event prior=j->push->staged_commit;
  const bool prior_valid=j->push->staged_commit_valid;
