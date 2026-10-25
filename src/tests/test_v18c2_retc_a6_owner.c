@@ -1,5 +1,6 @@
 #include "nf_embody18a6.h"
 #include "nf_c2_retc_frame.h"
+#include "nf_prediction.h"
 #include <stdio.h>
 #include <stdlib.h>
 #define CK(x) do{if(!(x)){fprintf(stderr,"RET-C A6 gate failed line %d\n",__LINE__);return 1;}}while(0)
@@ -25,6 +26,13 @@ int main(void){
  CK(w->tick==initial&&r->last_commit_tick==initial);
  CK(nf_retc_read(pub)==NULL);
  CK(!r->joint_commit_epoch);
+ /* Prediction must not mutate an A6-owned world outside its dispatcher. */
+ CK(nf18a6_bind_world_tick(w,r,NULL,NULL,NULL));
+ const uint64_t before=w->tick;
+ NfInputCommand command={0};command.move.strafe=1;
+ nf_prediction_simulate_command(w,10,&command);
+ CK(w->tick==before&&r->last_commit_tick==before);
+ CK(nf18a6_unbind_world_tick(w,r));
  free(pub);free(r);free(w);
  puts("RET-C live A6 refuses fallback physical publication without joint commit PASS");
  return 0;
