@@ -128,6 +128,31 @@ int main(void){
    }
    CHECK(verify(w,r,enc,push,publisher,tick));
  }
+ /* Negative replay probe: retain the last committed transaction identity.
+    A denial must not advance any physical, B2, B3 or published epoch. */
+ {
+   const NfRetcFrame *accepted=nf_retc_read(publisher);
+   CHECK(accepted&&accepted->epoch==2&&accepted->transaction_id==2);
+   const NfVec3 actor_before=nf_world_find_actor_const(w,10)->transform.position;
+   const NfVec3 crate_before=r->physical.object.center;
+   const Nf18b2Registry registry_before=enc->registry;
+   const uint32_t receipts_before=push->receipt_count;
+   const uint32_t accepted_before=r->accepted;
+   const uint64_t tick_before=w->tick;
+   joint.transaction_id=2; /* deliberate replay */
+   const uint32_t action=93u;
+   CHECK(nf18b2_propose(enc,(Nf18b2Intent){10,2010,action,NF18B2_PUSH})==NF18B2_ELIGIBLE);
+   CHECK(nf18b6_push_arm_b2(push,w,action)==NF18B3_OK);
+   NfMoveInput move={0};move.strafe=1;
+   nf_world_set_input(w,10,move);
+   CHECK(nf_world_step_checked(w,1.f/(float)NF_TICK_RATE)!=NF_WORLD_TICK_COMMITTED);
+   CHECK(w->tick==tick_before&&r->accepted==accepted_before);
+   CHECK(nf_retc_read(publisher)==accepted&&push->receipt_count==receipts_before);
+   CHECK(memcmp(&enc->registry,&registry_before,sizeof registry_before)==0);
+   CHECK(memcmp(&r->physical.object.center,&crate_before,sizeof crate_before)==0);
+   CHECK(memcmp(&nf_world_find_actor_const(w,10)->transform.position,&actor_before,sizeof actor_before)==0);
+   puts("RET-C replay rejection: world, registry, publisher and receipts unchanged PASS");
+ }
  CHECK(nf_retc_joint_detach(w,&joint));
  CHECK(nf18a6_unbind_world_tick(w,r));
  nf_retc_dispose(publisher);
