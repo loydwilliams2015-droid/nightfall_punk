@@ -88,6 +88,7 @@ int main(void){
  encounter->frame.scene.actors=&encounter->frame.actors[0];
  encounter->frame.scene.objects=&encounter->frame.objects[0];
  encounter->frame.actors[0]=actor;encounter->frame.objects[0]=object;
+ f->physical.world.revision=joint.use.world_revision+1u;
  NfRetcFrame *owned=nf_retc_joint_stage_owned(live,&f->physical,&joint);
  CK(owned&&owned->has_encounter_registry&&owned->b2_actor.id==10);
  free(owned);
