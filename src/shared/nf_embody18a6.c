@@ -235,8 +235,27 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
            or A6/B2/B3 live publication. Until full owner contract staging
            is wired, fail closed regardless of the staged solver outcome. */
         Nf18a5Integrated candidate=r->physical;
-        (void)nf18a5_integrated_pair_stage_checked(&candidate,version,tick,start,
+        const Nf18a5CloseResult staged=
+            nf18a5_integrated_pair_stage_checked(&candidate,version,tick,start,
               loader,ctx,shape,motor,dt,0.0f,0.5f,NULL,NULL);
+        if(staged.status!=NF18A5_CLOSE_COMMITTED)
+            return outcome(NF18A6_UNSUPPORTED,r);
+        if(r->owner_hooks.stage_joint){
+            NfRetcFrame *joint=r->owner_hooks.stage_joint(w,&candidate,
+                                  r->owner_hooks.context);
+            if(!joint)return outcome(NF18A6_UNSUPPORTED,r);
+            const bool valid=joint->has_b2_contract&&
+                joint->has_encounter_registry&&nf_retc_seal_b2_b3(joint)&&
+                joint->epoch==candidate.world.tick&&
+                joint->physical.world.revision==candidate.world.revision&&
+                joint->physical.committed_receipts==candidate.committed_receipts&&
+                joint->owner_actor==r->actor_id&&
+                joint->object_id==candidate.object.id;
+            free(joint);
+            if(!valid)return outcome(NF18A6_UNSUPPORTED,r);
+            /* Publication stays disabled until A6 world, all readers and
+               complete durable record commit can switch atomically. */
+        }
         return outcome(NF18A6_UNSUPPORTED,r);
     }
     Nf18a5Integrated next=r->physical;
