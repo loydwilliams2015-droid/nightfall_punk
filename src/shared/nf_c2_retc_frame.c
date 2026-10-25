@@ -66,6 +66,23 @@ bool nf_retc_seal_b2_b3(NfRetcFrame *f){
        f->b2_authority.features[i]==f->object_id)return false;
  return true;
 }
+bool nf_retc_bind_encounter(NfRetcFrame *f,
+ const Nf18b2EncounterRuntime *encounter){
+ if(!f||!encounter||f->has_encounter_registry||
+    !encounter->prepared||encounter->owner==NULL||
+    encounter->owner->actor_id!=f->owner_actor||
+    encounter->owner->physical.world.tick!=f->prior_epoch||
+    encounter->staged.account_count>NF18B2_MAX_REQUESTS||
+    encounter->staged.object_count>NF18B2_MAX_REQUESTS||
+    !encounter->staged.contract_epoch)return false;
+ /* Exact prevalidated registry, not synthetic resource deltas. This must be
+    called while the A6 owner holds its transaction lifetime boundary. */
+ f->encounter_registry=encounter->staged;
+ f->has_encounter_registry=true;
+ f->derived_contract_hash=digest(f->derived_contract_hash,
+     f->encounter_registry.revision,f->encounter_registry.contract_epoch);
+ return true;
+}
 NfRetcFrame *nf_retc_stage_source_push(
  const Nf18a5Integrated *physical,const Nf18b3Event *event,
  uint32_t tx,uint32_t prior_epoch,const Nf18b2Use *use,
