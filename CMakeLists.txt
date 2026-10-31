@@ -361,7 +361,15 @@ add_library(nightfall_shared STATIC
     src/shared/nf_contact18a5_wal.c
     src/shared/nf_eligibility18b2.c
     src/shared/nf_embody18a6.c
-    src/shared/nf_encounter18b2.c)
+    src/shared/nf_encounter18b2.c
+    # H54 full-game linkage: A6 references these concrete RET-C/lifecycle
+    # implementations. The contact-only laboratory glob previously masked
+    # missing objects in the explicit production library source list.
+    src/shared/nf_c2_h19_lab.c
+    src/shared/nf_c2_retc_frame.c
+    src/shared/nf_multi_ma03.c
+    src/shared/nf_v18c2_witness.c
+    src/shared/nf_v18c2_h9_auth.c)
 target_include_directories(nightfall_shared PUBLIC src/shared src/client)
 nf_project_warnings(nightfall_shared)
 if(UNIX)

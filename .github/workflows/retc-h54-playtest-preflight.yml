@@ -1,0 +1,69 @@
+name: RET-C H54 pre-human graphical and network preflight
+on:
+  push:
+    branches: [engineering/retc-h54-playtest-preflight]
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h54-playtest-preflight.yml'
+      - 'src/**'
+      - 'CMakeLists.txt'
+      - 'nightfall.sh'
+  workflow_dispatch:
+jobs:
+  preliminary-build-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print exact source identity
+        run: git rev-parse HEAD
+      - name: Install graphical/network build and headless-display dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake git pkg-config libsodium-dev \
+            libasound2-dev libx11-dev libxrandr-dev libxi-dev \
+            libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev \
+            xvfb ffmpeg
+      - name: Check source prerequisites
+        run: bash ./nightfall.sh standard-check
+      - name: Configure real full C11 client/server (not contact-only lab)
+        run: cmake -S . -B build-h54 -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=ON -DNF_BUILD_SERVER=ON -DNF_BUILD_NETBOT=ON -DNF_BUILD_TESTS=ON
+      - name: Compile actual client/server and full test tree
+        run: cmake --build build-h54 --parallel 2
+      - name: Full integrated CTest regression
+        run: ctest --test-dir build-h54 --output-on-failure --output-junit h54-full.xml
+      - name: Source-exact server plus network-bot smoke
+        run: |
+          set -euo pipefail
+          ./build-h54/nightfall_server --port 28754 --duration 9 --ai-count 2 --pressure-slots 1 --cattler-count 0 > build-h54/h54-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          sleep 1
+          ./build-h54/nightfall_netbot --host 127.0.0.1 --port 28754 --duration 6 --pattern 0 > build-h54/h54-netbot.log 2>&1
+          wait "$server_pid"
+          grep -q '\[server\] shutdown' build-h54/h54-server.log
+      - name: Automated graphical execution under software X11
+        run: |
+          set -euo pipefail
+          mkdir -p build-h54/screens
+          rm -f frame_*.png
+          xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 ./build-h54/nightfall_v16b_demo --auto focus_hold --seconds 3 --frames-dir build-h54/screens
+          if ! compgen -G "build-h54/screens/frame_*.png" >/dev/null; then
+            if compgen -G "frame_*.png" >/dev/null; then mv frame_*.png build-h54/screens/; fi
+          fi
+          count=$(find build-h54/screens -maxdepth 1 -name 'frame_*.png' -size +0c | wc -l)
+          echo "Nonempty graphical frames: $count"
+          test "$count" -ge 1
+      - name: Archive test-only evidence (no playable release)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retc-h54-preliminary-ci-evidence
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build-h54/h54-server.log
+            build-h54/h54-netbot.log
+            build-h54/h54-full.xml
+            build-h54/Testing/Temporary/LastTest.log
