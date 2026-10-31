@@ -139,6 +139,13 @@ int main(void){
    /* H43: externally owned record from ONE accepted immutable frame. */
    NfRetcExternalRecord exported={0};
    CHECK(nf_retc_external_capture(publisher,&exported));
+   CHECK(nf_retc_external_valid(&exported));
+   NfRetcExternalRecord malformed=exported;
+   malformed.first_account_actor=999;
+   CHECK(!nf_retc_external_valid(&malformed));
+   malformed=exported;malformed.epoch=0;
+   CHECK(!nf_retc_external_valid(&malformed));
+   CHECK(!nf_retc_external_valid(NULL));
    CHECK(exported.epoch==tick&&exported.transaction_id==tick&&
          exported.actor_id==10&&exported.object_id==2010&&
          exported.action_id==action&&exported.contract_epoch>0&&
