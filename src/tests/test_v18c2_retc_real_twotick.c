@@ -293,6 +293,16 @@ int main(void){
    CHECK(nf_retc_read_joint_view(publisher,&replay_view));
    CHECK(replay_view.accepted==accepted&&replay_view.epoch==2u&&
          replay_view.event->tick==2u&&replay_view.physical->world.tick==2u);
+   /* H53: rejected world transaction cannot produce a new NF04 observation.
+      The last accepted wire packet stays byte-exact and replay-denied. */
+   uint8_t after_rejection[NF_RETC_NETWORK_PACKET_BYTES]={0};
+   CHECK(nf_retc_network_emit(publisher,after_rejection,sizeof after_rejection)==
+         sizeof after_rejection);
+   CHECK(memcmp(after_rejection,network_packet,sizeof after_rejection)==0);
+   NfRetcExternalRecord denied_packet={0};
+   CHECK(!nf_retc_network_consume(after_rejection,sizeof after_rejection,
+                                  &network_consumer,&denied_packet));
+   CHECK(denied_packet.epoch==0&&network_consumer.epoch==2u);
    CHECK(memcmp(&enc->registry,&registry_before,sizeof registry_before)==0);
    CHECK(memcmp(&r->physical.object.center,&crate_before,sizeof crate_before)==0);
    CHECK(memcmp(&nf_world_find_actor_const(w,10)->transform.position,&actor_before,sizeof actor_before)==0);
