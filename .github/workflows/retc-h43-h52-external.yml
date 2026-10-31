@@ -30,6 +30,10 @@ jobs:
         run: cmake --build build-ext --target nightfall_v18c2_retc_real_twotick_test --parallel 2
       - name: Run cumulative two-tick and projection gate
         run: ctest --test-dir build-ext -R '^retc_real_dispatcher_two_joint_ticks_v18c2$' --output-on-failure --output-junit retc-external.xml
+      - name: H52 compile complete headless C source tree
+        run: cmake --build build-ext --parallel 2
+      - name: H52 full cumulative regression
+        run: ctest --test-dir build-ext --output-on-failure --output-junit retc-external-full.xml
       - name: Archive evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -38,5 +42,6 @@ jobs:
           path: |
             build-ext/Testing/Temporary/LastTest.log
             build-ext/retc-external.xml
+            build-ext/retc-external-full.xml
           if-no-files-found: warn
           retention-days: 7
