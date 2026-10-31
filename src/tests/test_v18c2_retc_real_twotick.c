@@ -1,4 +1,5 @@
 #include "nf_retc_joint_provider.h"
+#include "nf_retc_external.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -135,6 +136,15 @@ int main(void){
       return 1;
    }
    CHECK(verify(w,r,enc,push,publisher,tick));
+   /* H43: externally owned record from ONE accepted immutable frame. */
+   NfRetcExternalRecord exported={0};
+   CHECK(nf_retc_external_capture(publisher,&exported));
+   CHECK(exported.epoch==tick&&exported.transaction_id==tick&&
+         exported.actor_id==10&&exported.object_id==2010&&
+         exported.action_id==action&&exported.contract_epoch>0&&
+         exported.committed_receipts>0&&exported.account_count>0&&
+         exported.first_account_actor==10);
+
    NfRetcReadView current={0};
    CHECK(nf_retc_read_joint_view(publisher,&current));
    CHECK(current.accepted&&current.epoch==tick&&
