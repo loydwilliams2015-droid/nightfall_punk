@@ -256,7 +256,9 @@ if(NF_CONTACT_LAB_ONLY)
     target_link_libraries(nightfall_v18c2_retc_a6_owner_test PRIVATE nightfall_embody_h1)
     nf_project_warnings(nightfall_v18c2_retc_a6_owner_test)
     add_test(NAME retc_a6_owner_fails_closed_v18c2 COMMAND nightfall_v18c2_retc_a6_owner_test)
-    add_executable(nightfall_v18c2_retc_real_twotick_test src/tests/test_v18c2_retc_real_twotick.c)
+    add_executable(nightfall_v18c2_retc_real_twotick_test
+        src/tests/test_v18c2_retc_real_twotick.c
+        src/shared/nf_protocol.c)
     target_link_libraries(nightfall_v18c2_retc_real_twotick_test PRIVATE nightfall_embody_h1)
     nf_project_warnings(nightfall_v18c2_retc_real_twotick_test)
     add_test(NAME retc_real_dispatcher_two_joint_ticks_v18c2 COMMAND nightfall_v18c2_retc_real_twotick_test)
