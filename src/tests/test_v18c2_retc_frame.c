@@ -8,14 +8,48 @@
 #include <sys/wait.h>
 #define CK(x) do {if(!(x)){fprintf(stderr,"RET-C fail line %d\n",__LINE__);return 1;}}while(0)
 int main(int argc,char **argv){
- if(argc==3&&strcmp(argv[1],"--recover")==0){
+ if(argc==3&&(strcmp(argv[1],"--recover")==0||
+               strcmp(argv[1],"--recover-full")==0)){
+   const bool full=strcmp(argv[1],"--recover-full")==0;
    NfRetcFrame *recovered=malloc(sizeof *recovered);
    if(!recovered)return 81;
-   const bool ok=nf_retc_restore_file(argv[2],recovered)&&
-     recovered->epoch==2&&recovered->event.action==92&&
-     recovered->has_b2_contract&&recovered->physical.world.tick==2&&
+   const bool restored=nf_retc_restore_file(argv[2],recovered);
+   const bool basic_ok=restored&&recovered->has_b2_contract&&
      recovered->physical.actor.id==10&&recovered->physical.object.id==2010;
-   free(recovered);return ok?0:82;
+   /* Fresh address space: do not trust the parent's in-memory fields. */
+   const bool full_ok=basic_ok&&recovered->epoch==1&&
+     recovered->prior_epoch==0&&recovered->transaction_id==1&&
+     recovered->owner_actor==10&&recovered->object_id==2010&&
+     recovered->physical.world.tick==1&&
+     recovered->physical.committed_receipts==1&&
+     recovered->event.actor==10&&recovered->event.object==2010&&
+     recovered->event.tick==1&&recovered->event.action==91&&
+     recovered->event.kind==NF18B3_PUSH&&
+     recovered->event.phase==NF18B3_APPLIED&&
+     recovered->event.authorized&&recovered->event.applied&&
+     recovered->event.contract_epoch==7&&
+     recovered->b2_use.tick==1&&recovered->b2_use.actor_id==10&&
+     recovered->b2_use.object_id==2010&&recovered->b2_use.action_id==91&&
+     recovered->b2_actor.inventory==7&&
+     recovered->b2_object.id==2010&&
+     recovered->obligation_count==1&&
+     recovered->obligations[0].obligation_id==99&&
+     recovered->obligations[0].holder==10&&
+     recovered->obligations[0].beneficiary==20&&
+     recovered->obligations[0].kind==1&&
+     recovered->obligations[0].quantity==2&&
+     recovered->obligations[0].status==1&&
+     recovered->has_encounter_registry&&
+     recovered->encounter_registry.revision==3&&
+     recovered->encounter_registry.contract_epoch==7&&
+     recovered->encounter_registry.account_count==1&&
+     recovered->encounter_registry.accounts[0].actor_id==10&&
+     recovered->encounter_registry.accounts[0].balance==41&&
+     nf_retc_seal_b2_b3(recovered);
+   const bool bounded_ok=basic_ok&&recovered->epoch==2&&
+     recovered->event.action==92&&recovered->physical.world.tick==2;
+   free(recovered);
+   return (full?full_ok:bounded_ok)?0:82;
  }
 
  NfRetcPublisher publisher={0};
@@ -69,6 +103,28 @@ int main(int argc,char **argv){
  CK(!nf_retc_bind_encounter(f,encounter));
  encounter->staged.accounts[0].balance=1000;
  CK(f->encounter_registry.accounts[0].balance==41);
+ /* H41: an independently exec'd process must recover the COMPLETE
+    bounded physical/B2/B3/encounter/obligation frame.  This is a source-
+    exact crash/restart fixture, not proof of a production durability cutover. */
+ {
+   char full_journal[160];
+   snprintf(full_journal,sizeof full_journal,
+            "/tmp/nightfall_retc_h41_full_%ld.bin",(long)getpid());
+   remove(full_journal);
+   CK(nf_retc_persist_file(&publisher,f,full_journal));
+   CK(nf_retc_read(&publisher)==NULL); /* durability precedes visibility */
+   pid_t child=fork();CK(child>=0);
+   if(child==0){
+     char *const args[]={argv[0],"--recover-full",full_journal,NULL};
+     execv(argv[0],args);_exit(111);
+   }
+   int status=0;
+   CK(waitpid(child,&status,0)==child&&WIFEXITED(status)&&
+      WEXITSTATUS(status)==0);
+   CK(nf_retc_read(&publisher)==NULL);
+   CK(remove(full_journal)==0);
+   puts("RET-C H41 independently restarted complete-frame recovery PASS");
+ }
  /* Composite provider requires one A6 lease and both source domains. */
  NfWorld *live=calloc(1,sizeof *live);CK(live);
  live->tick=0;live->tick_in_progress=true;live->tick_owner_context=owner;
