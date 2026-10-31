@@ -1,0 +1,42 @@
+name: RET-C H43-H52 cumulative external reader
+on:
+  push:
+    branches: [engineering/retc-h43-h52-external-projection]
+    paths:
+      - 'src/shared/nf_retc_external.*'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h43-h52-external.yml'
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_external.*'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h43-h52-external.yml'
+  workflow_dispatch:
+jobs:
+  bounded-external:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure bounded source
+        env:
+          CC: ${{ matrix.compiler }}
+        run: cmake -S . -B build-ext -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug
+      - name: Compile real A6 source-exact test
+        run: cmake --build build-ext --target nightfall_v18c2_retc_real_twotick_test --parallel 2
+      - name: Run cumulative two-tick and projection gate
+        run: ctest --test-dir build-ext -R '^retc_real_dispatcher_two_joint_ticks_v18c2$' --output-on-failure --output-junit retc-external.xml
+      - name: Archive evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retc-external-${{ matrix.compiler }}-${{ github.sha }}
+          path: |
+            build-ext/Testing/Temporary/LastTest.log
+            build-ext/retc-external.xml
+          if-no-files-found: warn
+          retention-days: 7
