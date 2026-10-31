@@ -69,5 +69,19 @@ bool nf_retc_commit_file(NfRetcPublisher *pub,NfRetcFrame *candidate,
 bool nf_retc_restore_file(const char *path,NfRetcFrame *out);
 bool nf_retc_publish(NfRetcPublisher *pub,NfRetcFrame *candidate);
 const NfRetcFrame *nf_retc_read(const NfRetcPublisher *pub);
+/* H42 bounded read-only projection: all these domains come from exactly one
+ * accepted pointer load. Reject incomplete B2/B3/encounter frames rather
+ * than mixing with live mutable state. View storage belongs to pub and is
+ * valid only until publisher disposal; callers must coordinate its lifetime.
+ * This is NOT a global reader migration or a concurrent shutdown guarantee. */
+typedef struct NfRetcReadView {
+ const NfRetcFrame *accepted;
+ const Nf18a5Integrated *physical;
+ const Nf18b3Event *event;
+ const Nf18b2Registry *contract;
+ const Nf18b2Use *eligibility;
+ uint32_t epoch,transaction_id;
+} NfRetcReadView;
+bool nf_retc_read_joint_view(const NfRetcPublisher *pub,NfRetcReadView *out);
 void nf_retc_dispose(NfRetcPublisher *pub);
 #endif
