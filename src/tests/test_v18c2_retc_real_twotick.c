@@ -78,6 +78,7 @@ int main(void){
  CHECK(nf_retc_joint_attach(w,&joint));
  NfRetcReadView first={0};
  CHECK(!nf_retc_read_joint_view(publisher,&first)); /* no accepted frame */
+ NfRetcExternalCursor consumer={0};
  for(uint32_t tick=1;tick<=2;++tick){
    const uint32_t action=90u+tick;
    /* A6 publisher requires a strictly increasing transaction identity. */
@@ -140,6 +141,9 @@ int main(void){
    NfRetcExternalRecord exported={0};
    CHECK(nf_retc_external_capture(publisher,&exported));
    CHECK(nf_retc_external_valid(&exported));
+   CHECK(nf_retc_external_accept(&consumer,&exported));
+   CHECK(!nf_retc_external_accept(&consumer,&exported)); /* replay */
+   CHECK(consumer.epoch==tick&&consumer.transaction_id==tick);
    NfRetcExternalRecord malformed=exported;
    malformed.first_account_actor=999;
    CHECK(!nf_retc_external_valid(&malformed));
