@@ -170,6 +170,15 @@ int main(void){
    memcpy(tampered,encoded,sizeof tampered);tampered[91]^=1u;
    CHECK(!nf_retc_external_decode(tampered,sizeof tampered,&decoded));
    CHECK(decoded.epoch==0);
+   /* H49: deterministic single-bit adversarial sweep across all header and
+      payload bytes; bounds and expected failure are reproducible. */
+   for(size_t flip=0;flip<88u;++flip){
+     memcpy(tampered,encoded,sizeof tampered);
+     tampered[flip]^=(uint8_t)(1u<<(flip%8u));
+     CHECK(!nf_retc_external_decode(tampered,sizeof tampered,&decoded));
+     CHECK(decoded.epoch==0);
+   }
+
 
    CHECK(nf_retc_external_accept(&consumer,&exported));
    CHECK(!nf_retc_external_accept(&consumer,&exported)); /* replay */
