@@ -141,6 +141,11 @@ int main(void){
    NfRetcExternalRecord exported={0};
    CHECK(nf_retc_external_capture(publisher,&exported));
    CHECK(nf_retc_external_valid(&exported));
+   uint8_t encoded[NF_RETC_EXTERNAL_WIRE_BYTES]={0};
+   CHECK(nf_retc_external_encode(encoded,sizeof encoded,&exported)==sizeof encoded);
+   CHECK(encoded[0]==0x4e&&encoded[1]==0x46&&
+         encoded[2]==0x45&&encoded[3]==0x58);
+   CHECK(nf_retc_external_encode(encoded,sizeof encoded-1,&exported)==0);
    CHECK(nf_retc_external_accept(&consumer,&exported));
    CHECK(!nf_retc_external_accept(&consumer,&exported)); /* replay */
    CHECK(consumer.epoch==tick&&consumer.transaction_id==tick);
