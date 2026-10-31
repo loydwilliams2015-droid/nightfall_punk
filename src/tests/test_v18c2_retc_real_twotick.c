@@ -1,5 +1,6 @@
 #include "nf_retc_joint_provider.h"
 #include "nf_retc_external.h"
+#include "nf_retc_network.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,7 +79,10 @@ int main(void){
  CHECK(nf_retc_joint_attach(w,&joint));
  NfRetcReadView first={0};
  CHECK(!nf_retc_read_joint_view(publisher,&first)); /* no accepted frame */
- NfRetcExternalCursor consumer={0},wire_consumer={0};
+ NfRetcExternalCursor consumer={0},wire_consumer={0},network_consumer={0};
+ uint8_t network_packet[NF_RETC_NETWORK_PACKET_BYTES]={0};
+ CHECK(nf_retc_network_emit(publisher,network_packet,sizeof network_packet)==0);
+ CHECK(NF_RETC_NETWORK_PACKET_BYTES<=NF_NET_MAX_PACKET_BYTES);
  for(uint32_t tick=1;tick<=2;++tick){
    const uint32_t action=90u+tick;
    /* A6 publisher requires a strictly increasing transaction identity. */
@@ -141,6 +145,39 @@ int main(void){
    NfRetcExternalRecord exported={0};
    CHECK(nf_retc_external_capture(publisher,&exported));
    CHECK(nf_retc_external_valid(&exported));
+   /* H53: actual NF04 protocol framing of A6 accepted read-only observation. */
+   CHECK(nf_retc_network_emit(publisher,network_packet,sizeof network_packet)==
+         NF_RETC_NETWORK_PACKET_BYTES);
+   CHECK(nf_protocol_peek_type(network_packet,sizeof network_packet)==
+         NF_MSG_RETC_OBSERVATION);
+   NfRetcExternalRecord network_observed={0};
+   CHECK(nf_retc_network_consume(network_packet,sizeof network_packet,
+                                 &network_consumer,&network_observed));
+   CHECK(network_observed.epoch==tick&&network_observed.transaction_id==tick&&
+         network_observed.actor_id==exported.actor_id&&
+         network_observed.action_id==exported.action_id&&
+         network_observed.contract_epoch==exported.contract_epoch);
+   CHECK(!nf_retc_network_consume(network_packet,sizeof network_packet,
+                                  &network_consumer,&network_observed)); /* replay */
+   CHECK(network_observed.epoch==0&&network_consumer.epoch==tick);
+   CHECK(!nf_retc_network_consume(network_packet,sizeof network_packet-1,
+                                  &network_consumer,&network_observed)); /* torn */
+   uint8_t fake_packet[NF_RETC_NETWORK_PACKET_BYTES]={0};
+   memcpy(fake_packet,network_packet,sizeof fake_packet);
+   fake_packet[6]=(uint8_t)NF_MSG_SNAPSHOT; /* cannot masquerade as gameplay */
+   CHECK(!nf_retc_network_consume(fake_packet,sizeof fake_packet,
+                                  &network_consumer,&network_observed));
+   memcpy(fake_packet,network_packet,sizeof fake_packet);
+   fake_packet[7]=1; /* reserved flag */
+   CHECK(!nf_retc_network_consume(fake_packet,sizeof fake_packet,
+                                  &network_consumer,&network_observed));
+   memcpy(fake_packet,network_packet,sizeof fake_packet);
+   fake_packet[40]^=1; /* checksum-protected payload corruption */
+   CHECK(!nf_retc_network_consume(fake_packet,sizeof fake_packet,
+                                  &network_consumer,&network_observed));
+   CHECK(network_consumer.epoch==tick&&network_observed.epoch==0);
+   CHECK(nf_retc_network_emit(publisher,network_packet,sizeof network_packet-1)==0);
+
    uint8_t encoded[NF_RETC_EXTERNAL_WIRE_BYTES]={0};
    CHECK(nf_retc_external_encode(encoded,sizeof encoded,&exported)==sizeof encoded);
    CHECK(encoded[0]==0x4e&&encoded[1]==0x46&&
