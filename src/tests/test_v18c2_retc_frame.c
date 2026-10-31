@@ -122,8 +122,18 @@ int main(int argc,char **argv){
    CK(waitpid(child,&status,0)==child&&WIFEXITED(status)&&
       WEXITSTATUS(status)==0);
    CK(nf_retc_read(&publisher)==NULL);
+   /* A damaged persisted frame is rejected, not treated as authoritative. */
+   FILE *corrupt=fopen(full_journal,"r+b");CK(corrupt);
+   CK(fseek(corrupt,-1L,SEEK_END)==0);
+   const int last_byte=fgetc(corrupt);CK(last_byte!=EOF);
+   CK(fseek(corrupt,-1L,SEEK_END)==0);
+   CK(fputc(last_byte^0x01,corrupt)!=EOF);
+   CK(fclose(corrupt)==0);
+   NfRetcFrame *damaged=malloc(sizeof *damaged);CK(damaged);
+   CK(!nf_retc_restore_file(full_journal,damaged));
+   free(damaged);
    CK(remove(full_journal)==0);
-   puts("RET-C H41 independently restarted complete-frame recovery PASS");
+   puts("RET-C H41 complete-frame restart and checksum rejection PASS");
  }
  /* Composite provider requires one A6 lease and both source domains. */
  NfWorld *live=calloc(1,sizeof *live);CK(live);
