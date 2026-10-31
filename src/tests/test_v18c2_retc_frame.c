@@ -54,6 +54,8 @@ int main(int argc,char **argv){
 
  NfRetcPublisher publisher={0};
  CK(nf_retc_read(&publisher)==NULL);
+ NfRetcReadView joint_view={0};
+ CK(!nf_retc_read_joint_view(&publisher,&joint_view));
  Nf18a5Integrated *p=calloc(1,sizeof *p);CK(p);
  p->world.tick=1;p->world.revision=1;p->actor.id=10;p->object.id=2010;
  p->committed_receipts=1;
@@ -217,6 +219,11 @@ int main(int argc,char **argv){
  nf_retc_dispose(p2);free(p2);owner->retc_publisher=&publisher;
  free(live);
  CK(nf_retc_publish(&publisher,f));
+ CK(nf_retc_read_joint_view(&publisher,&joint_view));
+ CK(joint_view.accepted==f&&joint_view.epoch==1u&&
+    joint_view.physical->world.tick==1u&&
+    joint_view.event->tick==1u&&
+    joint_view.contract->contract_epoch==7u);
  free(encounter);free(owner);
  CK(nf_retc_read(&publisher)==f&&nf_retc_read(&publisher)->epoch==1);
  CK(!nf_retc_publish(&publisher,f)); /* no replay */
@@ -270,6 +277,11 @@ int main(int argc,char **argv){
  }
  CK(nf_retc_publish(&publisher,other));
  CK(nf_retc_read(&publisher)==other);
+ /* A typed B2 source witness without an encounter registry must not
+    masquerade as a fully consistent joint-reader view. */
+ CK(!nf_retc_read_joint_view(&publisher,&joint_view));
+ CK(joint_view.accepted==NULL);
+ puts("RET-C H42 incomplete-contract joint reader refused PASS");
  NfRetcFrame *disk=malloc(sizeof *disk);CK(disk);
  CK(nf_retc_restore_file(journal,disk));
  CK(disk->epoch==other->epoch&&disk->event.action==other->event.action&&
