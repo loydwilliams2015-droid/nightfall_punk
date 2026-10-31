@@ -146,6 +146,14 @@ int main(void){
    CHECK(encoded[0]==0x4e&&encoded[1]==0x46&&
          encoded[2]==0x45&&encoded[3]==0x58);
    CHECK(nf_retc_external_encode(encoded,sizeof encoded-1,&exported)==0);
+   NfRetcExternalRecord decoded={0};
+   CHECK(nf_retc_external_decode(encoded,sizeof encoded,&decoded));
+   CHECK(decoded.epoch==exported.epoch&&decoded.transaction_id==exported.transaction_id&&
+         decoded.actor_id==exported.actor_id&&decoded.object_id==exported.object_id&&
+         decoded.action_id==exported.action_id&&
+         decoded.first_account_balance==exported.first_account_balance&&
+         decoded.actor_center.x==exported.actor_center.x&&
+         decoded.object_center.z==exported.object_center.z);
    CHECK(nf_retc_external_accept(&consumer,&exported));
    CHECK(!nf_retc_external_accept(&consumer,&exported)); /* replay */
    CHECK(consumer.epoch==tick&&consumer.transaction_id==tick);
