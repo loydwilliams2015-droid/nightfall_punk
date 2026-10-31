@@ -1,0 +1,68 @@
+name: RET-C H56 actual client-server graphical preflight
+on:
+  push:
+    branches: [engineering/retc-h56-live-graphical-smoke]
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h56-live-client-smoke.yml'
+      - 'src/client/**'
+      - 'src/server/**'
+      - 'src/shared/**'
+      - 'CMakeLists.txt'
+  workflow_dispatch:
+jobs:
+  real-client-server-connection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record checked source
+        run: git rev-parse HEAD
+      - name: Install Linux graphical and ENet dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git pkg-config \
+            libsodium-dev libasound2-dev libx11-dev libxrandr-dev libxi-dev \
+            libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev \
+            xvfb ffmpeg
+      - name: Configure full graphical client and dedicated server
+        run: cmake -S . -B build-h56 -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=ON -DNF_BUILD_SERVER=ON -DNF_BUILD_TESTS=OFF
+      - name: Compile actual network client and server
+        run: cmake --build build-h56 --parallel 2 --target nightfall_client nightfall_server
+      - name: Execute real gameplay client on Xvfb against local server
+        run: |
+          set -euo pipefail
+          mkdir -p build-h56/evidence
+          xvfb-run -a bash -euo pipefail -c '
+            export LIBGL_ALWAYS_SOFTWARE=1
+            stdbuf -oL -eL ./build-h56/nightfall_server --port 28761 --duration 14 --ai-count 1 --pressure-slots 1 --cattler-count 1 > build-h56/evidence/server.log 2>&1 &
+            server_pid=$!
+            client_pid=""
+            trap '\''if [[ -n "$client_pid" ]]; then kill "$client_pid" 2>/dev/null || true; fi; kill "$server_pid" 2>/dev/null || true'\'' EXIT
+            sleep 2
+            ./build-h56/nightfall_client --host 127.0.0.1 --port 28761 > build-h56/evidence/client.log 2>&1 &
+            client_pid=$!
+            sleep 5
+            kill -0 "$client_pid"
+            kill -0 "$server_pid"
+            grep -q "\[server\] welcome entity=" build-h56/evidence/server.log
+            ffmpeg -nostdin -loglevel error -y -f x11grab -video_size 1280x720 -framerate 1 -i "$DISPLAY" -frames:v 1 -update 1 build-h56/evidence/client-screen.png
+            test -s build-h56/evidence/client-screen.png
+            kill "$client_pid" 2>/dev/null || true
+            wait "$client_pid" 2>/dev/null || true
+            client_pid=""
+            wait "$server_pid"
+            grep -q "\[server\] shutdown tick=" build-h56/evidence/server.log
+            echo "H56 live client connected, stayed alive, rendered under X11; server shutdown PASS"
+          '
+      - name: Preserve experimental evidence only; not a human download
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retc-h56-live-client-evidence
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build-h56/evidence/server.log
+            build-h56/evidence/client.log
+            build-h56/evidence/client-screen.png
