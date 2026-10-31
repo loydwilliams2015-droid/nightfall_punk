@@ -11,6 +11,15 @@ bool nf_retc_external_valid(const NfRetcExternalRecord *r){
         isfinite(r->object_center.y)&&isfinite(r->object_center.z);
 }
 
+bool nf_retc_external_accept(NfRetcExternalCursor *cursor,const NfRetcExternalRecord *record){
+ if(!cursor||!nf_retc_external_valid(record))return false;
+ if(cursor->epoch==UINT32_MAX||record->epoch!=cursor->epoch+1u||
+    record->prior_epoch!=cursor->epoch||
+    record->transaction_id<=cursor->transaction_id)return false;
+ cursor->epoch=record->epoch;
+ cursor->transaction_id=record->transaction_id;
+ return true;
+}
 bool nf_retc_external_capture(const NfRetcPublisher *publisher,NfRetcExternalRecord *out){
  if(!out)return false;
  *out=(NfRetcExternalRecord){0};
