@@ -12,5 +12,7 @@ typedef struct NfRetcExternalRecord {
  NfVec3 actor_center,object_center;
 } NfRetcExternalRecord;
 /* A failed capture clears out so stale records cannot be re-used. */
+/* H44: side-effect-free structural validation; no authenticity guarantee. */
+bool nf_retc_external_valid(const NfRetcExternalRecord *record);
 bool nf_retc_external_capture(const NfRetcPublisher *publisher,NfRetcExternalRecord *out);
 #endif
