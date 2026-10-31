@@ -107,3 +107,15 @@ bool nf_retc_external_decode(const uint8_t *bytes,size_t size,NfRetcExternalReco
  if(!nf_retc_external_valid(&candidate))return false;
  *out=candidate;return true;
 }
+
+/* H50: invalid, duplicate or stale records clear out without moving cursor. */
+bool nf_retc_external_consume(NfRetcExternalCursor *cursor,
+ const uint8_t *bytes,size_t size,NfRetcExternalRecord *out){
+ if(!out)return false;
+ *out=(NfRetcExternalRecord){0};
+ if(!cursor)return false;
+ NfRetcExternalRecord record={0};
+ if(!nf_retc_external_decode(bytes,size,&record)||
+    !nf_retc_external_accept(cursor,&record))return false;
+ *out=record;return true;
+}
