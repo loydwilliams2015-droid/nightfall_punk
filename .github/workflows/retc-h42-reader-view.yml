@@ -1,0 +1,45 @@
+name: RET-C H42 bounded consistent reader acceptance
+on:
+  push:
+    branches:
+      - engineering/retc-h42-consistent-read-view
+    paths:
+      - 'src/shared/nf_c2_retc_frame.*'
+      - 'src/tests/test_v18c2_retc_frame.c'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h42-reader-view.yml'
+  pull_request:
+    paths:
+      - 'src/shared/nf_c2_retc_frame.*'
+      - 'src/tests/test_v18c2_retc_frame.c'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h42-reader-view.yml'
+  workflow_dispatch:
+jobs:
+  joint-readers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure H42 headless verification
+        env:
+          CC: ${{ matrix.compiler }}
+        run: cmake -S . -B build-h42 -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug
+      - name: Build bounded reader and real A6 joint tests
+        run: cmake --build build-h42 --target nightfall_v18c2_retc_frame_test nightfall_v18c2_retc_real_twotick_test --parallel 2
+      - name: Execute full-frame negative and real A6 two-tick cases
+        run: ctest --test-dir build-h42 -R '^retc_(immutable_joint_frame|real_dispatcher_two_joint_ticks)_v18c2$' --output-on-failure --output-junit retc-h42.xml
+      - name: Upload source-exact evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retc-h42-${{ matrix.compiler }}-evidence
+          path: |
+            build-h42/Testing/Temporary/LastTest.log
+            build-h42/retc-h42.xml
+          if-no-files-found: warn
+          retention-days: 7
