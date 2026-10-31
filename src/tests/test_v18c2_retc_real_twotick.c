@@ -154,6 +154,23 @@ int main(void){
          decoded.first_account_balance==exported.first_account_balance&&
          decoded.actor_center.x==exported.actor_center.x&&
          decoded.object_center.z==exported.object_center.z);
+   /* H48: reject corrupt, short, oversize and unsupported wire versions. */
+   CHECK(!nf_retc_external_decode(encoded,sizeof encoded-1,&decoded));
+   CHECK(decoded.epoch==0);
+   CHECK(!nf_retc_external_decode(encoded,0,&decoded));
+   CHECK(!nf_retc_external_decode(NULL,sizeof encoded,&decoded));
+   CHECK(!nf_retc_external_decode(encoded,sizeof encoded,NULL));
+   uint8_t tampered[NF_RETC_EXTERNAL_WIRE_BYTES];
+   memcpy(tampered,encoded,sizeof tampered);tampered[2]^=1u;
+   CHECK(!nf_retc_external_decode(tampered,sizeof tampered,&decoded));
+   memcpy(tampered,encoded,sizeof tampered);tampered[4]^=1u;
+   CHECK(!nf_retc_external_decode(tampered,sizeof tampered,&decoded));
+   memcpy(tampered,encoded,sizeof tampered);tampered[32]^=1u;
+   CHECK(!nf_retc_external_decode(tampered,sizeof tampered,&decoded));
+   memcpy(tampered,encoded,sizeof tampered);tampered[91]^=1u;
+   CHECK(!nf_retc_external_decode(tampered,sizeof tampered,&decoded));
+   CHECK(decoded.epoch==0);
+
    CHECK(nf_retc_external_accept(&consumer,&exported));
    CHECK(!nf_retc_external_accept(&consumer,&exported)); /* replay */
    CHECK(consumer.epoch==tick&&consumer.transaction_id==tick);
