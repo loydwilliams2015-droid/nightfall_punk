@@ -17,7 +17,13 @@ static bool b2_provider(void *ctx,const NfWorld *w,const Nf18a6Runtime *owner,
 static bool verify(const NfWorld *w,const Nf18a6Runtime *r,
  const Nf18b2EncounterRuntime *enc,const Nf18b6Push *push,
  const NfRetcPublisher *publisher,uint32_t expected){
- const NfRetcFrame *f=nf_retc_read(publisher);
+ NfRetcReadView view={0};
+ if(!nf_retc_read_joint_view(publisher,&view))return false;
+ const NfRetcFrame *f=view.accepted;
+ if(view.epoch!=expected||view.event->tick!=expected||
+    view.physical->world.tick!=expected||
+    view.eligibility->tick!=expected||
+    view.contract->contract_epoch!=view.event->contract_epoch)return false;
  const NfActor *a=nf_world_find_actor_const(w,10);
  if(!f||!a||f->epoch!=expected||w->tick!=expected||
     r->last_commit_tick!=expected||r->joint_commit_epoch!=expected||
@@ -69,6 +75,8 @@ int main(void){
  NfRetcJointContext joint={0};joint.owner=r;joint.encounter=enc;
  joint.push=push;joint.transaction_id=1;
  CHECK(nf_retc_joint_attach(w,&joint));
+ NfRetcReadView first={0};
+ CHECK(!nf_retc_read_joint_view(publisher,&first)); /* no accepted frame */
  for(uint32_t tick=1;tick<=2;++tick){
    const uint32_t action=90u+tick;
    /* A6 publisher requires a strictly increasing transaction identity. */
@@ -127,7 +135,22 @@ int main(void){
       return 1;
    }
    CHECK(verify(w,r,enc,push,publisher,tick));
+   NfRetcReadView current={0};
+   CHECK(nf_retc_read_joint_view(publisher,&current));
+   CHECK(current.accepted&&current.epoch==tick&&
+         current.transaction_id==tick&&current.event->tick==tick&&
+         current.physical->world.tick==tick);
+   if(tick==1u){
+     first=current; /* immutable view remains usable until publisher disposal */
+   }else{
+     CHECK(first.accepted!=current.accepted);
+     CHECK(first.epoch==1u&&first.transaction_id==1u&&
+           first.event->tick==1u&&first.physical->world.tick==1u&&
+           first.eligibility->tick==1u);
+     CHECK(current.epoch==2u&&current.event->action==92u);
+   }
  }
+ puts("RET-C H42 one-load B2/B3/A5 reader retained both accepted epochs PASS");
  /* Negative replay probe: retain the last committed transaction identity.
     A denial must not advance any physical, B2, B3 or published epoch. */
  {
@@ -149,6 +172,10 @@ int main(void){
    CHECK(nf_world_step_checked(w,1.f/(float)NF_TICK_RATE)!=NF_WORLD_TICK_COMMITTED);
    CHECK(w->tick==tick_before&&r->accepted==accepted_before);
    CHECK(nf_retc_read(publisher)==accepted&&push->receipt_count==receipts_before);
+   NfRetcReadView replay_view={0};
+   CHECK(nf_retc_read_joint_view(publisher,&replay_view));
+   CHECK(replay_view.accepted==accepted&&replay_view.epoch==2u&&
+         replay_view.event->tick==2u&&replay_view.physical->world.tick==2u);
    CHECK(memcmp(&enc->registry,&registry_before,sizeof registry_before)==0);
    CHECK(memcmp(&r->physical.object.center,&crate_before,sizeof crate_before)==0);
    CHECK(memcmp(&nf_world_find_actor_const(w,10)->transform.position,&actor_before,sizeof actor_before)==0);

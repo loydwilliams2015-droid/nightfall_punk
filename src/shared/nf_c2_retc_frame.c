@@ -114,6 +114,43 @@ bool nf_retc_publish(NfRetcPublisher *pub,NfRetcFrame *f){
 const NfRetcFrame *nf_retc_read(const NfRetcPublisher *pub){
  return pub?atomic_load_explicit(&pub->current,memory_order_acquire):NULL;
 }
+/* H42: one acquire-load pins a bounded, immutable joint epoch.  The live
+   world/encounter are deliberately not read here; their separate projections
+   cannot be made atomic by repeatedly sampling public world fields. */
+bool nf_retc_read_joint_view(const NfRetcPublisher *pub,NfRetcReadView *out){
+ if(!out)return false;
+ *out=(NfRetcReadView){0};
+ const NfRetcFrame *f=nf_retc_read(pub);
+ if(!f||!f->epoch||!f->transaction_id||
+    !f->has_b2_contract||!f->has_encounter_registry||
+    f->physical.world.tick!=f->epoch||f->event.tick!=f->epoch||
+    f->b2_use.tick!=f->epoch||
+    f->event.actor!=f->owner_actor||f->event.object!=f->object_id||
+    f->physical.actor.id!=f->owner_actor||
+    f->physical.object.id!=f->object_id||
+    f->b2_use.actor_id!=f->owner_actor||
+    f->b2_use.object_id!=f->object_id||
+    f->b2_use.action_id!=f->event.action||
+    f->b2_actor.id!=f->owner_actor||f->b2_object.id!=f->object_id||
+    !f->event.authorized||!f->event.applied||
+    f->event.phase!=NF18B3_APPLIED||f->event.kind!=NF18B3_PUSH||
+    f->b2_decision.status!=NF18B2_ELIGIBLE||
+    f->b2_decision.physical!=NF18B2_ELIGIBLE||
+    f->b2_decision.contract!=NF18B2_ELIGIBLE||
+    !f->event.contract_epoch||
+    f->encounter_registry.contract_epoch!=f->event.contract_epoch||
+    f->encounter_registry.account_count>NF18B2_MAX_REQUESTS||
+    f->encounter_registry.object_count>NF18B2_MAX_REQUESTS||
+    f->obligation_count>NF_RETC_OBLIGATIONS)return false;
+ out->accepted=f;
+ out->physical=&f->physical;
+ out->event=&f->event;
+ out->contract=&f->encounter_registry;
+ out->eligibility=&f->b2_use;
+ out->epoch=f->epoch;
+ out->transaction_id=f->transaction_id;
+ return true;
+}
 void nf_retc_dispose(NfRetcPublisher *pub){
  if(!pub)return;
  atomic_store_explicit(&pub->current,NULL,memory_order_release);
