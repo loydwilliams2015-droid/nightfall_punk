@@ -1,0 +1,51 @@
+name: RET-C H53 NF04 read-only observer acceptance
+on:
+  push:
+    branches: [engineering/retc-h53-protocol-observer]
+    paths:
+      - 'src/shared/nf_retc_network.*'
+      - 'src/shared/nf_protocol.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - 'CMakeLists.txt'
+      - '.github/workflows/retc-h53-protocol-observer.yml'
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_network.*'
+      - 'src/shared/nf_protocol.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - 'CMakeLists.txt'
+      - '.github/workflows/retc-h53-protocol-observer.yml'
+  workflow_dispatch:
+jobs:
+  nf04-observer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure source-exact C11 headless run
+        env:
+          CC: ${{ matrix.compiler }}
+        run: cmake -S . -B build-h53 -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug
+      - name: Compile real A6 and H41 joint frame fixtures
+        run: cmake --build build-h53 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test nightfall_v18c2_retc_frame_test
+      - name: Verify RET-C H53 protocol-frame acceptance
+        run: ctest --test-dir build-h53 -R '^retc_(real_dispatcher_two_joint_ticks|immutable_joint_frame)_v18c2$' --output-on-failure --output-junit h53-focused.xml
+      - name: Compile entire headless test tree
+        run: cmake --build build-h53 --parallel 2
+      - name: Run complete cumulative regression
+        run: ctest --test-dir build-h53 --output-on-failure --output-junit h53-full.xml
+      - name: Archive logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retc-h53-${{ matrix.compiler }}-${{ github.sha }}
+          path: |
+            build-h53/Testing/Temporary/LastTest.log
+            build-h53/h53-focused.xml
+            build-h53/h53-full.xml
+          retention-days: 7
+          if-no-files-found: warn

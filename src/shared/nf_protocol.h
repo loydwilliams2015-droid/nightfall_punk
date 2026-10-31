@@ -32,7 +32,9 @@ typedef enum NfMessageType {
     NF_MSG_PING = 6,
     NF_MSG_PONG = 7,
     NF_MSG_DISCONNECT = 8,
-    NF_MSG_COMBAT_EVENT = 9
+    NF_MSG_COMBAT_EVENT = 9,
+    /* RET-C research diagnostic observation, never authoritative gameplay input. */
+    NF_MSG_RETC_OBSERVATION = 10
 } NfMessageType;
 
 typedef struct NfHelloMessage {
