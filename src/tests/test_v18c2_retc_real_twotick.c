@@ -194,6 +194,21 @@ int main(void){
    malformed=exported;malformed.epoch=0;
    CHECK(!nf_retc_external_valid(&malformed));
    CHECK(!nf_retc_external_valid(NULL));
+   /* H51: pathological / boundary source validation and no partial output. */
+   malformed=exported;malformed.actor_center.x=NAN;
+   CHECK(!nf_retc_external_valid(&malformed));
+   CHECK(nf_retc_external_encode(encoded,sizeof encoded,&malformed)==0);
+   malformed=exported;malformed.prior_epoch=UINT32_MAX;
+   CHECK(!nf_retc_external_valid(&malformed));
+   malformed=exported;malformed.transaction_id=0;
+   CHECK(!nf_retc_external_valid(&malformed));
+   malformed=exported;malformed.account_count=0;
+   CHECK(!nf_retc_external_valid(&malformed));
+   NfRetcExternalRecord no_record=exported;
+   CHECK(!nf_retc_external_capture(publisher,NULL));
+   CHECK(!nf_retc_external_consume(&wire_consumer,NULL,sizeof encoded,&no_record));
+   CHECK(no_record.epoch==0&&wire_consumer.epoch==tick);
+
    CHECK(exported.epoch==tick&&exported.transaction_id==tick&&
          exported.actor_id==10&&exported.object_id==2010&&
          exported.action_id==action&&exported.contract_epoch>0&&
