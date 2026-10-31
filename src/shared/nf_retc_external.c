@@ -77,3 +77,33 @@ size_t nf_retc_external_encode(uint8_t *out,size_t cap,const NfRetcExternalRecor
  ext_put32(out+88u,ext_checksum(out,88u));
  return NF_RETC_EXTERNAL_WIRE_BYTES;
 }
+
+/* H47: decoder never interprets raw bytes as a native ABI struct. */
+static uint32_t ext_get32(const uint8_t *p){
+ return (uint32_t)p[0]|((uint32_t)p[1]<<8)|
+        ((uint32_t)p[2]<<16)|((uint32_t)p[3]<<24);
+}
+static float ext_getfloat(const uint8_t *p){
+ uint32_t bits=ext_get32(p);float value=0;
+ memcpy(&value,&bits,sizeof value);return value;
+}
+bool nf_retc_external_decode(const uint8_t *bytes,size_t size,NfRetcExternalRecord *out){
+ if(!out)return false;
+ *out=(NfRetcExternalRecord){0};
+ if(!bytes||size!=NF_RETC_EXTERNAL_WIRE_BYTES||
+    ext_get32(bytes)!=0x5845464eu||ext_get32(bytes+4)!=1u||
+    ext_get32(bytes+88)!=ext_checksum(bytes,88u))return false;
+ uint32_t x[14];
+ for(size_t i=0;i<14u;++i)x[i]=ext_get32(bytes+8u+4u*i);
+ NfRetcExternalRecord candidate={0};
+ candidate.epoch=x[0];candidate.prior_epoch=x[1];candidate.transaction_id=x[2];
+ candidate.actor_id=x[3];candidate.object_id=x[4];candidate.action_id=x[5];
+ candidate.contract_epoch=x[6];candidate.world_revision=x[7];
+ candidate.material_epoch=x[8];candidate.committed_receipts=x[9];
+ candidate.contract_revision=x[10];candidate.account_count=x[11];
+ candidate.first_account_actor=x[12];candidate.first_account_balance=x[13];
+ candidate.actor_center=(NfVec3){ext_getfloat(bytes+64),ext_getfloat(bytes+68),ext_getfloat(bytes+72)};
+ candidate.object_center=(NfVec3){ext_getfloat(bytes+76),ext_getfloat(bytes+80),ext_getfloat(bytes+84)};
+ if(!nf_retc_external_valid(&candidate))return false;
+ *out=candidate;return true;
+}
