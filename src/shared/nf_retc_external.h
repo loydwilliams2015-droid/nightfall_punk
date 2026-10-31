@@ -19,6 +19,7 @@ typedef struct NfRetcExternalCursor { uint32_t epoch,transaction_id; } NfRetcExt
 bool nf_retc_external_accept(NfRetcExternalCursor *cursor,const NfRetcExternalRecord *record);
 #define NF_RETC_EXTERNAL_WIRE_BYTES 92u
 /* Versioned LE diagnostic envelope with checksum, NOT cryptographic auth. */
+bool nf_retc_external_decode(const uint8_t *bytes,size_t size,NfRetcExternalRecord *out);
 size_t nf_retc_external_encode(uint8_t *out,size_t cap,const NfRetcExternalRecord *record);
 bool nf_retc_external_capture(const NfRetcPublisher *publisher,NfRetcExternalRecord *out);
 #endif
