@@ -1,5 +1,6 @@
 #include "nf_retc_external.h"
 #include <math.h>
+#include <string.h>
 bool nf_retc_external_valid(const NfRetcExternalRecord *r){
  if(!r||r->prior_epoch==UINT32_MAX||r->epoch!=r->prior_epoch+1u||
     !r->transaction_id||!r->actor_id||!r->object_id||!r->action_id||
@@ -45,4 +46,34 @@ bool nf_retc_external_capture(const NfRetcPublisher *publisher,NfRetcExternalRec
  if(!nf_retc_external_valid(&candidate))return false;
  *out=candidate;
  return true;
+}
+
+/* H46: explicit width/byte-order; no native struct padding on wire. */
+static void ext_put32(uint8_t *p,uint32_t v){
+ p[0]=(uint8_t)v;p[1]=(uint8_t)(v>>8);p[2]=(uint8_t)(v>>16);p[3]=(uint8_t)(v>>24);
+}
+static void ext_putfloat(uint8_t *p,float f){
+ uint32_t bits=0;memcpy(&bits,&f,sizeof bits);ext_put32(p,bits);
+}
+static uint32_t ext_checksum(const uint8_t *p,size_t n){
+ uint32_t h=2166136261u;
+ for(size_t i=0;i<n;++i)h=(h^p[i])*16777619u;
+ return h;
+}
+size_t nf_retc_external_encode(uint8_t *out,size_t cap,const NfRetcExternalRecord *r){
+ if(!out||cap<NF_RETC_EXTERNAL_WIRE_BYTES||!nf_retc_external_valid(r))return 0;
+ ext_put32(out,0x5845464eu); /* ASCII NFEX */
+ ext_put32(out+4,1u);
+ const uint32_t values[14]={
+ r->epoch,r->prior_epoch,r->transaction_id,r->actor_id,r->object_id,
+ r->action_id,r->contract_epoch,r->world_revision,r->material_epoch,
+ r->committed_receipts,r->contract_revision,r->account_count,
+ r->first_account_actor,r->first_account_balance
+ };
+ for(size_t i=0;i<14u;++i)ext_put32(out+8u+4u*i,values[i]);
+ const float xyz[6]={r->actor_center.x,r->actor_center.y,r->actor_center.z,
+                     r->object_center.x,r->object_center.y,r->object_center.z};
+ for(size_t i=0;i<6u;++i)ext_putfloat(out+64u+4u*i,xyz[i]);
+ ext_put32(out+88u,ext_checksum(out,88u));
+ return NF_RETC_EXTERNAL_WIRE_BYTES;
 }
