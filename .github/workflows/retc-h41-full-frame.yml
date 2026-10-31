@@ -1,0 +1,41 @@
+name: RET-C H41 independent complete-frame recovery
+on:
+  push:
+    branches:
+      - engineering/retc-h41-full-frame-recovery
+    paths:
+      - 'src/tests/test_v18c2_retc_frame.c'
+      - '.github/workflows/retc-h41-full-frame.yml'
+  pull_request:
+    paths:
+      - 'src/tests/test_v18c2_retc_frame.c'
+      - '.github/workflows/retc-h41-full-frame.yml'
+  workflow_dispatch:
+jobs:
+  bounded-full-frame:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure source-exact headless C build
+        env:
+          CC: ${{ matrix.compiler }}
+        run: cmake -S . -B build-h41 -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug
+      - name: Build recovery fixture
+        run: cmake --build build-h41 --target nightfall_v18c2_retc_frame_test --parallel 2
+      - name: Test independently restarted physical-contractual frame
+        run: ctest --test-dir build-h41 -R '^retc_immutable_joint_frame_v18c2$' --output-on-failure --output-junit retc-h41.xml
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retc-h41-${{ matrix.compiler }}-evidence
+          path: |
+            build-h41/Testing/Temporary/LastTest.log
+            build-h41/retc-h41.xml
+          if-no-files-found: warn
+          retention-days: 7
