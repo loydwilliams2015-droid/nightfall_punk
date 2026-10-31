@@ -1,4 +1,5 @@
 #include "nf_retc_joint_provider.h"
+#include "nf_retc_external.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -77,6 +78,7 @@ int main(void){
  CHECK(nf_retc_joint_attach(w,&joint));
  NfRetcReadView first={0};
  CHECK(!nf_retc_read_joint_view(publisher,&first)); /* no accepted frame */
+ NfRetcExternalCursor consumer={0},wire_consumer={0};
  for(uint32_t tick=1;tick<=2;++tick){
    const uint32_t action=90u+tick;
    /* A6 publisher requires a strictly increasing transaction identity. */
@@ -135,6 +137,84 @@ int main(void){
       return 1;
    }
    CHECK(verify(w,r,enc,push,publisher,tick));
+   /* H43: externally owned record from ONE accepted immutable frame. */
+   NfRetcExternalRecord exported={0};
+   CHECK(nf_retc_external_capture(publisher,&exported));
+   CHECK(nf_retc_external_valid(&exported));
+   uint8_t encoded[NF_RETC_EXTERNAL_WIRE_BYTES]={0};
+   CHECK(nf_retc_external_encode(encoded,sizeof encoded,&exported)==sizeof encoded);
+   CHECK(encoded[0]==0x4e&&encoded[1]==0x46&&
+         encoded[2]==0x45&&encoded[3]==0x58);
+   CHECK(nf_retc_external_encode(encoded,sizeof encoded-1,&exported)==0);
+   NfRetcExternalRecord decoded={0};
+   CHECK(nf_retc_external_decode(encoded,sizeof encoded,&decoded));
+   NfRetcExternalRecord consumed={0};
+   CHECK(nf_retc_external_consume(&wire_consumer,encoded,sizeof encoded,&consumed));
+   CHECK(consumed.epoch==tick);
+   CHECK(!nf_retc_external_consume(&wire_consumer,encoded,sizeof encoded,&consumed));
+   CHECK(consumed.epoch==0&&wire_consumer.epoch==tick);
+   CHECK(decoded.epoch==exported.epoch&&decoded.transaction_id==exported.transaction_id&&
+         decoded.actor_id==exported.actor_id&&decoded.object_id==exported.object_id&&
+         decoded.action_id==exported.action_id&&
+         decoded.first_account_balance==exported.first_account_balance&&
+         decoded.actor_center.x==exported.actor_center.x&&
+         decoded.object_center.z==exported.object_center.z);
+   /* H48: reject corrupt, short, oversize and unsupported wire versions. */
+   CHECK(!nf_retc_external_decode(encoded,sizeof encoded-1,&decoded));
+   CHECK(decoded.epoch==0);
+   CHECK(!nf_retc_external_decode(encoded,0,&decoded));
+   CHECK(!nf_retc_external_decode(NULL,sizeof encoded,&decoded));
+   CHECK(!nf_retc_external_decode(encoded,sizeof encoded,NULL));
+   uint8_t tampered[NF_RETC_EXTERNAL_WIRE_BYTES];
+   memcpy(tampered,encoded,sizeof tampered);tampered[2]^=1u;
+   CHECK(!nf_retc_external_decode(tampered,sizeof tampered,&decoded));
+   memcpy(tampered,encoded,sizeof tampered);tampered[4]^=1u;
+   CHECK(!nf_retc_external_decode(tampered,sizeof tampered,&decoded));
+   memcpy(tampered,encoded,sizeof tampered);tampered[32]^=1u;
+   CHECK(!nf_retc_external_decode(tampered,sizeof tampered,&decoded));
+   memcpy(tampered,encoded,sizeof tampered);tampered[91]^=1u;
+   CHECK(!nf_retc_external_decode(tampered,sizeof tampered,&decoded));
+   CHECK(decoded.epoch==0);
+   /* H49: deterministic single-bit adversarial sweep across all header and
+      payload bytes; bounds and expected failure are reproducible. */
+   for(size_t flip=0;flip<88u;++flip){
+     memcpy(tampered,encoded,sizeof tampered);
+     tampered[flip]^=(uint8_t)(1u<<(flip%8u));
+     CHECK(!nf_retc_external_decode(tampered,sizeof tampered,&decoded));
+     CHECK(decoded.epoch==0);
+   }
+
+
+   CHECK(nf_retc_external_accept(&consumer,&exported));
+   CHECK(!nf_retc_external_accept(&consumer,&exported)); /* replay */
+   CHECK(consumer.epoch==tick&&consumer.transaction_id==tick);
+   NfRetcExternalRecord malformed=exported;
+   malformed.first_account_actor=999;
+   CHECK(!nf_retc_external_valid(&malformed));
+   malformed=exported;malformed.epoch=0;
+   CHECK(!nf_retc_external_valid(&malformed));
+   CHECK(!nf_retc_external_valid(NULL));
+   /* H51: pathological / boundary source validation and no partial output. */
+   malformed=exported;malformed.actor_center.x=NAN;
+   CHECK(!nf_retc_external_valid(&malformed));
+   CHECK(nf_retc_external_encode(encoded,sizeof encoded,&malformed)==0);
+   malformed=exported;malformed.prior_epoch=UINT32_MAX;
+   CHECK(!nf_retc_external_valid(&malformed));
+   malformed=exported;malformed.transaction_id=0;
+   CHECK(!nf_retc_external_valid(&malformed));
+   malformed=exported;malformed.account_count=0;
+   CHECK(!nf_retc_external_valid(&malformed));
+   NfRetcExternalRecord no_record=exported;
+   CHECK(!nf_retc_external_capture(publisher,NULL));
+   CHECK(!nf_retc_external_consume(&wire_consumer,NULL,sizeof encoded,&no_record));
+   CHECK(no_record.epoch==0&&wire_consumer.epoch==tick);
+
+   CHECK(exported.epoch==tick&&exported.transaction_id==tick&&
+         exported.actor_id==10&&exported.object_id==2010&&
+         exported.action_id==action&&exported.contract_epoch>0&&
+         exported.committed_receipts>0&&exported.account_count>0&&
+         exported.first_account_actor==10);
+
    NfRetcReadView current={0};
    CHECK(nf_retc_read_joint_view(publisher,&current));
    CHECK(current.accepted&&current.epoch==tick&&
