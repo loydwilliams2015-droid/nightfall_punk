@@ -47,6 +47,8 @@ int main(void){
  CK(nf_ma03c_joint_certify(&staged,witnesses,1u));
  /* H85: no fabricated issuer can certify without real bound A6 ownership. */
  CK(!nf_ma03c_joint_certify_source(live,&staged,1u,NULL,NULL));
+ /* H86: an unbound world must not certify with any synthetic issuer. */
+ CK(live->tick_owner==NULL&&live->tick_owner_context==NULL);
  witnesses[1].b3_valid=false;
  CK(!nf_ma03c_joint_certify(&staged,witnesses,1u));
  witnesses[1].b3_valid=true;
