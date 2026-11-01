@@ -1,0 +1,78 @@
+name: RET-C H60 VPC01 primordial two actor acceptance
+on:
+  push:
+    branches: [engineering/retc-h60-vpc01-two-actor-primordial]
+  pull_request:
+    paths:
+      - 'src/shared/nf_vpc01_two_actor.*'
+      - 'src/tests/test_vpc01_two_actor.c'
+      - 'src/demo/vpc01_two_actor.c'
+      - 'CMakeLists.txt'
+      - '.github/workflows/retc-h60-vpc01-two-actor.yml'
+  workflow_dispatch:
+jobs:
+  two-actor-source-exact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Identify exact source
+        run: git rev-parse HEAD
+      - name: Install graphical and C11 build requirements
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git pkg-config libsodium-dev \
+            libasound2-dev libx11-dev libxrandr-dev libxi-dev \
+            libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev \
+            xvfb ffmpeg
+      - name: Configure research laboratory
+        env:
+          CC: ${{ matrix.compiler }}
+        run: cmake -S . -B build-h60-research -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug
+      - name: Compile complete RET-C research test tree
+        run: cmake --build build-h60-research --parallel 2
+      - name: Execute H60 and inherited headless RET-C acceptance
+        run: ctest --test-dir build-h60-research --output-on-failure --output-junit h60-research.xml
+      - name: Configure real graphics/production-linkage targets
+        env:
+          CC: ${{ matrix.compiler }}
+        run: cmake -S . -B build-h60-game -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=ON -DNF_BUILD_SERVER=ON -DNF_BUILD_TESTS=ON
+      - name: Compile actual client/server plus VPC01 viewer and tests
+        run: cmake --build build-h60-game --parallel 2
+      - name: Full game inherited plus new VPC01 CTest
+        run: ctest --test-dir build-h60-game --output-on-failure --output-junit h60-game.xml
+      - name: Execute rendered VPC01 automatic scene
+        if: matrix.compiler == 'gcc'
+        run: |
+          set -euo pipefail
+          mkdir -p build-h60-game/vpc01-frames
+          rm -f frame_*.png
+          xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 ./build-h60-game/nightfall_vpc01_two_actor \
+            --auto --seconds 4 --frames-dir build-h60-game/vpc01-frames \
+            > build-h60-game/vpc01-run.log 2>&1
+          if ! compgen -G "build-h60-game/vpc01-frames/frame_*.png" >/dev/null; then
+            if compgen -G "frame_*.png" >/dev/null; then
+              mv frame_*.png build-h60-game/vpc01-frames/
+            fi
+          fi
+          test "$(find build-h60-game/vpc01-frames -maxdepth 1 -name 'frame_*.png' -size +0c | wc -l)" -ge 1
+          grep -q 'VPC01_H60_VIEW' build-h60-game/vpc01-run.log
+          cat build-h60-game/vpc01-run.log
+      - name: Preserve research artifacts only (not a human playtest)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retc-h60-vpc01-${{ matrix.compiler }}-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build-h60-research/h60-research.xml
+            build-h60-game/h60-game.xml
+            build-h60-research/Testing/Temporary/LastTest.log
+            build-h60-game/Testing/Temporary/LastTest.log
+            build-h60-game/vpc01-run.log
+            build-h60-game/vpc01-frames/*.png
