@@ -118,3 +118,24 @@ bool nf_ma03c_joint_certify(const NfMa03cCandidate *c,
  }
  return true;
 }
+
+/* H85 requires a source-owned issuer, and rejects any provider without
+ * a bound A6 world-tick owner. The issuer is not automatically trustworthy:
+ * real B2/A5/B3 source binding is an independently open acceptance gate. */
+bool nf_ma03c_joint_certify_source(const NfWorld *world,
+ const NfMa03cCandidate *candidate,uint32_t epoch,
+ NfMa03cWitnessIssuer issuer,void *context){
+ if(!world||!candidate||!issuer||!context||!world->tick_owner||
+    !world->tick_owner_context||world->tick_in_progress||
+    world->tick!=candidate->source_tick||!epoch||
+    candidate->source_tick+1u!=epoch)return false;
+ NfMa03cActorWitness witnesses[2]={{0},{0}};
+ if(candidate->roster.count!=2u)return false;
+ for(unsigned i=0;i<2u;++i){
+  const uint32_t id=candidate->roster.actors[i].id;
+  const NfActor *actual=nf_world_find_actor_const(world,id);
+  if(!actual||!actual->active||
+     !issuer(context,world,id,epoch,&witnesses[i]))return false;
+ }
+ return nf_ma03c_joint_certify(candidate,witnesses,epoch);
+}
