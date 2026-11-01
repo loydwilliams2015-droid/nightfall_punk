@@ -65,3 +65,35 @@ bool nf_ma024_recheck(const NfWorld *w,const Nf18a6Runtime *r,NfMa03Provider sou
   next.tick==expected->tick&&next.world_revision==expected->world_revision&&
   next.material_epoch==expected->material_epoch&&next.fingerprint==expected->fingerprint;
 }
+
+/* H82: positive two-actor contact is only an immutable proposal. No
+ * source-world tick, A6 owner, material, B2 registry or B3 receipt mutation. */
+bool nf_ma03c_stage_contact(const NfWorld *world,uint32_t owner_actor,
+ float dt,NfMa03cCandidate *out){
+ if(!world||!out||!owner_actor||!isfinite(dt)||dt<=0.f||
+    world->tick_in_progress||world->tick>=UINT32_MAX)return false;
+ NfMa03cCandidate candidate={0};
+ if(!nf_ma03_roster_capture(world,&candidate.roster)||
+    candidate.roster.count!=2u)return false;
+ Nf18a4Body bodies[2]={0};
+ bool owner_found=false;
+ for(unsigned i=0;i<2u;++i){
+  const NfMa03Participant *p=&candidate.roster.actors[i];
+  owner_found|=p->id==owner_actor;
+  bodies[i].id=p->id;
+  bodies[i].center=p->position;
+  bodies[i].velocity=p->velocity;
+  bodies[i].inverse_mass=1.f;
+  bodies[i].radius=.3f;
+  bodies[i].height=1.8f;
+ }
+ if(!owner_found)return false;
+ candidate.contact=nf_ma03c_compare(bodies,2u,dt,(uint32_t)world->tick+1u,1u);
+ if(candidate.contact.matched!=1u||candidate.contact.disagreed||
+    candidate.contact.unresolved)return false;
+ candidate.source_tick=world->tick;
+ candidate.owner_actor=owner_actor;
+ candidate.eligible=true;
+ *out=candidate;
+ return true;
+}

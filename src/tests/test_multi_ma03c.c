@@ -36,6 +36,17 @@ int main(void){
  NfMa03cEvidence positive=nf_ma03c_compare(bodies,2,1.f/60.f,1,1);
  CK(positive.matched==1&&positive.disagreed==0&&positive.unresolved==0);
  CK(live->tick==0u);
+ NfMa03cCandidate staged={0};
+ CK(nf_ma03c_stage_contact(live,10u,1.f/60.f,&staged));
+ CK(staged.eligible&&staged.contact.matched==1u&&
+    staged.roster.count==2u&&staged.source_tick==0u);
+ const NfMa03cCandidate original=staged;
+ CK(!nf_ma03c_stage_contact(live,99u,1.f/60.f,&staged));
+ CK(memcmp(&original,&staged,sizeof staged)==0);
+ slow->input.forward=2.f;
+ CK(!nf_ma03c_stage_contact(live,10u,1.f/60.f,&staged));
+ CK(memcmp(&original,&staged,sizeof staged)==0);
+ slow->input.forward=0.f;
  CK(fast->transform.velocity.x==150.f&&slow->transform.velocity.x==0.f);
  free(live);
  for(unsigned family=0;family<5;family++)for(unsigned seed=0;seed<128;seed++){
