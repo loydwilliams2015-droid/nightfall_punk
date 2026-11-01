@@ -293,6 +293,20 @@ int main(void){
    CHECK(nf_retc_read(publisher)==before&&w->tick==before_tick);
    CHECK(memcmp(&second->transform.position,&before_pos,sizeof before_pos)==0);
    second->input.forward=0.f;
+   /* H74: distinct second-actor control channels remain unavailable.
+      The original owner can request movement simultaneously, but a
+      second independent input must refuse the entire authoritative tick. */
+   NfMoveInput owner_move={0};owner_move.strafe=1.f;
+   nf_world_set_input(w,10,owner_move);
+   NfMoveInput coactor_move={0};coactor_move.strafe=-1.f;
+   nf_world_set_input(w,20,coactor_move);
+   CHECK(nf_world_step_checked(w,1.f/(float)NF_TICK_RATE)!=NF_WORLD_TICK_COMMITTED);
+   CHECK(w->tick==before_tick&&nf_retc_read(publisher)==before);
+   CHECK(memcmp(&second->transform.position,&before_pos,sizeof before_pos)==0);
+   coactor_move=(NfMoveInput){0};
+   nf_world_set_input(w,20,coactor_move);
+   owner_move=(NfMoveInput){0};
+   nf_world_set_input(w,10,owner_move);
  }
  /* Negative replay probe: retain the last committed transaction identity.
     A denial must not advance any physical, B2, B3 or published epoch. */
