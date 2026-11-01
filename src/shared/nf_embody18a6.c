@@ -485,6 +485,7 @@ Nf18a6TickTrace nf18a6_classify_tick(uint32_t tick,uint32_t red_target,
 static bool nf18a6_passive_actor_envelope(const NfWorld *world,
                                          const Nf18a6Runtime *owner){
     if(!world||!owner)return false;
+    if(nf_world_active_actor_count(world)>1u&&!owner->allow_passive_coactors)return false;
     const NfActor *primary=nf_world_find_actor_const(world,owner->actor_id);
     if(!primary||!primary->active)return false;
     const NfVec3 p=primary->transform.position;
