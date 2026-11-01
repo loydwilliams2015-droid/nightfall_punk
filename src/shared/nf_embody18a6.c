@@ -498,7 +498,12 @@ static bool nf18a6_passive_actor_envelope(const NfWorld *world,
            in->crouch_held||in->sprint_held||in->interact_held||
            !isfinite(in->yaw_radians))return false;
         const NfVec3 q=a->transform.position;
-        if(!isfinite(q.x)||!isfinite(q.y)||!isfinite(q.z))return false;
+        const NfVec3 v=a->transform.velocity;
+        /* H75: passive co-presence also forbids latent motion. A zero
+           input cannot authorize an already-moving unowned actor. */
+        if(!isfinite(q.x)||!isfinite(q.y)||!isfinite(q.z)||
+           !isfinite(v.x)||!isfinite(v.y)||!isfinite(v.z)||
+           v.x!=0.f||v.y!=0.f||v.z!=0.f)return false;
         const float dp=(q.x-p.x)*(q.x-p.x)+(q.z-p.z)*(q.z-p.z);
         const float dc=(q.x-obj.x)*(q.x-obj.x)+(q.z-obj.z)*(q.z-obj.z);
         if(!isfinite(dp)||!isfinite(dc)||dp<16.f||dc<16.f)return false;
