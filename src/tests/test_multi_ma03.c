@@ -84,6 +84,14 @@ int main(void){
  CK(!nf_ma03_roster_capture(world,&roster));
  CK(memcmp(&stable,&roster,sizeof stable)==0);
  actor->input.strafe=-1.f;
+ actor->input.strafe=2.f;
+ CK(!nf_ma03_roster_capture(world,&roster));
+ CK(memcmp(&stable,&roster,sizeof stable)==0);
+ actor->input.strafe=-1.f;
+ actor->combat.alive=false;
+ CK(!nf_ma03_roster_capture(world,&roster));
+ CK(memcmp(&stable,&roster,sizeof stable)==0);
+ actor->combat.alive=true;
  actor->id=10;
  CK(!nf_ma03_roster_capture(world,&roster));
  CK(memcmp(&stable,&roster,sizeof stable)==0);
