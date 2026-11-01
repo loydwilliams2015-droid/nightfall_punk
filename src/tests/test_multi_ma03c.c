@@ -45,6 +45,8 @@ int main(void){
  NfMa03cActorWitness witnesses[2]={
   {10,1,1,1,true,true,true},{20,1,1,1,true,true,true}};
  CK(nf_ma03c_joint_certify(&staged,witnesses,1u));
+ /* H85: no fabricated issuer can certify without real bound A6 ownership. */
+ CK(!nf_ma03c_joint_certify_source(live,&staged,1u,NULL,NULL));
  witnesses[1].b3_valid=false;
  CK(!nf_ma03c_joint_certify(&staged,witnesses,1u));
  witnesses[1].b3_valid=true;

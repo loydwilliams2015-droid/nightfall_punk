@@ -33,4 +33,11 @@ typedef struct { uint32_t actor_id,physical_epoch,b2_epoch,b3_epoch;
  bool physical_valid,b2_valid,b3_valid; } NfMa03cActorWitness;
 bool nf_ma03c_joint_certify(const NfMa03cCandidate *candidate,
  const NfMa03cActorWitness witness[2],uint32_t candidate_epoch);
+/* H85: provenance receipt must be obtained from a bound, source-owned
+   authority; caller-created booleans never establish production authority. */
+typedef bool (*NfMa03cWitnessIssuer)(void *context,const NfWorld *world,
+ uint32_t actor_id,uint32_t epoch,NfMa03cActorWitness *out);
+bool nf_ma03c_joint_certify_source(const NfWorld *world,
+ const NfMa03cCandidate *candidate,uint32_t epoch,
+ NfMa03cWitnessIssuer issuer,void *context);
 #endif
