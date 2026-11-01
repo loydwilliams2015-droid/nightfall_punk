@@ -1,65 +1,37 @@
-# VPC-01 — Human observation pilot (proposed)
-**Scope:** 1 self-observation + 2–3 independent voluntary testers.
-**Purpose:** find defects and disagreements; NOT statistical certification.
-**Status:** survey plan only; no human responses collected or implied.
+# VPC-01 — Neutral human observation pilot (proposed)
+**Scope:** one self-observation and optionally 2–3 independent voluntary testers.
+**Purpose:** collect uncoached first-person observations; identify specific defects and disagreements without preloading the designer's hypotheses.
+**Status:** protocol only. No collected human responses. No release-approved game build.
 
-## Session hygiene
-- Obtain informed, voluntary consent; avoid collecting sensitive demographic details.
-- Record pseudonymous tester ID, session date, actual build/source SHA, platform,
-  approximate FPS familiarity, hardware and display only as needed.
-- Identify material accurately: **concept art** vs **recorded gameplay** vs
-  **playable build**. Never present generated reference imagery as engine output.
-- Start with open observation before suggesting expected camera/art/physics outcomes.
-- Give all reviewers the same references/task script; retain the order.
-- If collecting video or telemetry, request separate opt-in and allow declining.
+## Tester-facing prompt (verbatim, before ANY ratings or diagnostic questioning)
 
-## Reference-only visual review (available before the gameplay slice)
-Show the three recent postcyberpunk/biopunk direction images and clearly label
-them aspirational reference art. Do not ask about experienced controls, FPS or
-simulation quality from a static image.
+> Please explore the material in whatever way feels natural to you. When you're finished, describe your experience in your own words.
+>
+> What did you notice? What happened as you explored? What stands out to you afterward?
+>
+> You can discuss anything you consider relevant, in as much or as little detail as you wish. There are no expected answers, and you don't need to agree with anyone else's impressions.
+>
+> If you'd like to add anything else, please do.
 
-Open prompts:
-1. What kind of world and play experience do these images suggest?
-2. What feels readable, distinctive, confusing or derivative?
-3. Does the lighting balance beauty and danger? Where is it too dark or grimy?
-4. What might distinguish these creatures from generic cyborg zombies?
-5. Which visual promises could be difficult for the gameplay to satisfy?
+Neutral optional follow-ups only: “Could you tell me more about that?”; “What happened next?”; “Is there anything else you'd like to add?” Do not affirm, debate, lead, or suggest an ideal answer.
 
-Optional image-specific 1–5 ratings (with N/A): atmosphere, world legibility,
-character readability, biome variety, aesthetic coherence.
-Ask for one concrete strength, one concern and one improvement, in their words.
+## Preparation and informed participation
+- Request voluntary informed consent; allow stopping, refusing recording and skipping questions. Collect no sensitive demographic data.
+- Record a pseudonymous tester ID, date, hardware/display only as needed, exact source SHA/build and scene/seed.
+- **Label the medium correctly:** concept art, captured gameplay video, or a verified playable build. Never represent generated reference art as gameplay output. The H60 two-actor research viewer is not an accepted multiplayer playtest.
+- Give all participants the same material, scene and minimal actual operating instructions. Do not disclose physics/design targets or terms such as collision predictability, darkness, biopunk or the intended response until after independent observations have been recorded.
+- Do not coach exploration. Capture the free narrative first without scores or structured prompts; include any spontaneous positives, negatives, confusions or unexpected observations as given.
 
-## Playable build review (only for features **actually implemented**)
-Give each tester an identical executable, documented SHA, seed and scene.
-Use up to three currently functional encounters: traversal/support,
-single-object physical PUSH, and multi-actor interaction if playable.
-Do not ask them to evaluate third-person controls until third-person is built.
-Observe 10–20 minutes without coaching, then ask:
+## Optional diagnostic follow-up (strictly AFTER the unprimed narrative)
+If a participant reports a specific event, ask them to demonstrate what they did and what they observed again, without suggesting a cause. For reproducible defects, record steps, initial conditions, expected/observed behavior *in the participant's words*, frequency, severity, corroboration and source-linked gate. Keep the participant's subjective reaction distinct from an engineer's causal diagnosis.
 
-1. Where was navigation or targeting unclear?
-2. When did physical outcomes disagree with what you expected to see?
-3. Which collisions, interactions or interruptions felt predictable/unpredictable?
-4. What felt responsive or delayed, with specific examples?
-5. What should change first, and why?
-6. Could you identify enemy intent and teammate effects without reading debug UI?
+Do not add forced ratings or closed-choice questions to the first-contact protocol. If separately authorized later, a secondary task-specific survey can use an explicitly scoped scale with N/A and neutral anchors, and should follow free observation, not precede it.
 
-Optional 1–5 ratings (N/A allowed): spatial readability, control response,
-physical consistency, camera comfort, enemy silhouette/intent,
-environmental legibility, cooperative clarity.
+## VPC-01 model and evidence boundaries
+See `docs/VPC01_PRIMORDIAL_TWO_ACTOR.md`. The intentional new benchmark is the two-actor+pod physical situation; inherited greybox tests remain regression controls, not proof of this experience. Ask about playable control, interaction or real-time physics only when those features have actually been implemented and independently verified in the distributed executable.
 
-## Observation record
-- Tester ID / material type / SHA / scene / seed / hardware
-- Reproduction steps / expected / actual / severity / confidence
-- Direct quote or concise observation (label subjective judgment)
-- Whether another tester independently reported it
-- Issue owner / source link / gate mapping / follow-up result
-
-## RET / RET-HK acceptance
-- Separate observed facts, hypotheses, aesthetic preferences, and bugs.
-- Two or three testimonials are exploratory *qualitative pilot evidence*, not a
-  representative sample, effect size estimate, confidence interval or p-value.
-- Repeated serious observations flag hypotheses for engineering tests; do not
-  automatically promote or reject a feature based on votes.
-- No artificial ML p-values; uncertainties near 1 remain unresolved until a
-  correctly designed statistical study.
-- Keep production and 1.8C.3 HOLD until all mandatory source-exact gates pass.
+## RET / RET-HK handling
+- Distinguish (a) observed facts/reproductions, (b) testers' interpretations and preferences, (c) engineering hypotheses, and (d) tested mechanisms.
+- Two or three volunteer accounts are exploratory qualitative evidence, not a representative sample or statistical certification. Never calculate an unjustified p-value, effect size or confidence interval.
+- Preserve quotations, consent status, source SHA, issue ownership, and unresolved uncertainty. No fictional responses.
+- Production, promotion to 1.8C.3 and human distribution remain HOLD until mandatory engineering and availability gates pass.
