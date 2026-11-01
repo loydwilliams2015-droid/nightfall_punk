@@ -1,0 +1,117 @@
+name: RET-C H63 minimal 3D Pong source-backed playable QA
+on:
+  push:
+    branches: [engineering/retc-h63-minimal-3d-pong]
+  workflow_dispatch:
+jobs:
+  complete-regression-and-packaged-smoke:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record source identity
+        run: |
+          git rev-parse HEAD
+          git status --porcelain
+      - name: Install graphical toolchain and X11 test runner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git pkg-config \
+            libsodium-dev libasound2-dev libx11-dev libxrandr-dev libxi-dev \
+            libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev \
+            xvfb ffmpeg file
+      - name: Configure & compile entire Linux game/test tree
+        run: |
+          cmake -S . -B build-h63-game -DCMAKE_BUILD_TYPE=Release \
+            -DNF_BUILD_CLIENT=ON -DNF_BUILD_SERVER=ON -DNF_BUILD_TESTS=ON
+          cmake --build build-h63-game --parallel 2
+      - name: Execute inherited and VPC-01 production-build tests
+        run: ctest --test-dir build-h63-game --output-on-failure --output-junit h63-game.xml
+      - name: Configure & compile complete RET-C research laboratory
+        run: |
+          cmake -S . -B build-h63-retc -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h63-retc --parallel 2
+      - name: Execute complete RET-C cumulative acceptance
+        run: ctest --test-dir build-h63-retc --output-on-failure --output-junit h63-retc.xml
+      - name: Assemble source-exact Linux x86_64 QA-only candidate
+        run: |
+          set -euo pipefail
+          root=stage/nightfall-vpc01-pong-qa
+          mkdir -p "$root/bin" "$root/docs" "$root/third_party" "$root/source" evidence
+          install -m 0755 build-h63-game/nightfall_vpc01_3d_pong "$root/bin/nightfall_vpc01_3d_pong"
+          install -m 0755 packaging/pong/run.sh "$root/run.sh"
+          install -m 0644 packaging/pong/README-QA.md "$root/README-QA.md"
+          install -m 0644 docs/VPC01_HUMAN_OBSERVATION_PILOT.md "$root/docs/VPC01_HUMAN_OBSERVATION_PILOT.md"
+          install -m 0644 docs/VPC01_FINAL_18CX_3D_PONG.md "$root/docs/VPC01_FINAL_18CX_3D_PONG.md"
+          install -m 0644 LICENSE "$root/LICENSE"
+          install -m 0644 docs/LICENSING.md "$root/docs/LICENSING.md"
+          test -s build-h63-game/_deps/raylib-src/LICENSE
+          install -m 0644 build-h63-game/_deps/raylib-src/LICENSE "$root/third_party/raylib-LICENSE"
+          git -C build-h63-game/_deps/raylib-src rev-parse HEAD > "$root/third_party/raylib-SOURCE_SHA"
+          git archive --format=tar HEAD | gzip -n > "$root/source/nightfall_punk-source.tar.gz"
+          git -C build-h63-game/_deps/raylib-src archive --format=tar HEAD | gzip -n > "$root/source/raylib-5.5-source.tar.gz"
+          test -s "$root/LICENSE"
+          grep -q '^GNU GENERAL PUBLIC LICENSE' "$root/LICENSE"
+          test -s "$root/source/nightfall_punk-source.tar.gz"
+          tar -xOzf "$root/source/nightfall_punk-source.tar.gz" LICENSE | cmp - "$root/LICENSE"
+          tar -xOzf "$root/source/raylib-5.5-source.tar.gz" LICENSE | cmp - "$root/third_party/raylib-LICENSE"
+          test -s "$root/third_party/raylib-SOURCE_SHA"
+          git rev-parse HEAD > "$root/SOURCE_SHA"
+          printf '%s\n' 'Research-only candidate. External human and production eligibility HOLD.' > "$root/RELEASE_STATUS"
+          ldd "$root/bin/nightfall_vpc01_3d_pong" | tee evidence/ldd.txt
+          if grep -q 'not found' evidence/ldd.txt; then echo 'Missing runtime shared library' >&2; exit 1; fi
+          (cd "$root" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          epoch=$(git show -s --format=%ct HEAD)
+          tar --sort=name --mtime="@$epoch" --owner=0 --group=0 --numeric-owner \
+            -cf - -C stage nightfall-vpc01-pong-qa | gzip -n > "nightfall-vpc01-pong-h63-linux-x86_64-$(git rev-parse --short=12 HEAD).tar.gz"
+          sha256sum nightfall-vpc01-pong-h63-linux-x86_64-*.tar.gz > nightfall-vpc01-pong-h63-SHA256SUMS.txt
+      - name: Extract actual packaged artifact and check integrity
+        run: |
+          set -euo pipefail
+          mkdir -p extracted
+          tar -xzf nightfall-vpc01-pong-h63-linux-x86_64-*.tar.gz -C extracted
+          cd extracted/nightfall-vpc01-pong-qa
+          sha256sum -c SHA256SUMS
+          test "$(cat SOURCE_SHA)" = "$GITHUB_SHA"
+          grep -q '^GNU GENERAL PUBLIC LICENSE' LICENSE
+          tar -xOzf source/nightfall_punk-source.tar.gz LICENSE | cmp - LICENSE
+          tar -xOzf source/raylib-5.5-source.tar.gz LICENSE | cmp - third_party/raylib-LICENSE
+          grep -q 'GPL-3.0-or-later' docs/LICENSING.md
+      - name: Launch the EXTRACTED candidate in a fresh X11 session
+        run: |
+          set -euo pipefail
+          root=extracted/nightfall-vpc01-pong-qa
+          mkdir -p evidence/frames
+          xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 timeout 25s \
+            "./$root/run.sh" --auto --seconds 3 --frames-dir "$GITHUB_WORKSPACE/evidence/frames" \
+            > evidence/packaged-render.log 2>&1
+          cat evidence/packaged-render.log
+          grep -q 'PONG_H63_VIEW' evidence/packaged-render.log
+          grep -q 'denied=0' evidence/packaged-render.log
+          # raylib's TakeScreenshot may store only the basename in its
+          # current working directory despite a supplied frames-dir.
+          # Preserve that real output; don't mistake artifact routing for physics.
+          if ! compgen -G 'evidence/frames/frame_*.png' >/dev/null; then
+            find "$root" -maxdepth 1 -type f -name 'frame_*.png' \
+              -exec mv -t evidence/frames/ -- {} +
+          fi
+          count=$(find evidence/frames -maxdepth 1 -name 'frame_*.png' -size +5000c | wc -l)
+          test "$count" -ge 3
+          first_frame=$(find evidence/frames -maxdepth 1 -name 'frame_*.png' -print -quit)
+          file "$first_frame"
+          echo "H63 packaged Pong demo smoke PASS, nonempty PNG frames=$count"
+      - name: Upload engineering candidate and source-exact test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vpc01-pong-h63-internal-qa-candidate-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            nightfall-vpc01-pong-h63-linux-x86_64-*.tar.gz
+            nightfall-vpc01-pong-h63-SHA256SUMS.txt
+            build-h63-game/h63-game.xml
+            build-h63-retc/h63-retc.xml
+            evidence/ldd.txt
+            evidence/packaged-render.log
+            evidence/frames/frame_*.png

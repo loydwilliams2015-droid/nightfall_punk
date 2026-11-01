@@ -276,6 +276,11 @@ if(NF_CONTACT_LAB_ONLY)
     target_link_libraries(nightfall_vpc01_two_actor_test PRIVATE nightfall_embody_h1)
     nf_project_warnings(nightfall_vpc01_two_actor_test)
     add_test(NAME vpc01_two_actor_primordial_v18c2 COMMAND nightfall_vpc01_two_actor_test)
+    # 1.8C.x final demo candidate: minimal 3D Pong, sourced from real A4 impulses.
+    add_executable(nightfall_vpc01_pong_test src/tests/test_vpc01_3d_pong.c)
+    target_link_libraries(nightfall_vpc01_pong_test PRIVATE nightfall_embody_h1)
+    nf_project_warnings(nightfall_vpc01_pong_test)
+    add_test(NAME vpc01_minimal_3d_pong_v18cx COMMAND nightfall_vpc01_pong_test)
     # Normal build forbids the two controls that bypass world embodiment.
     add_library(nightfall_embody_prod STATIC ${NF_EMBODY_SHARED} src/client/nf_camera.c)
     target_include_directories(nightfall_embody_prod PUBLIC src/shared src/client)
@@ -380,7 +385,8 @@ add_library(nightfall_shared STATIC
     src/shared/nf_multi_ma03.c
     src/shared/nf_v18c2_witness.c
     src/shared/nf_v18c2_h9_auth.c
-    src/shared/nf_vpc01_two_actor.c)
+    src/shared/nf_vpc01_two_actor.c
+    src/shared/nf_retc_pong.c)
 target_include_directories(nightfall_shared PUBLIC src/shared src/client)
 nf_project_warnings(nightfall_shared)
 if(UNIX)
@@ -508,6 +514,12 @@ if(NF_BUILD_CLIENT)
     target_include_directories(nightfall_vpc01_two_actor PRIVATE src/shared)
     nf_project_warnings(nightfall_vpc01_two_actor)
 
+    # Bound to the H63 A4 physical game core; research demonstration only.
+    add_executable(nightfall_vpc01_3d_pong src/demo/vpc01_3d_pong.c)
+    target_link_libraries(nightfall_vpc01_3d_pong PRIVATE nightfall_shared raylib)
+    target_include_directories(nightfall_vpc01_3d_pong PRIVATE src/shared)
+    nf_project_warnings(nightfall_vpc01_3d_pong)
+
     add_executable(nightfall_v17e_observer src/demo/v17e_graphical_observer.c)
     target_link_libraries(nightfall_v17e_observer PRIVATE nightfall_shared raylib)
     target_include_directories(nightfall_v17e_observer PRIVATE src/shared)
@@ -520,6 +532,10 @@ if(NF_BUILD_TESTS)
     target_link_libraries(nightfall_vpc01_two_actor_test PRIVATE nightfall_shared)
     nf_project_warnings(nightfall_vpc01_two_actor_test)
     add_test(NAME vpc01_two_actor_primordial_v18c2 COMMAND nightfall_vpc01_two_actor_test)
+    add_executable(nightfall_vpc01_pong_test src/tests/test_vpc01_3d_pong.c)
+    target_link_libraries(nightfall_vpc01_pong_test PRIVATE nightfall_shared)
+    nf_project_warnings(nightfall_vpc01_pong_test)
+    add_test(NAME vpc01_minimal_3d_pong_v18cx COMMAND nightfall_vpc01_pong_test)
 
     add_executable(nightfall_v18b2_contract_test src/tests/test_v18b2_contracts.c)
     target_link_libraries(nightfall_v18b2_contract_test PRIVATE nightfall_shared)
