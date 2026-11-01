@@ -52,7 +52,7 @@ int main(int argc,char **argv){
    return (full?full_ok:bounded_ok)?0:82;
  }
 
- NfRetcPublisher publisher={0};
+ NfRetcPublisher publisher={.current=NULL};
  CK(nf_retc_read(&publisher)==NULL);
  NfRetcReadView joint_view={0};
  CK(!nf_retc_read_joint_view(&publisher,&joint_view));
@@ -65,6 +65,10 @@ int main(int argc,char **argv){
  event.authorized=1;event.applied=1;event.kind=NF18B3_PUSH;
  NfRetcObligation obligation={.obligation_id=99,.holder=10,
    .beneficiary=20,.kind=1,.quantity=2,.status=1};
+ /* H68: unsigned epoch wrap cannot make tick-zero look sequential. */
+ p->world.tick=0;event.tick=0;
+ CK(!nf_retc_stage(p,&event,1,UINT32_MAX,&obligation,1));
+ p->world.tick=1;event.tick=1;
  CK(!nf_retc_stage(p,&event,1,0,&obligation,9));
  event.authorized=0;
  CK(!nf_retc_stage(p,&event,1,0,&obligation,1));
@@ -115,6 +119,37 @@ int main(int argc,char **argv){
    remove(full_journal);
    CK(nf_retc_persist_file(&publisher,f,full_journal));
    CK(nf_retc_read(&publisher)==NULL); /* durability precedes visibility */
+   /* H67: a valid checksum cannot authorize semantically incomplete joint
+      material/contract state. Forge a version-correct, checksum-correct
+      frame and verify restart refuses missing or contradictory encounter. */
+   {
+     typedef struct {uint32_t magic,version,length,checksum;} DiskHead;
+     char forged_path[180];
+     snprintf(forged_path,sizeof forged_path,
+              "/tmp/nightfall_h67_forged_%ld.bin",(long)getpid());
+     NfRetcFrame *forged_frame=malloc(sizeof *forged_frame);
+     NfRetcFrame *recovered=calloc(1,sizeof *recovered);
+     CK(forged_frame&&recovered);
+     for(unsigned attack=0;attack<2u;++attack){
+       *forged_frame=*f;
+       if(attack==0u)forged_frame->has_encounter_registry=false;
+       else forged_frame->encounter_registry.contract_epoch++;
+       uint32_t hash=2166136261u;
+       const unsigned char *bytes=(const unsigned char *)forged_frame;
+       for(size_t k=0;k<sizeof *forged_frame;++k)
+         hash=(hash^bytes[k])*16777619u;
+       DiskHead disk={0x52455443u,1u,(uint32_t)sizeof *forged_frame,hash};
+       FILE *fake=fopen(forged_path,"wb");CK(fake);
+       CK(fwrite(&disk,sizeof disk,1,fake)==1);
+       CK(fwrite(forged_frame,sizeof *forged_frame,1,fake)==1);
+       CK(fclose(fake)==0);
+       recovered->epoch=UINT32_MAX;
+       CK(!nf_retc_restore_file(forged_path,recovered));
+       CK(recovered->epoch==UINT32_MAX); /* no partial acceptance */
+       CK(remove(forged_path)==0);
+     }
+     free(forged_frame);free(recovered);
+   }
    pid_t child=fork();CK(child>=0);
    if(child==0){
      char *const args[]={argv[0],"--recover-full",full_journal,NULL};
@@ -218,13 +253,25 @@ int main(int argc,char **argv){
  CK(nf_retc_joint_detach(live,&joint));
  nf_retc_dispose(p2);free(p2);owner->retc_publisher=&publisher;
  free(live);
+ /* H64: a valid B2 PUSH without matching encounter ledger cannot be
+    published OR durably represented as a complete joint transaction. */
+ const uint32_t original_contract_epoch=f->encounter_registry.contract_epoch;
+ f->encounter_registry.contract_epoch++;
+ CK(!nf_retc_publish(&publisher,f));
+ CK(!nf_retc_persist_file(&publisher,f,"/tmp/nightfall_h64_reject.dat"));
+ CK(nf_retc_read(&publisher)==NULL);
+ f->encounter_registry.contract_epoch=original_contract_epoch;
+ f->has_encounter_registry=false;
+ CK(!nf_retc_publish(&publisher,f));
+ CK(!nf_retc_persist_file(&publisher,f,"/tmp/nightfall_h64_reject.dat"));
+ CK(nf_retc_read(&publisher)==NULL);
+ f->has_encounter_registry=true;
  CK(nf_retc_publish(&publisher,f));
  CK(nf_retc_read_joint_view(&publisher,&joint_view));
  CK(joint_view.accepted==f&&joint_view.epoch==1u&&
     joint_view.physical->world.tick==1u&&
     joint_view.event->tick==1u&&
     joint_view.contract->contract_epoch==7u);
- free(encounter);free(owner);
  CK(nf_retc_read(&publisher)==f&&nf_retc_read(&publisher)->epoch==1);
  CK(!nf_retc_publish(&publisher,f)); /* no replay */
  p->world.tick=2;event.tick=2;event.action=92;
@@ -241,6 +288,16 @@ int main(int argc,char **argv){
      &use,&decision,&actor,&object,&authority);CK(other);
  CK(other->has_b2_contract&&other->obligation_count==0);
  CK(other->b2_actor.inventory==99);
+ /* H64: previous H42 test intentionally published a B2-only frame and
+    expected readers to refuse it. It is now a mandatory prepublication
+    refusal instead; bind an exact staged encounter before retrying. */
+ CK(!nf_retc_publish(&publisher,other));
+ CK(!nf_retc_persist_file(&publisher,other,"/tmp/nightfall_h64_refuse2.dat"));
+ CK(nf_retc_read(&publisher)==f);
+ owner->physical.world.tick=1;
+ encounter->prepared=1;
+ CK(nf_retc_bind_encounter(other,encounter));
+ free(encounter);free(owner);
  char journal[160];snprintf(journal,sizeof journal,"/tmp/nightfall_retc_frame_%u.bin",(unsigned)other->transaction_id);
  remove(journal);
  CK(nf_retc_persist_file(&publisher,other,journal));
@@ -277,11 +334,12 @@ int main(int argc,char **argv){
  }
  CK(nf_retc_publish(&publisher,other));
  CK(nf_retc_read(&publisher)==other);
- /* A typed B2 source witness without an encounter registry must not
-    masquerade as a fully consistent joint-reader view. */
- CK(!nf_retc_read_joint_view(&publisher,&joint_view));
- CK(joint_view.accepted==NULL);
- puts("RET-C H42 incomplete-contract joint reader refused PASS");
+ /* H64: only a complete B2/B3 + encounter frame can now become
+    authoritative, so a successful accepted reader sees one joint epoch. */
+ CK(nf_retc_read_joint_view(&publisher,&joint_view));
+ CK(joint_view.accepted==other&&joint_view.epoch==2u);
+ CK(joint_view.contract->contract_epoch==other->event.contract_epoch);
+ puts("RET-C H64 source-backed complete joint reader accepted PASS");
  NfRetcFrame *disk=malloc(sizeof *disk);CK(disk);
  CK(nf_retc_restore_file(journal,disk));
  CK(disk->epoch==other->epoch&&disk->event.action==other->event.action&&

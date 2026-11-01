@@ -12,7 +12,7 @@ static uint32_t digest(uint32_t a,uint32_t b,uint32_t c){
 NfRetcFrame *nf_retc_stage(const Nf18a5Integrated *p,
  const Nf18b3Event *event,uint32_t tx,uint32_t prior_epoch,
  const NfRetcObligation *obs,uint32_t n){
- if(!p||!event||!tx||n>NF_RETC_OBLIGATIONS|| (n&&!obs)||
+ if(!p||!event||!tx||prior_epoch==UINT32_MAX||n>NF_RETC_OBLIGATIONS|| (n&&!obs)||
     p->world.tick!=prior_epoch+1u||event->tick!=p->world.tick||
     event->actor!=p->actor.id||event->object!=p->object.id||
     !event->authorized||!event->applied||event->phase!=NF18B3_APPLIED||
@@ -100,6 +100,21 @@ NfRetcFrame *nf_retc_stage_source_push(
     !nf_retc_seal_b2_b3(f)){free(f);return NULL;}
  return f;
 }
+/* H64: a B2-only or materially/contractually split frame is never an
+ * externally authoritative frame, even if its individual PUSH seal passes.
+ * This bounded check is not final whole-world transaction authority. */
+static bool retc_joint_complete(const NfRetcFrame *f){
+ return f&&f->epoch&&f->prior_epoch!=UINT32_MAX&&
+   f->epoch==f->prior_epoch+1u&&f->transaction_id&&
+   f->has_b2_contract&&f->has_encounter_registry&&
+   f->encounter_registry.contract_epoch!=0u&&
+   f->encounter_registry.contract_epoch==f->event.contract_epoch&&
+   f->physical.world.tick==f->epoch&&
+   f->event.tick==f->epoch&&
+   f->owner_actor==f->physical.actor.id&&
+   f->object_id==f->physical.object.id&&
+   nf_retc_seal_b2_b3((NfRetcFrame *)f);
+}
 /* H57: explicit read tenure. Closing rejects entrants, drains already
  * acquired readers before reclaim. Caller must own the publisher-object
  * lifetime itself and quiesce the A6 writer before reclaiming. */
@@ -139,7 +154,7 @@ bool nf_retc_publish(NfRetcPublisher *pub,NfRetcFrame *f){
     cannot stand in for typed B2 rights or material consequences. */
  if(!pub||!f||(pub&&atomic_load_explicit(&pub->read_closing,memory_order_acquire))||
     pub->count>=NF_RETC_HISTORY||
-    !f->has_b2_contract||!nf_retc_seal_b2_b3(f))return false;
+    !retc_joint_complete(f))return false;
  const NfRetcFrame *prior=atomic_load_explicit(&pub->current,memory_order_acquire);
  if(f->prior_epoch!=(prior?prior->epoch:0)||f->epoch!=f->prior_epoch+1u)return false;
  if(prior&&f->transaction_id<=prior->transaction_id)return false;
@@ -214,7 +229,7 @@ bool nf_retc_restore_file(const char *path,NfRetcFrame *out){
   fread(temp,sizeof *temp,1,fp)==1&&fgetc(fp)==EOF&&!ferror(fp);
  if(fclose(fp)!=0)ok=false;
  if(ok)ok=frame_checksum((const unsigned char *)temp,sizeof *temp)==h.checksum&&
-  temp->has_b2_contract&&nf_retc_seal_b2_b3(temp)&&
+  retc_joint_complete(temp)&&
   temp->owner_actor==temp->physical.actor.id&&
   temp->object_id==temp->physical.object.id;
  if(ok)*out=*temp;
@@ -223,8 +238,7 @@ bool nf_retc_restore_file(const char *path,NfRetcFrame *out){
 bool nf_retc_persist_file(NfRetcPublisher *pub,NfRetcFrame *f,
  const char *path){
  if(!pub||!f||!path||atomic_load_explicit(&pub->read_closing,memory_order_acquire)||
-    !f->has_b2_contract||
-    !nf_retc_seal_b2_b3(f)||pub->count>=NF_RETC_HISTORY)return false;
+    !retc_joint_complete(f)||pub->count>=NF_RETC_HISTORY)return false;
  const NfRetcFrame *prior=nf_retc_read(pub);
  if(f->prior_epoch!=(prior?prior->epoch:0)||
     f->epoch!=f->prior_epoch+1u||
