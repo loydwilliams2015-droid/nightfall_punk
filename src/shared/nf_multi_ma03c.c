@@ -139,9 +139,19 @@ bool nf_ma03c_joint_certify_source(const NfWorld *world,
   const NfMa03Participant *p=&candidate->roster.actors[i];
   const NfActor *a=nf_world_find_actor_const(world,p->id);
   if(!a||!a->active||!a->combat.alive||
-     memcmp(&a->transform.position,&p->position,sizeof p->position)!=0||
-     memcmp(&a->transform.velocity,&p->velocity,sizeof p->velocity)!=0||
-     memcmp(&a->input,&p->input,sizeof p->input)!=0)return false;
+     a->transform.position.x!=p->position.x||
+     a->transform.position.y!=p->position.y||
+     a->transform.position.z!=p->position.z||
+     a->transform.velocity.x!=p->velocity.x||
+     a->transform.velocity.y!=p->velocity.y||
+     a->transform.velocity.z!=p->velocity.z||
+     a->input.forward!=p->input.forward||
+     a->input.strafe!=p->input.strafe||
+     a->input.yaw_radians!=p->input.yaw_radians||
+     a->input.jump_pressed!=p->input.jump_pressed||
+     a->input.crouch_held!=p->input.crouch_held||
+     a->input.sprint_held!=p->input.sprint_held||
+     a->input.interact_held!=p->input.interact_held)return false;
   if(p->id==candidate->owner_actor)owner_present=true;
  }
  if(!owner_present)return false;
