@@ -101,3 +101,20 @@ static bool stage_contact(const NfWorld *world,uint32_t owner_actor,
 
 bool nf_ma03c_stage_contact(const NfWorld *w,uint32_t a,float dt,NfMa03cCandidate *out){return stage_contact(w,a,dt,out,false);}
 bool nf_ma03c_stage_contact_in_tick(const NfWorld *w,uint32_t a,float dt,NfMa03cCandidate *out){return stage_contact(w,a,dt,out,true);}
+
+/* H84 validates the presence of independent, source-consistent witnesses;
+ * no A6, A5, B2 or B3 state is published by this pure check. */
+bool nf_ma03c_joint_certify(const NfMa03cCandidate *c,
+ const NfMa03cActorWitness witness[2],uint32_t epoch){
+ if(!c||!witness||!c->eligible||c->roster.count!=2u||
+    c->contact.matched!=1u||c->contact.unresolved||
+    c->contact.disagreed||!epoch||c->source_tick+1u!=epoch)return false;
+ for(unsigned i=0;i<2u;++i){
+  const NfMa03cActorWitness *w=&witness[i];
+  if(w->actor_id!=c->roster.actors[i].id||
+     !w->physical_valid||!w->b2_valid||!w->b3_valid||
+     w->physical_epoch!=epoch||w->b2_epoch!=epoch||w->b3_epoch!=epoch)
+     return false;
+ }
+ return true;
+}
