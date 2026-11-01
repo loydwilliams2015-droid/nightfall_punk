@@ -93,6 +93,25 @@ int main(void){
  NfRetcJointContext joint={0};joint.owner=r;joint.encounter=enc;
  joint.push=push;joint.transaction_id=1;
  CHECK(nf_retc_joint_attach(w,&joint));
+ /* H90 actual source-owned encounter queue fixture: force a second queued
+    intent into the live B2 runtime, exercise the production joint staging
+    boundary, and establish that it cannot produce an accepted frame. This
+    is a structural queue test, not proof of two B2-eligible real actors. */
+ {
+  const size_t old_count=enc->queue_count;
+  const bool old_prepared=enc->prepared;
+  const bool old_staged=push->staged_commit_valid;
+  const NfRetcFrame *before=nf_retc_read(publisher);
+  const uint64_t tick_before=w->tick;
+  enc->queue_count=2u;
+  enc->prepared=true;
+  push->staged_commit_valid=true;
+  CHECK(nf_retc_joint_stage_owned(w,&r->physical,&joint)==NULL);
+  CHECK(nf_retc_read(publisher)==before&&w->tick==tick_before);
+  enc->queue_count=old_count;
+  enc->prepared=old_prepared;
+  push->staged_commit_valid=old_staged;
+ }
  NfRetcReadView first={0};
  CHECK(!nf_retc_read_joint_view(publisher,&first)); /* no accepted frame */
  NfRetcExternalCursor consumer={0},wire_consumer={0},network_consumer={0};
