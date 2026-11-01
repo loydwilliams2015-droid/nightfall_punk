@@ -401,8 +401,7 @@ int main(void){
  CHECK(enc->frame.scene.actor_count==2u);
  CHECK(enc->frame.actors[0].id==10u||enc->frame.actors[1].id==10u);
  CHECK(enc->frame.actors[0].id==20u||enc->frame.actors[1].id==20u);
- CHECK(verify(w,r,enc,push,publisher,2u)==false ||
-       nf_retc_read(publisher)!=NULL);
+ CHECK(nf_retc_read(publisher)!=NULL&&w->tick==2u);
  CHECK(nf_retc_joint_detach(w,&joint));
  CHECK(nf18a6_unbind_world_tick(w,r));
  nf_retc_dispose(publisher);
