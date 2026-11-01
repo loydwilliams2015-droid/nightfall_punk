@@ -6,6 +6,7 @@
 #include "nf_v18c2_h9_auth.h"
 #include "nf_movement.h"
 #include "nf_multi_ma03.h"
+#include "nf_multi_ma03c.h"
 #include <math.h>
 #include <string.h>
 #include <stdint.h>
@@ -526,6 +527,20 @@ static NfWorldTickStatus nf18a6_tick_dispatch(NfWorld *world,float dt,void *cont
             nf_c2_lease_release(&runtime->world_lease);
             return NF_WORLD_TICK_REJECTED;
         }
+    }
+    /* H83: source-backed two-actor contact witness must be prepared within
+       the real A6 owner tick. This narrow diagnostic option refuses until
+       the full two-actor material/contract frame can be co-committed. */
+    if(runtime->require_dual_contact_preflight){
+        NfMa03cCandidate candidate={0};
+        if(!nf_ma03c_stage_contact_in_tick(world,runtime->actor_id,dt,&candidate)||
+           candidate.source_tick!=world->tick||!candidate.eligible){
+            nf_c2_lease_release(&runtime->world_lease);
+            return NF_WORLD_TICK_REJECTED;
+        }
+        /* Intentionally refuse: no A5/B2/B3 joint dual-actor publication. */
+        nf_c2_lease_release(&runtime->world_lease);
+        return NF_WORLD_TICK_REJECTED;
     }
     /* No remote actor is silently starved by a one-actor lab scheduler. */
     if(!nf18a6_passive_actor_envelope(world,runtime)){nf_c2_lease_release(&runtime->world_lease);return NF_WORLD_TICK_REJECTED;}
