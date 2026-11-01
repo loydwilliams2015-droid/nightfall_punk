@@ -14,4 +14,20 @@ typedef bool (*NfMa03Provider)(void *,const NfWorld *,const Nf18a6Runtime *,
                                uint32_t,Nf18b2Scene *,Nf18b2Use *);
 Nf18b2UseDecision nf_ma03_b2_owner_evaluate(const NfWorld *,
  const Nf18a6Runtime *,NfMa03Provider,void *,uint32_t action,Nf18b2Model);
+/* H76: deterministic, source-owned actor roster for future A6 arbitration.
+ * A snapshot is NOT a tick commit, B2 authorization or collision resolution. */
+#define NF_MA03_ROSTER_MAX 16u
+typedef struct {
+ uint32_t id;
+ NfVec3 position, velocity;
+ NfMoveInput input;
+} NfMa03Participant;
+typedef struct {
+ uint64_t source_tick;
+ uint32_t count;
+ NfMa03Participant actors[NF_MA03_ROSTER_MAX];
+} NfMa03Roster;
+/* No output modification on failure; requires bounded active population,
+   unique nonzero actor identities, finite kinematics and finite inputs. */
+bool nf_ma03_roster_capture(const NfWorld *world,NfMa03Roster *out);
 #endif

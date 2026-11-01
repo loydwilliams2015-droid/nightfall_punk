@@ -64,3 +64,34 @@ Nf18b2UseDecision nf_ma03_b2_owner_evaluate(const NfWorld *world,
     return reject();
  return nf18b2_evaluate(&scene,use,model);
 }
+
+/* H76: actor enumeration belongs to the actual NfWorld; this deterministic
+ * roster is an input to a future A6-owned arbitration stage, not a commit. */
+bool nf_ma03_roster_capture(const NfWorld *world,NfMa03Roster *out){
+ if(!world||!out||world->tick_in_progress)return false;
+ NfMa03Roster candidate={0};
+ candidate.source_tick=world->tick;
+ for(size_t i=0;i<NF_MAX_ENTITIES;++i){
+  const NfActor *a=&world->actors[i];
+  if(!a->active)continue;
+  if(!a->id||candidate.count>=NF_MA03_ROSTER_MAX)return false;
+  const NfVec3 p=a->transform.position,v=a->transform.velocity;
+  const NfMoveInput in=a->input;
+  if(!isfinite(p.x)||!isfinite(p.y)||!isfinite(p.z)||
+     !isfinite(v.x)||!isfinite(v.y)||!isfinite(v.z)||
+     !isfinite(in.forward)||!isfinite(in.strafe)||!isfinite(in.yaw_radians))
+    return false;
+  uint32_t index=candidate.count;
+  for(uint32_t j=0;j<candidate.count;++j){
+   if(candidate.actors[j].id==a->id)return false;
+   if(candidate.actors[j].id>a->id){index=j;break;}
+  }
+  for(uint32_t k=candidate.count;k>index;--k)
+   candidate.actors[k]=candidate.actors[k-1u];
+  candidate.actors[index]=(NfMa03Participant){a->id,p,v,in};
+  ++candidate.count;
+ }
+ if(!candidate.count)return false;
+ *out=candidate;
+ return true;
+}

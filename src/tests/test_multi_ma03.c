@@ -61,6 +61,33 @@ static int trial(unsigned family,unsigned seed){
  return 0;
 }
 int main(void){
+ NfWorld *world=calloc(1,sizeof *world);
+ CK(world);
+ nf_world_init(world,42);
+ CK(nf_world_spawn_actor_with_id(world,20,NF_FACTION_PLAYER,(NfVec3){5,0,5})==20);
+ CK(nf_world_spawn_actor_with_id(world,10,NF_FACTION_PLAYER,(NfVec3){1,0,1})==10);
+ NfMoveInput one={0},two={0};
+ one.forward=1.f;two.strafe=-1.f;
+ nf_world_set_input(world,10,one);
+ nf_world_set_input(world,20,two);
+ NfMa03Roster roster={0};
+ CK(nf_ma03_roster_capture(world,&roster));
+ CK(roster.count==2&&roster.actors[0].id==10&&roster.actors[1].id==20);
+ CK(roster.actors[0].input.forward==1.f&&roster.actors[1].input.strafe==-1.f);
+ const NfMa03Roster stable=roster;
+ world->tick_in_progress=true;
+ CK(!nf_ma03_roster_capture(world,&roster));
+ world->tick_in_progress=false;
+ CK(memcmp(&stable,&roster,sizeof stable)==0);
+ NfActor *actor=nf_world_find_actor(world,20);CK(actor);
+ actor->input.strafe=NAN;
+ CK(!nf_ma03_roster_capture(world,&roster));
+ CK(memcmp(&stable,&roster,sizeof stable)==0);
+ actor->input.strafe=-1.f;
+ actor->id=10;
+ CK(!nf_ma03_roster_capture(world,&roster));
+ CK(memcmp(&stable,&roster,sizeof stable)==0);
+ free(world);
  for(unsigned f=0;f<5;f++)for(unsigned s=0;s<64;s++)if(trial(f,s))return 1;
  printf("MA03_CHAIN_OWNER_TEST scenarios=320 checks=%llu PASS\n",checks);return 0;
 }
