@@ -65,6 +65,10 @@ int main(int argc,char **argv){
  event.authorized=1;event.applied=1;event.kind=NF18B3_PUSH;
  NfRetcObligation obligation={.obligation_id=99,.holder=10,
    .beneficiary=20,.kind=1,.quantity=2,.status=1};
+ /* H68: unsigned epoch wrap cannot make tick-zero look sequential. */
+ p->world.tick=0;event.tick=0;
+ CK(!nf_retc_stage(p,&event,1,UINT32_MAX,&obligation,1));
+ p->world.tick=1;event.tick=1;
  CK(!nf_retc_stage(p,&event,1,0,&obligation,9));
  event.authorized=0;
  CK(!nf_retc_stage(p,&event,1,0,&obligation,1));
