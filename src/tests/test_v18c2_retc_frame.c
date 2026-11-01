@@ -218,6 +218,19 @@ int main(int argc,char **argv){
  CK(nf_retc_joint_detach(live,&joint));
  nf_retc_dispose(p2);free(p2);owner->retc_publisher=&publisher;
  free(live);
+ /* H64: a valid B2 PUSH without matching encounter ledger cannot be
+    published OR durably represented as a complete joint transaction. */
+ const uint32_t original_contract_epoch=f->encounter_registry.contract_epoch;
+ f->encounter_registry.contract_epoch++;
+ CK(!nf_retc_publish(&publisher,f));
+ CK(!nf_retc_persist_file(&publisher,f,"/tmp/nightfall_h64_reject.dat"));
+ CK(nf_retc_read(&publisher)==NULL);
+ f->encounter_registry.contract_epoch=original_contract_epoch;
+ f->has_encounter_registry=false;
+ CK(!nf_retc_publish(&publisher,f));
+ CK(!nf_retc_persist_file(&publisher,f,"/tmp/nightfall_h64_reject.dat"));
+ CK(nf_retc_read(&publisher)==NULL);
+ f->has_encounter_registry=true;
  CK(nf_retc_publish(&publisher,f));
  CK(nf_retc_read_joint_view(&publisher,&joint_view));
  CK(joint_view.accepted==f&&joint_view.epoch==1u&&
