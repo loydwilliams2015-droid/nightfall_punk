@@ -277,6 +277,19 @@ int main(int argc,char **argv){
     joint_view.event->tick==1u&&
     joint_view.contract->contract_epoch==7u);
  CK(nf_retc_read(&publisher)==f&&nf_retc_read(&publisher)->epoch==1);
+ /* H71 bounded frame-history capacity: no overwrite, publication,
+    persistence, or reader-pointer modification on full storage. */
+ {
+   const uint32_t saved_count=publisher.count;
+   const NfRetcFrame *saved_current=nf_retc_read(&publisher);
+   publisher.count=NF_RETC_HISTORY;
+   CK(!nf_retc_publish(&publisher,f));
+   CK(!nf_retc_persist_file(&publisher,f,
+      "/tmp/nightfall_h71_history_overflow.bin"));
+   CK(nf_retc_read(&publisher)==saved_current);
+   CK(publisher.count==NF_RETC_HISTORY);
+   publisher.count=saved_count;
+ }
  CK(!nf_retc_publish(&publisher,f)); /* no replay */
  p->world.tick=2;event.tick=2;event.action=92;
  p->world.tick=1;event.tick=1;
