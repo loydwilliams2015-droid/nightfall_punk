@@ -286,6 +286,19 @@ int main(void){
    }
  }
  puts("RET-C H42 one-load B2/B3/A5 reader retained both accepted epochs PASS");
+ /* H79: at the ACTUAL A6 tick boundary an actor identity collision
+    must refuse before publication, even if the bind-time roster passed. */
+ {
+   NfActor *coactor=nf_world_find_actor(w,20);CHECK(coactor);
+   const NfRetcFrame *accepted_before=nf_retc_read(publisher);
+   const uint64_t tick_before=w->tick;
+   const uint32_t id_before=coactor->id;
+   coactor->id=10u;
+   CHECK(nf_world_step_checked(w,1.f/(float)NF_TICK_RATE)!=NF_WORLD_TICK_COMMITTED);
+   CHECK(w->tick==tick_before&&nf_retc_read(publisher)==accepted_before);
+   coactor->id=id_before;
+ }
+
  /* H73 rejection: a co-present second actor cannot secretly request
     movement under the one-actor B2/B3 contract. The accepted frame stays
     byte-identical and the single source-world tick does not advance. */
