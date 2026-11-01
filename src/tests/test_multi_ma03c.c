@@ -40,6 +40,13 @@ int main(void){
  CK(nf_ma03c_stage_contact(live,10u,1.f/60.f,&staged));
  CK(staged.eligible&&staged.contact.matched==1u&&
     staged.roster.count==2u&&staged.source_tick==0u);
+ live->tick_in_progress=true;
+ NfMa03cCandidate in_tick={0};
+ CK(nf_ma03c_stage_contact_in_tick(live,10u,1.f/60.f,&in_tick));
+ CK(in_tick.eligible&&in_tick.contact.matched==1u);
+ CK(!nf_ma03c_stage_contact(live,10u,1.f/60.f,&in_tick));
+ live->tick_in_progress=false;
+ CK(!nf_ma03c_stage_contact_in_tick(live,10u,1.f/60.f,&in_tick));
  const NfMa03cCandidate original=staged;
  CK(!nf_ma03c_stage_contact(live,99u,1.f/60.f,&staged));
  CK(memcmp(&original,&staged,sizeof staged)==0);

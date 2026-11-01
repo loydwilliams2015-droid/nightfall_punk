@@ -25,4 +25,6 @@ typedef struct {
 } NfMa03cCandidate;
 bool nf_ma03c_stage_contact(const NfWorld *world,uint32_t owner_actor,
  float dt,NfMa03cCandidate *out);
+bool nf_ma03c_stage_contact_in_tick(const NfWorld *world,uint32_t owner_actor,
+ float dt,NfMa03cCandidate *out);
 #endif

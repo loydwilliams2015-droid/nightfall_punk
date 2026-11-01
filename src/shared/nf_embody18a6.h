@@ -65,6 +65,7 @@ typedef struct Nf18a6Runtime {
     uint32_t actor_id;
     /* H73 opt-in, passive/distant co-presence only; default rejects >1 actor. */
     bool allow_passive_coactors;
+    bool require_dual_contact_preflight; /* H83 research only; refuses joint commit */
     uint32_t object_collider_index; /* NfWorld material/weapon geometry mirror */
     uint32_t last_hash;
     uint32_t model;
