@@ -519,12 +519,9 @@ static NfWorldTickStatus nf18a6_tick_dispatch(NfWorld *world,float dt,void *cont
        candidate tick. It is a preflight gate, NOT a second actor commit. */
     if(runtime->allow_passive_coactors){
         NfMa03Roster roster={0};
-        /* World tick_in_progress is expected inside the real dispatcher.
-           Construct the authoritative source roster locally, rejecting
-           invalid/duplicate actor state without dropping the owner lease. */
-        NfWorld view=*world;
-        view.tick_in_progress=false;
-        if(!nf_ma03_roster_capture(&view,&roster)||
+        /* Tick-in-progress capture is permitted only on the owner path;
+           no copy of the large live world is made. */
+        if(!nf_ma03_roster_capture_in_tick(world,&roster)||
            roster.source_tick!=world->tick){
             nf_c2_lease_release(&runtime->world_lease);
             return NF_WORLD_TICK_REJECTED;
