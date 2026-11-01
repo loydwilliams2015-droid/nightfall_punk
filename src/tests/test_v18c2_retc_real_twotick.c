@@ -1,6 +1,7 @@
 #include "nf_retc_joint_provider.h"
 #include "nf_retc_external.h"
 #include "nf_retc_network.h"
+#include "nf_multi_ma03.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -81,6 +82,11 @@ int main(void){
  const char *journal="/tmp/nightfall_retc_real_twotick.bin";
  remove(journal);
  CHECK(nf18a6_retc_bind(r,publisher,journal));
+ /* H77: the opt-in A6 bind must depend on the same real MA03
+    source actor roster used to stage independent actor inputs. */
+ NfMa03Roster roster={0};
+ CHECK(nf_ma03_roster_capture(w,&roster));
+ CHECK(roster.count==2&&roster.actors[0].id==10&&roster.actors[1].id==20);
  CHECK(nf18a6_bind_world_tick(w,r,NULL,NULL,NULL));
  push->runtime=r;push->contract_epoch=enc->registry.contract_epoch;
  CHECK(nf18b6_push_require_b2(push,b2_provider,enc,NF18B2_M4_MATERIAL_FIRST));
