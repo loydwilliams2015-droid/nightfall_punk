@@ -65,6 +65,7 @@ int main(void){
  Nf18a4Body crate={0};crate.id=2010;crate.center=(NfVec3){1.5601f,.9f,1};
  crate.inverse_mass=1.f/24.f;crate.box_half=(NfVec3){.2f,.5f,.35f};
  CHECK(nf18a6_init(r,w,10,crate,3,NF18A6_WORLD_BRIDGE));
+ r->allow_passive_coactors=true; /* H73 explicit research opt-in */
  uint8_t empty[NF18A5_CANON_VOXELS]={0};
  CHECK(nf18a5_load_canonical(&r->physical.world.grid,0,0,0,empty,1));
  CHECK(nf18b2_encounter_init(enc,w,r,NF18B2_M4_MATERIAL_FIRST));
