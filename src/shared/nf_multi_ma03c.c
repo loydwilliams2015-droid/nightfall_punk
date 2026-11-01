@@ -131,6 +131,12 @@ bool nf_ma03c_joint_certify_source(const NfWorld *world,
     candidate->source_tick+1u!=epoch)return false;
  NfMa03cActorWitness witnesses[2]={{0},{0}};
  if(candidate->roster.count!=2u)return false;
+ /* H86: the bound authority must be the actual A6 runtime whose actor
+    owns the staged contact. Do not treat an arbitrary non-null world
+    context as provenance. The issuer itself is still not source-trusted. */
+ const Nf18a6Runtime *owner=(const Nf18a6Runtime *)world->tick_owner_context;
+ if(owner->actor_id!=candidate->owner_actor||
+    owner->last_commit_tick!=world->tick)return false;
  for(unsigned i=0;i<2u;++i){
   const uint32_t id=candidate->roster.actors[i].id;
   const NfActor *actual=nf_world_find_actor_const(world,id);
