@@ -137,7 +137,7 @@ NfPongStatus nf_pong_stage(const NfPongWorld *w,const NfPongInput *in,
     next.serve_delay=36u;
     out->scored=1u;left=0.f;break;
    }
-   if(!impulse(&next,e,w->tick+1u))return NF_PONG_PENDING;
+   if(!impulse(&next,e.kind,w->tick+1u))return NF_PONG_PENDING;
    out->impulses_applied++;
   }
   if(left>1.e-7f)return NF_PONG_PENDING; /* too many contacts/tick */
