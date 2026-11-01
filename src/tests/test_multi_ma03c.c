@@ -40,6 +40,21 @@ int main(void){
  CK(nf_ma03c_stage_contact(live,10u,1.f/60.f,&staged));
  CK(staged.eligible&&staged.contact.matched==1u&&
     staged.roster.count==2u&&staged.source_tick==0u);
+ /* H84: passing synthetic complete witnesses only establishes the pure
+    validator; these are NOT real B2/A5/B3-issued credentials. */
+ NfMa03cActorWitness witnesses[2]={
+  {10,1,1,1,true,true,true},{20,1,1,1,true,true,true}};
+ CK(nf_ma03c_joint_certify(&staged,witnesses,1u));
+ witnesses[1].b3_valid=false;
+ CK(!nf_ma03c_joint_certify(&staged,witnesses,1u));
+ witnesses[1].b3_valid=true;
+ witnesses[1].physical_epoch=2u;
+ CK(!nf_ma03c_joint_certify(&staged,witnesses,1u));
+ witnesses[1].physical_epoch=1u;
+ witnesses[1].actor_id=10u;
+ CK(!nf_ma03c_joint_certify(&staged,witnesses,1u));
+ witnesses[1].actor_id=20u;
+ CK(!nf_ma03c_joint_certify(&staged,witnesses,0u));
  live->tick_in_progress=true;
  NfMa03cCandidate in_tick={0};
  CK(nf_ma03c_stage_contact_in_tick(live,10u,1.f/60.f,&in_tick));
