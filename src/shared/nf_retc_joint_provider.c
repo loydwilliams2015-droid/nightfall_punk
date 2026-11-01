@@ -49,7 +49,14 @@ NfRetcFrame *nf_retc_joint_stage_owned(const NfWorld *w,
  if(!j->owner){fprintf(stderr,"RET-C joint_stage_owned predicate 6: !j->owner\n");return NULL;}
  if(!j->encounter->prepared){fprintf(stderr,"RET-C joint_stage_owned predicate 7: !j->encounter->prepared\n");return NULL;}
  if(!j->push->staged_commit_valid){fprintf(stderr,"RET-C joint_stage_owned predicate 8: !j->push->staged_commit_valid\n");return NULL;}
- if(j->encounter->queue_count!=1u){fprintf(stderr,"RET-C joint_stage_owned predicate 9: j->encounter->queue_count!=1u\n");return NULL;}
+ /* H89: explicitly inventory multi-intent B2 transactions. The current
+    accepted frame represents one B3 event and cannot co-publish two.
+    Never silently truncate a second genuine queued intent. */
+ if(j->encounter->queue_count>1u){
+  fprintf(stderr,"RET-C H89 dual B2 intents require joint-frame expansion; refusing split commit\\n");
+  return NULL;
+ }
+ if(j->encounter->queue_count!=1u){fprintf(stderr,"RET-C joint_stage_owned predicate 9: j->encounter->queue_count!=1u\\n");return NULL;}
  if(!j->encounter->granted[0]){fprintf(stderr,"RET-C joint_stage_owned predicate 10: !j->encounter->granted[0]\n");return NULL;}
  if(j->encounter->frame.scene.actor_count!=1u){fprintf(stderr,"RET-C joint_stage_owned predicate 11: j->encounter->frame.scene.actor_count!=1u\n");return NULL;}
  if(j->encounter->frame.scene.object_count!=1u){fprintf(stderr,"RET-C joint_stage_owned predicate 12: j->encounter->frame.scene.object_count!=1u\n");return NULL;}
