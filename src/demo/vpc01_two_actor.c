@@ -72,7 +72,8 @@ int main(int argc,char **argv){
  bool blocked=false;
  while(!WindowShouldClose()){
   float frame_dt=GetFrameTime();
-  if(frame_dt<0.f)frame_dt=0.f;if(frame_dt>.08f)frame_dt=.08f;
+  if(frame_dt<0.f)frame_dt=0.f;
+  if(frame_dt>.08f)frame_dt=.08f;
   accumulator+=(double)frame_dt;
   if(IsKeyPressed(KEY_R)){nf_vpc01_init(&world);blocked=false;}
   if(IsKeyPressed(KEY_TAB))second_scripted=!second_scripted;
