@@ -439,6 +439,32 @@ int main(void){
     (int)t1->authorization.status,(int)t1->authorization.reason,
     (int)t1->authorization.physical,(int)t1->authorization.contract);
  }
+ /* H95 positive geometry probe uses real world actor 20 and genuine B2
+    evaluation. Existing far-away H94 denial remains independently tested.
+    No multi-actor frame is published. */
+ {
+  NfActor *second_actor=nf_world_find_actor(w,20u);
+  CHECK(second_actor!=NULL);
+  const NfVec3 old_pos=second_actor->transform.position;
+  const size_t old_count=enc->queue_count;
+  const NfRetcFrame *accepted=nf_retc_read(publisher);
+  second_actor->transform.position=(NfVec3){1.0f,0.f,1.65f};
+  const Nf18b2Status nearby=nf18b2_propose(
+       enc,(Nf18b2Intent){20,2010,603,NF18B2_PUSH});
+  fprintf(stderr,"H95 nearby source B2: status=%d count=%zu\\n",
+      (int)nearby,enc->queue_count);
+  CHECK(nearby!=NF18B2_INVALID);
+  CHECK(enc->queue_count==old_count+1u);
+  const Nf18b2QueuedIntent *q=&enc->queue[old_count];
+  CHECK(q->intent.actor_id==20u&&q->trace_index<enc->trace_count);
+  const Nf18b2EncounterTrace *t=&enc->traces[q->trace_index];
+  fprintf(stderr,"H95 nearby reason=%d physical=%d contract=%d\\n",
+      (int)t->authorization.reason,(int)t->authorization.physical,
+      (int)t->authorization.contract);
+  CHECK(nearby==t->authorization.status);
+  CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
+  second_actor->transform.position=old_pos;
+ }
  CHECK(nf_retc_joint_detach(w,&joint));
  CHECK(nf18a6_unbind_world_tick(w,r));
  nf_retc_dispose(publisher);
