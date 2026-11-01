@@ -402,6 +402,23 @@ int main(void){
  CHECK(enc->frame.actors[0].id==10u||enc->frame.actors[1].id==10u);
  CHECK(enc->frame.actors[0].id==20u||enc->frame.actors[1].id==20u);
  CHECK(nf_retc_read(publisher)!=NULL&&w->tick==2u);
+ /* H92: actual independent B2 propose calls from two registered world
+    identities. Both submissions must pass the real evaluator to count as
+    a positive two-intent milestone; no accepted dual-actor frame exists. */
+ {
+   const NfRetcFrame *accepted=nf_retc_read(publisher);
+   const uint64_t previous_tick=w->tick;
+   const Nf18b2Status first=nf18b2_propose(
+      enc,(Nf18b2Intent){10,2010,601,NF18B2_PUSH});
+   const Nf18b2Status second=nf18b2_propose(
+      enc,(Nf18b2Intent){20,2010,602,NF18B2_PUSH});
+   CHECK(nf_retc_read(publisher)==accepted&&w->tick==previous_tick);
+   /* Record exact B2 status, do not invent or promote an eligible grant. */
+   fprintf(stderr,"H92 real B2 submissions: actor10=%d actor20=%d queue=%zu\\n",
+        (int)first,(int)second,enc->queue_count);
+   CHECK(first!=NF18B2_INVALID&&second!=NF18B2_INVALID);
+   CHECK(enc->queue_count==2u);
+ }
  CHECK(nf_retc_joint_detach(w,&joint));
  CHECK(nf18a6_unbind_world_tick(w,r));
  nf_retc_dispose(publisher);
