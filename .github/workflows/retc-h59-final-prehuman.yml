@@ -1,0 +1,83 @@
+name: RET-C H59 final pre-human cumulative acceptance
+on:
+  push:
+    branches: [engineering/retc-h59-final-prehuman-acceptance]
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h59-final-prehuman.yml'
+      - 'src/**'
+      - 'CMakeLists.txt'
+  workflow_dispatch:
+jobs:
+  full-source-cross-compiler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record exact source SHA
+        run: git rev-parse HEAD
+      - name: Install graphical/network and headless CI requirements
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git pkg-config libsodium-dev \
+            libasound2-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev \
+            libglu1-mesa-dev libxcursor-dev libxinerama-dev xvfb ffmpeg
+      - name: Configure full client and server
+        env:
+          CC: ${{ matrix.compiler }}
+        run: cmake -S . -B build-h59-full -DCMAKE_BUILD_TYPE=Debug -DNF_BUILD_CLIENT=ON -DNF_BUILD_SERVER=ON -DNF_BUILD_TESTS=ON
+      - name: Compile complete graphical/game tree
+        run: cmake --build build-h59-full --parallel 2
+      - name: Full game CTest regression
+        run: ctest --test-dir build-h59-full --output-on-failure --output-junit h59-full-game.xml
+      - name: Configure all RET-C headless research tests
+        env:
+          CC: ${{ matrix.compiler }}
+        run: cmake -S . -B build-h59-retc -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+      - name: Compile all RET-C headless tests
+        run: cmake --build build-h59-retc --parallel 2
+      - name: Complete headless RET-C cumulative acceptance
+        run: ctest --test-dir build-h59-retc --output-on-failure --output-junit h59-retc.xml
+      - name: GCC real multiplayer graphical smoke (not VPC-01 acceptance)
+        if: matrix.compiler == 'gcc'
+        run: |
+          set -euo pipefail
+          mkdir -p build-h59-full/graphical
+          xvfb-run -a bash -euo pipefail -c '
+            export LIBGL_ALWAYS_SOFTWARE=1
+            stdbuf -oL -eL ./build-h59-full/nightfall_server --port 28762 --duration 12 --ai-count 1 --pressure-slots 1 --cattler-count 1 > build-h59-full/graphical/server.log 2>&1 &
+            server_pid=$!
+            client_pid=""
+            trap '\''if [[ -n "$client_pid" ]]; then kill "$client_pid" 2>/dev/null || true; fi; kill "$server_pid" 2>/dev/null || true'\'' EXIT
+            sleep 2
+            ./build-h59-full/nightfall_client --host 127.0.0.1 --port 28762 > build-h59-full/graphical/client.log 2>&1 &
+            client_pid=$!
+            sleep 5
+            kill -0 "$client_pid"
+            grep -q "\[server\] welcome entity=" build-h59-full/graphical/server.log
+            ffmpeg -nostdin -loglevel error -y -f x11grab -video_size 1280x720 -framerate 1 -i "$DISPLAY" -frames:v 1 -update 1 build-h59-full/graphical/real-client.png
+            test -s build-h59-full/graphical/real-client.png
+            kill "$client_pid" 2>/dev/null || true
+            wait "$client_pid" 2>/dev/null || true
+            client_pid=""
+            wait "$server_pid"
+            grep -q "\[server\] shutdown tick=" build-h59-full/graphical/server.log
+          '
+      - name: Preserve source-exact test evidence (no playable binary)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retc-h59-${{ matrix.compiler }}-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build-h59-full/h59-full-game.xml
+            build-h59-retc/h59-retc.xml
+            build-h59-full/Testing/Temporary/LastTest.log
+            build-h59-retc/Testing/Temporary/LastTest.log
+            build-h59-full/graphical/*.log
+            build-h59-full/graphical/*.png
