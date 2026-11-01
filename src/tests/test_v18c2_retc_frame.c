@@ -52,7 +52,7 @@ int main(int argc,char **argv){
    return (full?full_ok:bounded_ok)?0:82;
  }
 
- NfRetcPublisher publisher={0};
+ NfRetcPublisher publisher={.current=NULL};
  CK(nf_retc_read(&publisher)==NULL);
  NfRetcReadView joint_view={0};
  CK(!nf_retc_read_joint_view(&publisher,&joint_view));
