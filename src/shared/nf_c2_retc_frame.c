@@ -12,7 +12,7 @@ static uint32_t digest(uint32_t a,uint32_t b,uint32_t c){
 NfRetcFrame *nf_retc_stage(const Nf18a5Integrated *p,
  const Nf18b3Event *event,uint32_t tx,uint32_t prior_epoch,
  const NfRetcObligation *obs,uint32_t n){
- if(!p||!event||!tx||n>NF_RETC_OBLIGATIONS|| (n&&!obs)||
+ if(!p||!event||!tx||prior_epoch==UINT32_MAX||n>NF_RETC_OBLIGATIONS|| (n&&!obs)||
     p->world.tick!=prior_epoch+1u||event->tick!=p->world.tick||
     event->actor!=p->actor.id||event->object!=p->object.id||
     !event->authorized||!event->applied||event->phase!=NF18B3_APPLIED||
@@ -104,7 +104,9 @@ NfRetcFrame *nf_retc_stage_source_push(
  * externally authoritative frame, even if its individual PUSH seal passes.
  * This bounded check is not final whole-world transaction authority. */
 static bool retc_joint_complete(const NfRetcFrame *f){
- return f&&f->has_b2_contract&&f->has_encounter_registry&&
+ return f&&f->epoch&&f->prior_epoch!=UINT32_MAX&&
+   f->epoch==f->prior_epoch+1u&&f->transaction_id&&
+   f->has_b2_contract&&f->has_encounter_registry&&
    f->encounter_registry.contract_epoch!=0u&&
    f->encounter_registry.contract_epoch==f->event.contract_epoch&&
    f->physical.world.tick==f->epoch&&
