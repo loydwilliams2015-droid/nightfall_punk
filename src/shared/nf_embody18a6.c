@@ -5,6 +5,7 @@
 #include "nf_c2_retc_frame.h"
 #include "nf_v18c2_h9_auth.h"
 #include "nf_movement.h"
+#include "nf_multi_ma03.h"
 #include <math.h>
 #include <string.h>
 #include <stdint.h>
@@ -560,6 +561,17 @@ bool nf18a6_bind_world_tick(NfWorld *world,Nf18a6Runtime *runtime,
        runtime->model>NF18A6_WORLD_CAMERA||
        world->tick!=runtime->last_commit_tick||
        !nf_world_find_actor_const(world,runtime->actor_id))return false;
+    /* H77 binds the existing source-owned MA03 roster to A6's optional
+       two-actor coexistence boundary. This is preflight only; it neither
+       grants a second actor B2 rights nor publishes a joint tick. */
+    if(runtime->allow_passive_coactors){
+        NfMa03Roster roster={0};
+        if(!nf_ma03_roster_capture(world,&roster))return false;
+        bool owner_present=false;
+        for(uint32_t i=0;i<roster.count;++i)
+            if(roster.actors[i].id==runtime->actor_id)owner_present=true;
+        if(!owner_present)return false;
+    }
     if(!nf_world_bind_tick_owner(world,nf18a6_tick_dispatch,runtime))return false;
     nf_c2_lease_init(&runtime->world_lease);
     atomic_store(&runtime->auth_shutdown,false);
