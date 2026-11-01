@@ -515,6 +515,18 @@ static NfWorldTickStatus nf18a6_tick_dispatch(NfWorld *world,float dt,void *cont
     Nf18a6Runtime *runtime=(Nf18a6Runtime *)context;
     if(!world||!runtime)return NF_WORLD_TICK_INVALID;
     if(!nf_c2_lease_acquire(&runtime->world_lease))return NF_WORLD_TICK_REJECTED;
+    /* H78: source-exact roster snapshot is captured before an A6-owned
+       candidate tick. It is a preflight gate, NOT a second actor commit. */
+    if(runtime->allow_passive_coactors){
+        NfMa03Roster roster={0};
+        /* Tick-in-progress capture is permitted only on the owner path;
+           no copy of the large live world is made. */
+        if(!nf_ma03_roster_capture_in_tick(world,&roster)||
+           roster.source_tick!=world->tick){
+            nf_c2_lease_release(&runtime->world_lease);
+            return NF_WORLD_TICK_REJECTED;
+        }
+    }
     /* No remote actor is silently starved by a one-actor lab scheduler. */
     if(!nf18a6_passive_actor_envelope(world,runtime)){nf_c2_lease_release(&runtime->world_lease);return NF_WORLD_TICK_REJECTED;}
     const NfActor *actor=nf_world_find_actor_const(world,runtime->actor_id);

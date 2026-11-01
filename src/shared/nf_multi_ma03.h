@@ -30,4 +30,6 @@ typedef struct {
 /* No output modification on failure; requires bounded active population,
    unique nonzero actor identities, finite kinematics and finite inputs. */
 bool nf_ma03_roster_capture(const NfWorld *world,NfMa03Roster *out);
+/* Owner-only preflight within an A6 tick; does not authorize publication. */
+bool nf_ma03_roster_capture_in_tick(const NfWorld *world,NfMa03Roster *out);
 #endif
