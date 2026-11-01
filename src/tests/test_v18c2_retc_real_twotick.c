@@ -212,11 +212,13 @@ int main(void){
    memcpy(tampered,encoded,sizeof tampered);tampered[91]^=1u;
    CHECK(!nf_retc_external_decode(tampered,sizeof tampered,&decoded));
    CHECK(decoded.epoch==0);
-   /* H49: deterministic single-bit adversarial sweep across all header and
-      payload bytes; bounds and expected failure are reproducible. */
-   for(size_t flip=0;flip<88u;++flip){
+   /* H66: exhaustive ONE-bit tamper sweep across the entire 92-byte
+      encoded frame, INCLUDING every checksum byte. An attacker can
+      recompute this non-cryptographic checksum: authentication remains
+      a separate full-network requirement. */
+   for(size_t flip=0;flip<sizeof encoded*8u;++flip){
      memcpy(tampered,encoded,sizeof tampered);
-     tampered[flip]^=(uint8_t)(1u<<(flip%8u));
+     tampered[flip/8u]^=(uint8_t)(1u<<(flip%8u));
      CHECK(!nf_retc_external_decode(tampered,sizeof tampered,&decoded));
      CHECK(decoded.epoch==0);
    }
