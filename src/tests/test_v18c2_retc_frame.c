@@ -130,10 +130,14 @@ int main(int argc,char **argv){
      NfRetcFrame *forged_frame=malloc(sizeof *forged_frame);
      NfRetcFrame *recovered=calloc(1,sizeof *recovered);
      CK(forged_frame&&recovered);
-     for(unsigned attack=0;attack<2u;++attack){
+     for(unsigned attack=0;attack<6u;++attack){
        *forged_frame=*f;
        if(attack==0u)forged_frame->has_encounter_registry=false;
-       else forged_frame->encounter_registry.contract_epoch++;
+       else if(attack==1u)forged_frame->encounter_registry.contract_epoch++;
+       else if(attack==2u)forged_frame->event.actor++;
+       else if(attack==3u)forged_frame->event.object++;
+       else if(attack==4u)forged_frame->b2_use.action_id++;
+       else forged_frame->b2_actor.id++;
        uint32_t hash=2166136261u;
        const unsigned char *bytes=(const unsigned char *)forged_frame;
        for(size_t k=0;k<sizeof *forged_frame;++k)

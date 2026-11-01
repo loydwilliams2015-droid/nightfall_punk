@@ -113,6 +113,13 @@ static bool retc_joint_complete(const NfRetcFrame *f){
    f->event.tick==f->epoch&&
    f->owner_actor==f->physical.actor.id&&
    f->object_id==f->physical.object.id&&
+   f->event.actor==f->owner_actor&&f->event.object==f->object_id&&
+   f->b2_use.tick==f->epoch&&
+   f->b2_use.actor_id==f->owner_actor&&
+   f->b2_use.object_id==f->object_id&&
+   f->b2_use.action_id==f->event.action&&
+   f->b2_actor.id==f->owner_actor&&
+   f->b2_object.id==f->object_id&&
    nf_retc_seal_b2_b3((NfRetcFrame *)f);
 }
 /* H57: explicit read tenure. Closing rejects entrants, drains already
