@@ -4,6 +4,19 @@
 
 The complete text of GPL version 3 is preserved, unmodified, in the repository root [LICENSE](../LICENSE). The **or later** grant is the repository's explicit licensing choice for project-owned original software; it does **not** grant us ownership of external contributions or third-party material.
 
+## Provisional copyright status — deferred viability determination
+
+**Status (2026-10-31): COPYRIGHT ATTRIBUTION PLACEHOLDER; registration and future protectability assessment deferred.**
+
+- **Named project copyright holder:** To be determined after a documented authorship, ownership, and provenance review. No individual, cooperative, or proposed future entity is declared the holder by this placeholder.
+- **Registration:** Not claimed or scheduled. Whether to register any qualifying original contributions may be decided at a later date, with attention to the viability of the underlying copyright claim.
+- **Authorship / AI assistance:** Assess human-authored expressive contributions, any autonomous AI-generated elements, prior third-party sources, and contributor permissions on the evidence available at review. Do not assume all AI-assisted outputs are protected or all are unprotected.
+- **No retrospective fiction:** This placeholder neither creates copyright nor postpones rights that already arise under applicable law. It is not a copyright notice naming a fictitious holder; it is not a public-domain dedication, rights transfer, assignment to CommonStav, registration application, or restriction on legitimate GPL uses.
+- **Rights-based GPL grants:** The chosen GPL-3.0-or-later terms apply to original protectable material only insofar as the respective rights holders are entitled to license it. Preserve true third-party notices and their conditions.
+- **Review trigger:** Before public distribution or a substantial ownership/governance change, record contributor/asset provenance, appropriate human authorship and protectability evidence, and actual licensing authority. Use factual attribution once established; never fill this placeholder by inference from a GitHub username.
+
+Under U.S. law, qualifying copyright generally attaches automatically on fixation; registration and later assessments are separate. U.S. Copyright Office guidance on generative AI similarly calls for case-specific human authorship assessment. This project records no legal conclusion on any particular file's protectability.
+
 ## Scope
 
 - **Original project source code, related original build scripts, and software tools:** GPL-3.0-or-later, to the extent licensed by their respective copyright holders to the project. Where source files are newly created or meaningfully edited, add `SPDX-License-Identifier: GPL-3.0-or-later` and accurate copyright attribution if known; do not invent author names.
