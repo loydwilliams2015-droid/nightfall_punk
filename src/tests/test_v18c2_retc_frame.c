@@ -268,7 +268,6 @@ int main(int argc,char **argv){
     joint_view.physical->world.tick==1u&&
     joint_view.event->tick==1u&&
     joint_view.contract->contract_epoch==7u);
- free(encounter);free(owner);
  CK(nf_retc_read(&publisher)==f&&nf_retc_read(&publisher)->epoch==1);
  CK(!nf_retc_publish(&publisher,f)); /* no replay */
  p->world.tick=2;event.tick=2;event.action=92;
@@ -285,6 +284,16 @@ int main(int argc,char **argv){
      &use,&decision,&actor,&object,&authority);CK(other);
  CK(other->has_b2_contract&&other->obligation_count==0);
  CK(other->b2_actor.inventory==99);
+ /* H64: previous H42 test intentionally published a B2-only frame and
+    expected readers to refuse it. It is now a mandatory prepublication
+    refusal instead; bind an exact staged encounter before retrying. */
+ CK(!nf_retc_publish(&publisher,other));
+ CK(!nf_retc_persist_file(&publisher,other,"/tmp/nightfall_h64_refuse2.dat"));
+ CK(nf_retc_read(&publisher)==f);
+ owner->physical.world.tick=1;
+ encounter->prepared=1;
+ CK(nf_retc_bind_encounter(other,encounter));
+ free(encounter);free(owner);
  char journal[160];snprintf(journal,sizeof journal,"/tmp/nightfall_retc_frame_%u.bin",(unsigned)other->transaction_id);
  remove(journal);
  CK(nf_retc_persist_file(&publisher,other,journal));
@@ -321,11 +330,12 @@ int main(int argc,char **argv){
  }
  CK(nf_retc_publish(&publisher,other));
  CK(nf_retc_read(&publisher)==other);
- /* A typed B2 source witness without an encounter registry must not
-    masquerade as a fully consistent joint-reader view. */
- CK(!nf_retc_read_joint_view(&publisher,&joint_view));
- CK(joint_view.accepted==NULL);
- puts("RET-C H42 incomplete-contract joint reader refused PASS");
+ /* H64: only a complete B2/B3 + encounter frame can now become
+    authoritative, so a successful accepted reader sees one joint epoch. */
+ CK(nf_retc_read_joint_view(&publisher,&joint_view));
+ CK(joint_view.accepted==other&&joint_view.epoch==2u);
+ CK(joint_view.contract->contract_epoch==other->event.contract_epoch);
+ puts("RET-C H64 source-backed complete joint reader accepted PASS");
  NfRetcFrame *disk=malloc(sizeof *disk);CK(disk);
  CK(nf_retc_restore_file(journal,disk));
  CK(disk->epoch==other->epoch&&disk->event.action==other->event.action&&
