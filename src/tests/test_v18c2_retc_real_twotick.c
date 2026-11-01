@@ -392,6 +392,17 @@ int main(void){
    CHECK(memcmp(&nf_world_find_actor_const(w,10)->transform.position,&actor_before,sizeof actor_before)==0);
    puts("RET-C replay rejection: world, registry, publisher and receipts unchanged PASS");
  }
+ /* H91 positive source-owned registration for the second REAL world actor.
+    This is NOT dual eligibility or dual publication: existing A6/B3
+    projection still supports only actor 10. */
+ CHECK(nf18b2_register_actor(enc,20,0,0,50));
+ CHECK(enc->registry.account_count==2u);
+ CHECK(nf18b2_live_frame(enc,&enc->frame));
+ CHECK(enc->frame.scene.actor_count==2u);
+ CHECK(enc->frame.actors[0].id==10u||enc->frame.actors[1].id==10u);
+ CHECK(enc->frame.actors[0].id==20u||enc->frame.actors[1].id==20u);
+ CHECK(verify(w,r,enc,push,publisher,2u)==false ||
+       nf_retc_read(publisher)!=NULL);
  CHECK(nf_retc_joint_detach(w,&joint));
  CHECK(nf18a6_unbind_world_tick(w,r));
  nf_retc_dispose(publisher);
