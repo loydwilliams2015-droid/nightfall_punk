@@ -532,6 +532,7 @@ static NfWorldTickStatus nf18a6_tick_dispatch(NfWorld *world,float dt,void *cont
        the real A6 owner tick. This narrow diagnostic option refuses until
        the full two-actor material/contract frame can be co-committed. */
     if(runtime->require_dual_contact_preflight){
+#ifdef NF18A6_TEST_CONTROLS
         NfMa03cCandidate candidate={0};
         if(!nf_ma03c_stage_contact_in_tick(world,runtime->actor_id,dt,&candidate)||
            candidate.source_tick!=world->tick||!candidate.eligible){
@@ -541,6 +542,12 @@ static NfWorldTickStatus nf18a6_tick_dispatch(NfWorld *world,float dt,void *cont
         /* Intentionally refuse: no A5/B2/B3 joint dual-actor publication. */
         nf_c2_lease_release(&runtime->world_lease);
         return NF_WORLD_TICK_REJECTED;
+#else
+        /* Production deliberately lacks this experimental solver binding.
+           Reject rather than leave a potentially unresolved dependency. */
+        nf_c2_lease_release(&runtime->world_lease);
+        return NF_WORLD_TICK_REJECTED;
+#endif
     }
     /* No remote actor is silently starved by a one-actor lab scheduler. */
     if(!nf18a6_passive_actor_envelope(world,runtime)){nf_c2_lease_release(&runtime->world_lease);return NF_WORLD_TICK_REJECTED;}
