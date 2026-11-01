@@ -37,7 +37,25 @@ typedef struct NfRetcPublisher {
  _Atomic(const NfRetcFrame *) current;
  NfRetcFrame *owned[NF_RETC_HISTORY];
  uint32_t count;
+ /* H57: protects published frame lifetime for explicitly leased readers.
+    Owner/writer serialization and publisher-object lifetime are separate. */
+ atomic_uint active_readers;
+ atomic_bool read_closing;
 } NfRetcPublisher;
+typedef struct NfRetcReadLease {
+ const NfRetcPublisher *publisher;
+ const NfRetcFrame *accepted;
+} NfRetcReadLease;
+/* A successful lease pins an accepted immutable frame until release.
+   Acquisition fails once shutdown begins. Publishers themselves must remain
+   allocated until all acquisition attempts have returned. */
+bool nf_retc_read_lease_acquire(const NfRetcPublisher *pub,
+                               NfRetcReadLease *out);
+void nf_retc_read_lease_release(NfRetcReadLease *lease);
+/* Nonblocking shutdown: marks closing, rejects new leases and refuses
+   destruction while an existing lease remains. Call again after drain.
+   Single authoritative writer must already be quiesced by A6. */
+bool nf_retc_try_dispose(NfRetcPublisher *pub);
 /* Stage makes a private deep copy. Caller retains the candidate until publish. */
 NfRetcFrame *nf_retc_stage(const Nf18a5Integrated *physical,
  const Nf18b3Event *event,uint32_t tx,uint32_t prior_epoch,
@@ -83,5 +101,7 @@ typedef struct NfRetcReadView {
  uint32_t epoch,transaction_id;
 } NfRetcReadView;
 bool nf_retc_read_joint_view(const NfRetcPublisher *pub,NfRetcReadView *out);
+/* H57: validated joint view under active lease; invalidate before release. */
+bool nf_retc_read_leased_view(const NfRetcReadLease *lease,NfRetcReadView *out);
 void nf_retc_dispose(NfRetcPublisher *pub);
 #endif

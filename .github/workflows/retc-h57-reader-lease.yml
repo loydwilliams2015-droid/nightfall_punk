@@ -1,0 +1,58 @@
+name: RET-C H57 accepted-frame reader lease acceptance
+on:
+  push:
+    branches: [engineering/retc-h57-reader-lifetime-lease]
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h57-reader-lease.yml'
+      - 'src/shared/nf_c2_retc_frame.*'
+      - 'src/shared/nf_retc_external.*'
+      - 'src/tests/test_v18c2_retc_reader_lease.c'
+      - 'CMakeLists.txt'
+  workflow_dispatch:
+jobs:
+  scoped-lease-and-cumulative:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source
+        run: git rev-parse HEAD
+      - name: Configure laboratory
+        env:
+          CC: ${{ matrix.compiler }}
+        run: cmake -S . -B build-h57 -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug
+      - name: Compile all headless CTests
+        run: cmake --build build-h57 --parallel 2
+      - name: Full cumulative RET-C regression
+        run: ctest --test-dir build-h57 --output-on-failure --output-junit h57-full.xml
+      - name: Configure address/undefined sanitizer adversarial tenure
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-h57-san -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build scoped lease and A6 tests with sanitizers
+        run: cmake --build build-h57-san --parallel 2 --target nightfall_v18c2_retc_reader_lease_test nightfall_v18c2_retc_real_twotick_test
+      - name: Address/undefined sanitizer lifetime and real A6 gate
+        env:
+          ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-h57-san -R '^retc_(reader_lease_retirement|real_dispatcher_two_joint_ticks)_v18c2$' --output-on-failure --output-junit h57-sanitizer.xml
+      - name: Upload source-exact logs only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retc-h57-${{ matrix.compiler }}-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build-h57/h57-full.xml
+            build-h57-san/h57-sanitizer.xml
+            build-h57/Testing/Temporary/LastTest.log
+            build-h57-san/Testing/Temporary/LastTest.log

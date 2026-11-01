@@ -24,10 +24,14 @@ bool nf_retc_external_accept(NfRetcExternalCursor *cursor,const NfRetcExternalRe
 bool nf_retc_external_capture(const NfRetcPublisher *publisher,NfRetcExternalRecord *out){
  if(!out)return false;
  *out=(NfRetcExternalRecord){0};
+ NfRetcReadLease lease={0};
+ if(!nf_retc_read_lease_acquire(publisher,&lease))return false;
  NfRetcReadView v={0};
- if(!nf_retc_read_joint_view(publisher,&v)||!v.accepted||
+ if(!nf_retc_read_leased_view(&lease,&v)||!v.accepted||
     v.contract->account_count==0||v.contract->account_count>NF18B2_MAX_REQUESTS||
-    v.contract->accounts[0].actor_id!=v.accepted->owner_actor)return false;
+    v.contract->accounts[0].actor_id!=v.accepted->owner_actor){
+     nf_retc_read_lease_release(&lease);return false;
+ }
  const NfRetcFrame *f=v.accepted;
  NfRetcExternalRecord candidate={0};
  candidate.epoch=v.epoch;candidate.prior_epoch=f->prior_epoch;
@@ -43,7 +47,9 @@ bool nf_retc_external_capture(const NfRetcPublisher *publisher,NfRetcExternalRec
  candidate.first_account_balance=v.contract->accounts[0].balance;
  candidate.actor_center=v.physical->actor.center;
  candidate.object_center=v.physical->object.center;
- if(!nf_retc_external_valid(&candidate))return false;
+ const bool valid=nf_retc_external_valid(&candidate);
+ nf_retc_read_lease_release(&lease);
+ if(!valid)return false;
  *out=candidate;
  return true;
 }
