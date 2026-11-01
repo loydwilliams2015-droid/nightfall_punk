@@ -107,14 +107,14 @@ bool nf_retc_read_lease_acquire(const NfRetcPublisher *pub,
                                NfRetcReadLease *out){
  if(!out)return false;
  *out=(NfRetcReadLease){0};
- if(!pub||atomic_load_explicit(&pub->read_closing,memory_order_acquire))return false;
+ if(!pub||atomic_load_explicit(&pub->read_closing,memory_order_seq_cst))return false;
  atomic_uint *readers=(atomic_uint *)&pub->active_readers;
- atomic_fetch_add_explicit(readers,1u,memory_order_acq_rel);
- if(atomic_load_explicit(&pub->read_closing,memory_order_acquire)){
-    atomic_fetch_sub_explicit(readers,1u,memory_order_acq_rel);return false;
+ atomic_fetch_add_explicit(readers,1u,memory_order_seq_cst);
+ if(atomic_load_explicit(&pub->read_closing,memory_order_seq_cst)){
+    atomic_fetch_sub_explicit(readers,1u,memory_order_seq_cst);return false;
  }
- const NfRetcFrame *f=atomic_load_explicit(&pub->current,memory_order_acquire);
- if(!f){atomic_fetch_sub_explicit(readers,1u,memory_order_acq_rel);return false;}
+ const NfRetcFrame *f=atomic_load_explicit(&pub->current,memory_order_seq_cst);
+ if(!f){atomic_fetch_sub_explicit(readers,1u,memory_order_seq_cst);return false;}
  out->publisher=pub;out->accepted=f;
  return true;
 }
@@ -122,13 +122,13 @@ void nf_retc_read_lease_release(NfRetcReadLease *lease){
  if(!lease||!lease->publisher)return;
  atomic_uint *readers=(atomic_uint *)&lease->publisher->active_readers;
  lease->accepted=NULL;lease->publisher=NULL;
- atomic_fetch_sub_explicit(readers,1u,memory_order_acq_rel);
+ atomic_fetch_sub_explicit(readers,1u,memory_order_seq_cst);
 }
 bool nf_retc_try_dispose(NfRetcPublisher *pub){
  if(!pub)return false;
- atomic_store_explicit(&pub->read_closing,true,memory_order_release);
- if(atomic_load_explicit(&pub->active_readers,memory_order_acquire)!=0u)return false;
- atomic_store_explicit(&pub->current,NULL,memory_order_release);
+ atomic_store_explicit(&pub->read_closing,true,memory_order_seq_cst);
+ if(atomic_load_explicit(&pub->active_readers,memory_order_seq_cst)!=0u)return false;
+ atomic_store_explicit(&pub->current,NULL,memory_order_seq_cst);
  for(uint32_t i=0;i<pub->count;++i)free(pub->owned[i]);
  for(uint32_t i=0;i<pub->count;++i)pub->owned[i]=NULL;
  pub->count=0;
