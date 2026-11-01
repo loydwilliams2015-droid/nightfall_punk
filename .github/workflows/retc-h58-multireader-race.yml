@@ -1,0 +1,42 @@
+name: RET-C H58 multi-reader independent race gate
+on:
+  push:
+    branches: [engineering/retc-h58-multireader-race-gate]
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h58-multireader-race.yml'
+      - 'src/tests/test_v18c2_retc_reader_lease.c'
+      - 'src/shared/nf_c2_retc_frame.*'
+  workflow_dispatch:
+jobs:
+  race-detection:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact source
+        run: git rev-parse HEAD
+      - name: Install alternate independent race detector
+        run: sudo apt-get update && sudo apt-get install -y valgrind
+      - name: Configure strict C11 laboratory
+        run: cmake -S . -B build-h58 -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug
+      - name: Build H58 lease and source-bound A6
+        run: cmake --build build-h58 --parallel 2 --target nightfall_v18c2_retc_reader_lease_test nightfall_v18c2_retc_real_twotick_test
+      - name: Run four-reader 64 trial deterministic contention gate
+        run: ctest --test-dir build-h58 -R '^retc_reader_lease_retirement_v18c2$' --output-on-failure --output-junit h58-lease.xml
+      - name: Helgrind check of real concurrent reader shutdown fixture
+        run: valgrind --tool=helgrind --error-exitcode=66 --history-level=approx --log-file=build-h58/helgrind.log ./build-h58/nightfall_v18c2_retc_reader_lease_test
+      - name: Verify inherited real A6 transaction
+        run: ctest --test-dir build-h58 -R '^retc_real_dispatcher_two_joint_ticks_v18c2$' --output-on-failure --output-junit h58-a6.xml
+      - name: Archive independent race evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retc-h58-race-evidence
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build-h58/helgrind.log
+            build-h58/h58-lease.xml
+            build-h58/h58-a6.xml
+            build-h58/Testing/Temporary/LastTest.log

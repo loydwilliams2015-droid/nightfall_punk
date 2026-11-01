@@ -25,39 +25,46 @@ static void *reader(void *opaque){
  return NULL;
 }
 int main(void){
- for(uint32_t trial=1;trial<=32u;++trial){
+ for(uint32_t trial=1;trial<=64u;++trial){
    NfRetcPublisher *p=calloc(1,sizeof *p);
    NfRetcFrame *frame=calloc(1,sizeof *frame);
    CK(p&&frame);
-   /* Source-independent deterministic tenure oracle, not forged game truth:
-      tests ownership of allocated accepted-pointer memory only. */
    frame->epoch=trial;
    atomic_init(&p->current,frame);
    atomic_init(&p->active_readers,0u);
    atomic_init(&p->read_closing,false);
    p->owned[0]=frame;p->count=1u;
-   Hold h={0};h.pub=p;
-   atomic_init(&h.acquired,false);
-   atomic_init(&h.release_reader,false);
-   atomic_init(&h.observed_epoch,0u);
-   pthread_t thread;
-   CK(pthread_create(&thread,NULL,reader,&h)==0);
-   while(!atomic_load(&h.acquired))sched_yield();
-   CK(atomic_load(&h.observed_epoch)!=UINT32_MAX);
-   CK(!nf_retc_try_dispose(p)); /* Deny reclamation while frame is borrowed. */
+   Hold h[4]={0};
+   pthread_t t[4];
+   for(size_t i=0;i<4u;++i){
+     h[i].pub=p;
+     atomic_init(&h[i].acquired,false);
+     atomic_init(&h[i].release_reader,false);
+     atomic_init(&h[i].observed_epoch,0u);
+     CK(pthread_create(&t[i],NULL,reader,&h[i])==0);
+   }
+   for(size_t i=0;i<4u;++i){
+     while(!atomic_load(&h[i].acquired))sched_yield();
+     CK(atomic_load(&h[i].observed_epoch)!=UINT32_MAX);
+   }
+   CK(atomic_load(&p->active_readers)==4u);
+   CK(!nf_retc_try_dispose(p)); /* Closing must reject destruction. */
    NfRetcReadLease denied={0};
-   CK(!nf_retc_read_lease_acquire(p,&denied)); /* No new reader after close. */
+   CK(!nf_retc_read_lease_acquire(p,&denied));
    CK(denied.accepted==NULL&&denied.publisher==NULL);
-   CK(atomic_load(&p->current)==frame);
-   atomic_store(&h.release_reader,true);
-   CK(pthread_join(thread,NULL)==0);
-   CK(atomic_load(&h.observed_epoch)==trial);
-   CK(nf_retc_try_dispose(p)); /* All readers drained: frame may retire. */
-   CK(atomic_load(&p->current)==NULL);
-   CK(p->count==0u);
+   for(size_t i=0;i<4u;++i){
+     CK(atomic_load(&p->current)==frame);
+     atomic_store(&h[i].release_reader,true);
+     CK(pthread_join(t[i],NULL)==0);
+     CK(atomic_load(&h[i].observed_epoch)==trial);
+     if(i!=3u)CK(!nf_retc_try_dispose(p)); /* 3,2,1 live readers. */
+   }
+   CK(atomic_load(&p->active_readers)==0u);
+   CK(nf_retc_try_dispose(p));
+   CK(atomic_load(&p->current)==NULL&&p->count==0u);
    CK(!nf_retc_read_lease_acquire(p,&denied));
    free(p);
  }
- puts("H57 scoped read lease / retire-after-drain / reject-after-close 32 trials PASS");
+ puts("H58 four-reader accepted-pointer tenure, 64 shutdown trials PASS");
  return 0;
 }
