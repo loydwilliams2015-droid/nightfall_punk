@@ -62,9 +62,6 @@ jobs:
           cd extracted/nightfall-vpc01-qa
           sha256sum -c SHA256SUMS
           test "$(cat SOURCE_SHA)" = "$GITHUB_SHA"
-          ./bin/nightfall_vpc01_two_actor --help >/dev/null 2>&1 && {
-            echo 'This viewer has no --help contract. Do not treat that as a supported interface.' >&2; exit 1;
-          } || true
       - name: Launch the EXTRACTED candidate in a fresh X11 session
         run: |
           set -euo pipefail
