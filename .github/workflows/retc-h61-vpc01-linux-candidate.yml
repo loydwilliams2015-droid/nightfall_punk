@@ -73,9 +73,17 @@ jobs:
           cat evidence/packaged-render.log
           grep -q 'VPC01_H60_VIEW' evidence/packaged-render.log
           grep -q 'denied=0' evidence/packaged-render.log
+          # raylib's TakeScreenshot may store only the basename in its
+          # current working directory despite a supplied frames-dir.
+          # Preserve that real output; don't mistake artifact routing for physics.
+          if ! compgen -G 'evidence/frames/frame_*.png' >/dev/null; then
+            find "$root" -maxdepth 1 -type f -name 'frame_*.png' \
+              -exec mv -t evidence/frames/ -- {} +
+          fi
           count=$(find evidence/frames -maxdepth 1 -name 'frame_*.png' -size +5000c | wc -l)
           test "$count" -ge 3
-          file evidence/frames/frame_*.png | head -4
+          first_frame=$(find evidence/frames -maxdepth 1 -name 'frame_*.png' -print -quit)
+          file "$first_frame"
           echo "H61 packaged viewer smoke PASS, nonempty PNG frames=$count"
       - name: Upload engineering candidate and source-exact test evidence
         if: always()
