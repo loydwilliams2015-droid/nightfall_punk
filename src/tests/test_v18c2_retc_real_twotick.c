@@ -293,6 +293,12 @@ int main(void){
    CHECK(nf_retc_read(publisher)==before&&w->tick==before_tick);
    CHECK(memcmp(&second->transform.position,&before_pos,sizeof before_pos)==0);
    second->input.forward=0.f;
+   /* H75: input-idle but physically moving co-actor is not passive. */
+   second->transform.velocity.x=3.f;
+   CHECK(nf_world_step_checked(w,1.f/(float)NF_TICK_RATE)!=NF_WORLD_TICK_COMMITTED);
+   CHECK(w->tick==before_tick&&nf_retc_read(publisher)==before);
+   CHECK(memcmp(&second->transform.position,&before_pos,sizeof before_pos)==0);
+   second->transform.velocity.x=0.f;
    /* H74: distinct second-actor control channels remain unavailable.
       The original owner can request movement simultaneously, but a
       second independent input must refuse the entire authoritative tick. */
