@@ -1,4 +1,6 @@
 #include "nf_multi_ma03c.h"
+#include "nf_multi_ma03.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 static unsigned checks;
@@ -7,6 +9,35 @@ static bool unavailable(void *ctx,const NfWorld *w,const Nf18a6Runtime *r,uint32
  (void)ctx;(void)w;(void)r;(void)action;(void)s;(void)u;return false;
 }
 int main(void){
+ /* H81 positive precursor: use real NfWorld actor snapshots to feed the
+    EXISTING MA01C2/MA03C contact scheduler, not a fabricated callback.
+    This is an independent read-only proposal, not an A6 joint commit. */
+ NfWorld *live=calloc(1,sizeof *live);
+ CK(live!=NULL);
+ nf_world_init(live,80u);
+ CK(nf_world_spawn_actor_with_id(live,20,NF_FACTION_PLAYER,(NfVec3){2.f,1.f,0.f})==20);
+ CK(nf_world_spawn_actor_with_id(live,10,NF_FACTION_PLAYER,(NfVec3){0.f,1.f,0.f})==10);
+ NfActor *fast=nf_world_find_actor(live,10);
+ NfActor *slow=nf_world_find_actor(live,20);
+ CK(fast&&slow);
+ fast->transform.velocity.x=150.f;
+ NfMa03Roster roster={0};
+ CK(nf_ma03_roster_capture(live,&roster));
+ CK(roster.count==2&&roster.actors[0].id==10&&roster.actors[1].id==20);
+ Nf18a4Body bodies[2]={0};
+ for(unsigned i=0;i<2;++i){
+   bodies[i].id=roster.actors[i].id;
+   bodies[i].center=roster.actors[i].position;
+   bodies[i].velocity=roster.actors[i].velocity;
+   bodies[i].inverse_mass=1.f;
+   bodies[i].radius=.3f;
+   bodies[i].height=1.8f;
+ }
+ NfMa03cEvidence positive=nf_ma03c_compare(bodies,2,1.f/60.f,1,1);
+ CK(positive.matched==1&&positive.disagreed==0&&positive.unresolved==0);
+ CK(live->tick==0u);
+ CK(fast->transform.velocity.x==150.f&&slow->transform.velocity.x==0.f);
+ free(live);
  for(unsigned family=0;family<5;family++)for(unsigned seed=0;seed<128;seed++){
   Nf18a4Body b[3]={0};
   for(unsigned i=0;i<3;i++){b[i].id=i+1;b[i].inverse_mass=1.f/(1.f+(float)(i+seed%3));
