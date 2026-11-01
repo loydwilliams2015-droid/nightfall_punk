@@ -27,7 +27,11 @@ static bool verify(const NfWorld *w,const Nf18a6Runtime *r,
     view.eligibility->tick!=expected||
     view.contract->contract_epoch!=view.event->contract_epoch)return false;
  const NfActor *a=nf_world_find_actor_const(w,10);
- if(!f||!a||f->epoch!=expected||w->tick!=expected||
+ const NfActor *other=nf_world_find_actor_const(w,20);
+ if(!f||!a||!other||other->id!=20u||
+    f->owner_actor==other->id||f->event.actor==other->id||
+    f->b2_use.actor_id==other->id||
+    f->epoch!=expected||w->tick!=expected||
     r->last_commit_tick!=expected||r->joint_commit_epoch!=expected||
     r->retc_pending||push->receipt_count!=expected||
     f->event.tick!=expected||push->event.tick!=expected||
@@ -51,6 +55,11 @@ int main(void){
  nf_world_init(w,42);
  nf_world_add_collider(w,NF_COLLIDER_SOLID,(NfVec3){0,-.5f,0},(NfVec3){4,0,4});
  CHECK(nf_world_spawn_actor_with_id(w,10,NF_FACTION_PLAYER,(NfVec3){1,0,1})==10);
+ /* H72: real A6 dispatcher runs in a world with a second actor present.
+    The second actor is NOT yet part of a shared two-actor B2/B3 transaction.
+    This is a coexistence / no-misattribution gate, not full MA03 acceptance. */
+ CHECK(nf_world_spawn_actor_with_id(w,20,NF_FACTION_PLAYER,(NfVec3){3,0,3})==20);
+ CHECK(nf_world_find_actor_const(w,20)!=NULL);
  NfActor *actor=nf_world_find_actor(w,10);CHECK(actor);
  actor->movement.grounded=true;actor->movement.mode=NF_MOVE_GROUND;
  Nf18a4Body crate={0};crate.id=2010;crate.center=(NfVec3){1.5601f,.9f,1};
