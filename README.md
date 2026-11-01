@@ -1,6 +1,12 @@
 # nightfall_punk
 
-Open-source copy-left **Neo-Xennial / Systemic Arena FPS** developed in C + raylib.
+Open-source copyleft **Neo-Xennial / Systemic Arena FPS** developed in C + raylib.
+
+## License
+
+Original nightfall!punk software is licensed under the **GNU General Public License, version 3 or any later version** (`SPDX-License-Identifier: GPL-3.0-or-later`), to the extent the respective copyright holders have granted those rights. See [LICENSE](LICENSE) for the full GPLv3 text and [docs/LICENSING.md](docs/LICENSING.md) for scope, third-party attribution, source availability and pending provenance checks. Commercial use is permitted under the applicable GPL terms.
+
+This root license does not change third-party licenses or independently establish ownership of historical code or creative assets. Public volunteer release remains gated by both licensing verification and the separate VPC-01 / RET-C engineering acceptance programme.
 
 **Current candidate milestone: v0.9 — Topographical Energy Accounting.** Accepted versions remain archived through `archive/v0.7`. v0.8 Dream Cattler Habitat Ecology is still a draft human-acceptance candidate on PR #11; v0.9 is deliberately stacked on that branch rather than pretending v0.8 has already been accepted.
 
