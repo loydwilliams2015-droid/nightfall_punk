@@ -67,8 +67,8 @@ Nf18b2UseDecision nf_ma03_b2_owner_evaluate(const NfWorld *world,
 
 /* H76: actor enumeration belongs to the actual NfWorld; this deterministic
  * roster is an input to a future A6-owned arbitration stage, not a commit. */
-bool nf_ma03_roster_capture(const NfWorld *world,NfMa03Roster *out){
- if(!world||!out||world->tick_in_progress)return false;
+static bool roster_capture(const NfWorld *world,NfMa03Roster *out,bool in_tick){
+ if(!world||!out||world->tick_in_progress!=in_tick)return false;
  NfMa03Roster candidate={0};
  candidate.source_tick=world->tick;
  for(size_t i=0;i<NF_MAX_ENTITIES;++i){
@@ -95,3 +95,6 @@ bool nf_ma03_roster_capture(const NfWorld *world,NfMa03Roster *out){
  *out=candidate;
  return true;
 }
+
+bool nf_ma03_roster_capture(const NfWorld *w,NfMa03Roster *out){return roster_capture(w,out,false);}
+bool nf_ma03_roster_capture_in_tick(const NfWorld *w,NfMa03Roster *out){return roster_capture(w,out,true);}
