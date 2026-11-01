@@ -428,6 +428,11 @@ int main(void){
    const Nf18b2EncounterTrace *t1=&enc->traces[q1->trace_index];
    CHECK(t0->intent.actor_id==10u&&t1->intent.actor_id==20u);
    CHECK(first==t0->authorization.status&&second==t1->authorization.status);
+   /* H94 classify the real second actor's source decision explicitly.
+      Reject any unsupported claim that distant actor 20 is eligible. */
+   CHECK(second!=NF18B2_ELIGIBLE);
+   CHECK(t1->authorization.physical!=NF18B2_ELIGIBLE ||
+         t1->authorization.contract!=NF18B2_ELIGIBLE);
    fprintf(stderr,"H93 source B2 authorization: actor10 status=%d reason=%d physical=%d contract=%d; actor20 status=%d reason=%d physical=%d contract=%d\\n",
     (int)t0->authorization.status,(int)t0->authorization.reason,
     (int)t0->authorization.physical,(int)t0->authorization.contract,
