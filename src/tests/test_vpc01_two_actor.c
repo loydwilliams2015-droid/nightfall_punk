@@ -42,6 +42,14 @@ static int two_actor(uint32_t seed){
   }
  }
  CK(contact&&a.contact_events>=1u);
+ if(seed==0u){
+  /* Exact head-on collision is collinear: crossing would be a real defect. */
+  if(!(a.body[0].center.x<a.body[1].center.x)){
+   fprintf(stderr,"VPC-01 head-on crossing: a=%.6f b=%.6f contacts=%u\\n",
+     a.body[0].center.x,a.body[1].center.x,a.contact_events);
+   return 1;
+  }
+ }
  /* Lateral deflection can legitimately exchange actors' x-order. Never
     mistake x-order for nonpenetration in a two-dimensional contact model. */
  return 0;
