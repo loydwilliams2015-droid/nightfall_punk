@@ -131,12 +131,20 @@ bool nf_ma03c_joint_certify_source(const NfWorld *world,
     candidate->source_tick+1u!=epoch)return false;
  NfMa03cActorWitness witnesses[2]={{0},{0}};
  if(candidate->roster.count!=2u)return false;
- /* H86: the bound authority must be the actual A6 runtime whose actor
-    owns the staged contact. Do not treat an arbitrary non-null world
-    context as provenance. The issuer itself is still not source-trusted. */
- const Nf18a6Runtime *owner=(const Nf18a6Runtime *)world->tick_owner_context;
- if(owner->actor_id!=candidate->owner_actor||
-    owner->last_commit_tick!=world->tick)return false;
+ /* H86: revalidate the candidate against the CURRENT source actors.
+    A caller cannot replay an old roster after changing live kinematics.
+    Binding the issuer to actual A6/B2/A5/B3 ownership is still open. */
+ bool owner_present=false;
+ for(unsigned i=0;i<2u;++i){
+  const NfMa03Participant *p=&candidate->roster.actors[i];
+  const NfActor *a=nf_world_find_actor_const(world,p->id);
+  if(!a||!a->active||!a->combat.alive||
+     memcmp(&a->transform.position,&p->position,sizeof p->position)!=0||
+     memcmp(&a->transform.velocity,&p->velocity,sizeof p->velocity)!=0||
+     memcmp(&a->input,&p->input,sizeof p->input)!=0)return false;
+  if(p->id==candidate->owner_actor)owner_present=true;
+ }
+ if(!owner_present)return false;
  for(unsigned i=0;i<2u;++i){
   const uint32_t id=candidate->roster.actors[i].id;
   const NfActor *actual=nf_world_find_actor_const(world,id);
