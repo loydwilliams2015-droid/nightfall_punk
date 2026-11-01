@@ -115,6 +115,37 @@ int main(int argc,char **argv){
    remove(full_journal);
    CK(nf_retc_persist_file(&publisher,f,full_journal));
    CK(nf_retc_read(&publisher)==NULL); /* durability precedes visibility */
+   /* H67: a valid checksum cannot authorize semantically incomplete joint
+      material/contract state. Forge a version-correct, checksum-correct
+      frame and verify restart refuses missing or contradictory encounter. */
+   {
+     typedef struct {uint32_t magic,version,length,checksum;} DiskHead;
+     char forged_path[180];
+     snprintf(forged_path,sizeof forged_path,
+              "/tmp/nightfall_h67_forged_%ld.bin",(long)getpid());
+     NfRetcFrame *forged_frame=malloc(sizeof *forged_frame);
+     NfRetcFrame *recovered=calloc(1,sizeof *recovered);
+     CK(forged_frame&&recovered);
+     for(unsigned attack=0;attack<2u;++attack){
+       *forged_frame=*f;
+       if(attack==0u)forged_frame->has_encounter_registry=false;
+       else forged_frame->encounter_registry.contract_epoch++;
+       uint32_t hash=2166136261u;
+       const unsigned char *bytes=(const unsigned char *)forged_frame;
+       for(size_t k=0;k<sizeof *forged_frame;++k)
+         hash=(hash^bytes[k])*16777619u;
+       DiskHead disk={0x52455443u,1u,(uint32_t)sizeof *forged_frame,hash};
+       FILE *fake=fopen(forged_path,"wb");CK(fake);
+       CK(fwrite(&disk,sizeof disk,1,fake)==1);
+       CK(fwrite(forged_frame,sizeof *forged_frame,1,fake)==1);
+       CK(fclose(fake)==0);
+       recovered->epoch=UINT32_MAX;
+       CK(!nf_retc_restore_file(forged_path,recovered));
+       CK(recovered->epoch==UINT32_MAX); /* no partial acceptance */
+       CK(remove(forged_path)==0);
+     }
+     free(forged_frame);free(recovered);
+   }
    pid_t child=fork();CK(child>=0);
    if(child==0){
      char *const args[]={argv[0],"--recover-full",full_journal,NULL};
