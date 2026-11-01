@@ -27,4 +27,10 @@ bool nf_ma03c_stage_contact(const NfWorld *world,uint32_t owner_actor,
  float dt,NfMa03cCandidate *out);
 bool nf_ma03c_stage_contact_in_tick(const NfWorld *world,uint32_t owner_actor,
  float dt,NfMa03cCandidate *out);
+/* H84: conservative owner precommit certification. A valid contact alone
+ * cannot substitute for two complete physical/contractual realizations. */
+typedef struct { uint32_t actor_id,physical_epoch,b2_epoch,b3_epoch;
+ bool physical_valid,b2_valid,b3_valid; } NfMa03cActorWitness;
+bool nf_ma03c_joint_certify(const NfMa03cCandidate *candidate,
+ const NfMa03cActorWitness witness[2],uint32_t candidate_epoch);
 #endif
