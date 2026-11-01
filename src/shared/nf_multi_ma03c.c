@@ -68,12 +68,13 @@ bool nf_ma024_recheck(const NfWorld *w,const Nf18a6Runtime *r,NfMa03Provider sou
 
 /* H82: positive two-actor contact is only an immutable proposal. No
  * source-world tick, A6 owner, material, B2 registry or B3 receipt mutation. */
-bool nf_ma03c_stage_contact(const NfWorld *world,uint32_t owner_actor,
- float dt,NfMa03cCandidate *out){
+static bool stage_contact(const NfWorld *world,uint32_t owner_actor,
+ float dt,NfMa03cCandidate *out,bool in_tick){
  if(!world||!out||!owner_actor||!isfinite(dt)||dt<=0.f||
-    world->tick_in_progress||world->tick>=UINT32_MAX)return false;
+    world->tick_in_progress!=in_tick||world->tick>=UINT32_MAX)return false;
  NfMa03cCandidate candidate={0};
- if(!nf_ma03_roster_capture(world,&candidate.roster)||
+ if(!(in_tick?nf_ma03_roster_capture_in_tick(world,&candidate.roster):
+                nf_ma03_roster_capture(world,&candidate.roster))||
     candidate.roster.count!=2u)return false;
  Nf18a4Body bodies[2]={0};
  bool owner_found=false;
@@ -97,3 +98,6 @@ bool nf_ma03c_stage_contact(const NfWorld *world,uint32_t owner_actor,
  *out=candidate;
  return true;
 }
+
+bool nf_ma03c_stage_contact(const NfWorld *w,uint32_t a,float dt,NfMa03cCandidate *out){return stage_contact(w,a,dt,out,false);}
+bool nf_ma03c_stage_contact_in_tick(const NfWorld *w,uint32_t a,float dt,NfMa03cCandidate *out){return stage_contact(w,a,dt,out,true);}
