@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sched.h>
 static uint32_t digest(uint32_t a,uint32_t b,uint32_t c){
  uint32_t v=2166136261u;
  v=(v^a)*16777619u;v=(v^b)*16777619u;return (v^c)*16777619u;
@@ -99,10 +100,45 @@ NfRetcFrame *nf_retc_stage_source_push(
     !nf_retc_seal_b2_b3(f)){free(f);return NULL;}
  return f;
 }
+/* H57: explicit read tenure. Closing rejects entrants, drains already
+ * acquired readers before reclaim. Caller must own the publisher-object
+ * lifetime itself and quiesce the A6 writer before reclaiming. */
+bool nf_retc_read_lease_acquire(const NfRetcPublisher *pub,
+                               NfRetcReadLease *out){
+ if(!out)return false;
+ *out=(NfRetcReadLease){0};
+ if(!pub||atomic_load_explicit(&pub->read_closing,memory_order_acquire))return false;
+ atomic_uint *readers=(atomic_uint *)&pub->active_readers;
+ atomic_fetch_add_explicit(readers,1u,memory_order_acq_rel);
+ if(atomic_load_explicit(&pub->read_closing,memory_order_acquire)){
+    atomic_fetch_sub_explicit(readers,1u,memory_order_acq_rel);return false;
+ }
+ const NfRetcFrame *f=atomic_load_explicit(&pub->current,memory_order_acquire);
+ if(!f){atomic_fetch_sub_explicit(readers,1u,memory_order_acq_rel);return false;}
+ out->publisher=pub;out->accepted=f;
+ return true;
+}
+void nf_retc_read_lease_release(NfRetcReadLease *lease){
+ if(!lease||!lease->publisher)return;
+ atomic_uint *readers=(atomic_uint *)&lease->publisher->active_readers;
+ lease->accepted=NULL;lease->publisher=NULL;
+ atomic_fetch_sub_explicit(readers,1u,memory_order_acq_rel);
+}
+bool nf_retc_try_dispose(NfRetcPublisher *pub){
+ if(!pub)return false;
+ atomic_store_explicit(&pub->read_closing,true,memory_order_release);
+ if(atomic_load_explicit(&pub->active_readers,memory_order_acquire)!=0u)return false;
+ atomic_store_explicit(&pub->current,NULL,memory_order_release);
+ for(uint32_t i=0;i<pub->count;++i)free(pub->owned[i]);
+ for(uint32_t i=0;i<pub->count;++i)pub->owned[i]=NULL;
+ pub->count=0;
+ return true;
+}
 bool nf_retc_publish(NfRetcPublisher *pub,NfRetcFrame *f){
  /* Source-backed candidate authority is mandatory: generic obligation tuples
     cannot stand in for typed B2 rights or material consequences. */
- if(!pub||!f||pub->count>=NF_RETC_HISTORY||
+ if(!pub||!f||(pub&&atomic_load_explicit(&pub->read_closing,memory_order_acquire))||
+    pub->count>=NF_RETC_HISTORY||
     !f->has_b2_contract||!nf_retc_seal_b2_b3(f))return false;
  const NfRetcFrame *prior=atomic_load_explicit(&pub->current,memory_order_acquire);
  if(f->prior_epoch!=(prior?prior->epoch:0)||f->epoch!=f->prior_epoch+1u)return false;
@@ -117,10 +153,9 @@ const NfRetcFrame *nf_retc_read(const NfRetcPublisher *pub){
 /* H42: one acquire-load pins a bounded, immutable joint epoch.  The live
    world/encounter are deliberately not read here; their separate projections
    cannot be made atomic by repeatedly sampling public world fields. */
-bool nf_retc_read_joint_view(const NfRetcPublisher *pub,NfRetcReadView *out){
+static bool nf_retc_validated_view(const NfRetcFrame *f,NfRetcReadView *out){
  if(!out)return false;
  *out=(NfRetcReadView){0};
- const NfRetcFrame *f=nf_retc_read(pub);
  if(!f||!f->epoch||!f->transaction_id||
     !f->has_b2_contract||!f->has_encounter_registry||
     f->physical.world.tick!=f->epoch||f->event.tick!=f->epoch||
@@ -151,11 +186,17 @@ bool nf_retc_read_joint_view(const NfRetcPublisher *pub,NfRetcReadView *out){
  out->transaction_id=f->transaction_id;
  return true;
 }
+bool nf_retc_read_joint_view(const NfRetcPublisher *pub,NfRetcReadView *out){
+ /* Backwards-compatible owner-only access; no external lifetime guarantee. */
+ return nf_retc_validated_view(nf_retc_read(pub),out);
+}
+bool nf_retc_read_leased_view(const NfRetcReadLease *lease,NfRetcReadView *out){
+ return nf_retc_validated_view(lease?lease->accepted:NULL,out);
+}
 void nf_retc_dispose(NfRetcPublisher *pub){
  if(!pub)return;
- atomic_store_explicit(&pub->current,NULL,memory_order_release);
- for(uint32_t i=0;i<pub->count;++i)free(pub->owned[i]);
- pub->count=0;
+ /* Caller must already have quiesced the A6 owner/writer. */
+ while(!nf_retc_try_dispose(pub))sched_yield();
 }
 
 /* Bounded local research journal. No directory fsync / portable encoding:
@@ -181,7 +222,8 @@ bool nf_retc_restore_file(const char *path,NfRetcFrame *out){
 }
 bool nf_retc_persist_file(NfRetcPublisher *pub,NfRetcFrame *f,
  const char *path){
- if(!pub||!f||!path||!f->has_b2_contract||
+ if(!pub||!f||!path||atomic_load_explicit(&pub->read_closing,memory_order_acquire)||
+    !f->has_b2_contract||
     !nf_retc_seal_b2_b3(f)||pub->count>=NF_RETC_HISTORY)return false;
  const NfRetcFrame *prior=nf_retc_read(pub);
  if(f->prior_epoch!=(prior?prior->epoch:0)||
