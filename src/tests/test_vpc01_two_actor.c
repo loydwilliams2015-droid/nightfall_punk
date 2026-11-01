@@ -16,11 +16,11 @@ static int two_actor(uint32_t seed){
     in.requested[0].x=1.0f;
     in.requested[1].x=-1.0f;
   }
+  const NfVpc01World before=a;
   NfVpc01Candidate ca={0},cb={0};
   CK(nf_vpc01_stage(&a,&in,1.f/60.f,&ca)==NF_VPC01_COMMITTED);
   CK(nf_vpc01_stage(&b,&in,1.f/60.f,&cb)==NF_VPC01_COMMITTED);
   CK(!memcmp(&ca,&cb,sizeof ca)); /* source-exact deterministic pair */
-  const NfVpc01World before=a;
   CK(!memcmp(&a,&before,sizeof a));
   if(ca.contact_applied){
     CK(ca.contact.status==NF18A4_ACCEPTED);
@@ -31,9 +31,19 @@ static int two_actor(uint32_t seed){
   CK(nf_vpc01_publish(&a,&ca)==NF_VPC01_COMMITTED);
   CK(nf_vpc01_publish(&b,&cb)==NF_VPC01_COMMITTED);
   CK(!memcmp(&a,&b,sizeof a));
+  const float dx=a.body[0].center.x-a.body[1].center.x;
+  const float dz=a.body[0].center.z-a.body[1].center.z;
+  const float dist=sqrtf(dx*dx+dz*dz);
+  if(dist+0.002f<a.body[0].radius+a.body[1].radius){
+   fprintf(stderr,"VPC-01 penetration seed=%u tick=%u a=(%.6f,%.6f) b=(%.6f,%.6f) dist=%.6f contacts=%u\\n",
+      seed,a.tick,a.body[0].center.x,a.body[0].center.z,
+      a.body[1].center.x,a.body[1].center.z,dist,a.contact_events);
+   return 1;
+  }
  }
  CK(contact&&a.contact_events>=1u);
- CK(a.body[0].center.x<a.body[1].center.x);
+ /* Lateral deflection can legitimately exchange actors' x-order. Never
+    mistake x-order for nonpenetration in a two-dimensional contact model. */
  return 0;
 }
 static int pod_push(void){
