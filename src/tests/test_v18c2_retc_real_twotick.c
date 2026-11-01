@@ -58,13 +58,14 @@ int main(void){
  /* H72: real A6 dispatcher runs in a world with a second actor present.
     The second actor is NOT yet part of a shared two-actor B2/B3 transaction.
     This is a coexistence / no-misattribution gate, not full MA03 acceptance. */
- CHECK(nf_world_spawn_actor_with_id(w,20,NF_FACTION_PLAYER,(NfVec3){3,0,3})==20);
+ CHECK(nf_world_spawn_actor_with_id(w,20,NF_FACTION_PLAYER,(NfVec3){12,0,12})==20);
  CHECK(nf_world_find_actor_const(w,20)!=NULL);
  NfActor *actor=nf_world_find_actor(w,10);CHECK(actor);
  actor->movement.grounded=true;actor->movement.mode=NF_MOVE_GROUND;
  Nf18a4Body crate={0};crate.id=2010;crate.center=(NfVec3){1.5601f,.9f,1};
  crate.inverse_mass=1.f/24.f;crate.box_half=(NfVec3){.2f,.5f,.35f};
  CHECK(nf18a6_init(r,w,10,crate,3,NF18A6_WORLD_BRIDGE));
+ r->allow_passive_coactors=true; /* H73 explicit research opt-in */
  uint8_t empty[NF18A5_CANON_VOXELS]={0};
  CHECK(nf18a5_load_canonical(&r->physical.world.grid,0,0,0,empty,1));
  CHECK(nf18b2_encounter_init(enc,w,r,NF18B2_M4_MATERIAL_FIRST));
@@ -279,6 +280,20 @@ int main(void){
    }
  }
  puts("RET-C H42 one-load B2/B3/A5 reader retained both accepted epochs PASS");
+ /* H73 rejection: a co-present second actor cannot secretly request
+    movement under the one-actor B2/B3 contract. The accepted frame stays
+    byte-identical and the single source-world tick does not advance. */
+ {
+   NfActor *second=nf_world_find_actor(w,20);CHECK(second);
+   const NfRetcFrame *before=nf_retc_read(publisher);
+   const uint64_t before_tick=w->tick;
+   const NfVec3 before_pos=second->transform.position;
+   second->input.forward=1.f;
+   CHECK(nf_world_step_checked(w,1.f/(float)NF_TICK_RATE)!=NF_WORLD_TICK_COMMITTED);
+   CHECK(nf_retc_read(publisher)==before&&w->tick==before_tick);
+   CHECK(memcmp(&second->transform.position,&before_pos,sizeof before_pos)==0);
+   second->input.forward=0.f;
+ }
  /* Negative replay probe: retain the last committed transaction identity.
     A denial must not advance any physical, B2, B3 or published epoch. */
  {

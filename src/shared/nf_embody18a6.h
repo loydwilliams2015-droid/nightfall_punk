@@ -63,6 +63,8 @@ typedef struct Nf18a6Runtime {
     atomic_bool joint_publication_active; /* owner tick visibility exclusion */
     uint32_t joint_commit_epoch; /* owner-controlled A6/B3 completed transaction */
     uint32_t actor_id;
+    /* H73 opt-in, passive/distant co-presence only; default rejects >1 actor. */
+    bool allow_passive_coactors;
     uint32_t object_collider_index; /* NfWorld material/weapon geometry mirror */
     uint32_t last_hash;
     uint32_t model;

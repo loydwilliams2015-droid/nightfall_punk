@@ -476,12 +476,41 @@ Nf18a6TickTrace nf18a6_classify_tick(uint32_t tick,uint32_t red_target,
     }
     return tr;
 }
+/* H73 conservative interoperability: additional actors may be co-present
+ * only as truly passive, distant witnesses. The current A6 publisher still
+ * owns ONE actor's B2/A5/B3 transaction. Fail closed whenever a second
+ * actor requests control or can influence that contact. Never interpret
+ * this gate as general multi-actor collision arbitration.
+ */
+static bool nf18a6_passive_actor_envelope(const NfWorld *world,
+                                         const Nf18a6Runtime *owner){
+    if(!world||!owner)return false;
+    if(nf_world_active_actor_count(world)>1u&&!owner->allow_passive_coactors)return false;
+    const NfActor *primary=nf_world_find_actor_const(world,owner->actor_id);
+    if(!primary||!primary->active)return false;
+    const NfVec3 p=primary->transform.position;
+    const NfVec3 obj=owner->physical.object.center;
+    for(size_t i=0;i<NF_MAX_ENTITIES;++i){
+        const NfActor *a=&world->actors[i];
+        if(!a->active||a->id==owner->actor_id)continue;
+        const NfMoveInput *in=&a->input;
+        if(in->forward!=0.f||in->strafe!=0.f||in->jump_pressed||
+           in->crouch_held||in->sprint_held||in->interact_held||
+           !isfinite(in->yaw_radians))return false;
+        const NfVec3 q=a->transform.position;
+        if(!isfinite(q.x)||!isfinite(q.y)||!isfinite(q.z))return false;
+        const float dp=(q.x-p.x)*(q.x-p.x)+(q.z-p.z)*(q.z-p.z);
+        const float dc=(q.x-obj.x)*(q.x-obj.x)+(q.z-obj.z)*(q.z-obj.z);
+        if(!isfinite(dp)||!isfinite(dc)||dp<16.f||dc<16.f)return false;
+    }
+    return true;
+}
 static NfWorldTickStatus nf18a6_tick_dispatch(NfWorld *world,float dt,void *context){
     Nf18a6Runtime *runtime=(Nf18a6Runtime *)context;
     if(!world||!runtime)return NF_WORLD_TICK_INVALID;
     if(!nf_c2_lease_acquire(&runtime->world_lease))return NF_WORLD_TICK_REJECTED;
     /* No remote actor is silently starved by a one-actor lab scheduler. */
-    if(nf_world_active_actor_count(world)!=1u){nf_c2_lease_release(&runtime->world_lease);return NF_WORLD_TICK_REJECTED;}
+    if(!nf18a6_passive_actor_envelope(world,runtime)){nf_c2_lease_release(&runtime->world_lease);return NF_WORLD_TICK_REJECTED;}
     const NfActor *actor=nf_world_find_actor_const(world,runtime->actor_id);
     if(!actor){nf_c2_lease_release(&runtime->world_lease);return NF_WORLD_TICK_REJECTED;}
     atomic_store_explicit(&runtime->joint_publication_active,true,memory_order_release);
@@ -521,7 +550,7 @@ static NfWorldTickStatus nf18a6_tick_dispatch(NfWorld *world,float dt,void *cont
 }
 bool nf18a6_bind_world_tick(NfWorld *world,Nf18a6Runtime *runtime,
              Nf18a5FineProvider provider,void *context,const char *journal){
-    if(!world||!runtime||nf_world_active_actor_count(world)!=1u||
+    if(!world||!runtime||!nf18a6_passive_actor_envelope(world,runtime)||
        runtime->model<NF18A6_WORLD_BRIDGE||
        runtime->model>NF18A6_WORLD_CAMERA||
        world->tick!=runtime->last_commit_tick||
