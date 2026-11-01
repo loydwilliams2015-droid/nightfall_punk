@@ -45,6 +45,25 @@ int main(void){
  NfMa03cActorWitness witnesses[2]={
   {10,1,1,1,true,true,true},{20,1,1,1,true,true,true}};
  CK(nf_ma03c_joint_certify(&staged,witnesses,1u));
+ /* H87 exhaustive single-field mutation matrix against the synthetic
+    precommit predicate: neither actor can lose any one domain witness. */
+ for(unsigned actor=0;actor<2u;++actor){
+  for(unsigned field=0;field<3u;++field){
+   NfMa03cActorWitness bad[2]={witnesses[0],witnesses[1]};
+   if(field==0)bad[actor].physical_valid=false;
+   if(field==1)bad[actor].b2_valid=false;
+   if(field==2)bad[actor].b3_valid=false;
+   CK(!nf_ma03c_joint_certify(&staged,bad,1u));
+  }
+  for(unsigned field=0;field<3u;++field){
+   NfMa03cActorWitness bad[2]={witnesses[0],witnesses[1]};
+   if(field==0)bad[actor].physical_epoch=2u;
+   if(field==1)bad[actor].b2_epoch=2u;
+   if(field==2)bad[actor].b3_epoch=2u;
+   CK(!nf_ma03c_joint_certify(&staged,bad,1u));
+  }
+ }
+ CK(live->tick==0u&&fast->transform.velocity.x==150.f);
  /* H85: no fabricated issuer can certify without real bound A6 ownership. */
  CK(!nf_ma03c_joint_certify_source(live,&staged,1u,NULL,NULL));
  /* H86: an unbound world must not certify with any synthetic issuer. */
