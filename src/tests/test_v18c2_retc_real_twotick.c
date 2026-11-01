@@ -419,6 +419,20 @@ int main(void){
         (int)first,(int)second,enc->queue_count);
    CHECK(first!=NF18B2_INVALID&&second!=NF18B2_INVALID);
    CHECK(enc->queue_count==prior_count+2u);
+   /* H93: source-issued per-proposal decisions, not inferred eligibility. */
+   const Nf18b2QueuedIntent *q0=&enc->queue[prior_count];
+   const Nf18b2QueuedIntent *q1=&enc->queue[prior_count+1u];
+   CHECK(q0->intent.actor_id==10u&&q1->intent.actor_id==20u);
+   CHECK(q0->trace_index<enc->trace_count&&q1->trace_index<enc->trace_count);
+   const Nf18b2EncounterTrace *t0=&enc->traces[q0->trace_index];
+   const Nf18b2EncounterTrace *t1=&enc->traces[q1->trace_index];
+   CHECK(t0->intent.actor_id==10u&&t1->intent.actor_id==20u);
+   CHECK(first==t0->authorization.status&&second==t1->authorization.status);
+   fprintf(stderr,"H93 source B2 authorization: actor10 status=%d reason=%d physical=%d contract=%d; actor20 status=%d reason=%d physical=%d contract=%d\\n",
+    (int)t0->authorization.status,(int)t0->authorization.reason,
+    (int)t0->authorization.physical,(int)t0->authorization.contract,
+    (int)t1->authorization.status,(int)t1->authorization.reason,
+    (int)t1->authorization.physical,(int)t1->authorization.contract);
  }
  CHECK(nf_retc_joint_detach(w,&joint));
  CHECK(nf18a6_unbind_world_tick(w,r));
