@@ -77,6 +77,9 @@ static bool roster_capture(const NfWorld *world,NfMa03Roster *out,bool in_tick){
   if(!a->id||candidate.count>=NF_MA03_ROSTER_MAX)return false;
   const NfVec3 p=a->transform.position,v=a->transform.velocity;
   const NfMoveInput in=a->input;
+  /* H80: existing owner-issued participants must have valid agency and
+     finite bounded input; malformed commands cannot become staged authority. */
+  if(!a->combat.alive||fabsf(in.forward)>1.f||fabsf(in.strafe)>1.f)return false;
   if(!isfinite(p.x)||!isfinite(p.y)||!isfinite(p.z)||
      !isfinite(v.x)||!isfinite(v.y)||!isfinite(v.z)||
      !isfinite(in.forward)||!isfinite(in.strafe)||!isfinite(in.yaw_radians))
