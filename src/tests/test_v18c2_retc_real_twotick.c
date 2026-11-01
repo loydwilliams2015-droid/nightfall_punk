@@ -408,6 +408,7 @@ int main(void){
  {
    const NfRetcFrame *accepted=nf_retc_read(publisher);
    const uint64_t previous_tick=w->tick;
+   const size_t prior_count=enc->queue_count;
    const Nf18b2Status first=nf18b2_propose(
       enc,(Nf18b2Intent){10,2010,601,NF18B2_PUSH});
    const Nf18b2Status second=nf18b2_propose(
@@ -417,7 +418,7 @@ int main(void){
    fprintf(stderr,"H92 real B2 submissions: actor10=%d actor20=%d queue=%zu\\n",
         (int)first,(int)second,enc->queue_count);
    CHECK(first!=NF18B2_INVALID&&second!=NF18B2_INVALID);
-   CHECK(enc->queue_count==2u);
+   CHECK(enc->queue_count==prior_count+2u);
  }
  CHECK(nf_retc_joint_detach(w,&joint));
  CHECK(nf18a6_unbind_world_tick(w,r));
