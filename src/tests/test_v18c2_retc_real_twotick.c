@@ -462,6 +462,13 @@ int main(void){
       (int)t->authorization.reason,(int)t->authorization.physical,
       (int)t->authorization.contract);
   CHECK(nearby==t->authorization.status);
+  /* H96 research challenger: require an ACTUAL positive B2 grant. */
+  if(nearby!=NF18B2_ELIGIBLE){
+    fprintf(stderr,"H96 not eligible: status=%d reason=%d physical=%d contract=%d\n",
+      (int)nearby,(int)t->authorization.reason,
+      (int)t->authorization.physical,(int)t->authorization.contract);
+  }
+  CHECK(nearby==NF18B2_ELIGIBLE);
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   second_actor->transform.position=old_pos;
  }
