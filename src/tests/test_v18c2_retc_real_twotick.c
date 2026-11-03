@@ -462,6 +462,24 @@ int main(void){
       (int)t->authorization.reason,(int)t->authorization.physical,
       (int)t->authorization.contract);
   CHECK(nearby==t->authorization.status);
+  /* H96 observed control: nearby physics passes but source-owned
+     contractual authorization refuses. Preserve fail-closed authority. */
+  if(nearby!=NF18B2_ELIGIBLE){
+    fprintf(stderr,"H96 not eligible: status=%d reason=%d physical=%d contract=%d\n",
+      (int)nearby,(int)t->authorization.reason,
+      (int)t->authorization.physical,(int)t->authorization.contract);
+  }
+  CHECK(t->authorization.physical==NF18B2_ELIGIBLE);
+  CHECK(t->authorization.contract!=NF18B2_ELIGIBLE);
+  /* H97: exact denial is occupied capacity, not a missing credential,
+     a material witness, or an arbitrary source-generated grant. */
+  CHECK(t->authorization.reason==NF18B2_CAPACITY);
+  CHECK(enc->frame.scene.object_count==1u);
+  CHECK(enc->frame.objects[0].id==2010u);
+  CHECK(enc->frame.objects[0].capacity==1u);
+  CHECK(enc->frame.objects[0].occupant_count==1u);
+  CHECK(enc->frame.objects[0].occupants[0]==10u);
+  CHECK(nearby!=NF18B2_ELIGIBLE);
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   second_actor->transform.position=old_pos;
  }
