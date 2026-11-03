@@ -474,7 +474,7 @@ int main(void){
   /* H97: exact denial is occupied capacity, not a missing credential,
      a material witness, or an arbitrary source-generated grant. */
   CHECK(t->authorization.reason==NF18B2_CAPACITY);
-  CHECK(enc->frame.object_count==1u);
+  CHECK(enc->frame.scene.object_count==1u);
   CHECK(enc->frame.objects[0].id==2010u);
   CHECK(enc->frame.objects[0].capacity==1u);
   CHECK(enc->frame.objects[0].occupant_count==1u);
