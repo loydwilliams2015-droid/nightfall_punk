@@ -471,6 +471,14 @@ int main(void){
   }
   CHECK(t->authorization.physical==NF18B2_ELIGIBLE);
   CHECK(t->authorization.contract!=NF18B2_ELIGIBLE);
+  /* H97: exact denial is occupied capacity, not a missing credential,
+     a material witness, or an arbitrary source-generated grant. */
+  CHECK(t->authorization.reason==NF18B2_CAPACITY);
+  CHECK(enc->frame.object_count==1u);
+  CHECK(enc->frame.objects[0].id==2010u);
+  CHECK(enc->frame.objects[0].capacity==1u);
+  CHECK(enc->frame.objects[0].occupant_count==1u);
+  CHECK(enc->frame.objects[0].occupants[0]==10u);
   CHECK(nearby!=NF18B2_ELIGIBLE);
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   second_actor->transform.position=old_pos;
