@@ -73,7 +73,7 @@ int main(void){
  CHECK(nf18b2_register_actor(enc,10,0,0,50));
  Nf18b2Object object={0};
  object.id=2010;object.revision=1;object.cell_id=1;
- object.nexus_id=1;object.slot_id=1;object.capacity=1;
+ object.nexus_id=1;object.slot_id=1;object.capacity=2; /* H98 authorized two-place contract */
  /* Interaction point sits on the actor-facing crate surface;
     the crate center is materially occluded and must not be used as a handle. */
  object.target=(NfVec3){crate.center.x-crate.box_half.x,crate.center.y,crate.center.z};
@@ -462,6 +462,16 @@ int main(void){
       (int)t->authorization.reason,(int)t->authorization.physical,
       (int)t->authorization.contract);
   CHECK(nearby==t->authorization.status);
+  /* H98: a legitimate capacity-two registered object admits actor 20
+     after actor 10's established occupancy, without issuing fake grants. */
+  CHECK(enc->frame.scene.object_count==1u);
+  CHECK(enc->frame.objects[0].capacity==2u);
+  CHECK(enc->frame.objects[0].occupant_count==1u);
+  CHECK(enc->frame.objects[0].occupants[0]==10u);
+  CHECK(t->authorization.physical==NF18B2_ELIGIBLE);
+  CHECK(t->authorization.contract==NF18B2_ELIGIBLE);
+  CHECK(t->authorization.reason==NF18B2_OK);
+  CHECK(nearby==NF18B2_ELIGIBLE);
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   second_actor->transform.position=old_pos;
  }
