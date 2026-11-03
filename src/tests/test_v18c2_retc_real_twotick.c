@@ -487,6 +487,25 @@ int main(void){
                        NF18B2_M4_MATERIAL_FIRST,reverse));
   CHECK(reverse[0].status==forward[1].status);
   CHECK(reverse[1].status==forward[0].status);
+  /* H100: competing actions from one actor may not consume two capacity
+     slots; sorting by source actor/action makes reversed input equivalent. */
+  Nf18b2Use second_action=q->witness;
+  second_action.action_id=604u;
+  Nf18b2Use duplicated[3]={requests[0],requests[1],second_action};
+  Nf18b2UseDecision resolved[3]={{0}};
+  CHECK(nf18b2_resolve(&enc->frame.scene,duplicated,3u,
+                       NF18B2_M4_MATERIAL_FIRST,resolved));
+  CHECK(resolved[0].status==NF18B2_ELIGIBLE);
+  CHECK(resolved[1].status==NF18B2_ELIGIBLE);
+  CHECK(resolved[2].status==NF18B2_DUPLICATE);
+  CHECK(resolved[2].reason==NF18B2_REPLAY);
+  Nf18b2Use duplicated_reverse[3]={second_action,requests[1],requests[0]};
+  Nf18b2UseDecision reverse_resolved[3]={{0}};
+  CHECK(nf18b2_resolve(&enc->frame.scene,duplicated_reverse,3u,
+                       NF18B2_M4_MATERIAL_FIRST,reverse_resolved));
+  CHECK(reverse_resolved[0].status==resolved[2].status);
+  CHECK(reverse_resolved[1].status==resolved[1].status);
+  CHECK(reverse_resolved[2].status==resolved[0].status);
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   second_actor->transform.position=old_pos;
