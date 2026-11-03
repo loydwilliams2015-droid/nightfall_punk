@@ -472,6 +472,22 @@ int main(void){
   CHECK(t->authorization.contract==NF18B2_ELIGIBLE);
   CHECK(t->authorization.reason==NF18B2_OK);
   CHECK(nearby==NF18B2_ELIGIBLE);
+  /* H99: actual B2 source witnesses must resolve consistently in both
+     input orders, without changing the accepted A6 frame or world tick. */
+  const Nf18b2QueuedIntent *first_q=&enc->queue[old_count-2u];
+  CHECK(first_q->intent.actor_id==10u);
+  Nf18b2Use requests[2]={first_q->witness,q->witness};
+  Nf18b2UseDecision forward[2]={{0}},reverse[2]={{0}};
+  CHECK(nf18b2_resolve(&enc->frame.scene,requests,2u,
+                       NF18B2_M4_MATERIAL_FIRST,forward));
+  CHECK(forward[0].status==NF18B2_ELIGIBLE);
+  CHECK(forward[1].status==NF18B2_ELIGIBLE);
+  Nf18b2Use reversed[2]={requests[1],requests[0]};
+  CHECK(nf18b2_resolve(&enc->frame.scene,reversed,2u,
+                       NF18B2_M4_MATERIAL_FIRST,reverse));
+  CHECK(reverse[0].status==forward[1].status);
+  CHECK(reverse[1].status==forward[0].status);
+  CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   second_actor->transform.position=old_pos;
  }
