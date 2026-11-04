@@ -531,6 +531,22 @@ int main(void){
        nf18b2_evaluate(&enc->frame.scene,stale,NF18B2_M4_MATERIAL_FIRST);
   CHECK(stale_result.status==NF18B2_STALE);
   CHECK(stale_result.reason==NF18B2_FRAME_CHANGED);
+  /* H104: actual B2 witness with stale object revision cannot be
+     promoted to eligibility after the object changes. */
+  Nf18b2Use stale_object=q->witness;
+  ++stale_object.object_revision;
+  const Nf18b2UseDecision stale_object_result=
+      nf18b2_evaluate(&enc->frame.scene,stale_object,NF18B2_M4_MATERIAL_FIRST);
+  CHECK(stale_object_result.status==NF18B2_STALE);
+  CHECK(stale_object_result.reason==NF18B2_FRAME_CHANGED);
+  /* H105: material epoch drift invalidates a previously source-issued
+     witness; source-owned eligibility is not replayable across revisions. */
+  Nf18b2Use stale_material=q->witness;
+  ++stale_material.material_epoch;
+  const Nf18b2UseDecision stale_material_result=
+      nf18b2_evaluate(&enc->frame.scene,stale_material,NF18B2_M4_MATERIAL_FIRST);
+  CHECK(stale_material_result.status==NF18B2_STALE);
+  CHECK(stale_material_result.reason==NF18B2_FRAME_CHANGED);
   /* H103: repeated arbitration is read-only: cannot alter registry,
      accepted pointer, tick, or occupancy. */
   const Nf18b2Registry registry_before=enc->registry;
