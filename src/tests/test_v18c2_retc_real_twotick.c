@@ -108,6 +108,29 @@ int main(void){
   push->staged_commit_valid=true;
   CHECK(nf_retc_joint_stage_owned(w,&r->physical,&joint)==NULL);
   CHECK(nf_retc_read(publisher)==before&&w->tick==tick_before);
+  /* H111-H113: the source stage refuses zero, three and maximum queued
+     intents, independently of the H90 two-intent refusal. */
+  const size_t unsupported_counts[3]={0u,3u,NF18B2_MAX_REQUESTS};
+  for(size_t k=0;k<3u;++k){
+    enc->queue_count=unsupported_counts[k];
+    CHECK(nf_retc_joint_stage_owned(w,&r->physical,&joint)==NULL);
+    CHECK(nf_retc_read(publisher)==before&&w->tick==tick_before);
+  }
+  /* H114: even a single queued intent requires an owner-issued grant. */
+  const uint8_t old_grant=enc->granted[0];
+  enc->queue_count=1u;
+  enc->granted[0]=0u;
+  CHECK(nf_retc_joint_stage_owned(w,&r->physical,&joint)==NULL);
+  CHECK(nf_retc_read(publisher)==before&&w->tick==tick_before);
+  /* H115: current one-event RET-C staging must not silently truncate
+     a genuine two-actor B2 scene, even with its single queue slot granted. */
+  const size_t old_actor_count=enc->frame.scene.actor_count;
+  enc->granted[0]=1u;
+  enc->frame.scene.actor_count=2u;
+  CHECK(nf_retc_joint_stage_owned(w,&r->physical,&joint)==NULL);
+  CHECK(nf_retc_read(publisher)==before&&w->tick==tick_before);
+  enc->frame.scene.actor_count=old_actor_count;
+  enc->granted[0]=old_grant;
   enc->queue_count=old_count;
   enc->prepared=old_prepared;
   push->staged_commit_valid=old_staged;
