@@ -506,6 +506,46 @@ int main(void){
   CHECK(reverse_resolved[0].status==resolved[2].status);
   CHECK(reverse_resolved[1].status==resolved[1].status);
   CHECK(reverse_resolved[2].status==resolved[0].status);
+  /* H101: capacity-one boundary on copied source snapshot; actor 10
+     retains its existing slot, new actor 20 is refused in either order. */
+  Nf18b2Object capacity_one=enc->frame.objects[0];
+  capacity_one.capacity=1u;
+  Nf18b2Scene limited_scene=enc->frame.scene;
+  limited_scene.objects=&capacity_one;
+  Nf18b2UseDecision limited[2]={{0}},limited_rev[2]={{0}};
+  CHECK(nf18b2_resolve(&limited_scene,requests,2u,
+                       NF18B2_M4_MATERIAL_FIRST,limited));
+  CHECK(limited[0].status==NF18B2_ELIGIBLE);
+  CHECK(limited[1].status==NF18B2_BLOCKED);
+  CHECK(limited[1].reason==NF18B2_CAPACITY);
+  CHECK(nf18b2_resolve(&limited_scene,reversed,2u,
+                       NF18B2_M4_MATERIAL_FIRST,limited_rev));
+  CHECK(limited_rev[0].status==limited[1].status);
+  CHECK(limited_rev[0].reason==NF18B2_CAPACITY);
+  CHECK(limited_rev[1].status==limited[0].status);
+  /* H102: source actor revision mismatch must reject, never reissue
+     eligibility from an old witness. */
+  Nf18b2Use stale=q->witness;
+  ++stale.actor_revision;
+  const Nf18b2UseDecision stale_result=
+       nf18b2_evaluate(&enc->frame.scene,stale,NF18B2_M4_MATERIAL_FIRST);
+  CHECK(stale_result.status==NF18B2_STALE);
+  CHECK(stale_result.reason==NF18B2_FRAME_CHANGED);
+  /* H103: repeated arbitration is read-only: cannot alter registry,
+     accepted pointer, tick, or occupancy. */
+  const Nf18b2Registry registry_before=enc->registry;
+  const Nf18b2Object object_before=enc->frame.objects[0];
+  for(unsigned repeat=0;repeat<8u;++repeat){
+    Nf18b2UseDecision repeat_result[3]={{0}};
+    CHECK(nf18b2_resolve(&enc->frame.scene,duplicated,3u,
+                         NF18B2_M4_MATERIAL_FIRST,repeat_result));
+    CHECK(repeat_result[0].status==resolved[0].status);
+    CHECK(repeat_result[1].status==resolved[1].status);
+    CHECK(repeat_result[2].status==resolved[2].status);
+  }
+  CHECK(memcmp(&enc->registry,&registry_before,sizeof registry_before)==0);
+  CHECK(memcmp(&enc->frame.objects[0],&object_before,sizeof object_before)==0);
+  CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   second_actor->transform.position=old_pos;
