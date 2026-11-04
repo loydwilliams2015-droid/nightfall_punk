@@ -547,6 +547,48 @@ int main(void){
       nf18b2_evaluate(&enc->frame.scene,stale_material,NF18B2_M4_MATERIAL_FIRST);
   CHECK(stale_material_result.status==NF18B2_STALE);
   CHECK(stale_material_result.reason==NF18B2_FRAME_CHANGED);
+  /* H106: real B2 witness bound to an older world revision must refuse. */
+  Nf18b2Use stale_world=q->witness;
+  ++stale_world.world_revision;
+  const Nf18b2UseDecision world_result=
+      nf18b2_evaluate(&enc->frame.scene,stale_world,NF18B2_M4_MATERIAL_FIRST);
+  CHECK(world_result.status==NF18B2_STALE);
+  CHECK(world_result.reason==NF18B2_FRAME_CHANGED);
+  /* H107: an altered tick cannot inherit a previous source-issued grant. */
+  Nf18b2Use stale_tick=q->witness;
+  ++stale_tick.tick;
+  const Nf18b2UseDecision tick_result=
+      nf18b2_evaluate(&enc->frame.scene,stale_tick,NF18B2_M4_MATERIAL_FIRST);
+  CHECK(tick_result.status==NF18B2_STALE);
+  CHECK(tick_result.reason==NF18B2_FRAME_CHANGED);
+  /* H108: a byte-identical source witness submitted twice is not two
+     independent authorizations, even when object capacity is two. */
+  Nf18b2Use replay_uses[2]={q->witness,q->witness};
+  Nf18b2UseDecision replay_decisions[2]={{0}};
+  CHECK(nf18b2_resolve(&enc->frame.scene,replay_uses,2u,
+                       NF18B2_M4_MATERIAL_FIRST,replay_decisions));
+  CHECK(replay_decisions[0].status==NF18B2_ELIGIBLE);
+  CHECK(replay_decisions[1].status==NF18B2_DUPLICATE);
+  CHECK(replay_decisions[1].reason==NF18B2_REPLAY);
+  /* H109: same actor/action routed to two different objects is invalid,
+     never a claim for either resource. The second target is intentionally
+     absent from this authoritative registry. */
+  Nf18b2Use conflicting[2]={q->witness,q->witness};
+  conflicting[1].object_id=2011u;
+  Nf18b2UseDecision conflict_decisions[2]={{0}};
+  CHECK(nf18b2_resolve(&enc->frame.scene,conflicting,2u,
+                       NF18B2_M4_MATERIAL_FIRST,conflict_decisions));
+  CHECK(conflict_decisions[0].status==NF18B2_INVALID);
+  CHECK(conflict_decisions[1].status==NF18B2_INVALID);
+  CHECK(conflict_decisions[0].reason==NF18B2_BAD_INPUT);
+  CHECK(conflict_decisions[1].reason==NF18B2_BAD_INPUT);
+  /* H110: unsupported adjudicator model fails closed and none of these
+     research probes can advance the live A6 publication pointer or tick. */
+  const Nf18b2UseDecision invalid_model=
+      nf18b2_evaluate(&enc->frame.scene,q->witness,(Nf18b2Model)99);
+  CHECK(invalid_model.status==NF18B2_INVALID);
+  CHECK(invalid_model.reason==NF18B2_BAD_INPUT);
+  CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   /* H103: repeated arbitration is read-only: cannot alter registry,
      accepted pointer, tick, or occupancy. */
   const Nf18b2Registry registry_before=enc->registry;
