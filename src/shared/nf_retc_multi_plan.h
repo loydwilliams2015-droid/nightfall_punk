@@ -139,4 +139,35 @@ static inline bool nf_retc_multi_validate_b3(
  return true;
 }
 
+/* H142-H146: deterministic ordering of TWO validated B3 intentions.
+ * This canonical batch is a prepublication research artifact, NOT an A6
+ * frame, receipt, material effect, WAL entry or commit capability. */
+typedef struct NfRetcCanonicalBatch {
+ Nf18b3Event events[2];
+ uint32_t tick,contract_epoch;
+ uint8_t prepared;
+} NfRetcCanonicalBatch;
+static inline bool nf_retc_multi_canonical_batch(
+ const Nf18b2EncounterRuntime *enc,size_t first,size_t second,
+ const NfRetcMultiEventProposal *proposal,NfRetcCanonicalBatch *out){
+ if(!out)return false;
+ *out=(NfRetcCanonicalBatch){0};
+ if(!nf_retc_multi_validate_b3(enc,first,second,proposal))return false;
+ const Nf18b3Event *a=&proposal->events[0],*b=&proposal->events[1];
+ if(a->actor==b->actor||a->action==0u||b->action==0u||
+    a->object!=b->object||a->tick!=b->tick||
+    a->world_epoch!=b->world_epoch||
+    a->material_epoch!=b->material_epoch||
+    a->contract_epoch!=b->contract_epoch||
+    a->contract_epoch!=enc->registry.contract_epoch)return false;
+ const bool swap=(a->actor>b->actor||
+    (a->actor==b->actor&&a->action>b->action));
+ out->events[0]=swap?*b:*a;
+ out->events[1]=swap?*a:*b;
+ out->tick=a->tick;
+ out->contract_epoch=a->contract_epoch;
+ out->prepared=1u;
+ return true;
+}
+
 #endif
