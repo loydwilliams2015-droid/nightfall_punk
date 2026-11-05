@@ -677,6 +677,46 @@ int main(void){
   CHECK(nf_retc_multi_validate_b3(enc,first_index,old_count,&event_plan));
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   CHECK(push->receipt_count==2u);
+  /* H142: source-exact B3 intentions form one deterministic private batch. */
+  NfRetcCanonicalBatch batch={0};
+  CHECK(nf_retc_multi_canonical_batch(enc,first_index,old_count,
+                                      &event_plan,&batch));
+  CHECK(batch.prepared&&batch.events[0].actor==10u&&
+        batch.events[1].actor==20u);
+  CHECK(batch.events[0].action==601u&&batch.events[1].action==603u);
+  /* H143: reverse proposal order yields same canonical source identity. */
+  NfRetcCanonicalBatch reversed_batch={0};
+  CHECK(nf_retc_multi_canonical_batch(enc,old_count,first_index,
+                                      &event_reverse,&reversed_batch));
+  CHECK(reversed_batch.prepared&&reversed_batch.tick==batch.tick&&
+        reversed_batch.contract_epoch==batch.contract_epoch);
+  CHECK(reversed_batch.events[0].actor==batch.events[0].actor&&
+        reversed_batch.events[1].actor==batch.events[1].actor&&
+        reversed_batch.events[0].action==batch.events[0].action&&
+        reversed_batch.events[1].action==batch.events[1].action);
+  /* H144: forged B3 action must not enter an authoritative staging queue. */
+  NfRetcMultiEventProposal forged_batch_source=event_plan;
+  ++forged_batch_source.events[1].action;
+  NfRetcCanonicalBatch denied_batch={0};
+  CHECK(!nf_retc_multi_canonical_batch(enc,first_index,old_count,
+                                       &forged_batch_source,&denied_batch));
+  CHECK(!denied_batch.prepared);
+  /* H145: changed B2 source actor revision refuses stale batch. */
+  ((Nf18b2QueuedIntent *)h126_first)->witness.actor_revision++;
+  denied_batch=(NfRetcCanonicalBatch){0};
+  CHECK(!nf_retc_multi_canonical_batch(enc,first_index,old_count,
+                                       &event_plan,&denied_batch));
+  CHECK(!denied_batch.prepared);
+  ((Nf18b2QueuedIntent *)h126_first)->witness.actor_revision=saved_actor_revision;
+  /* H146: a canonicalized intention is neither granted nor applied;
+     recomputation cannot publish A6 or issue real B3 receipts. */
+  for(size_t i=0;i<2u;++i){
+    CHECK(batch.events[i].kind==NF18B3_PUSH);
+    CHECK(batch.events[i].phase==NF18B3_PROPOSED);
+    CHECK(batch.events[i].authorized==0u&&!batch.events[i].applied);
+  }
+  CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
+  CHECK(push->receipt_count==2u);
   /* H99: actual B2 source witnesses must resolve consistently in both
      input orders, without changing the accepted A6 frame or world tick. */
   const Nf18b2QueuedIntent *first_q=&enc->queue[old_count-2u];
