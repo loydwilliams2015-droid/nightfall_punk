@@ -534,6 +534,21 @@ int main(void){
   const size_t first_index=old_count-2u;
   CHECK(enc->queue[first_index].intent.actor_id==10u);
   NfRetcMultiPlan multi={0};
+  const Nf18b2QueuedIntent *h126_first=&enc->queue[first_index];
+  const Nf18b2QueuedIntent *h126_second=&enc->queue[old_count];
+  const Nf18b2UseDecision h126_first_eval=nf18b2_evaluate(
+      &enc->frame.scene,h126_first->witness,enc->model);
+  const Nf18b2UseDecision h126_second_eval=nf18b2_evaluate(
+      &enc->frame.scene,h126_second->witness,enc->model);
+  fprintf(stderr,"H126 plan diagnostics: first_status=%d first_reason=%d first_physical=%d first_contract=%d second_status=%d second_reason=%d first_trace=%d second_trace=%d first_registry=%u second_registry=%u live_registry=%u first_contract_epoch=%u second_contract_epoch=%u live_contract_epoch=%u\\n",
+      (int)h126_first_eval.status,(int)h126_first_eval.reason,
+      (int)h126_first_eval.physical,(int)h126_first_eval.contract,
+      (int)h126_second_eval.status,(int)h126_second_eval.reason,
+      (int)enc->traces[h126_first->trace_index].authorization.status,
+      (int)enc->traces[h126_second->trace_index].authorization.status,
+      h126_first->registry_revision,h126_second->registry_revision,
+      enc->registry.revision,h126_first->contract_epoch,h126_second->contract_epoch,
+      enc->registry.contract_epoch);
   CHECK(nf_retc_multi_plan_two(enc,first_index,old_count,&multi));
   CHECK(multi.prepared==1u&&multi.actor_ids[0]==10u&&
         multi.actor_ids[1]==20u&&multi.object_id==2010u);
