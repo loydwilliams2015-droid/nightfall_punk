@@ -785,7 +785,7 @@ int main(void){
    CHECK(nf_world_spawn_actor_with_id(two_world,30,NF_FACTION_PLAYER,
            (NfVec3){0,0,0})==30);
    CHECK(nf_world_spawn_actor_with_id(two_world,40,NF_FACTION_PLAYER,
-           (NfVec3){.9f,0,0})==40);
+           (NfVec3){12.f,0,0})==40);
    NfActor *primary=nf_world_find_actor(two_world,30);
    NfActor *secondary=nf_world_find_actor(two_world,40);
    CHECK(primary&&secondary);
@@ -798,6 +798,10 @@ int main(void){
                       NF18A6_WORLD_BRIDGE));
    two_owner->allow_passive_coactors=true;
    CHECK(nf18a6_bind_world_tick(two_world,two_owner,NULL,NULL,NULL));
+   /* Bind under the incumbent distant-passive safety envelope, then
+      stage an isolated NEARBY collision candidate without attempting
+      a production A6 tick (which must still reject this topology). */
+   secondary->transform.position=(NfVec3){.9f,0.f,0.f};
    const NfVec3 first_start=primary->transform.position;
    const NfVec3 second_start=secondary->transform.position;
    const uint64_t source_tick=two_world->tick;
