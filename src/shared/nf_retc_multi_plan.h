@@ -72,4 +72,37 @@ static inline bool nf_retc_multi_plan_two(const Nf18b2EncounterRuntime *enc,
  out->prepared=1u;
  return true;
 }
+/* H132-H136: a two-event PROPOSAL, not a B3 realization. The event structs
+ * carry typed source identities only. Authorized/applied are always zero.
+ * The A6 single-event frame and durable journal MUST NOT consume this. */
+#include "nf_interact18b3.h"
+typedef struct NfRetcMultiEventProposal {
+ NfRetcMultiPlan plan;
+ Nf18b3Event events[2];
+ uint8_t complete;
+} NfRetcMultiEventProposal;
+static inline bool nf_retc_multi_propose_b3(const Nf18b2EncounterRuntime *enc,
+ size_t first_index,size_t second_index,NfRetcMultiEventProposal *out){
+ if(!out)return false;
+ *out=(NfRetcMultiEventProposal){0};
+ NfRetcMultiPlan p={0};
+ if(!nf_retc_multi_plan_two(enc,first_index,second_index,&p)||
+    !p.prepared||!enc->registry.contract_epoch)return false;
+ for(size_t i=0;i<2u;++i){
+  const Nf18b2Use *u=&p.uses[i];
+  if(!u->actor_id||!u->object_id||!u->action_id||!u->tick)return false;
+  out->events[i]=(Nf18b3Event){
+    .actor=u->actor_id,.object=u->object_id,.action=u->action_id,
+    .tick=u->tick,.world_epoch=u->world_revision,
+    .material_epoch=u->material_epoch,
+    .contract_epoch=enc->registry.contract_epoch,
+    .kind=NF18B3_PUSH,.phase=NF18B3_PROPOSED,
+    .authorized=0u,.applied=0u
+  };
+ }
+ out->plan=p;
+ out->complete=1u;
+ return true;
+}
+
 #endif
