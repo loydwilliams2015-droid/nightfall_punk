@@ -2,6 +2,7 @@
 #include "nf_retc_multi_plan.h"
 #include "nf_retc_multi_preflight.h"
 #include "nf_retc_multi_physical.h"
+#include "nf_retc_ma03_physics_stage.h"
 #include "nf_retc_external.h"
 #include "nf_retc_network.h"
 #include "nf_multi_ma03.h"
@@ -772,6 +773,70 @@ int main(void){
   CHECK(nf_retc_multi_physical_preflight(w,r,enc,publisher,&batch));
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   CHECK(push->receipt_count==2u);
+  /* H157-H161: isolated real A6-bound two-actor physical candidate.
+     Unlike B2 proposals, this actually executes the A4 two-body solver,
+     checks independent analytical impulses, and returns two changed body
+     trajectories. It has NO A5/B3 effect and publishes NOTHING. */
+  {
+   NfWorld *two_world=calloc(1,sizeof *two_world);
+   Nf18a6Runtime *two_owner=calloc(1,sizeof *two_owner);
+   CHECK(two_world&&two_owner);
+   nf_world_init(two_world,77);
+   CHECK(nf_world_spawn_actor_with_id(two_world,30,NF_FACTION_PLAYER,
+           (NfVec3){0,0,0})==30);
+   CHECK(nf_world_spawn_actor_with_id(two_world,40,NF_FACTION_PLAYER,
+           (NfVec3){12.f,0,0})==40);
+   NfActor *primary=nf_world_find_actor(two_world,30);
+   NfActor *secondary=nf_world_find_actor(two_world,40);
+   CHECK(primary&&secondary);
+   primary->transform.velocity.x=4.f;
+   Nf18a4Body inert_crate={0};
+   inert_crate.id=3050;inert_crate.center=(NfVec3){4.f,.9f,0.f};
+   inert_crate.inverse_mass=1.f/24.f;
+   inert_crate.box_half=(NfVec3){.2f,.5f,.35f};
+   CHECK(nf18a6_init(two_owner,two_world,30,inert_crate,3,
+                      NF18A6_WORLD_BRIDGE));
+   two_owner->allow_passive_coactors=true;
+   CHECK(nf18a6_bind_world_tick(two_world,two_owner,NULL,NULL,NULL));
+   /* Bind under the incumbent distant-passive safety envelope, then
+      stage an isolated NEARBY collision candidate without attempting
+      a production A6 tick (which must still reject this topology). */
+   secondary->transform.position=(NfVec3){.9f,0.f,0.f};
+   const NfVec3 first_start=primary->transform.position;
+   const NfVec3 second_start=secondary->transform.position;
+   const uint64_t source_tick=two_world->tick;
+   /* H157 positive: independently source-owned A4 simulation for both. */
+   NfRetcMa03PhysicalCandidate candidate={0};
+   CHECK(nf_retc_ma03_stage_physics(two_world,two_owner,.125f,&candidate));
+   CHECK(candidate.eligible&&candidate.solved.count==2u&&
+         candidate.source.count==2u&&candidate.solved.impacts==1u);
+   CHECK(candidate.solved.bodies[0].id==30u&&
+         candidate.solved.bodies[1].id==40u);
+   /* H158: an independent 1-D inelastic collision oracle agrees. */
+   CHECK(candidate.reference.matched==1u&&
+         candidate.reference.disagreed==0u&&
+         candidate.reference.unresolved==0u);
+   CHECK(candidate.solved.bodies[0].velocity.x<4.f&&
+         candidate.solved.bodies[1].velocity.x>0.f);
+   CHECK(candidate.solved.bodies[0].center.x>first_start.x&&
+         candidate.solved.bodies[1].center.x>second_start.x);
+   /* H159: an unchanged world rechecks the same deterministic solution. */
+   CHECK(nf_retc_ma03_recheck_physics(two_world,two_owner,.125f,&candidate));
+   /* H160: change the second real actor velocity and reject old result. */
+   secondary->transform.velocity.x=1.f;
+   CHECK(!nf_retc_ma03_recheck_physics(two_world,two_owner,.125f,&candidate));
+   secondary->transform.velocity.x=0.f;
+   CHECK(nf_retc_ma03_recheck_physics(two_world,two_owner,.125f,&candidate));
+   /* H161: two real A4 candidate consequences are PRIVATE, not a tick. */
+   CHECK(two_world->tick==source_tick&&two_owner->last_commit_tick==source_tick);
+   CHECK(memcmp(&primary->transform.position,&first_start,sizeof first_start)==0);
+   CHECK(memcmp(&secondary->transform.position,&second_start,sizeof second_start)==0);
+   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
+   CHECK(push->receipt_count==2u);
+   CHECK(nf18a6_unbind_world_tick(two_world,two_owner));
+   free(two_owner);
+   free(two_world);
+  }
   /* H99: actual B2 source witnesses must resolve consistently in both
      input orders, without changing the accepted A6 frame or world tick. */
   const Nf18b2QueuedIntent *first_q=&enc->queue[old_count-2u];
