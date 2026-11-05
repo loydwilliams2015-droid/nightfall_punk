@@ -35,8 +35,13 @@ static inline bool nf_retc_multi_plan_two(const Nf18b2EncounterRuntime *enc,
     a->witness.tick!=b->witness.tick||
     a->witness.world_revision!=b->witness.world_revision||
     a->witness.material_epoch!=b->witness.material_epoch||
-    a->registry_revision!=enc->registry.revision||
-    b->registry_revision!=enc->registry.revision||
+    /* H127: registration can advance the registry between independently
+       proposed intents. A prior registry number is NOT permission: retain
+       strict contract epoch and freshly re-evaluate each B2 source witness.
+       Zero and future registry versions are impossible authorization bases. */
+    !a->registry_revision||!b->registry_revision||
+    a->registry_revision>enc->registry.revision||
+    b->registry_revision>enc->registry.revision||
     a->contract_epoch!=enc->registry.contract_epoch||
     b->contract_epoch!=enc->registry.contract_epoch)return false;
  const Nf18b2EncounterTrace *ta=&enc->traces[a->trace_index];
