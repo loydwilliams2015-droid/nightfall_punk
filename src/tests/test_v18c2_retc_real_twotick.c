@@ -654,6 +654,29 @@ int main(void){
   }
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   CHECK(push->receipt_count==2u);
+  /* H137: the captured two-event B3 proposal must still match both
+     current, independently source-evaluated B2 intents. */
+  CHECK(nf_retc_multi_validate_b3(enc,first_index,old_count,&event_plan));
+  /* H138: proposals from reversed input are independently verifiable. */
+  CHECK(nf_retc_multi_validate_b3(enc,old_count,first_index,&event_reverse));
+  /* H139: changing source actor revision invalidates the old proposal. */
+  ((Nf18b2QueuedIntent *)h126_first)->witness.actor_revision++;
+  CHECK(!nf_retc_multi_validate_b3(enc,first_index,old_count,&event_plan));
+  ((Nf18b2QueuedIntent *)h126_first)->witness.actor_revision=saved_actor_revision;
+  /* H140: a forged B3 event action or applied flag cannot be sealed. */
+  NfRetcMultiEventProposal altered_event=event_plan;
+  ++altered_event.events[1].action;
+  CHECK(!nf_retc_multi_validate_b3(enc,first_index,old_count,&altered_event));
+  altered_event=event_plan;
+  altered_event.events[0].applied=1u;
+  CHECK(!nf_retc_multi_validate_b3(enc,first_index,old_count,&altered_event));
+  altered_event=event_plan;
+  altered_event.events[1].authorized=1u;
+  CHECK(!nf_retc_multi_validate_b3(enc,first_index,old_count,&altered_event));
+  /* H141: revalidation is always prepublication and non-realizing. */
+  CHECK(nf_retc_multi_validate_b3(enc,first_index,old_count,&event_plan));
+  CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
+  CHECK(push->receipt_count==2u);
   /* H99: actual B2 source witnesses must resolve consistently in both
      input orders, without changing the accepted A6 frame or world tick. */
   const Nf18b2QueuedIntent *first_q=&enc->queue[old_count-2u];
