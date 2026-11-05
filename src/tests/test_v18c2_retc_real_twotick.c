@@ -1,5 +1,6 @@
 #include "nf_retc_joint_provider.h"
 #include "nf_retc_multi_plan.h"
+#include "nf_retc_multi_preflight.h"
 #include "nf_retc_external.h"
 #include "nf_retc_network.h"
 #include "nf_multi_ma03.h"
@@ -715,6 +716,35 @@ int main(void){
     CHECK(batch.events[i].phase==NF18B3_PROPOSED);
     CHECK(batch.events[i].authorized==0u&&!batch.events[i].applied);
   }
+  CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
+  CHECK(push->receipt_count==2u);
+  /* H147: only the bound real A6 world owner and accepted source
+     snapshot may admit a canonical two-intent batch for planning. */
+  CHECK(nf_retc_multi_a6_preflight(w,r,enc,publisher,&batch));
+  CHECK(nf_retc_multi_a6_preflight(w,r,enc,publisher,&reversed_batch));
+  /* H148: future or replayed tick values cannot masquerade as next tick. */
+  NfRetcCanonicalBatch changed_batch=batch;
+  changed_batch.tick++;
+  CHECK(!nf_retc_multi_a6_preflight(w,r,enc,publisher,&changed_batch));
+  changed_batch=batch;
+  changed_batch.tick=w->tick;
+  CHECK(!nf_retc_multi_a6_preflight(w,r,enc,publisher,&changed_batch));
+  /* H149: the real tick-owner binding is required, not a caller claim. */
+  void *prior_tick_owner=w->tick_owner_context;
+  w->tick_owner_context=NULL;
+  CHECK(!nf_retc_multi_a6_preflight(w,r,enc,publisher,&batch));
+  w->tick_owner_context=prior_tick_owner;
+  /* H150: source actor identities and their ordering must match the
+     actual actor roster and single active A6 owner. */
+  changed_batch=batch;
+  changed_batch.events[1].actor=999999u;
+  CHECK(!nf_retc_multi_a6_preflight(w,r,enc,publisher,&changed_batch));
+  changed_batch=batch;
+  changed_batch.events[0].actor=20u;
+  CHECK(!nf_retc_multi_a6_preflight(w,r,enc,publisher,&changed_batch));
+  /* H151: absent accepted frame/publisher is never a commit claim;
+     all preflights are read-only, retaining old B3 receipt count. */
+  CHECK(!nf_retc_multi_a6_preflight(w,r,enc,NULL,&batch));
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   CHECK(push->receipt_count==2u);
   /* H99: actual B2 source witnesses must resolve consistently in both
