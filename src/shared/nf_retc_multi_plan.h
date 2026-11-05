@@ -105,4 +105,38 @@ static inline bool nf_retc_multi_propose_b3(const Nf18b2EncounterRuntime *enc,
  return true;
 }
 
+/* H137-H141: read-only freshness seal for a research proposal. This
+ * never grants, stages, realizes, persists or publishes B3 consequences.
+ * The current registry/scene is authoritative; captured bytes cannot
+ * override a changed source witness or authorization trace. */
+static inline bool nf_retc_multi_validate_b3(
+ const Nf18b2EncounterRuntime *enc,size_t first_index,
+ size_t second_index,const NfRetcMultiEventProposal *proposal){
+ if(!enc||!proposal||!proposal->complete||!proposal->plan.prepared)
+   return false;
+ NfRetcMultiEventProposal fresh={0};
+ if(!nf_retc_multi_propose_b3(enc,first_index,second_index,&fresh))
+   return false;
+ if(proposal->plan.object_id!=fresh.plan.object_id||
+    proposal->plan.assessed_tick!=fresh.plan.assessed_tick||
+    proposal->plan.world_revision!=fresh.plan.world_revision||
+    proposal->plan.material_epoch!=fresh.plan.material_epoch)
+   return false;
+ for(size_t i=0;i<2u;++i){
+  const Nf18b3Event *a=&proposal->events[i],*b=&fresh.events[i];
+  if(proposal->plan.actor_ids[i]!=fresh.plan.actor_ids[i]||
+     memcmp(&proposal->plan.uses[i],&fresh.plan.uses[i],
+            sizeof proposal->plan.uses[i])!=0||
+     memcmp(&proposal->plan.decisions[i],&fresh.plan.decisions[i],
+            sizeof proposal->plan.decisions[i])!=0||
+     a->actor!=b->actor||a->object!=b->object||a->action!=b->action||
+     a->tick!=b->tick||a->world_epoch!=b->world_epoch||
+     a->material_epoch!=b->material_epoch||
+     a->contract_epoch!=b->contract_epoch||
+     a->kind!=NF18B3_PUSH||a->phase!=NF18B3_PROPOSED||
+     a->authorized||a->applied)return false;
+ }
+ return true;
+}
+
 #endif
