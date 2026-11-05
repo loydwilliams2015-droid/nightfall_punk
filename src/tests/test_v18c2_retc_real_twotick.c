@@ -131,6 +131,39 @@ int main(void){
   CHECK(nf_retc_read(publisher)==before&&w->tick==tick_before);
   enc->frame.scene.actor_count=old_actor_count;
   enc->granted[0]=old_grant;
+  /* H116: without prepared B2 state no joint stage is authorized. */
+  enc->queue_count=1u;
+  enc->granted[0]=1u;
+  enc->prepared=false;
+  CHECK(nf_retc_joint_stage_owned(w,&r->physical,&joint)==NULL);
+  CHECK(nf_retc_read(publisher)==before&&w->tick==tick_before);
+  enc->prepared=true;
+  /* H117: B3 evidence must exist before any joint staging attempt. */
+  push->staged_commit_valid=false;
+  CHECK(nf_retc_joint_stage_owned(w,&r->physical,&joint)==NULL);
+  CHECK(nf_retc_read(publisher)==before&&w->tick==tick_before);
+  push->staged_commit_valid=true;
+  /* H118: missing authoritative A6 owner is never permission. */
+  Nf18a6Runtime *saved_owner=joint.owner;
+  joint.owner=NULL;
+  CHECK(nf_retc_joint_stage_owned(w,&r->physical,&joint)==NULL);
+  CHECK(nf_retc_read(publisher)==before&&w->tick==tick_before);
+  joint.owner=saved_owner;
+  /* H119: missing B3 provider cannot expose physical-only success. */
+  Nf18b6Push *saved_push=joint.push;
+  joint.push=NULL;
+  CHECK(nf_retc_joint_stage_owned(w,&r->physical,&joint)==NULL);
+  CHECK(nf_retc_read(publisher)==before&&w->tick==tick_before);
+  joint.push=saved_push;
+  /* H120: source stage must refuse two registered object projections
+     while its frame is limited to one B3 event and one source object. */
+  const size_t saved_object_count=enc->frame.scene.object_count;
+  enc->frame.scene.actor_count=1u;
+  enc->frame.scene.object_count=2u;
+  CHECK(nf_retc_joint_stage_owned(w,&r->physical,&joint)==NULL);
+  CHECK(nf_retc_read(publisher)==before&&w->tick==tick_before);
+  enc->frame.scene.object_count=saved_object_count;
+  enc->frame.scene.actor_count=old_actor_count;
   enc->queue_count=old_count;
   enc->prepared=old_prepared;
   push->staged_commit_valid=old_staged;
