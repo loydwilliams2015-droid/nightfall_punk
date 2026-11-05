@@ -579,6 +579,42 @@ int main(void){
   CHECK(!denied.prepared);
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   CHECK(push->receipt_count==2u);
+  /* H127: acceptance explicitly permits pre-registration revision 15
+     only because both current source evaluations and contract epoch pass. */
+  CHECK(h126_first->registry_revision<enc->registry.revision);
+  CHECK(h126_second->registry_revision==enc->registry.revision);
+  CHECK(multi.prepared==1u);
+  /* H128: unknown zero registry cannot authorize a stale proposal. */
+  const uint32_t saved_registry=h126_first->registry_revision;
+  ((Nf18b2QueuedIntent *)h126_first)->registry_revision=0u;
+  denied=(NfRetcMultiPlan){0};
+  CHECK(!nf_retc_multi_plan_two(enc,first_index,old_count,&denied));
+  CHECK(!denied.prepared);
+  ((Nf18b2QueuedIntent *)h126_first)->registry_revision=saved_registry;
+  /* H129: future registry versions cannot be source-issued authority. */
+  ((Nf18b2QueuedIntent *)h126_first)->registry_revision=enc->registry.revision+1u;
+  denied=(NfRetcMultiPlan){0};
+  CHECK(!nf_retc_multi_plan_two(enc,first_index,old_count,&denied));
+  CHECK(!denied.prepared);
+  ((Nf18b2QueuedIntent *)h126_first)->registry_revision=saved_registry;
+  /* H130: any changed contractual epoch remains fail-closed even
+     when each independently reconstructed physical witness is clear. */
+  const uint32_t saved_epoch=h126_first->contract_epoch;
+  ((Nf18b2QueuedIntent *)h126_first)->contract_epoch=saved_epoch+1u;
+  denied=(NfRetcMultiPlan){0};
+  CHECK(!nf_retc_multi_plan_two(enc,first_index,old_count,&denied));
+  CHECK(!denied.prepared);
+  ((Nf18b2QueuedIntent *)h126_first)->contract_epoch=saved_epoch;
+  /* H131: stale B2 actor revision must be rejected by fresh evaluation.
+     The accepted A6 pointer and B3 receipts remain unchanged. */
+  const uint32_t saved_actor_revision=h126_first->witness.actor_revision;
+  ((Nf18b2QueuedIntent *)h126_first)->witness.actor_revision++;
+  denied=(NfRetcMultiPlan){0};
+  CHECK(!nf_retc_multi_plan_two(enc,first_index,old_count,&denied));
+  CHECK(!denied.prepared);
+  ((Nf18b2QueuedIntent *)h126_first)->witness.actor_revision=saved_actor_revision;
+  CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
+  CHECK(push->receipt_count==2u);
   /* H99: actual B2 source witnesses must resolve consistently in both
      input orders, without changing the accepted A6 frame or world tick. */
   const Nf18b2QueuedIntent *first_q=&enc->queue[old_count-2u];
