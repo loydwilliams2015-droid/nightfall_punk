@@ -1,6 +1,7 @@
 #include "nf_retc_joint_provider.h"
 #include "nf_retc_multi_plan.h"
 #include "nf_retc_multi_preflight.h"
+#include "nf_retc_multi_physical.h"
 #include "nf_retc_external.h"
 #include "nf_retc_network.h"
 #include "nf_multi_ma03.h"
@@ -745,6 +746,30 @@ int main(void){
   /* H151: absent accepted frame/publisher is never a commit claim;
      all preflights are read-only, retaining old B3 receipt count. */
   CHECK(!nf_retc_multi_a6_preflight(w,r,enc,NULL,&batch));
+  CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
+  CHECK(push->receipt_count==2u);
+  /* H152: canonical B2/B3 intentions match real MA03 actors and A5
+     source object, without adding movement authority to the second actor. */
+  CHECK(nf_retc_multi_physical_preflight(w,r,enc,publisher,&batch));
+  /* H153: desynchronizing the real actor20 pose from the B2 scene fails. */
+  const NfVec3 before_second_pose=second_actor->transform.position;
+  second_actor->transform.position.x+=0.25f;
+  CHECK(!nf_retc_multi_physical_preflight(w,r,enc,publisher,&batch));
+  second_actor->transform.position=before_second_pose;
+  /* H154: an A5 source object identity mismatch fails closed. */
+  const uint32_t before_object_id=r->physical.object.id;
+  ++r->physical.object.id;
+  CHECK(!nf_retc_multi_physical_preflight(w,r,enc,publisher,&batch));
+  r->physical.object.id=before_object_id;
+  /* H155: active coactor velocity has no source-owned A4/A5 multi-body
+     realizer and must be refused, not implicitly treated as idle. */
+  const NfVec3 before_second_velocity=second_actor->transform.velocity;
+  second_actor->transform.velocity.x=1.f;
+  CHECK(!nf_retc_multi_physical_preflight(w,r,enc,publisher,&batch));
+  second_actor->transform.velocity=before_second_velocity;
+  /* H156: owner-bound physical preflight is read-only and never publishes
+     the canonical proposal, changes world tick or adds B3 receipts. */
+  CHECK(nf_retc_multi_physical_preflight(w,r,enc,publisher,&batch));
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   CHECK(push->receipt_count==2u);
   /* H99: actual B2 source witnesses must resolve consistently in both
