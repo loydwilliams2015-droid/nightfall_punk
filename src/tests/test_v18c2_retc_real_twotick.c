@@ -615,6 +615,45 @@ int main(void){
   ((Nf18b2QueuedIntent *)h126_first)->witness.actor_revision=saved_actor_revision;
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   CHECK(push->receipt_count==2u);
+  /* H132: derive two typed B3 proposals from actual eligible B2 sources. */
+  NfRetcMultiEventProposal event_plan={0};
+  CHECK(nf_retc_multi_propose_b3(enc,first_index,old_count,&event_plan));
+  CHECK(event_plan.complete&&event_plan.plan.prepared);
+  CHECK(event_plan.events[0].actor==10u&&event_plan.events[1].actor==20u);
+  CHECK(event_plan.events[0].object==2010u&&event_plan.events[1].object==2010u);
+  CHECK(event_plan.events[0].action==601u&&event_plan.events[1].action==603u);
+  /* H133: order reversal does not change either source event identity. */
+  NfRetcMultiEventProposal event_reverse={0};
+  CHECK(nf_retc_multi_propose_b3(enc,old_count,first_index,&event_reverse));
+  CHECK(event_reverse.complete);
+  CHECK(event_reverse.events[0].actor==event_plan.events[1].actor);
+  CHECK(event_reverse.events[1].actor==event_plan.events[0].actor);
+  CHECK(event_reverse.events[0].action==event_plan.events[1].action);
+  CHECK(event_reverse.events[1].action==event_plan.events[0].action);
+  /* H134: a stale actor witness blocks B3 proposal construction. */
+  ((Nf18b2QueuedIntent *)h126_first)->witness.actor_revision++;
+  NfRetcMultiEventProposal reject_event={0};
+  CHECK(!nf_retc_multi_propose_b3(enc,first_index,old_count,&reject_event));
+  CHECK(!reject_event.complete);
+  ((Nf18b2QueuedIntent *)h126_first)->witness.actor_revision=saved_actor_revision;
+  /* H135: a mismatched contract epoch cannot enter B3 proposal. */
+  ((Nf18b2QueuedIntent *)h126_first)->contract_epoch++;
+  reject_event=(NfRetcMultiEventProposal){0};
+  CHECK(!nf_retc_multi_propose_b3(enc,first_index,old_count,&reject_event));
+  CHECK(!reject_event.complete);
+  ((Nf18b2QueuedIntent *)h126_first)->contract_epoch=saved_epoch;
+  /* H136: typed B3 proposals do not claim authorization/application or
+     mutate the sole accepted A6 publication and receipt state. */
+  for(size_t n=0;n<2u;++n){
+    CHECK(event_plan.events[n].kind==NF18B3_PUSH);
+    CHECK(event_plan.events[n].phase==NF18B3_PROPOSED);
+    CHECK(event_plan.events[n].authorized==0u);
+    CHECK(event_plan.events[n].applied==0u);
+    CHECK(event_plan.events[n].tick==event_plan.plan.assessed_tick);
+    CHECK(event_plan.events[n].contract_epoch==enc->registry.contract_epoch);
+  }
+  CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
+  CHECK(push->receipt_count==2u);
   /* H99: actual B2 source witnesses must resolve consistently in both
      input orders, without changing the accepted A6 frame or world tick. */
   const Nf18b2QueuedIntent *first_q=&enc->queue[old_count-2u];
