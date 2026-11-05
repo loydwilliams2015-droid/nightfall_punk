@@ -1,4 +1,5 @@
 #include "nf_retc_joint_provider.h"
+#include "nf_retc_multi_plan.h"
 #include "nf_retc_external.h"
 #include "nf_retc_network.h"
 #include "nf_multi_ma03.h"
@@ -528,6 +529,41 @@ int main(void){
   CHECK(t->authorization.contract==NF18B2_ELIGIBLE);
   CHECK(t->authorization.reason==NF18B2_OK);
   CHECK(nearby==NF18B2_ELIGIBLE);
+  /* H121: two authentic independently eligible source B2 proposals can
+     form a bounded private plan, without inventing a B3 receipt. */
+  const size_t first_index=old_count-2u;
+  CHECK(enc->queue[first_index].intent.actor_id==10u);
+  NfRetcMultiPlan multi={0};
+  CHECK(nf_retc_multi_plan_two(enc,first_index,old_count,&multi));
+  CHECK(multi.prepared==1u&&multi.actor_ids[0]==10u&&
+        multi.actor_ids[1]==20u&&multi.object_id==2010u);
+  CHECK(multi.assessed_tick==enc->queue[first_index].witness.tick);
+  /* H122: source-authorized plans remain stable under reversed input. */
+  NfRetcMultiPlan reverse_multi={0};
+  CHECK(nf_retc_multi_plan_two(enc,old_count,first_index,&reverse_multi));
+  CHECK(reverse_multi.prepared==1u&&reverse_multi.actor_ids[0]==20u&&
+        reverse_multi.actor_ids[1]==10u);
+  CHECK(reverse_multi.world_revision==multi.world_revision&&
+        reverse_multi.material_epoch==multi.material_epoch);
+  /* H123: a stale second-actor revision makes preparation fail closed. */
+  const uint32_t saved_revision=q->witness.world_revision;
+  ((Nf18b2QueuedIntent *)q)->witness.world_revision++;
+  NfRetcMultiPlan denied={0};
+  CHECK(!nf_retc_multi_plan_two(enc,first_index,old_count,&denied));
+  CHECK(!denied.prepared);
+  ((Nf18b2QueuedIntent *)q)->witness.world_revision=saved_revision;
+  /* H124: a blocked source trace cannot be laundered into a plan. */
+  const Nf18b2Status saved_contract=t->authorization.status;
+  ((Nf18b2EncounterTrace *)t)->authorization.status=NF18B2_BLOCKED;
+  CHECK(!nf_retc_multi_plan_two(enc,first_index,old_count,&denied));
+  CHECK(!denied.prepared);
+  ((Nf18b2EncounterTrace *)t)->authorization.status=saved_contract;
+  /* H125: duplicate source actor identities and the prepublication plan
+     cannot mutate accepted A6 state or add any B3 receipts. */
+  CHECK(!nf_retc_multi_plan_two(enc,old_count,old_count,&denied));
+  CHECK(!denied.prepared);
+  CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
+  CHECK(push->receipt_count==2u);
   /* H99: actual B2 source witnesses must resolve consistently in both
      input orders, without changing the accepted A6 frame or world tick. */
   const Nf18b2QueuedIntent *first_q=&enc->queue[old_count-2u];

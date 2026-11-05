@@ -1,0 +1,70 @@
+#ifndef NF_RETC_MULTI_PLAN_H
+#define NF_RETC_MULTI_PLAN_H
+/* H121-H125: bounded, read-only research plan for two genuine B2 proposals.
+ * This is NOT an A6 commit, B3 receipt, or an accepted NfRetcFrame.
+ * No caller may publish a plan or treat it as contractual realization. */
+#include "nf_encounter18b2.h"
+#include <string.h>
+typedef struct NfRetcMultiPlan {
+ Nf18b2Use uses[2];
+ Nf18b2UseDecision decisions[2];
+ uint32_t actor_ids[2];
+ uint32_t object_id,assessed_tick,world_revision,material_epoch;
+ uint8_t prepared;
+} NfRetcMultiPlan;
+static inline bool nf_retc_multi_plan_two(const Nf18b2EncounterRuntime *enc,
+ size_t first_index,size_t second_index,NfRetcMultiPlan *out){
+ if(!out)return false;
+ *out=(NfRetcMultiPlan){0};
+ if(!enc||first_index==second_index||first_index>=enc->queue_count||
+    second_index>=enc->queue_count||!enc->frame.scene.actors||
+    !enc->frame.scene.objects)return false;
+ const Nf18b2QueuedIntent *a=&enc->queue[first_index];
+ const Nf18b2QueuedIntent *b=&enc->queue[second_index];
+ if(a->withdrawn||b->withdrawn||a->trace_index>=enc->trace_count||
+    b->trace_index>=enc->trace_count||
+    !a->intent.actor_id||a->intent.actor_id==b->intent.actor_id||
+    !a->intent.object_id||a->intent.object_id!=b->intent.object_id||
+    a->intent.kind!=NF18B2_PUSH||b->intent.kind!=NF18B2_PUSH||
+    a->witness.actor_id!=a->intent.actor_id||
+    b->witness.actor_id!=b->intent.actor_id||
+    a->witness.object_id!=a->intent.object_id||
+    b->witness.object_id!=b->intent.object_id||
+    a->witness.action_id!=a->intent.action_id||
+    b->witness.action_id!=b->intent.action_id||
+    a->witness.tick!=b->witness.tick||
+    a->witness.world_revision!=b->witness.world_revision||
+    a->witness.material_epoch!=b->witness.material_epoch||
+    a->registry_revision!=enc->registry.revision||
+    b->registry_revision!=enc->registry.revision||
+    a->contract_epoch!=enc->registry.contract_epoch||
+    b->contract_epoch!=enc->registry.contract_epoch)return false;
+ const Nf18b2EncounterTrace *ta=&enc->traces[a->trace_index];
+ const Nf18b2EncounterTrace *tb=&enc->traces[b->trace_index];
+ if(ta->intent.actor_id!=a->intent.actor_id||
+    tb->intent.actor_id!=b->intent.actor_id||
+    ta->authorization.status!=NF18B2_ELIGIBLE||
+    tb->authorization.status!=NF18B2_ELIGIBLE)return false;
+ const Nf18b2UseDecision da=nf18b2_evaluate(
+     &enc->frame.scene,a->witness,enc->model);
+ const Nf18b2UseDecision db=nf18b2_evaluate(
+     &enc->frame.scene,b->witness,enc->model);
+ if(da.status!=NF18B2_ELIGIBLE||db.status!=NF18B2_ELIGIBLE||
+    da.physical!=NF18B2_ELIGIBLE||db.physical!=NF18B2_ELIGIBLE||
+    da.contract!=NF18B2_ELIGIBLE||db.contract!=NF18B2_ELIGIBLE)return false;
+ Nf18b2Use uses[2]={a->witness,b->witness};
+ Nf18b2UseDecision resolved[2]={{0}};
+ if(!nf18b2_resolve(&enc->frame.scene,uses,2u,enc->model,resolved)||
+    resolved[0].status!=NF18B2_ELIGIBLE||
+    resolved[1].status!=NF18B2_ELIGIBLE)return false;
+ out->uses[0]=uses[0];out->uses[1]=uses[1];
+ out->decisions[0]=resolved[0];out->decisions[1]=resolved[1];
+ out->actor_ids[0]=uses[0].actor_id;out->actor_ids[1]=uses[1].actor_id;
+ out->object_id=uses[0].object_id;
+ out->assessed_tick=uses[0].tick;
+ out->world_revision=uses[0].world_revision;
+ out->material_epoch=uses[0].material_epoch;
+ out->prepared=1u;
+ return true;
+}
+#endif
