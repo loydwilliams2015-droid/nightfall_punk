@@ -833,6 +833,54 @@ int main(void){
    CHECK(memcmp(&secondary->transform.position,&second_start,sizeof second_start)==0);
    CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
    CHECK(push->receipt_count==2u);
+   /* H162: moving source coactor produces a genuine two-body A4
+      impulse, agrees with independent inelastic collision reference. */
+   secondary->transform.velocity.x=1.f;
+   NfRetcMa03PhysicalCandidate moving_target={0};
+   CHECK(nf_retc_ma03_stage_physics(two_world,two_owner,.125f,&moving_target));
+   CHECK(moving_target.eligible&&moving_target.reference.matched==1u&&
+         moving_target.solved.impacts==1u);
+   CHECK(fabsf(moving_target.solved.bodies[0].velocity.x-2.5f)<.003f);
+   CHECK(fabsf(moving_target.solved.bodies[1].velocity.x-2.5f)<.003f);
+   secondary->transform.velocity.x=0.f;
+   /* H163: a distant source actor with no collision cannot fabricate
+      an impulse receipt for the proposed pair. */
+   secondary->transform.position.x=3.f;
+   NfRetcMa03PhysicalCandidate no_contact={0};
+   CHECK(!nf_retc_ma03_stage_physics(two_world,two_owner,.125f,&no_contact));
+   CHECK(!no_contact.eligible);
+   secondary->transform.position=second_start;
+   /* H164: off-axis contact is outside the deliberately narrow
+      independent 1-D reference domain and must remain unpromoted. */
+   secondary->transform.position.z=.25f;
+   NfRetcMa03PhysicalCandidate off_axis={0};
+   CHECK(!nf_retc_ma03_stage_physics(two_world,two_owner,.125f,&off_axis));
+   CHECK(!off_axis.eligible);
+   secondary->transform.position=second_start;
+   /* H165: a modified integration horizon cannot replay the old
+      physical witness as though it were source-exact. */
+   CHECK(!nf_retc_ma03_recheck_physics(two_world,two_owner,.09f,&candidate));
+   CHECK(nf_retc_ma03_recheck_physics(two_world,two_owner,.125f,&candidate));
+   /* H166: detach the actual owner binding in the staged view; no
+      caller-supplied pointer is authority without the world boundary. */
+   void *physics_tick_context=two_world->tick_owner_context;
+   two_world->tick_owner_context=NULL;
+   NfRetcMa03PhysicalCandidate detached={0};
+   CHECK(!nf_retc_ma03_stage_physics(two_world,two_owner,.125f,&detached));
+   CHECK(!detached.eligible);
+   two_world->tick_owner_context=physics_tick_context;
+   /* H167: the real A6 dispatcher still denies a nearby second actor,
+      proving this research solver cannot bypass the production tick. */
+   const uint64_t old_physical_tick=two_world->tick;
+   CHECK(nf_world_step_checked(two_world,1.f/(float)NF_TICK_RATE)
+         !=NF_WORLD_TICK_COMMITTED);
+   CHECK(two_world->tick==old_physical_tick);
+   CHECK(memcmp(&primary->transform.position,&first_start,
+                sizeof first_start)==0);
+   CHECK(memcmp(&secondary->transform.position,&second_start,
+                sizeof second_start)==0);
+   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u&&
+         push->receipt_count==2u);
    CHECK(nf18a6_unbind_world_tick(two_world,two_owner));
    free(two_owner);
    free(two_world);
