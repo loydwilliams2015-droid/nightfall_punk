@@ -17,6 +17,7 @@ typedef struct NfRetcM2ThreeContact {
  uint32_t source_revision;
  float expected_velocity;
  unsigned passes;
+ uint32_t reject_line; /* research-only rejection locator */
  bool staged;
 } NfRetcM2ThreeContact;
 static inline bool nf_retc_m2_three_contact_in_tick(
@@ -24,6 +25,7 @@ static inline bool nf_retc_m2_three_contact_in_tick(
  NfRetcM2ThreeContact *out){
  if(!out)return false;
  out->staged=false;
+ out->reject_line=0u;
  if(!w||!owner||!w->tick_in_progress||
     w->tick_owner_context!=owner||!w->tick_owner||
     !owner->require_pair_research||!owner->research_pair_stage||
@@ -32,15 +34,15 @@ static inline bool nf_retc_m2_three_contact_in_tick(
     owner->last_commit_tick!=w->tick||
     owner->physical.world.tick!=w->tick||
     owner->physical.world.revision==UINT32_MAX||
-    !owner->physical.world.grid.global_revision)return false;
+    !owner->physical.world.grid.global_revision){ out->reject_line=(uint32_t)__LINE__; return false; }
  NfMa03Roster roster={0};
  if(!nf_ma03_roster_capture_in_tick(w,&roster)||roster.count!=2u||
-    roster.source_tick!=w->tick)return false;
+    roster.source_tick!=w->tick){ out->reject_line=(uint32_t)__LINE__; return false; }
  const NfActor *primary=nf_world_find_actor_const(w,owner->actor_id);
  const NfMa03Participant *rival=NULL;
  for(size_t i=0;i<2u;++i)if(roster.actors[i].id!=owner->actor_id)
     rival=&roster.actors[i];
- if(!primary||!rival)return false;
+ if(!primary||!rival){ out->reject_line=(uint32_t)__LINE__; return false; }
  const NfActor *other=nf_world_find_actor_const(w,rival->id);
  Nf18a4Body a=owner->physical.actor;
  Nf18a4Body b=owner->physical.object;
@@ -67,8 +69,8 @@ static inline bool nf_retc_m2_three_contact_in_tick(
     b.box_half.x<=0.f||b.box_half.y<=0.f||
     b.box_half.z<=0.f||
     fabsf(rival->position.x-(b.center.x+b.box_half.x+a.radius))>.001f)
-    return false;
- if(owner->object_collider_index>=w->collider_count)return false;
+    { out->reject_line=(uint32_t)__LINE__; return false; }
+ if(owner->object_collider_index>=w->collider_count){ out->reject_line=(uint32_t)__LINE__; return false; }
  const NfCollider *mirror=&w->colliders[owner->object_collider_index];
  if(mirror->kind!=NF_COLLIDER_SOLID||
     fabsf(mirror->min.x-(b.center.x-b.box_half.x))>.0001f||
@@ -76,7 +78,7 @@ static inline bool nf_retc_m2_three_contact_in_tick(
     fabsf(mirror->min.z-(b.center.z-b.box_half.z))>.0001f||
     fabsf(mirror->max.x-(b.center.x+b.box_half.x))>.0001f||
     fabsf(mirror->max.y-(b.center.y+b.box_half.y))>.0001f||
-    fabsf(mirror->max.z-(b.center.z+b.box_half.z))>.0001f)return false;
+    fabsf(mirror->max.z-(b.center.z+b.box_half.z))>.0001f){ out->reject_line=(uint32_t)__LINE__; return false; }
  const uint32_t tick=(uint32_t)w->tick+1u;
  const uint32_t revision=owner->physical.world.revision;
  const Nf18a2ShapePolicy shape={a.radius,a.height,.05f,.4f,.65f};
@@ -86,7 +88,7 @@ static inline bool nf_retc_m2_three_contact_in_tick(
  if(first.status!=NF18A4_ACCEPTED||!first.swept_hit||
     first.receipt.status!=NF18A4_ACCEPTED||
     !first.receipt.impulses_applied||first.toi<=0.f||
-    first.toi>=1.f)return false;
+    first.toi>=1.f){ out->reject_line=(uint32_t)__LINE__; return false; }
  const float contact_time=dt*first.toi;
  Nf18a4Body bodies[3]={a,b,{0}};
  bodies[0].center.x+=a.velocity.x*contact_time;
@@ -102,14 +104,14 @@ static inline bool nf_retc_m2_three_contact_in_tick(
     fabsf((bodies[1].center.x+b.box_half.x+bodies[2].radius)-
            bodies[2].center.x)>.001f||
     fabsf((bodies[1].center.x-b.box_half.x-bodies[0].radius)-
-           bodies[0].center.x)>.006f)return false;
+           bodies[0].center.x)>.006f){ out->reject_line=(uint32_t)__LINE__; return false; }
  /* 1D independent oracle: perfectly inelastic triple contact yields
     common velocity by conservation of momentum, with no external drive. */
  const float ma=1.f/a.inverse_mass,mb=1.f/b.inverse_mass;
  const float mc=1.f/bodies[2].inverse_mass;
  const float oracle=(ma*a.velocity.x+mb*b.velocity.x+
                      mc*bodies[2].velocity.x)/(ma+mb+mc);
- if(!isfinite(oracle))return false;
+ if(!isfinite(oracle)){ out->reject_line=(uint32_t)__LINE__; return false; }
  Nf18a4Constraint constraints[2]={{0},{0}};
  constraints[0].body_a=a.id;constraints[0].body_b=b.id;
  constraints[0].feature_id=b.id;
@@ -127,7 +129,7 @@ static inline bool nf_retc_m2_three_contact_in_tick(
   for(size_t k=0;k<2u;++k){
    Nf18a4Receipt r=nf18a4_apply_contact(&bodies[k],&bodies[k+1],
        constraints[k],NF18A4_RECIPROCAL_LINEAR,tick,revision);
-   if(r.status==NF18A4_INVALID)return false;
+   if(r.status==NF18A4_INVALID){ out->reject_line=(uint32_t)__LINE__; return false; }
    if(r.impulses_applied){
     if(!receipts[k].impulses_applied)receipts[k]=r;
     else receipts[k].normal_impulse.x+=r.normal_impulse.x;
@@ -142,7 +144,7 @@ static inline bool nf_retc_m2_three_contact_in_tick(
     passes>32u||
     fabsf(bodies[0].velocity.x-oracle)>.004f||
     fabsf(bodies[1].velocity.x-oracle)>.004f||
-    fabsf(bodies[2].velocity.x-oracle)>.004f)return false;
+    fabsf(bodies[2].velocity.x-oracle)>.004f){ out->reject_line=(uint32_t)__LINE__; return false; }
  /* This stage conservatively restricts all trajectories to exact static
     material clearance. The dynamic crate is handled by A4 contacts. */
  Nf18a5Grid grid=owner->physical.world.grid;
@@ -156,19 +158,19 @@ static inline bool nf_retc_m2_three_contact_in_tick(
   NfVec3 delta={bodies[k].velocity.x*remaining,0.f,0.f};
   uint32_t loads=0u;
   if(nf18a5_sweep_query(&grid,feet,delta,policy,remaining,tick,
-      NULL,NULL,&loads)!=NF18A5_Q_FREE)return false;
+      NULL,NULL,&loads)!=NF18A5_Q_FREE){ out->reject_line=(uint32_t)__LINE__; return false; }
   bodies[k].center.x+=delta.x;
  }
  NfRetcM2ThreeContact next={0};
  next.material=owner->physical.world;
  for(size_t k=0;k<2u;++k){
   if(!nf18a5_receipt_sample(&receipts[k],bodies[k].id,bodies[k+1].id,
-       0.f,next.material.grid.global_revision,&next.samples[k]))return false;
+       0.f,next.material.grid.global_revision,&next.samples[k])){ out->reject_line=(uint32_t)__LINE__; return false; }
   next.contacts[k]=receipts[k];
  }
  if(!nf18a5_world_commit(&next.material,revision,tick,owner->actor_id,
      next.samples,2u)||next.material.history.raw_samples!=
-         owner->physical.world.history.raw_samples+2u)return false;
+         owner->physical.world.history.raw_samples+2u){ out->reject_line=(uint32_t)__LINE__; return false; }
  for(size_t i=0;i<3u;++i)next.bodies[i]=bodies[i];
  next.source_tick=w->tick;
  next.source_revision=revision;
