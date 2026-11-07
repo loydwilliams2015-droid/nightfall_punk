@@ -6,6 +6,7 @@
 #include "nf_retc_m2_contention_tick.h"
 #include "nf_retc_m2_fairness_tick.h"
 #include "nf_retc_m2_three_entity_tick.h"
+#include "nf_retc_m2_three_contact_tick.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -86,6 +87,14 @@ static bool three_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,voi
  M2ThreeProbe *p=(M2ThreeProbe *)context;
  ++p->calls;
  const bool ok=nf_retc_m2_three_entity_in_tick(w,owner,dt,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
+typedef struct M2ChainProbe {NfRetcM2ThreeContact *out;unsigned calls,passed;} M2ChainProbe;
+static bool chain_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,void *context){
+ M2ChainProbe *p=(M2ChainProbe *)context;
+ ++p->calls;
+ const bool ok=nf_retc_m2_three_contact_in_tick(w,owner,dt,p->out);
  if(ok)++p->passed;
  return ok;
 }
@@ -452,6 +461,62 @@ int main(void){
        owner->physical.object.center.x==before_crate.x&&
        rival->transform.position.x==-3.f);
  free(three);
+ /* H238: source-exact owner capsule -> A6 crate -> touching rival actor.
+    Both A4 contacts are SOLVED together with momentum reference and
+    produce TWO authentic private A5 contact-history samples. */
+ NfRetcM2ThreeContact *chain=calloc(1,sizeof *chain);
+ CHECK(chain);
+ M2ChainProbe chain_probe_state={.out=chain};
+ rival->transform.position.x=owner->physical.object.center.x+
+      owner->physical.object.box_half.x+owner->physical.actor.radius;
+ owner->research_pair_stage=chain_probe;
+ owner->research_pair_context=&chain_probe_state;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ if(!chain->staged)fprintf(stderr,"H238 three-contact stage reject line %u\n",chain->reject_line);
+ CHECK(chain_probe_state.calls==1u&&chain_probe_state.passed==1u&&chain->staged);
+ CHECK(chain->passes<=32u&&chain->passes>=2u);
+ CHECK(chain->bodies[0].id==30u&&chain->bodies[1].id==3050u&&
+       chain->bodies[2].id==40u);
+ CHECK(chain->contacts[0].impulses_applied&&
+       chain->contacts[1].impulses_applied);
+ CHECK(chain->material.history.raw_samples==samples+2u&&
+       chain->samples[0].body_a==30u&&chain->samples[0].body_b==3050u&&
+       chain->samples[1].body_a==3050u&&chain->samples[1].body_b==40u);
+ for(unsigned k=0u;k<3u;++k)
+  CHECK(fabsf(chain->bodies[k].velocity.x-chain->expected_velocity)<.004f);
+ /* H239: exact same in-tick source reproduces both causal A4/A5 edges. */
+ const uint32_t chain_history=nf18a5_history_hash(&chain->material.history);
+ const float common_speed=chain->expected_velocity;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==2u&&chain_probe_state.passed==2u&&chain->staged);
+ CHECK(nf18a5_history_hash(&chain->material.history)==chain_history&&
+       chain->expected_velocity==common_speed);
+ /* H240: rival not touching the dynamic crate is outside this narrow
+    simultaneous chain domain; must refuse invented contact ancestry. */
+ rival->transform.position.x+=.1f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==3u&&chain_probe_state.passed==2u&&!chain->staged);
+ rival->transform.position.x-=.1f;
+ /* H241: source crate collider diverges from the A6 physical crate.
+    A4 may not stage using detached, caller-supplied geometry. */
+ NfCollider *chain_mirror=&world->colliders[owner->object_collider_index];
+ chain_mirror->min.x+=.1f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==4u&&chain_probe_state.passed==2u&&!chain->staged);
+ chain_mirror->min.x-=.1f;
+ /* H242: after restoration TWO private A5 contacts stage from the
+    authentic A4 network, but no A6, A5, actor, crate or B3 publication. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==5u&&chain_probe_state.passed==3u&&chain->staged);
+ CHECK(chain->material.history.raw_samples==samples+2u&&
+       nf18a5_history_hash(&chain->material.history)==chain_history);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x&&
+       fabsf(rival->transform.position.x-(before_crate.x+owner->physical.object.box_half.x+owner->physical.actor.radius))<.0001f);
+ free(chain);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
  owner->research_pair_context=NULL;

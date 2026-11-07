@@ -230,12 +230,14 @@ static bool ingest(Nf18a5History *h,const Nf18a5Sample *s){
     }
     ++h->raw_samples;return true;
 }
-bool nf18a5_history_commit(Nf18a5History *h,uint32_t tick,uint32_t version,
-                            uint32_t owner,const Nf18a5Sample *samples,size_t count){
+static bool history_commit_owned(Nf18a5History *h,uint32_t tick,
+                            uint32_t version,uint32_t owner,
+                            const Nf18a5Sample *samples,size_t count,
+                            const uint32_t joint[3]){
     if(!valid_history(h)||!owner||!tick||!version||count>NF18A5_MAX_STREAMS||
        (count && !samples) ||(h->initialized && (owner!=h->owner || tick<=h->last_tick || version<=h->last_world_version)))return false;
     for(size_t i=0;i<count;++i){const Nf18a5Sample *s=&samples[i];
-        if(s->tick!=tick || s->body_a!=owner || !s->body_b || !s->contact_id || !s->material_epoch ||
+        if(s->tick!=tick || (joint ? (s->body_a!=joint[i] || s->body_b!=joint[i+1u]) : s->body_a!=owner) || !s->body_b || !s->contact_id || !s->material_epoch ||
            !isfinite(s->normal_impulse)||s->normal_impulse<0.0f ||
            !isfinite(s->resting_force)||s->resting_force<0.0f ||
            !isfinite(s->approach_speed)||s->approach_speed<0.0f)return false;
@@ -263,6 +265,10 @@ bool nf18a5_history_commit(Nf18a5History *h,uint32_t tick,uint32_t version,
     }
     next.last_tick=tick;next.last_world_version=version;next.owner=owner;next.initialized=1u;
     *h=next;return true;
+}
+bool nf18a5_history_commit(Nf18a5History *h,uint32_t tick,uint32_t version,
+                            uint32_t owner,const Nf18a5Sample *samples,size_t count){
+    return history_commit_owned(h,tick,version,owner,samples,count,NULL);
 }
 bool nf18a5_history_close(Nf18a5History *h,uint32_t tick,uint32_t version,
                            uint32_t owner,uint32_t contact){
@@ -306,6 +312,28 @@ bool nf18a5_world_commit(Nf18a5World *w,uint32_t expected,uint32_t tick,
     Nf18a5History temp=w->history;
     if(!nf18a5_history_commit(&temp,tick,expected+1u,owner,samples,count))return false;
     w->history=temp;w->tick=tick;w->revision=expected+1u;return true;
+}
+/* Three source-bound contact entities in ONE PRIVATE A5 history revision.
+   The old one-owner history API is unchanged; this explicit research path
+   preserves actor->object and object->rival source identities. The caller
+   MUST independently bind these IDs to the live A6 roster and A4 receipts. */
+bool nf18a5_world_commit_three(Nf18a5World *w,uint32_t expected,uint32_t tick,
+    uint32_t owner,const uint32_t p[3],const Nf18a5Sample samples[2]){
+    if(!w||!p||!samples||!owner||p[0]!=owner||!p[1]||!p[2]||
+       p[0]==p[1]||p[1]==p[2]||p[0]==p[2]||
+       !tick||tick<=w->tick||w->revision!=expected||
+       expected==UINT32_MAX)return false;
+    if(samples[0].body_a!=p[0]||samples[0].body_b!=p[1]||
+       samples[1].body_a!=p[1]||samples[1].body_b!=p[2]||
+       samples[0].material_epoch!=w->grid.global_revision||
+       samples[1].material_epoch!=w->grid.global_revision)return false;
+    Nf18a5History next=w->history;
+    if(!history_commit_owned(&next,tick,expected+1u,owner,samples,2u,p))
+       return false;
+    w->history=next;
+    w->tick=tick;
+    w->revision=expected+1u;
+    return true;
 }
 bool nf18a5_world_material_commit(Nf18a5World *w,uint32_t expected,uint32_t tick,
                                   uint32_t owner,int32_t cx,int32_t cy,int32_t cz,
