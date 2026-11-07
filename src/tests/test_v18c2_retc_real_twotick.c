@@ -3,6 +3,7 @@
 #include "nf_retc_multi_preflight.h"
 #include "nf_retc_multi_physical.h"
 #include "nf_retc_ma03_physics_stage.h"
+#include "nf_retc_ma03_a5_envelope.h"
 #include "nf_retc_external.h"
 #include "nf_retc_network.h"
 #include "nf_multi_ma03.h"
@@ -833,6 +834,52 @@ int main(void){
    CHECK(memcmp(&secondary->transform.position,&second_start,sizeof second_start)==0);
    CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
    CHECK(push->receipt_count==2u);
+   /* H168: connect TWO source-solved A4 bodies to one actual A5 source
+      epoch without inventing a second A5 material history or B3 receipt. */
+   const uint32_t a5_before_revision=two_owner->physical.world.revision;
+   const uint32_t a5_before_epoch=two_owner->physical.world.grid.global_revision;
+   const uint32_t a5_before_events=two_owner->physical.world.history.generated_events;
+   const uint32_t a5_before_samples=two_owner->physical.world.history.raw_samples;
+   NfRetcMa03A5Envelope a5_handoff={0};
+   CHECK(nf_retc_ma03_a5_prepare(two_world,two_owner,.125f,
+                                   &candidate,&a5_handoff));
+   CHECK(a5_handoff.prepared&&a5_handoff.bodies[0].id==30u&&
+         a5_handoff.bodies[1].id==40u);
+   CHECK(nf_retc_ma03_a5_recheck(two_world,two_owner,.125f,
+                                  &candidate,&a5_handoff));
+   /* H169: material-world revision drift invalidates both A4 bodies'
+      shared A5 handoff before any downstream realization. */
+   ++two_owner->physical.world.revision;
+   CHECK(!nf_retc_ma03_a5_recheck(two_world,two_owner,.125f,
+                                   &candidate,&a5_handoff));
+   two_owner->physical.world.revision=a5_before_revision;
+   /* H170: no caller may substitute a forged second-actor consequence. */
+   NfRetcMa03A5Envelope forged_handoff=a5_handoff;
+   forged_handoff.bodies[1].velocity.x+=.5f;
+   CHECK(!nf_retc_ma03_a5_recheck(two_world,two_owner,.125f,
+                                   &candidate,&forged_handoff));
+   /* H171: changed A5 material epoch or history provenance blocks replay. */
+   ++two_owner->physical.world.grid.global_revision;
+   CHECK(!nf_retc_ma03_a5_recheck(two_world,two_owner,.125f,
+                                   &candidate,&a5_handoff));
+   two_owner->physical.world.grid.global_revision=a5_before_epoch;
+   ++two_owner->physical.world.history.generated_events;
+   CHECK(!nf_retc_ma03_a5_recheck(two_world,two_owner,.125f,
+                                   &candidate,&a5_handoff));
+   two_owner->physical.world.history.generated_events=a5_before_events;
+   /* H172: two-body/A5 handoff is private: no material history written,
+      no A6 tick, actor projection, publisher or real B3 receipt changed. */
+   CHECK(nf_retc_ma03_a5_recheck(two_world,two_owner,.125f,
+                                  &candidate,&a5_handoff));
+   CHECK(two_owner->physical.world.revision==a5_before_revision&&
+         two_owner->physical.world.grid.global_revision==a5_before_epoch&&
+         two_owner->physical.world.history.generated_events==a5_before_events&&
+         two_owner->physical.world.history.raw_samples==a5_before_samples);
+   CHECK(two_world->tick==source_tick);
+   CHECK(memcmp(&primary->transform.position,&first_start,sizeof first_start)==0);
+   CHECK(memcmp(&secondary->transform.position,&second_start,sizeof second_start)==0);
+   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u&&
+         push->receipt_count==2u);
    /* H162: moving source coactor produces a genuine two-body A4
       impulse, agrees with independent inelastic collision reference. */
    secondary->transform.velocity.x=1.f;
