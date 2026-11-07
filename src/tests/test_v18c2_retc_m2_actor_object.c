@@ -1,6 +1,7 @@
 #include "nf_retc_m2_pair_tick.h"
 #include "nf_retc_m2_support_tick.h"
 #include "nf_retc_m2_push_tick.h"
+#include "nf_retc_m2_carry_tick.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -30,6 +31,14 @@ static bool push_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,void
  M2PushProbe *p=(M2PushProbe *)context;
  ++p->calls;
  const bool accepted=nf_retc_m2_push_stage_in_tick(w,owner,dt,p->out);
+ if(accepted)++p->accepted;
+ return accepted;
+}
+typedef struct M2CarryProbe {NfRetcM2CarryEvidence *out;unsigned calls,accepted;} M2CarryProbe;
+static bool carry_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,void *context){
+ M2CarryProbe *p=(M2CarryProbe *)context;
+ ++p->calls;
+ const bool accepted=nf_retc_m2_carry_stage_in_tick(w,owner,dt,p->out);
  if(accepted)++p->accepted;
  return accepted;
 }
@@ -147,6 +156,54 @@ int main(void){
  CHECK(a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x);
  free(push_effect);
+ /* H213-H217: no object ownership is minted; private kinematic carry
+    must use the real actor input and both source-bounded swept bodies. */
+ NfRetcM2CarryEvidence *carry=calloc(1,sizeof *carry);
+ CHECK(carry);
+ M2CarryProbe cp={.out=carry};
+ owner->research_pair_stage=carry_probe;
+ owner->research_pair_context=&cp;
+ /* H213: conservative dual swept clearance admits bounded carry motion,
+    preserving the source-relative actor/object offset. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(cp.calls==1u&&cp.accepted==1u&&carry->staged);
+ CHECK(fabsf(carry->candidate.actor.center.x-
+             owner->physical.actor.center.x-.5f)<.0001f);
+ CHECK(fabsf(carry->candidate.object.center.x-
+             owner->physical.object.center.x-.5f)<.0001f);
+ CHECK(fabsf(carry->source_offset.x-.95f)<.0001f);
+ CHECK(carry->candidate.world.history.raw_samples==samples&&
+       carry->candidate.committed_receipts==owner->physical.committed_receipts);
+ /* H214: released interaction interrupts carry with no history effect. */
+ a->input.interact_held=false;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(cp.calls==2u&&cp.accepted==1u&&!carry->staged);
+ a->input.interact_held=true;
+ /* H215: object teleport beyond source bounded reach cannot claim carry. */
+ const NfVec3 carried_from=owner->physical.object.center;
+ owner->physical.object.center.x+=1.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(cp.calls==3u&&cp.accepted==1u&&!carry->staged);
+ owner->physical.object.center=carried_from;
+ /* H216: a SOLID canonical source voxel in either swept path blocks
+    carrying, even when the actor still holds the interaction input. */
+ chunk->canonical[0]=NF18A5_SOLID;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(cp.calls==4u&&cp.accepted==1u&&!carry->staged);
+ chunk->canonical[0]=cell;
+ /* H217: restore and deterministically carry in PRIVATE only.
+    There is no fabricated A4 contact receipt, B2/B3 consequence,
+    A6 tick advancement, actor/object publication, or A5 sample. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(cp.calls==5u&&cp.accepted==2u&&carry->staged);
+ CHECK(carry->candidate.world.revision==revision+1u&&
+       carry->candidate.world.history.raw_samples==samples&&
+       carry->candidate.committed_receipts==owner->physical.committed_receipts);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
+ free(carry);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
  owner->research_pair_context=NULL;
