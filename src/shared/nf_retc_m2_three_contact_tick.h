@@ -68,6 +68,15 @@ static inline bool nf_retc_m2_three_contact_in_tick(
     b.box_half.z<=0.f||
     fabsf(rival->position.x-(b.center.x+b.box_half.x+a.radius))>.001f)
     return false;
+ if(owner->object_collider_index>=w->collider_count)return false;
+ const NfCollider *mirror=&w->colliders[owner->object_collider_index];
+ if(mirror->kind!=NF_COLLIDER_SOLID||
+    fabsf(mirror->min.x-(b.center.x-b.box_half.x))>.0001f||
+    fabsf(mirror->min.y-(b.center.y-b.box_half.y))>.0001f||
+    fabsf(mirror->min.z-(b.center.z-b.box_half.z))>.0001f||
+    fabsf(mirror->max.x-(b.center.x+b.box_half.x))>.0001f||
+    fabsf(mirror->max.y-(b.center.y+b.box_half.y))>.0001f||
+    fabsf(mirror->max.z-(b.center.z+b.box_half.z))>.0001f)return false;
  const uint32_t tick=(uint32_t)w->tick+1u;
  const uint32_t revision=owner->physical.world.revision;
  const Nf18a2ShapePolicy shape={a.radius,a.height,.05f,.4f,.65f};
