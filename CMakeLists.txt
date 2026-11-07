@@ -262,6 +262,14 @@ if(NF_CONTACT_LAB_ONLY)
     target_link_libraries(nightfall_v18c2_retc_real_twotick_test PRIVATE nightfall_embody_h1)
     nf_project_warnings(nightfall_v18c2_retc_real_twotick_test)
     add_test(NAME retc_real_dispatcher_two_joint_ticks_v18c2 COMMAND nightfall_v18c2_retc_real_twotick_test)
+    # M2 H198-H202: actual A6 owner-tick actor-to-dynamic-object physical
+    # and private A5 history staging, explicitly not a joint B3 commit.
+    add_executable(nightfall_v18c2_retc_m2_actor_object_test
+        src/tests/test_v18c2_retc_m2_actor_object.c)
+    target_link_libraries(nightfall_v18c2_retc_m2_actor_object_test PRIVATE nightfall_embody_h1)
+    nf_project_warnings(nightfall_v18c2_retc_m2_actor_object_test)
+    add_test(NAME retc_m2_actor_object_private_owner_tick_v18c2
+        COMMAND nightfall_v18c2_retc_m2_actor_object_test)
     add_executable(nightfall_v18c2_retc_frame_test src/tests/test_v18c2_retc_frame.c)
     target_link_libraries(nightfall_v18c2_retc_frame_test PRIVATE nightfall_embody_h1)
     nf_project_warnings(nightfall_v18c2_retc_frame_test)
