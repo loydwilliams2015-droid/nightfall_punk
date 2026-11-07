@@ -909,6 +909,17 @@ int main(void){
  CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
        owner->physical.world.history.raw_samples==samples&&
        owner->physical.committed_receipts==0u);
+ /* M2.x final H273B: five independently checkable source-arrival
+    classifications. Tied events are deliberately NOT falsely accepted
+    by the actor-first solver; the full tie/reversal solver is open. */
+ CHECK(nf_retc_m2_arrival_order(.02f,.75f,0.f,.08f,.125f)==2);
+ CHECK(nf_retc_m2_arrival_order(.06f,.75f,0.f,.08f,.125f)==2);
+ CHECK(nf_retc_m2_arrival_order(.09f,.75f,0.f,.08f,.125f)==1);
+ CHECK(nf_retc_m2_arrival_order(.02f,.25f,.5f,.08f,.125f)==1);
+ CHECK(nf_retc_m2_arrival_order(.02f,.75f,0.f,NAN,.125f)==0);
+ /* Tested private staging remains bytewise source-derived and fails
+    closed on rival-first geometry (H273A above); restoring source
+    still returns the exact two-contact A5 history hash. */
  free(scheduled);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
