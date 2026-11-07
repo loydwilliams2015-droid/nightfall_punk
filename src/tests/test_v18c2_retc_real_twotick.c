@@ -1126,6 +1126,39 @@ int main(void){
          two_owner->physical.world.history.raw_samples==a5_before_samples&&
          push->receipt_count==2u&&nf_retc_read(publisher)==accepted);
    center_chunk->canonical[0]=previous_cell;
+   /* H193: the A6 in-tick owner supplies two REAL A4 material impulses
+      that are equal/opposite and tied to the authentic A5 sample. */
+   CHECK(in_tick->staged&&in_tick->impacts==1u);
+   CHECK(in_tick->bodies[0].id==30u&&in_tick->bodies[1].id==40u);
+   CHECK(in_tick->material_impulse[0].x < -1.f);
+   CHECK(in_tick->material_impulse[1].x > 1.f);
+   CHECK(fabsf(in_tick->material_impulse[0].x+
+                in_tick->material_impulse[1].x)<.02f);
+   /* H194: independently revalidate two actor velocity changes against
+      the source-applied A4 contact receipt and private A5 history. */
+   CHECK(nf_retc_ma03_reciprocal_effects_valid(in_tick));
+   /* H195: a forged second actor impulse cannot cross M2's boundary. */
+   in_tick->material_impulse[1].x+=1.f;
+   CHECK(!nf_retc_ma03_reciprocal_effects_valid(in_tick));
+   in_tick->material_impulse[1].x-=1.f;
+   /* H196: a foreign A4 receipt identity is not an A5 material effect. */
+   ++in_tick->applied_contact.contact_id;
+   CHECK(!nf_retc_ma03_reciprocal_effects_valid(in_tick));
+   --in_tick->applied_contact.contact_id;
+   CHECK(nf_retc_ma03_reciprocal_effects_valid(in_tick));
+   /* H197: repeat the true A6 owner tick with the same source and verify
+      both reciprocal effects stay private, deterministic and unpublishable. */
+   const float first_actor_impulse=in_tick->material_impulse[0].x;
+   const float second_actor_impulse=in_tick->material_impulse[1].x;
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==15u&&probe.accepted==7u&&in_tick->staged);
+   CHECK(nf_retc_ma03_reciprocal_effects_valid(in_tick));
+   CHECK(in_tick->material_impulse[0].x==first_actor_impulse&&
+         in_tick->material_impulse[1].x==second_actor_impulse);
+   CHECK(two_world->tick==source_tick&&
+         two_owner->physical.world.revision==a5_before_revision&&
+         two_owner->physical.world.history.raw_samples==a5_before_samples&&
+         push->receipt_count==2u&&nf_retc_read(publisher)==accepted);
    two_owner->require_dual_contact_preflight=false;
    two_owner->research_dual_stage=NULL;
    two_owner->research_dual_context=NULL;
