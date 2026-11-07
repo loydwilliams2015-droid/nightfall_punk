@@ -516,6 +516,75 @@ int main(void){
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x&&
        fabsf(rival->transform.position.x-(before_crate.x+owner->physical.object.box_half.x+owner->physical.actor.radius))<.0001f);
+ /* H243-H247: material transaction integrity on the true two-edge
+    A4 contact graph. All calls use PRIVATE copied A5 world state. */
+ const uint32_t chain_ids[3]={30u,3050u,40u};
+ Nf18a5World private_history=owner->physical.world;
+ const uint32_t original_history_digest=
+     nf18a5_history_hash(&private_history.history);
+ /* H243: genuine pair of distinct source contacts commits together
+    under one A6 actor owner; preserve crate->rival material ancestry. */
+ CHECK(nf18a5_world_commit_three(&private_history,revision,1u,30u,
+                                 chain_ids,chain->samples));
+ CHECK(private_history.revision==revision+1u&&
+       private_history.tick==1u&&
+       private_history.history.raw_samples==samples+2u);
+ unsigned active_edges=0u;
+ bool edge_owner_box=false,edge_box_rival=false;
+ for(size_t si=0u;si<NF18A5_MAX_STREAMS;++si){
+  const Nf18a5Stream *st=&private_history.history.streams[si];
+  if(!st->active)continue;
+  ++active_edges;
+  if(st->body_a==30u&&st->body_b==3050u)edge_owner_box=true;
+  if(st->body_a==3050u&&st->body_b==40u)edge_box_rival=true;
+ }
+ CHECK(active_edges==2u&&edge_owner_box&&edge_box_rival);
+ /* H244: forge the second source edge as owner->rival rather than
+    crate->rival. Must fail atomically and preserve the input world. */
+ Nf18a5Sample forged_edges[2]={chain->samples[0],chain->samples[1]};
+ forged_edges[1].body_a=30u;
+ Nf18a5World rejected=owner->physical.world;
+ CHECK(!nf18a5_world_commit_three(&rejected,revision,1u,30u,
+                                  chain_ids,forged_edges));
+ CHECK(rejected.revision==revision&&rejected.tick==0u&&
+       rejected.history.raw_samples==samples&&
+       nf18a5_history_hash(&rejected.history)==original_history_digest);
+ /* H245: two same-origin contact IDs are not two distinct material
+    interactions, even when the physical solver returned two receipts. */
+ forged_edges[1]=chain->samples[1];
+ forged_edges[1].contact_id=forged_edges[0].contact_id;
+ CHECK(!nf18a5_world_commit_three(&rejected,revision,1u,30u,
+                                  chain_ids,forged_edges));
+ CHECK(rejected.revision==revision&&
+       rejected.history.raw_samples==samples);
+ /* H246: both material epoch and expected world revision must be exact. */
+ forged_edges[1]=chain->samples[1];
+ forged_edges[1].material_epoch+=1u;
+ CHECK(!nf18a5_world_commit_three(&rejected,revision,1u,30u,
+                                  chain_ids,forged_edges));
+ CHECK(!nf18a5_world_commit_three(&rejected,revision+1u,1u,30u,
+                                  chain_ids,chain->samples));
+ CHECK(rejected.revision==revision&&
+       rejected.history.raw_samples==samples);
+ /* H247: force stream exhaustion and demonstrate no half-commit of
+    first edge even when second stream cannot be allocated. */
+ Nf18a5World saturated=owner->physical.world;
+ for(size_t si=0u;si<NF18A5_MAX_STREAMS;++si){
+  Nf18a5Stream *st=&saturated.history.streams[si];
+  *st=(Nf18a5Stream){0};
+  st->active=1u;
+  st->contact_id=100000u+(uint32_t)si;
+  st->body_a=30u;st->body_b=3050u;
+ }
+ const uint32_t saturated_hash=nf18a5_history_hash(&saturated.history);
+ CHECK(!nf18a5_world_commit_three(&saturated,revision,1u,30u,
+                                  chain_ids,chain->samples));
+ CHECK(saturated.revision==revision&&saturated.tick==0u&&
+       saturated.history.raw_samples==samples&&
+       nf18a5_history_hash(&saturated.history)==saturated_hash);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
  free(chain);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
