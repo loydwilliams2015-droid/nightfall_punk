@@ -8,6 +8,7 @@ typedef struct {
  Nf18a4Body bodies[NF18A4_MAX_BODIES];
  size_t count;
  uint32_t impacts;
+ Nf18a4Receipt receipts[NF_MA01C2_MAX_EVENTS]; /* real A4 contact provenance */
  float advanced_seconds;
 } NfMa01c2Result;
 /* Serial single-owner reference; horizontal upright equal-center capsule
