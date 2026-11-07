@@ -9,6 +9,7 @@ on:
       - 'src/shared/nf_retc_external.*'
       - 'src/shared/nf_embody18a6.*'
       - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - 'src/tests/test_v18c2_retc_m2_actor_object.c'
   workflow_dispatch:
 jobs:
   bounded-asan-ubsan:
@@ -30,12 +31,34 @@ jobs:
             -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
             -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
       - name: Build test harnesses
-        run: cmake --build build-h55 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test nightfall_v18c2_h14_concurrent_test
+        run: cmake --build build-h55 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test nightfall_v18c2_h14_concurrent_test nightfall_v18c2_retc_m2_actor_object_test
       - name: Execute source-bound real A6 joint read test
         env:
           ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
         run: ctest --test-dir build-h55 -R '^retc_real_dispatcher_two_joint_ticks_v18c2$' --output-on-failure --output-junit h55-a6.xml
+      - name: Execute M2 actor-object real A6 owner tick under ASan/UBSan
+        env:
+          ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-h55 -R '^retc_m2_actor_object_private_owner_tick_v18c2
+        env:
+          ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-h55 -R '^h14_concurrent_lifecycle_v18c2$' --output-on-failure --output-junit h55-h14.xml
+      - name: Preserve sanitizer evidence only
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: retc-h55-sanitizer-${{ matrix.compiler }}-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build-h55/h55-a6.xml
+            build-h55/h55-h14.xml
+            build-h55/h55-m2.xml
+            build-h55/Testing/Temporary/LastTest.log
+ --output-on-failure --output-junit h55-m2.xml
       - name: Execute A6 H14 authorization lifecycle control
         env:
           ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
