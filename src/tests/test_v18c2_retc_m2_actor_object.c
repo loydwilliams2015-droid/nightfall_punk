@@ -639,6 +639,45 @@ int main(void){
        owner->physical.committed_receipts==0u&&
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x);
+ /* H253-H257: source-exact A4 first-impact TOI/timing boundary.
+    This is a collinear 1D scheduled-contact test, NOT proof of
+    reversing a real collision graph or generalized 3D contacts. */
+ const float baseline_contact_time=chain->first_impact_time;
+ const uint32_t baseline_contact_history=
+     nf18a5_history_hash(&chain->material.history);
+ CHECK(baseline_contact_time>0.f&&baseline_contact_time<.125f);
+ /* H253: a shorter VALID dt which still contains the impact stages the
+    same A4 contact time and both genuine A5 history edges. */
+ CHECK(nf_world_step_checked(world,.11f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==11u&&chain_probe_state.passed==8u&&chain->staged);
+ CHECK(chain->first_impact_fraction>0.f&&chain->first_impact_fraction<1.f);
+ CHECK(fabsf(chain->first_impact_time-baseline_contact_time)<.003f);
+ CHECK(chain->material.history.raw_samples==samples+2u);
+ /* H254: a longer valid dt preserves TOI as physical time, although
+    its normalized fraction necessarily changes. */
+ CHECK(nf_world_step_checked(world,.15f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==12u&&chain_probe_state.passed==9u&&chain->staged);
+ CHECK(fabsf(chain->first_impact_time-baseline_contact_time)<.003f);
+ CHECK(chain->material.history.raw_samples==samples+2u);
+ /* H255: dt stops BEFORE the first actor-crate impact; never invent
+    both contact receipts or material history for future collisions. */
+ CHECK(nf_world_step_checked(world,.075f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==13u&&chain_probe_state.passed==9u&&!chain->staged);
+ /* H256: dt outside the supported 250ms tick boundary is rejected
+    before any private three-body physical or A5 stage. */
+ CHECK(nf_world_step_checked(world,.3f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==14u&&chain_probe_state.passed==9u&&!chain->staged);
+ /* H257: source baseline replay exactly reestablishes the original
+    first impact time and private two-edge history hash; nothing live. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==15u&&chain_probe_state.passed==10u&&chain->staged);
+ CHECK(chain->first_impact_time==baseline_contact_time&&
+       nf18a5_history_hash(&chain->material.history)==baseline_contact_history);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
  free(chain);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
