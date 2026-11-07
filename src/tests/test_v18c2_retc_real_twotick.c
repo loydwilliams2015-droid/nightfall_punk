@@ -1085,6 +1085,47 @@ int main(void){
          two_owner->physical.world.history.raw_samples==a5_before_samples&&
          two_world->tick==source_tick&&push->receipt_count==2u);
    CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
+   /* H188: a genuinely loaded 0.5m fine grid can clear a MIXED
+      canonical voxel when its single solid subvoxel lies beyond both
+      swept capsule paths (z=0.5..1, both paths at z=0, radius 0.36). */
+   const uint16_t fine_len=8u*8u*8u;
+   uint8_t fine_clear[8u*8u*8u]={0};
+   fine_clear[8u]=NF18A5_SOLID; /* y=0,z=1,x=0 */
+   center_chunk->canonical[0]=NF18A5_MIXED;
+   const uint32_t fine_parent=center_chunk->canonical_epoch;
+   CHECK(nf18a5_load_fine(&two_owner->physical.world.grid,0,0,0,
+                          2u,fine_clear,fine_len,fine_parent,1u));
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==10u&&probe.accepted==5u&&in_tick->staged);
+   /* H189: stale fine-parent evidence must never grant static clearance. */
+   center_chunk->fine_parent_epoch=fine_parent+1u;
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==11u&&probe.accepted==5u&&!in_tick->staged);
+   center_chunk->fine_parent_epoch=fine_parent;
+   /* H190: fine-resolution SOLID directly in actor 30's swept hull is a
+      real obstruction even though nearby exact subvoxels are FREE. */
+   center_chunk->fine[0]=NF18A5_SOLID;
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==12u&&probe.accepted==5u&&!in_tick->staged);
+   center_chunk->fine[0]=NF18A5_FREE;
+   /* H191: fine cache release cannot silently downgrade a MIXED cell
+      to FREE under an unchanged canonical material claim. */
+   CHECK(nf18a5_release_fine(&two_owner->physical.world.grid,0,0,0));
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==13u&&probe.accepted==5u&&!in_tick->staged);
+   /* H192: reloading exact fine source restores staging with identical
+      collision receipt; all live A6/A5/B3 effects remain unpublished. */
+   CHECK(nf18a5_load_fine(&two_owner->physical.world.grid,0,0,0,
+                          2u,fine_clear,fine_len,fine_parent,1u));
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==14u&&probe.accepted==6u&&in_tick->staged);
+   CHECK(in_tick->sample.normal_impulse==in_tick_impulse&&
+         nf18a5_history_hash(&in_tick->material_candidate.history)==in_tick_hash);
+   CHECK(two_world->tick==source_tick&&
+         two_owner->physical.world.revision==a5_before_revision&&
+         two_owner->physical.world.history.raw_samples==a5_before_samples&&
+         push->receipt_count==2u&&nf_retc_read(publisher)==accepted);
+   center_chunk->canonical[0]=previous_cell;
    two_owner->require_dual_contact_preflight=false;
    two_owner->research_dual_stage=NULL;
    two_owner->research_dual_context=NULL;
