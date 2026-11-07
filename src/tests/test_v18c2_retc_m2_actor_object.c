@@ -5,6 +5,7 @@
 #include "nf_retc_m2_transition_tick.h"
 #include "nf_retc_m2_contention_tick.h"
 #include "nf_retc_m2_fairness_tick.h"
+#include "nf_retc_m2_three_entity_tick.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -78,6 +79,14 @@ static bool fair_probe(const NfWorld *w,const Nf18a6Runtime *owner,
  ++p->calls;
  const bool ok=nf_retc_m2_fair_in_tick(w,owner,dt,p->state);
  if(ok)++p->staged;
+ return ok;
+}
+typedef struct M2ThreeProbe {NfRetcM2ThreeEntity *out;unsigned calls,passed;} M2ThreeProbe;
+static bool three_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,void *context){
+ M2ThreeProbe *p=(M2ThreeProbe *)context;
+ ++p->calls;
+ const bool ok=nf_retc_m2_three_entity_in_tick(w,owner,dt,p->out);
+ if(ok)++p->passed;
  return ok;
 }
 int main(void){
@@ -395,6 +404,54 @@ int main(void){
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x);
  free(fair);
+ /* H233: one real A6 owner actor pushes the real crate while the second
+    world actor follows a separated, source-bound passive trajectory. */
+ NfRetcM2ThreeEntity *three=calloc(1,sizeof *three);
+ CHECK(three);
+ M2ThreeProbe tp3={.out=three};
+ rival->transform.position.x=-3.f;
+ rival->transform.velocity.x=0.f;
+ owner->research_pair_stage=three_probe;
+ owner->research_pair_context=&tp3;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(tp3.calls==1u&&tp3.passed==1u&&three->staged);
+ CHECK(three->roster.count==2u&&three->rival_id==40u&&
+       three->rival_before.id==40u&&three->rival_after.id==40u);
+ CHECK(three->owner_push.staged&&
+       three->owner_push.pair.candidate.object.velocity.x>0.f&&
+       three->owner_push.pair.candidate.world.history.raw_samples==samples+1u);
+ /* H234: stage is deterministic for the same exact world source. */
+ const uint32_t three_hash=nf18a5_history_hash(
+       &three->owner_push.pair.candidate.world.history);
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(tp3.calls==2u&&tp3.passed==2u&&three->staged);
+ CHECK(nf18a5_history_hash(&three->owner_push.pair.candidate.world.history)==three_hash);
+ CHECK(three->rival_after.center.x==three->rival_before.center.x);
+ /* H235: actual rival enters the owner actor's contact reach. We MUST
+    refuse the unresolved shared three-body physics instead of hiding it. */
+ rival->transform.position.x=-.2f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(tp3.calls==3u&&tp3.passed==2u&&!three->staged);
+ rival->transform.position.x=-3.f;
+ /* H236: an otherwise remote rival's swept trajectory crosses the
+    interaction; conservative rejection is the only supported result. */
+ rival->transform.velocity.x=24.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(tp3.calls==4u&&tp3.passed==2u&&!three->staged);
+ rival->transform.velocity.x=0.f;
+ /* H237: restored three-entity source passes but NO rival body, actor,
+    crate, A5 history, B3 receipt or live A6 tick is published. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(tp3.calls==5u&&tp3.passed==3u&&three->staged);
+ CHECK(three->rival_after.velocity.x==0.f&&
+       three->rival_after.center.x==-3.f);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x&&
+       rival->transform.position.x==-3.f);
+ free(three);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
  owner->research_pair_context=NULL;
