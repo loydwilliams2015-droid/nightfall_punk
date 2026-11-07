@@ -3,6 +3,7 @@
 #include "nf_retc_m2_push_tick.h"
 #include "nf_retc_m2_carry_tick.h"
 #include "nf_retc_m2_transition_tick.h"
+#include "nf_retc_m2_contention_tick.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -52,6 +53,17 @@ static bool transition_probe(const NfWorld *w,const Nf18a6Runtime *owner,float d
  M2TransitionProbe *p=(M2TransitionProbe *)context;
  ++p->calls;
  const bool ok=nf_retc_m2_transition_in_tick(w,owner,dt,p->mode,p->state);
+ if(ok)++p->passed;
+ return ok;
+}
+typedef struct M2ContentionProbe {
+ NfRetcM2Contention *out;
+ unsigned calls,passed;
+} M2ContentionProbe;
+static bool contention_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,void *context){
+ M2ContentionProbe *p=(M2ContentionProbe *)context;
+ ++p->calls;
+ const bool ok=nf_retc_m2_contend_in_tick(w,owner,dt,p->out);
  if(ok)++p->passed;
  return ok;
 }
@@ -261,6 +273,62 @@ int main(void){
  CHECK(a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x);
  free(tr);
+ /* H223: two REAL world actors claim the same A6-owned crate. The bounded
+    research tie-break chooses source actor id 30 before id 40. */
+ CHECK(nf_world_spawn_actor_with_id(world,40u,NF_FACTION_RIVAL,
+       (NfVec3){0.f,0.f,0.f})==40u);
+ NfActor *rival=nf_world_find_actor(world,40u);
+ CHECK(rival);
+ rival->input.interact_held=true;
+ rival->input.forward=1.f;
+ rival->input.strafe=0.f;
+ rival->input.yaw_radians=0.f;
+ NfRetcM2Contention *cont=calloc(1,sizeof *cont);
+ CHECK(cont);
+ M2ContentionProbe mp={.out=cont};
+ owner->research_pair_stage=contention_probe;
+ owner->research_pair_context=&mp;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(mp.calls==1u&&mp.passed==1u&&cont->staged&&
+       cont->claim_count==2u&&cont->winning_actor==30u);
+ CHECK(cont->winner_effect.staged&&
+       cont->winner_effect.pair.candidate.world.history.raw_samples==samples+1u);
+ /* H224: permutation of the captured source roster does not change the
+    deterministic contender winner or the source claim count. */
+ NfMa03Roster permuted=cont->roster;
+ NfMa03Participant temp=permuted.actors[0];
+ permuted.actors[0]=permuted.actors[1];
+ permuted.actors[1]=temp;
+ uint32_t permuted_claims=0u;
+ CHECK(nf_retc_m2_select_claim(&permuted,
+       owner->physical.object.center,&permuted_claims)==30u);
+ CHECK(permuted_claims==2u);
+ /* H225: lower-id REAL contender wins; A6 owner 30 MUST refuse to stage
+    any rival-owned physical consequence or A5 sample. */
+ rival->id=20u;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(mp.calls==2u&&mp.passed==1u&&!cont->staged&&
+       cont->claim_count==2u&&cont->winning_actor==20u);
+ rival->id=40u;
+ /* H226: owner releases and source rival remains held: competitor wins
+    the proposal, but this A6 owner may not act on its behalf. */
+ a->input.interact_held=false;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(mp.calls==3u&&mp.passed==1u&&!cont->staged&&
+       cont->claim_count==1u&&cont->winning_actor==40u);
+ /* H227: rival release and source owner re-entry deterministically
+    restores private staging. Still no live world/body/A5/B3 effects. */
+ a->input.interact_held=true;
+ rival->input.interact_held=false;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(mp.calls==4u&&mp.passed==2u&&cont->staged&&
+       cont->winning_actor==30u&&cont->claim_count==1u);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
+ free(cont);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
  owner->research_pair_context=NULL;
