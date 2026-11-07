@@ -846,6 +846,7 @@ int main(void){
     stage in one private A5 material epoch, preserving ancestry. */
  rival->transform.velocity.x=.5f;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ if(!scheduled->staged)fprintf(stderr,"H270 rejected at event scheduler line %u\n",scheduled->reject_line);
  CHECK(ev.calls==9u&&ev.passed==6u&&scheduled->staged);
  CHECK(fabsf(scheduled->expected_velocity-
        (80.f*4.f+24.f*.25f+80.f*.5f)/(80.f+24.f+80.f))<.002f);
