@@ -104,7 +104,7 @@ static inline bool nf_retc_ma03_a5_stage_in_owner_tick(
  /* H193: derive two actual reciprocal material consequences from the
     A4 solver; never synthesize actor-2 movement from a B3 proposal.
     The present solver is linear, equal-mass and collinear. */
- NfVec3 impulse[2]={{0},{0}};
+ NfVec3 impulse[2]={{0.f,0.f,0.f},{0.f,0.f,0.f}};
  for(size_t i=0;i<2u;++i){
   const float im=bodies[i].inverse_mass;
   if(!(im>0.f)||!isfinite(im))return false;
