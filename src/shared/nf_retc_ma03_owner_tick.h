@@ -65,6 +65,27 @@ static inline bool nf_retc_ma03_a5_stage_in_owner_tick(
  if(solved.status!=NF_NARROW_OK||solved.count!=2u||
     solved.impacts!=1u||oracle.matched!=1u||
     oracle.disagreed||oracle.unresolved)return false;
+ /* H183-H187: both real actor swept capsules must clear STATIC A5
+    canonical/fine geometry before either contact or history can stage.
+    Queries use a PRIVATE grid because fine-cache fills are not authority.
+    Missing, mixed without current fine data, or SOLID fails closed. */
+ Nf18a5Grid clearance=owner->physical.world.grid;
+ for(size_t i=0;i<2u;++i){
+  const Nf18a4Body *start=&bodies[i],*end=&solved.bodies[i];
+  const Nf18a2ShapePolicy shape={
+   .radius=start->radius,.height=start->height,
+   .foot_flat_radius=0.05f,.step_height=0.4f,
+   .walkable_normal_y=0.65f
+  };
+  const NfVec3 feet={start->center.x,
+       start->center.y-start->height*.5f,start->center.z};
+  const NfVec3 path={end->center.x-start->center.x,
+       end->center.y-start->center.y,end->center.z-start->center.z};
+  uint32_t loads=0;
+  if(nf18a5_sweep_query(&clearance,feet,path,shape,dt,tick,
+          NULL,NULL,&loads)!=NF18A5_Q_FREE)
+    return false;
+ }
  const Nf18a4Receipt *receipt=&solved.receipts[0];
  if(receipt->status!=NF18A4_ACCEPTED||!receipt->impulses_applied||
     receipt->tick!=tick||receipt->world_version!=revision)return false;
