@@ -168,8 +168,11 @@ static inline bool nf_retc_m2_three_contact_in_tick(
        0.f,next.material.grid.global_revision,&next.samples[k])){ out->reject_line=(uint32_t)__LINE__; return false; }
   next.contacts[k]=receipts[k];
  }
- if(!nf18a5_world_commit(&next.material,revision,tick,owner->actor_id,
-     next.samples,2u)||next.material.history.raw_samples!=
+ const uint32_t participants[3]={
+     bodies[0].id,bodies[1].id,bodies[2].id};
+ if(!nf18a5_world_commit_three(&next.material,revision,tick,
+     owner->actor_id,participants,next.samples)||
+     next.material.history.raw_samples!=
          owner->physical.world.history.raw_samples+2u){ out->reject_line=(uint32_t)__LINE__; return false; }
  for(size_t i=0;i<3u;++i)next.bodies[i]=bodies[i];
  next.source_tick=w->tick;
