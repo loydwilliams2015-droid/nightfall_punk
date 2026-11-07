@@ -1,0 +1,52 @@
+name: RET-C M2.4-M2.5 closeout preflight
+on:
+  push:
+    branches: [engineering/retc-h268-h272-m2-moving-events]
+    paths:
+      - 'docs/retc_m24_m25_closeout_acceptance.md'
+      - 'src/shared/nf_retc_m2_event_scheduler.h'
+      - 'src/tests/test_v18c2_retc_m2_actor_object.c'
+      - '.github/workflows/retc-m24-m25-closeout.yml'
+  pull_request:
+    paths:
+      - 'docs/retc_m24_m25_closeout_acceptance.md'
+      - 'src/shared/nf_retc_m2_event_scheduler.h'
+      - 'src/tests/test_v18c2_retc_m2_actor_object.c'
+      - '.github/workflows/retc-m24-m25-closeout.yml'
+  workflow_dispatch:
+jobs:
+  contract-and-m24-regression:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact SHA
+        run: git rev-parse HEAD
+      - name: Validate conservative closeout contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          file=docs/retc_m24_m25_closeout_acceptance.md
+          test -s "$file"
+          for gate in H273 H274 H275 H276 H277; do
+            grep -q "$gate" "$file"
+          done
+          grep -q 'RESEARCH-ONLY' "$file"
+          grep -q 'production release' "$file"
+      - name: Configure existing research engine with sanitizers
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-m24-closeout -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build source-exact M2.4 cumulative target
+        run: cmake --build build-m24-closeout --parallel 2 --target nightfall_v18c2_retc_m2_actor_object_test
+      - name: Execute M2.4 cumulative research regression
+        env:
+          ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-m24-closeout -R '^retc_m2_actor_object_private_owner_tick_v18c2$' --output-on-failure
