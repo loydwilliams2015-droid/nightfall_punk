@@ -21,9 +21,9 @@ typedef struct NfRetcM2ThreeContact {
  uint32_t reject_line; /* research-only rejection locator */
  bool staged;
 } NfRetcM2ThreeContact;
-static inline bool nf_retc_m2_three_contact_in_tick(
+static inline bool nf_retc_m2_three_contact_ordered_in_tick(
  const NfWorld *w,const Nf18a6Runtime *owner,float dt,
- NfRetcM2ThreeContact *out){
+ bool reverse_constraints,NfRetcM2ThreeContact *out){
  if(!out)return false;
  out->staged=false;
  out->reject_line=0u;
@@ -127,7 +127,8 @@ static inline bool nf_retc_m2_three_contact_in_tick(
  Nf18a4Receipt receipts[2]={{0},{0}};
  unsigned passes=0u;
  for(unsigned pass=0u;pass<32u;++pass){
-  for(size_t k=0;k<2u;++k){
+  for(size_t visit=0;visit<2u;++visit){
+   const size_t k=reverse_constraints?1u-visit:visit;
    Nf18a4Receipt r=nf18a4_apply_contact(&bodies[k],&bodies[k+1],
        constraints[k],NF18A4_RECIPROCAL_LINEAR,tick,revision);
    if(r.status==NF18A4_INVALID){ out->reject_line=(uint32_t)__LINE__; return false; }
@@ -185,5 +186,13 @@ static inline bool nf_retc_m2_three_contact_in_tick(
  next.staged=true;
  *out=next;
  return true;
+}
+/* Production-like research incumbent retains its original fixed order.
+   Reverse permutation is a challenger ONLY on the same source and
+   contact graph, never a claim about actual reversed arrival times. */
+static inline bool nf_retc_m2_three_contact_in_tick(
+ const NfWorld *w,const Nf18a6Runtime *owner,float dt,
+ NfRetcM2ThreeContact *out){
+ return nf_retc_m2_three_contact_ordered_in_tick(w,owner,dt,false,out);
 }
 #endif
