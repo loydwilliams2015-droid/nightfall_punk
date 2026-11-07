@@ -16,6 +16,7 @@ typedef struct NfRetcM2ThreeContact {
  uint64_t source_tick;
  uint32_t source_revision;
  float expected_velocity;
+ float first_impact_time,first_impact_fraction;
  unsigned passes;
  uint32_t reject_line; /* research-only rejection locator */
  bool staged;
@@ -178,6 +179,8 @@ static inline bool nf_retc_m2_three_contact_in_tick(
  next.source_tick=w->tick;
  next.source_revision=revision;
  next.expected_velocity=oracle;
+ next.first_impact_time=contact_time;
+ next.first_impact_fraction=first.toi;
  next.passes=passes;
  next.staged=true;
  *out=next;
