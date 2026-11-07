@@ -514,7 +514,7 @@ int main(void){
        owner->physical.committed_receipts==0u&&
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x&&
-       rival->transform.position.x==1.51f);
+       fabsf(rival->transform.position.x-(before_crate.x+owner->physical.object.box_half.x+owner->physical.actor.radius))<.0001f);
  free(chain);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
