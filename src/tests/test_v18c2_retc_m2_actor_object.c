@@ -810,6 +810,69 @@ int main(void){
        owner->physical.committed_receipts==0u&&
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x);
+ /* H268-H272: the second contact must be computed from BOTH moving
+    source bodies at the real first event, never from a stationary rival
+    assumption. The incumbent stationary case remains the control. */
+ const float moving_source_crate=owner->physical.object.velocity.x;
+ const float moving_source_rival=rival->transform.velocity.x;
+ const float moving_baseline_first=scheduled->first_time;
+ const float moving_baseline_second=scheduled->second_time;
+ const uint32_t moving_baseline_hash=
+     nf18a5_history_hash(&scheduled->material.history);
+ /* H268: moving rival translates before event one and changes the
+    second event time. Conservation checks all THREE source masses. */
+ rival->transform.velocity.x=.25f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(ev.calls==7u&&ev.passed==4u&&scheduled->staged);
+ CHECK(scheduled->second_time>moving_baseline_second);
+ CHECK(fabsf(scheduled->expected_velocity-
+       (80.f*4.f+80.f*.25f)/(80.f+24.f+80.f))<.002f);
+ for(unsigned j=0u;j<3u;++j)
+  CHECK(fabsf(scheduled->bodies[j].velocity.x-
+       scheduled->expected_velocity)<.004f);
+ CHECK(scheduled->material.history.raw_samples==samples+2u);
+ /* H269: moving source crate changes FIRST impact time and gap
+    to rival at first impact; the second event is not stationary CCD. */
+ rival->transform.velocity.x=0.f;
+ owner->physical.object.velocity.x=.25f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(ev.calls==8u&&ev.passed==5u&&scheduled->staged);
+ CHECK(scheduled->first_time>moving_baseline_first);
+ CHECK(fabsf(scheduled->expected_velocity-
+       (80.f*4.f+24.f*.25f)/(80.f+24.f+80.f))<.002f);
+ CHECK(scheduled->first_time<scheduled->second_time&&
+       scheduled->second_time<.125f);
+ /* H270: both source bodies move; two authentic A4 receipts still
+    stage in one private A5 material epoch, preserving ancestry. */
+ rival->transform.velocity.x=.5f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(ev.calls==9u&&ev.passed==6u&&scheduled->staged);
+ CHECK(fabsf(scheduled->expected_velocity-
+       (80.f*4.f+24.f*.25f+80.f*.5f)/(80.f+24.f+80.f))<.002f);
+ CHECK(scheduled->samples[0].body_a==30u&&
+       scheduled->samples[0].body_b==3050u&&
+       scheduled->samples[1].body_a==3050u&&
+       scheduled->samples[1].body_b==40u);
+ /* H271: rival outruns the post-first-event crate; a second impact
+    cannot be forged inside this tick, so the joint stage refuses. */
+ owner->physical.object.velocity.x=0.f;
+ rival->transform.velocity.x=3.5f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(ev.calls==10u&&ev.passed==6u&&!scheduled->staged);
+ /* H272: restore source velocities. Both event times and exact
+    A5 digest reproduce, no world tick, actor, crate or B3 publication. */
+ owner->physical.object.velocity.x=moving_source_crate;
+ rival->transform.velocity.x=moving_source_rival;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(ev.calls==11u&&ev.passed==7u&&scheduled->staged);
+ CHECK(scheduled->first_time==moving_baseline_first&&
+       scheduled->second_time==moving_baseline_second&&
+       nf18a5_history_hash(&scheduled->material.history)==moving_baseline_hash);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
  free(scheduled);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
