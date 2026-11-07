@@ -5,6 +5,7 @@
 #include "nf_retc_ma03_physics_stage.h"
 #include "nf_retc_ma03_a5_envelope.h"
 #include "nf_retc_ma03_a5_contact_stage.h"
+#include "nf_retc_ma03_owner_tick.h"
 #include "nf_retc_external.h"
 #include "nf_retc_network.h"
 #include "nf_multi_ma03.h"
@@ -51,6 +52,19 @@ static bool verify(const NfWorld *w,const Nf18a6Runtime *r,
     fabsf(a->transform.position.z-f->physical.actor.center.z)<.0001f&&
     fabsf(col->min.x-(f->physical.object.center.x-f->physical.object.box_half.x))<.0001f&&
     fabsf(col->max.x-(f->physical.object.center.x+f->physical.object.box_half.x))<.0001f;
+}
+typedef struct NfH178OwnerTickProbe {
+ NfRetcMa03TickEvidence *evidence;
+ unsigned calls,accepted;
+} NfH178OwnerTickProbe;
+static bool h178_owner_tick_probe(const NfWorld *w,
+ const Nf18a6Runtime *owner,float dt,void *context){
+ NfH178OwnerTickProbe *p=context;
+ if(!p||!p->evidence)return false;
+ ++p->calls;
+ bool ok=nf_retc_ma03_a5_stage_in_owner_tick(w,owner,dt,p->evidence);
+ if(ok)++p->accepted;
+ return ok;
 }
 int main(void){
  NfWorld *w=calloc(1,sizeof *w);
@@ -976,6 +990,56 @@ int main(void){
                 sizeof second_start)==0);
    CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u&&
          push->receipt_count==2u);
+   /* H178: real A6 owner tick executes a two-body A4 contact and
+      private A5 history via H83 diagnostic callback, then refuses commit. */
+   NfRetcMa03TickEvidence *in_tick=calloc(1,sizeof *in_tick);
+   CHECK(in_tick);
+   NfH178OwnerTickProbe probe={.evidence=in_tick};
+   two_owner->research_dual_stage=h178_owner_tick_probe;
+   two_owner->research_dual_context=&probe;
+   two_owner->require_dual_contact_preflight=true;
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==1u&&probe.accepted==1u&&in_tick->staged);
+   CHECK(in_tick->impacts==1u&&in_tick->sample.body_a==30u&&
+         in_tick->sample.body_b==40u&&
+         in_tick->material_candidate.history.raw_samples==a5_before_samples+1u);
+   /* H179: repeat at the same accepted A6 source tick yields the same
+      staged contact and history fingerprint, no published world tick. */
+   const uint32_t in_tick_hash=nf18a5_history_hash(
+       &in_tick->material_candidate.history);
+   const float in_tick_impulse=in_tick->sample.normal_impulse;
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==2u&&probe.accepted==2u&&in_tick->staged);
+   CHECK(nf18a5_history_hash(&in_tick->material_candidate.history)==in_tick_hash);
+   CHECK(in_tick->sample.normal_impulse==in_tick_impulse);
+   /* H180: A6 A4 owner-source mismatch refuses private A5 staging. */
+   const float old_bound_velocity=two_owner->physical.actor.velocity.x;
+   two_owner->physical.actor.velocity.x+=.75f;
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==3u&&probe.accepted==2u&&!in_tick->staged);
+   two_owner->physical.actor.velocity.x=old_bound_velocity;
+   /* H181: invalid A5 material epoch never authorizes a history sample. */
+   two_owner->physical.world.grid.global_revision=0u;
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==4u&&probe.accepted==2u&&!in_tick->staged);
+   two_owner->physical.world.grid.global_revision=a5_before_epoch;
+   /* H182: H83 cannot publish a partial two-actor transaction even with
+      authentic A4 receipt and private A5 history successfully staged. */
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==5u&&probe.accepted==3u&&in_tick->staged);
+   CHECK(two_world->tick==source_tick&&
+         two_owner->physical.world.revision==a5_before_revision&&
+         two_owner->physical.world.history.raw_samples==a5_before_samples);
+   CHECK(memcmp(&primary->transform.position,&first_start,
+                sizeof first_start)==0);
+   CHECK(memcmp(&secondary->transform.position,&second_start,
+                sizeof second_start)==0);
+   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u&&
+         push->receipt_count==2u);
+   two_owner->require_dual_contact_preflight=false;
+   two_owner->research_dual_stage=NULL;
+   two_owner->research_dual_context=NULL;
+   free(in_tick);
    CHECK(nf18a6_unbind_world_tick(two_world,two_owner));
    free(two_owner);
    free(two_world);
