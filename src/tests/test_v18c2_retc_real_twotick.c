@@ -4,6 +4,7 @@
 #include "nf_retc_multi_physical.h"
 #include "nf_retc_ma03_physics_stage.h"
 #include "nf_retc_ma03_a5_envelope.h"
+#include "nf_retc_ma03_a5_contact_stage.h"
 #include "nf_retc_external.h"
 #include "nf_retc_network.h"
 #include "nf_multi_ma03.h"
@@ -880,6 +881,53 @@ int main(void){
    CHECK(memcmp(&secondary->transform.position,&second_start,sizeof second_start)==0);
    CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u&&
          push->receipt_count==2u);
+   /* H173: actual MA01 A4 collision receipt (not a fabricated event)
+      drives a PRIVATE A5 history commit for both source actor IDs. */
+   CHECK(candidate.solved.receipts[0].status==NF18A4_ACCEPTED);
+   CHECK(candidate.solved.receipts[0].impulses_applied);
+   NfRetcMa03A5ContactStage *a5_contact_stage=
+       calloc(1,sizeof *a5_contact_stage);
+   CHECK(a5_contact_stage);
+   CHECK(nf_retc_ma03_a5_stage_contact(two_world,two_owner,.125f,
+                     &candidate,&a5_handoff,a5_contact_stage));
+   CHECK(a5_contact_stage->staged&&
+         a5_contact_stage->contact.body_a==30u&&
+         a5_contact_stage->contact.body_b==40u&&
+         a5_contact_stage->contact.normal_impulse>0.f);
+   CHECK(a5_contact_stage->candidate.history.raw_samples==a5_before_samples+1u);
+   CHECK(a5_contact_stage->candidate.tick==two_world->tick+1u);
+   /* H174: same source and receipt yields deterministic A5 history. */
+   NfRetcMa03A5ContactStage *repeat_a5=calloc(1,sizeof *repeat_a5);
+   CHECK(repeat_a5);
+   CHECK(nf_retc_ma03_a5_stage_contact(two_world,two_owner,.125f,
+                     &candidate,&a5_handoff,repeat_a5));
+   CHECK(repeat_a5->staged&&
+         repeat_a5->contact.contact_id==a5_contact_stage->contact.contact_id&&
+         repeat_a5->contact.normal_impulse==a5_contact_stage->contact.normal_impulse&&
+         nf18a5_history_hash(&repeat_a5->candidate.history)==
+         nf18a5_history_hash(&a5_contact_stage->candidate.history));
+   /* H175: changed source material revision cannot get a private commit. */
+   ++two_owner->physical.world.revision;
+   CHECK(!nf_retc_ma03_a5_stage_contact(two_world,two_owner,.125f,
+                     &candidate,&a5_handoff,repeat_a5));
+   two_owner->physical.world.revision=a5_before_revision;
+   /* H176: a forged calculated second-body consequence is refused. */
+   NfRetcMa03A5Envelope forged_material=a5_handoff;
+   forged_material.bodies[1].velocity.x+=.25f;
+   CHECK(!nf_retc_ma03_a5_stage_contact(two_world,two_owner,.125f,
+                     &candidate,&forged_material,repeat_a5));
+   /* H177: privately committed A5 history does not publish any live
+      A5, A6, B2 or B3 effect; the single-A6 owner remains unchanged. */
+   CHECK(two_owner->physical.world.revision==a5_before_revision&&
+         two_owner->physical.world.history.raw_samples==a5_before_samples&&
+         two_owner->physical.world.history.generated_events==a5_before_events);
+   CHECK(two_world->tick==source_tick);
+   CHECK(memcmp(&primary->transform.position,&first_start,sizeof first_start)==0);
+   CHECK(memcmp(&secondary->transform.position,&second_start,sizeof second_start)==0);
+   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u&&
+         push->receipt_count==2u);
+   free(repeat_a5);
+   free(a5_contact_stage);
    /* H162: moving source coactor produces a genuine two-body A4
       impulse, agrees with independent inelastic collision reference. */
    secondary->transform.velocity.x=1.f;
