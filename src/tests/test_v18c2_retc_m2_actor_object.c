@@ -472,6 +472,7 @@ int main(void){
  owner->research_pair_stage=chain_probe;
  owner->research_pair_context=&chain_probe_state;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ if(!chain->staged)fprintf(stderr,"H238 three-contact stage reject line %u\n",chain->reject_line);
  CHECK(chain_probe_state.calls==1u&&chain_probe_state.passed==1u&&chain->staged);
  CHECK(chain->passes<=32u&&chain->passes>=2u);
  CHECK(chain->bodies[0].id==30u&&chain->bodies[1].id==3050u&&
