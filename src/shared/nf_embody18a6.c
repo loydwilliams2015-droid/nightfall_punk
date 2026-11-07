@@ -539,6 +539,12 @@ static NfWorldTickStatus nf18a6_tick_dispatch(NfWorld *world,float dt,void *cont
             nf_c2_lease_release(&runtime->world_lease);
             return NF_WORLD_TICK_REJECTED;
         }
+        /* H178: only the actual owner-invoked tick can ask the research
+           callback to stage both A4 bodies and a PRIVATE A5 history.
+           Regardless of its result, NEVER publish an incomplete B3 frame. */
+        if(runtime->research_dual_stage)
+            (void)runtime->research_dual_stage(world,runtime,dt,
+                                              runtime->research_dual_context);
         /* Intentionally refuse: no A5/B2/B3 joint dual-actor publication. */
         nf_c2_lease_release(&runtime->world_lease);
         return NF_WORLD_TICK_REJECTED;

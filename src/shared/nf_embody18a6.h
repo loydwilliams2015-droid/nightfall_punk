@@ -66,6 +66,9 @@ typedef struct Nf18a6Runtime {
     /* H73 opt-in, passive/distant co-presence only; default rejects >1 actor. */
     bool allow_passive_coactors;
     bool require_dual_contact_preflight; /* H83 research only; refuses joint commit */
+    /* Research-only H178 owner-tick staging callback, never publication. */
+    bool (*research_dual_stage)(const NfWorld *,const struct Nf18a6Runtime *,float,void *);
+    void *research_dual_context;
     uint32_t object_collider_index; /* NfWorld material/weapon geometry mirror */
     uint32_t last_hash;
     uint32_t model;
