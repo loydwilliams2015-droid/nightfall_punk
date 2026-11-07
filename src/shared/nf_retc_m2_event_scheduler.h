@@ -7,6 +7,22 @@
  * with two authentic A4 receipts committed to one PRIVATE A5 revision.
  * No 3D generalization, B2/B3 grant, WAL or A6 publication. */
 #include "nf_retc_m2_three_contact_tick.h"
+/* Source-derived collinear event-order preflight. Conservative ties are
+ * unsupported: no A4 impulse or A5 sample may be staged in this scheduler
+ * when crate->rival meets actor->crate first or nearly simultaneously.
+ * 0=invalid, 1=actor-first, 2=preempted/tied. Research-only. */
+static inline int nf_retc_m2_arrival_order(float gap,float crate_v,
+ float rival_v,float actor_crate_t,float dt){
+ if(!isfinite(gap)||gap<=0.f||!isfinite(crate_v)||
+    !isfinite(rival_v)||!isfinite(actor_crate_t)||
+    !isfinite(dt)||actor_crate_t<=0.f||dt<=0.f||
+    actor_crate_t>=dt)return 0;
+ const float relative=crate_v-rival_v;
+ if(relative<=0.f)return 1; /* no pre-existing closing rival contact */
+ const float t=gap/relative;
+ if(!isfinite(t)||t<0.f)return 0;
+ return t<=actor_crate_t+0.00001f?2:1;
+}
 typedef struct NfRetcM2EventChain {
  Nf18a5World material;
  Nf18a4Body bodies[3];
@@ -85,6 +101,13 @@ static inline bool nf_retc_m2_event_chain_in_tick(
     !first.receipt.impulses_applied||first.toi<=0.f||
     first.toi>=1.f){ out->reject_line=(uint32_t)__LINE__; return false; }
  const float t1=first.toi*dt;
+ /* H273B: classify competing *source* contact arrivals before ANY
+  * staged A4 impulse. Reject reversed or near-simultaneous schedules.
+  * Full reversed-event solver remains a separate research challenger. */
+ if(nf_retc_m2_arrival_order(gap,b.velocity.x,rival->velocity.x,
+                            t1,dt)!=1){
+    out->reject_line=(uint32_t)__LINE__;return false;
+ }
  Nf18a4Body bodies[3]={a,b,{0}};
  bodies[0].center.x+=a.velocity.x*t1;
  bodies[1].center.x+=b.velocity.x*t1;
