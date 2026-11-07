@@ -1,0 +1,35 @@
+name: RET-C H263-H267 M2 two-event contact scheduling acceptance
+on:
+  push:
+    branches: [engineering/retc-h263-h267-m2-push-interrupt]
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_m2_push_tick.h'
+      - 'src/tests/test_v18c2_retc_m2_actor_object.c'
+      - '.github/workflows/retc-h263-h267-m2-push.yml'
+  workflow_dispatch:
+jobs:
+  push-source-asan-ubsan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact source
+        run: git rev-parse HEAD
+      - name: Configure research engine
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-push -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build real owner-tick three-entity test
+        run: cmake --build build-push --parallel 2 --target nightfall_v18c2_retc_m2_actor_object_test
+      - name: Execute H198-H267 cumulative M2 target
+        env:
+          ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-push -R '^retc_m2_actor_object_private_owner_tick_v18c2$' --output-on-failure

@@ -7,6 +7,7 @@
 #include "nf_retc_m2_fairness_tick.h"
 #include "nf_retc_m2_three_entity_tick.h"
 #include "nf_retc_m2_three_contact_tick.h"
+#include "nf_retc_m2_event_scheduler.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -95,6 +96,18 @@ static bool chain_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,voi
  M2ChainProbe *p=(M2ChainProbe *)context;
  ++p->calls;
  const bool ok=nf_retc_m2_three_contact_ordered_in_tick(w,owner,dt,p->reverse,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
+typedef struct M2EventProbe {
+ NfRetcM2EventChain *out;
+ unsigned calls,passed;
+} M2EventProbe;
+static bool event_probe(const NfWorld *w,const Nf18a6Runtime *owner,
+                        float dt,void *context){
+ M2EventProbe *p=(M2EventProbe *)context;
+ ++p->calls;
+ const bool ok=nf_retc_m2_event_chain_in_tick(w,owner,dt,p->out);
  if(ok)++p->passed;
  return ok;
 }
@@ -733,6 +746,71 @@ int main(void){
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x);
  free(chain);
+ /* H263-H267: a true SECOND event later than owner->crate impact.
+    The incumbent simultaneous-contact solver refuses the .04m gap;
+    the new event-driven challenger may privately stage both edges. */
+ NfRetcM2EventChain *scheduled=calloc(1,sizeof *scheduled);
+ CHECK(scheduled);
+ M2EventProbe ev={.out=scheduled};
+ owner->research_pair_stage=event_probe;
+ owner->research_pair_context=&ev;
+ const float touching_x=owner->physical.object.center.x+
+    owner->physical.object.box_half.x+owner->physical.actor.radius;
+ rival->transform.position.x=touching_x+.04f;
+ /* H263: two separate physical events, real A4 receipts and A5 edges;
+    final velocities agree with an independent inelastic 1D oracle. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(ev.calls==1u&&ev.passed==1u&&scheduled->staged);
+ CHECK(scheduled->first_time>0.f&&
+       scheduled->second_time>scheduled->first_time&&
+       scheduled->second_time<.125f);
+ CHECK(scheduled->contacts[0].impulses_applied&&
+       scheduled->contacts[1].impulses_applied);
+ CHECK(scheduled->material.history.raw_samples==samples+2u&&
+       scheduled->samples[0].body_a==30u&&
+       scheduled->samples[0].body_b==3050u&&
+       scheduled->samples[1].body_a==3050u&&
+       scheduled->samples[1].body_b==40u);
+ for(unsigned i=0u;i<3u;++i)
+  CHECK(fabsf(scheduled->bodies[i].velocity.x-
+              scheduled->expected_velocity)<.004f);
+ /* H264: repeat exact authoritative source, same event times and
+    A5 material ancestry; diagnostic replay does not mutate source. */
+ const float first_time=scheduled->first_time;
+ const float second_time=scheduled->second_time;
+ const uint32_t event_hash=nf18a5_history_hash(&scheduled->material.history);
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(ev.calls==2u&&ev.passed==2u&&scheduled->staged);
+ CHECK(scheduled->first_time==first_time&&
+       scheduled->second_time==second_time&&
+       nf18a5_history_hash(&scheduled->material.history)==event_hash);
+ /* H265: physically distinct second event beyond tick horizon cannot
+    fabricate a crate-to-rival receipt or history publication. */
+ rival->transform.position.x=touching_x+.20f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(ev.calls==3u&&ev.passed==2u&&!scheduled->staged);
+ rival->transform.position.x=touching_x+.04f;
+ /* H266: owner source collider altered; both purported A4 events
+    must refuse without trusting the detached crate geometry. */
+ NfCollider *event_mirror=&world->colliders[owner->object_collider_index];
+ event_mirror->min.x+=.1f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(ev.calls==4u&&ev.passed==2u&&!scheduled->staged);
+ event_mirror->min.x-=.1f;
+ /* H267: tick stops after event one but before event two. Deny
+    two-contact candidate; baseline restoration recreates both edges. */
+ const float midpoint=.5f*(first_time+second_time);
+ CHECK(nf_world_step_checked(world,midpoint)==NF_WORLD_TICK_REJECTED);
+ CHECK(ev.calls==5u&&ev.passed==2u&&!scheduled->staged);
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(ev.calls==6u&&ev.passed==3u&&scheduled->staged);
+ CHECK(nf18a5_history_hash(&scheduled->material.history)==event_hash);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
+ free(scheduled);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
  owner->research_pair_context=NULL;
