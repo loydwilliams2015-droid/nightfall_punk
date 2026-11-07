@@ -842,14 +842,16 @@ int main(void){
        (80.f*4.f+24.f*.25f)/(80.f+24.f+80.f))<.002f);
  CHECK(scheduled->first_time<scheduled->second_time&&
        scheduled->second_time<.125f);
- /* H270: both source bodies move; two authentic A4 receipts still
-    stage in one private A5 material epoch, preserving ancestry. */
- rival->transform.velocity.x=.5f;
+ /* H270: both source bodies advance at .25m/s. Both impacts
+    now occur inside the same .125s horizon (unlike the .5m/s
+    rival, which correctly yielded an out-of-tick event). */
+ rival->transform.velocity.x=.25f;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
- if(!scheduled->staged)fprintf(stderr,"H270 rejected at event scheduler line %u\n",scheduled->reject_line);
  CHECK(ev.calls==9u&&ev.passed==6u&&scheduled->staged);
+ CHECK(scheduled->first_time<scheduled->second_time&&
+       scheduled->second_time<.125f);
  CHECK(fabsf(scheduled->expected_velocity-
-       (80.f*4.f+24.f*.25f+80.f*.5f)/(80.f+24.f+80.f))<.002f);
+       (80.f*4.f+24.f*.25f+80.f*.25f)/(80.f+24.f+80.f))<.002f);
  CHECK(scheduled->samples[0].body_a==30u&&
        scheduled->samples[0].body_b==3050u&&
        scheduled->samples[1].body_a==3050u&&
