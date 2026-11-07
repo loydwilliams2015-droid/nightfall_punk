@@ -2,6 +2,7 @@
 #include "nf_retc_m2_support_tick.h"
 #include "nf_retc_m2_push_tick.h"
 #include "nf_retc_m2_carry_tick.h"
+#include "nf_retc_m2_transition_tick.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -41,6 +42,18 @@ static bool carry_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,voi
  const bool accepted=nf_retc_m2_carry_stage_in_tick(w,owner,dt,p->out);
  if(accepted)++p->accepted;
  return accepted;
+}
+typedef struct M2TransitionProbe {
+ NfRetcM2Transition *state;
+ NfRetcM2TransitionMode mode;
+ unsigned calls,passed;
+} M2TransitionProbe;
+static bool transition_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,void *context){
+ M2TransitionProbe *p=(M2TransitionProbe *)context;
+ ++p->calls;
+ const bool ok=nf_retc_m2_transition_in_tick(w,owner,dt,p->mode,p->state);
+ if(ok)++p->passed;
+ return ok;
 }
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
@@ -204,6 +217,50 @@ int main(void){
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x);
  free(carry);
+ /* H218: source-exact private PUSH arms a transitional witness. */
+ NfRetcM2Transition *tr=calloc(1,sizeof *tr);
+ CHECK(tr);
+ M2TransitionProbe tp={.state=tr,.mode=NF_RETC_M2_PUSH};
+ owner->research_pair_stage=transition_probe;
+ owner->research_pair_context=&tp;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(tp.calls==1u&&tp.passed==1u&&tr->armed&&tr->staged);
+ CHECK(tr->mode==NF_RETC_M2_PUSH&&tr->push.staged&&
+       tr->object_id==owner->physical.object.id);
+ /* H219: an unchanged source may privately hand off from PUSH to CARRY,
+    revalidating both swept volumes and object source. */
+ tp.mode=NF_RETC_M2_CARRY;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(tp.calls==2u&&tp.passed==2u&&tr->carry.staged&&
+       tr->mode==NF_RETC_M2_CARRY);
+ CHECK(tr->carry.candidate.world.history.raw_samples==samples);
+ /* H220: actual input release disarms the transition and invalidates
+    previous PUSH/CARRY staging despite A6 rejecting publication. */
+ a->input.interact_held=false;
+ tp.mode=NF_RETC_M2_RELEASE;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(tp.calls==3u&&tp.passed==2u&&!tr->armed&&
+       !tr->push.staged&&!tr->carry.staged);
+ /* H221: reholding the input cannot resume a cancelled carry without
+    a new source-exact PUSH stage. */
+ a->input.interact_held=true;
+ tp.mode=NF_RETC_M2_CARRY;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(tp.calls==4u&&tp.passed==2u&&!tr->armed&&!tr->staged);
+ /* H222: source-restored rearm and carry transition are deterministic,
+    with zero authoritative A6 tick, A5 history, or B3 receipts. */
+ tp.mode=NF_RETC_M2_PUSH;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(tp.calls==5u&&tp.passed==3u&&tr->armed&&tr->push.staged);
+ tp.mode=NF_RETC_M2_CARRY;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(tp.calls==6u&&tp.passed==4u&&tr->carry.staged);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ CHECK(a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
+ free(tr);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
  owner->research_pair_context=NULL;
