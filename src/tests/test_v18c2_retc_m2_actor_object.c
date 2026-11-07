@@ -90,11 +90,11 @@ static bool three_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,voi
  if(ok)++p->passed;
  return ok;
 }
-typedef struct M2ChainProbe {NfRetcM2ThreeContact *out;unsigned calls,passed;} M2ChainProbe;
+typedef struct M2ChainProbe {NfRetcM2ThreeContact *out;unsigned calls,passed;bool reverse;} M2ChainProbe;
 static bool chain_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,void *context){
  M2ChainProbe *p=(M2ChainProbe *)context;
  ++p->calls;
- const bool ok=nf_retc_m2_three_contact_in_tick(w,owner,dt,p->out);
+ const bool ok=nf_retc_m2_three_contact_ordered_in_tick(w,owner,dt,p->reverse,p->out);
  if(ok)++p->passed;
  return ok;
 }
@@ -673,6 +673,60 @@ int main(void){
  CHECK(chain_probe_state.calls==15u&&chain_probe_state.passed==10u&&chain->staged);
  CHECK(chain->first_impact_time==baseline_contact_time&&
        nf18a5_history_hash(&chain->material.history)==baseline_contact_history);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
+ /* H258-H262: SAME real contact graph solved in the inverse A4
+    Gauss-Seidel constraint order. This tests iterative-order
+    convergence, NOT reversal of physical impact arrival times. */
+ const float order_baseline=chain->expected_velocity;
+ const uint32_t order_baseline_hash=nf18a5_history_hash(&chain->material.history);
+ chain_probe_state.reverse=true;
+ /* H258: reverse the two actual A4 contact constraints, preserve
+    source identities and recover the independently calculated momentum. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==16u&&chain_probe_state.passed==11u&&chain->staged);
+ CHECK(chain->bodies[0].id==30u&&chain->bodies[1].id==3050u&&
+       chain->bodies[2].id==40u);
+ CHECK(chain->material.history.raw_samples==samples+2u);
+ for(unsigned i=0u;i<3u;++i)
+  CHECK(fabsf(chain->bodies[i].velocity.x-order_baseline)<.004f);
+ CHECK(chain->contacts[0].impulses_applied&&chain->contacts[1].impulses_applied);
+ /* H259: identical reordered A4 constraints replay deterministically,
+    including A5 history; no invented extra contacts. */
+ const uint32_t reverse_history=nf18a5_history_hash(&chain->material.history);
+ const unsigned reverse_passes=chain->passes;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==17u&&chain_probe_state.passed==12u&&chain->staged);
+ CHECK(nf18a5_history_hash(&chain->material.history)==reverse_history&&
+       chain->passes==reverse_passes);
+ /* H260: unequal source crate mass must satisfy SAME independent
+    conservation law under reversed A4 visitation. */
+ const float order_crate_mass=owner->physical.object.inverse_mass;
+ owner->physical.object.inverse_mass=1.f/48.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==18u&&chain_probe_state.passed==13u&&chain->staged);
+ const float order_mass_oracle=(80.f*4.f)/(80.f+48.f+80.f);
+ CHECK(fabsf(chain->expected_velocity-order_mass_oracle)<.001f);
+ for(unsigned i=0u;i<3u;++i)
+  CHECK(fabsf(chain->bodies[i].velocity.x-order_mass_oracle)<.004f);
+ CHECK(chain->material.history.raw_samples==samples+2u);
+ owner->physical.object.inverse_mass=order_crate_mass;
+ /* H261: separated rival is an unsupported distinct arrival event.
+    Neither permutation may claim the resulting two-contact solution. */
+ rival->transform.position.x+=.10f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==19u&&chain_probe_state.passed==13u&&!chain->staged);
+ rival->transform.position.x-=.10f;
+ /* H262: original incumbent remains available and its exact A5
+    contact history is restored with zero authoritative side effects. */
+ chain_probe_state.reverse=false;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==20u&&chain_probe_state.passed==14u&&chain->staged);
+ CHECK(chain->expected_velocity==order_baseline&&
+       nf18a5_history_hash(&chain->material.history)==order_baseline_hash);
  CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
        owner->physical.world.history.raw_samples==samples&&
        owner->physical.committed_receipts==0u&&
