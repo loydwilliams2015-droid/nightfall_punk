@@ -47,9 +47,11 @@ static inline bool nf_retc_m2_event_chain_in_tick(
     !nf18a4_body_valid(&a)||!nf18a4_body_valid(&b)||
     a.inverse_mass<=0.f||b.inverse_mass<=0.f||a.velocity.x<=.1f||
     fabsf(a.velocity.y)>.0001f||fabsf(a.velocity.z)>.0001f||
-    fabsf(b.velocity.x)>.0001f||fabsf(b.velocity.y)>.0001f||
+    !isfinite(b.velocity.x)||b.velocity.x<0.f||
+    b.velocity.x>=a.velocity.x||fabsf(b.velocity.y)>.0001f||
     fabsf(b.velocity.z)>.0001f||
-    fabsf(rival->velocity.x)>.0001f||
+    !isfinite(rival->velocity.x)||rival->velocity.x<0.f||
+    rival->velocity.x>=a.velocity.x||
     fabsf(rival->velocity.y)>.0001f||
     fabsf(rival->velocity.z)>.0001f||
     fabsf(rival->position.z-b.center.z)>.0001f||
@@ -90,6 +92,8 @@ static inline bool nf_retc_m2_event_chain_in_tick(
  bodies[2].center=(NfVec3){rival->position.x,
      rival->position.y+.5f*other->movement.body_height,rival->position.z};
  bodies[2].velocity=rival->velocity;
+ /* Advance the real rival to event one, even when still separated. */
+ bodies[2].center.x+=rival->velocity.x*t1;
  bodies[2].inverse_mass=1.f/80.f;
  bodies[2].radius=a.radius;
  bodies[2].height=other->movement.body_height;
@@ -109,9 +113,13 @@ static inline bool nf_retc_m2_event_chain_in_tick(
      c[0],NF18A4_RECIPROCAL_LINEAR,tick,revision);
  if(!receipts[0].impulses_applied||
     receipts[0].status!=NF18A4_ACCEPTED)return false;
+ /* At first contact, the original crate-rival gap has evolved due to
+    BOTH initial source velocities during the first event interval. */
+ const float gap_t1=gap+(rival->velocity.x-b.velocity.x)*t1;
+ if(!isfinite(gap_t1)||gap_t1<=.0001f)return false;
  const float relative=bodies[1].velocity.x-bodies[2].velocity.x;
  if(!isfinite(relative)||relative<=.0001f)return false;
- const float second_delay=gap/relative;
+ const float second_delay=gap_t1/relative;
  const float t2=t1+second_delay;
  if(!isfinite(t2)||t2>=dt||second_delay<=.0001f)return false;
  /* Between events: propagate all bodies by SOURCE-EVENT A4 velocities. */
@@ -148,8 +156,8 @@ static inline bool nf_retc_m2_event_chain_in_tick(
     fabsf(bodies[1].velocity.x-oracle)>.004f||
     fabsf(bodies[2].velocity.x-oracle)>.004f)return false;
  /* Full source-to-final swept extent, not merely the final segment.
-    The bounded model is monotone +X; static material queries reject
-    any obstruction across all three physical contact intervals. */
+    These bounded tests support only monotone +X trajectories; any
+    reversal is rejected before claiming static clearance. */
  Nf18a5Grid grid=owner->physical.world.grid;
  const NfVec3 start_pos[3]={
     a.center,b.center,
