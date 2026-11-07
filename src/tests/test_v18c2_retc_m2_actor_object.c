@@ -1,5 +1,6 @@
 #include "nf_retc_m2_pair_tick.h"
 #include "nf_retc_m2_support_tick.h"
+#include "nf_retc_m2_push_tick.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -23,6 +24,14 @@ static bool support_probe(const NfWorld *w,const Nf18a6Runtime *owner,
  const bool ok=nf_retc_m2_support_stage_in_tick(w,owner,dt,p->out);
  if(ok)++p->success;
  return ok;
+}
+typedef struct M2PushProbe {NfRetcM2PushEvidence *out;unsigned calls,accepted;} M2PushProbe;
+static bool push_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,void *context){
+ M2PushProbe *p=(M2PushProbe *)context;
+ ++p->calls;
+ const bool accepted=nf_retc_m2_push_stage_in_tick(w,owner,dt,p->out);
+ if(accepted)++p->accepted;
+ return accepted;
 }
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
@@ -97,6 +106,47 @@ int main(void){
  CHECK(owner->physical.object.center.x==before_crate.x&&
        owner->physical.object.center.y==before_crate.y&&
        owner->physical.object.center.z==before_crate.z);
+ /* H208-H212: source-owned PUSH action, never a B2 grant. */
+ NfRetcM2PushEvidence *push_effect=calloc(1,sizeof *push_effect);
+ CHECK(push_effect);
+ M2PushProbe pp={.out=push_effect};
+ a->input.interact_held=true;
+ a->input.forward=1.f;
+ a->input.strafe=0.f;
+ a->input.yaw_radians=0.f;
+ owner->research_pair_stage=push_probe;
+ owner->research_pair_context=&pp;
+ /* H208 source-owned physical dynamic push and private A5 history. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(pp.calls==1u&&pp.accepted==1u&&push_effect->staged);
+ CHECK(push_effect->pair.staged&&push_effect->source_object==3050u);
+ CHECK(push_effect->pair.candidate.object.velocity.x>0.f&&
+       push_effect->pair.candidate.world.history.raw_samples==samples+1u);
+ /* H209 input release interrupts research PUSH without publication. */
+ a->input.interact_held=false;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(pp.calls==2u&&pp.accepted==1u&&!push_effect->staged);
+ a->input.interact_held=true;
+ /* H210 absent forward intention refuses. */
+ a->input.forward=0.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(pp.calls==3u&&pp.accepted==1u&&!push_effect->staged);
+ a->input.forward=1.f;
+ /* H211 changed live collider mirror refuses stale physical crate. */
+ NfCollider *mirror=&world->colliders[owner->object_collider_index];
+ mirror->min.x+=.125f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(pp.calls==4u&&pp.accepted==1u&&!push_effect->staged);
+ mirror->min.x-=.125f;
+ /* H212 restored source stages exactly one private PUSH contact. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(pp.calls==5u&&pp.accepted==2u&&push_effect->staged);
+ CHECK(push_effect->pair.candidate.object.velocity.x>0.f);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples);
+ CHECK(a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
+ free(push_effect);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
  owner->research_pair_context=NULL;
