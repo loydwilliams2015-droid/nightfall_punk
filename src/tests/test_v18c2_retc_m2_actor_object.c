@@ -4,6 +4,7 @@
 #include "nf_retc_m2_carry_tick.h"
 #include "nf_retc_m2_transition_tick.h"
 #include "nf_retc_m2_contention_tick.h"
+#include "nf_retc_m2_fairness_tick.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -65,6 +66,18 @@ static bool contention_probe(const NfWorld *w,const Nf18a6Runtime *owner,float d
  ++p->calls;
  const bool ok=nf_retc_m2_contend_in_tick(w,owner,dt,p->out);
  if(ok)++p->passed;
+ return ok;
+}
+typedef struct M2FairProbe {
+ NfRetcM2Fairness *state;
+ unsigned calls,staged;
+} M2FairProbe;
+static bool fair_probe(const NfWorld *w,const Nf18a6Runtime *owner,
+                       float dt,void *context){
+ M2FairProbe *p=(M2FairProbe *)context;
+ ++p->calls;
+ const bool ok=nf_retc_m2_fair_in_tick(w,owner,dt,p->state);
+ if(ok)++p->staged;
  return ok;
 }
 int main(void){
@@ -329,6 +342,59 @@ int main(void){
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x);
  free(cont);
+ /* H228: real competing actors 30 and 40, same source, alternating
+    diagnostic claimant selections. Only owner 30 may stage A4/A5. */
+ rival->input.interact_held=true;
+ NfRetcM2Fairness *fair=calloc(1,sizeof *fair);
+ CHECK(fair);
+ M2FairProbe fp={.state=fair};
+ owner->research_pair_stage=fair_probe;
+ owner->research_pair_context=&fp;
+ for(unsigned i=0u;i<6u;++i){
+  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+  CHECK(fp.calls==i+1u&&fair->rounds==i+1u&&fair->claim_count==2u);
+  CHECK(fair->winner==(i%2u==0u?30u:40u));
+  CHECK(fair->staged==(i%2u==0u));
+ }
+ CHECK(fair->owner_stages==3u&&fair->rival_decisions==3u&&fp.staged==3u);
+ /* H229: fair selector's result is independent of roster order. */
+ NfMa03Roster reversed=permuted;
+ reversed.actors[0].input.interact_held=true;
+ reversed.actors[1].input.interact_held=true;
+ uint32_t n=0u;
+ CHECK(nf_retc_m2_fair_select(&reversed,
+       owner->physical.object.center,30u,&n)==40u&&n==2u);
+ CHECK(nf_retc_m2_fair_select(&reversed,
+       owner->physical.object.center,40u,&n)==30u&&n==2u);
+ /* H230: owner stops claiming; sole rival wins proposals but cannot
+    borrow A6's physical owner or publish its own PUSH. */
+ a->input.interact_held=false;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(fp.calls==7u&&fair->winner==40u&&fair->claim_count==1u&&
+       !fair->staged&&fair->rival_decisions==4u);
+ a->input.interact_held=true;
+ /* H231: stale material epoch invalidates the diagnostic binding and
+    requires a fresh source claim; no implicit source rebinding. */
+ ++owner->physical.world.revision;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(fp.calls==8u&&!fair->staged&&!fair->bound);
+ --owner->physical.world.revision;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(fp.calls==9u&&fair->staged&&fair->winner==30u&&fair->bound);
+ /* H232: continued contention never starves a claimant in this
+    REJECTED-tick probe, and never publishes any material outcome. */
+ const uint32_t first_rounds=fair->rounds;
+ for(unsigned i=0u;i<8u;++i){
+  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+  CHECK(fair->winner==(i%2u==0u?40u:30u));
+ }
+ CHECK(fair->rounds==first_rounds+8u);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
+ free(fair);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
  owner->research_pair_context=NULL;
