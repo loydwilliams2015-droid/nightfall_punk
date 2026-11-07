@@ -14,6 +14,9 @@ typedef struct NfRetcMa03TickEvidence {
  Nf18a5Sample sample;
  uint64_t source_tick;
  uint32_t owner_actor,impacts;
+ /* M2 bounded per-actor consequences from source-executed A4 impulse. */
+ NfVec3 original_velocity[2],material_impulse[2];
+ Nf18a4Receipt applied_contact;
  bool staged;
 } NfRetcMa03TickEvidence;
 static inline bool nf_retc_ma03_a5_stage_in_owner_tick(
@@ -98,6 +101,26 @@ static inline bool nf_retc_ma03_a5_stage_in_owner_tick(
     next.revision!=revision+1u||next.tick!=tick||
     next.history.raw_samples!=owner->physical.world.history.raw_samples+1u)
     return false;
+ /* H193: derive two actual reciprocal material consequences from the
+    A4 solver; never synthesize actor-2 movement from a B3 proposal.
+    The present solver is linear, equal-mass and collinear. */
+ NfVec3 impulse[2]={{0},{0}};
+ for(size_t i=0;i<2u;++i){
+  const float im=bodies[i].inverse_mass;
+  if(!(im>0.f)||!isfinite(im))return false;
+  impulse[i]=(NfVec3){
+    (solved.bodies[i].velocity.x-bodies[i].velocity.x)/im,
+    (solved.bodies[i].velocity.y-bodies[i].velocity.y)/im,
+    (solved.bodies[i].velocity.z-bodies[i].velocity.z)/im};
+  if(!isfinite(impulse[i].x)||!isfinite(impulse[i].y)||
+     !isfinite(impulse[i].z))return false;
+ }
+ if(fabsf(impulse[0].x+impulse[1].x)>.02f||
+    fabsf(impulse[0].y+impulse[1].y)>.02f||
+    fabsf(impulse[0].z+impulse[1].z)>.02f||
+    fabsf(impulse[0].x) <= .001f||
+    fabsf(fabsf(impulse[0].x)-sample.normal_impulse)>.02f)
+   return false;
  out->material_candidate=next;
  out->bodies[0]=solved.bodies[0];
  out->bodies[1]=solved.bodies[1];
@@ -105,7 +128,55 @@ static inline bool nf_retc_ma03_a5_stage_in_owner_tick(
  out->source_tick=w->tick;
  out->owner_actor=owner->actor_id;
  out->impacts=solved.impacts;
+ for(size_t i=0;i<2u;++i){
+  out->original_velocity[i]=bodies[i].velocity;
+  out->material_impulse[i]=impulse[i];
+ }
+ out->applied_contact=*receipt;
  out->staged=true;
+ return true;
+}
+/* H194-H197: validate the actual contact and both material consequences
+ * before any downstream authority considers this private staging evidence.
+ * A positive result still grants NO ability to publish or journal. */
+static inline bool nf_retc_ma03_reciprocal_effects_valid(
+ const NfRetcMa03TickEvidence *e){
+ if(!e||!e->staged||e->impacts!=1u||
+    e->bodies[0].id==e->bodies[1].id||
+    e->sample.body_a!=e->bodies[0].id||
+    e->sample.body_b!=e->bodies[1].id||
+    e->sample.contact_id!=e->applied_contact.contact_id||
+    e->sample.tick!=e->applied_contact.tick||
+    e->applied_contact.status!=NF18A4_ACCEPTED||
+    !e->applied_contact.impulses_applied||
+    e->material_candidate.tick!=e->sample.tick||
+    e->sample.material_epoch!=e->material_candidate.grid.global_revision)
+   return false;
+ float delta[2][3];
+ for(size_t i=0;i<2u;++i){
+  if(!isfinite(e->bodies[i].inverse_mass)||
+     e->bodies[i].inverse_mass<=0.f)return false;
+  delta[i][0]=(e->bodies[i].velocity.x-e->original_velocity[i].x)/
+                    e->bodies[i].inverse_mass;
+  delta[i][1]=(e->bodies[i].velocity.y-e->original_velocity[i].y)/
+                    e->bodies[i].inverse_mass;
+  delta[i][2]=(e->bodies[i].velocity.z-e->original_velocity[i].z)/
+                    e->bodies[i].inverse_mass;
+  const float claimed[3]={e->material_impulse[i].x,
+     e->material_impulse[i].y,e->material_impulse[i].z};
+  for(size_t k=0;k<3u;++k)
+   if(!isfinite(delta[i][k])||!isfinite(claimed[k])||
+      fabsf(delta[i][k]-claimed[k])>.02f)return false;
+ }
+ for(size_t k=0;k<3u;++k)
+  if(fabsf(delta[0][k]+delta[1][k])>.02f)return false;
+ const float norm=sqrtf(delta[0][0]*delta[0][0]+
+     delta[0][1]*delta[0][1]+delta[0][2]*delta[0][2]);
+ const NfVec3 ri=e->applied_contact.normal_impulse;
+ const float receipt_norm=sqrtf(ri.x*ri.x+ri.y*ri.y+ri.z*ri.z);
+ if(!isfinite(norm)||!isfinite(receipt_norm)||
+    norm<=.001f||fabsf(norm-receipt_norm)>.02f||
+    fabsf(norm-e->sample.normal_impulse)>.02f)return false;
  return true;
 }
 #endif
