@@ -127,6 +127,13 @@ typedef struct Nf18a5World {
 void nf18a5_world_init(Nf18a5World *w,uint8_t capacity);
 bool nf18a5_world_commit(Nf18a5World *w,uint32_t expected_version,uint32_t tick,
                          uint32_t owner,const Nf18a5Sample *samples,size_t count);
+/* Research-only bounded A6-authoritative three-entity chain: two actual
+   contacts owner->crate and crate->rival in ONE private history tick.
+   Retains both true body_a identities; no B2/B3 or durable authority.
+   participants[0] must be owner; 3 unique source identities required. */
+bool nf18a5_world_commit_three(Nf18a5World *w,uint32_t expected,uint32_t tick,
+    uint32_t owner,const uint32_t participants[3],
+    const Nf18a5Sample samples[2]);
 /* Atomically stage one canonical material edit with its committed contacts. */
 bool nf18a5_world_material_commit(Nf18a5World *w,uint32_t expected_version,
                                   uint32_t tick,uint32_t owner,
