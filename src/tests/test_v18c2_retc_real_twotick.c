@@ -810,7 +810,7 @@ int main(void){
    inert_crate.id=3050;inert_crate.center=(NfVec3){4.f,.9f,0.f};
    inert_crate.inverse_mass=1.f/24.f;
    inert_crate.box_half=(NfVec3){.2f,.5f,.35f};
-   CHECK(nf18a6_init(two_owner,two_world,30,inert_crate,3,
+   CHECK(nf18a6_init(two_owner,two_world,30,inert_crate,8,
                       NF18A6_WORLD_BRIDGE));
    two_owner->allow_passive_coactors=true;
    CHECK(nf18a6_bind_world_tick(two_world,two_owner,NULL,NULL,NULL));
@@ -990,6 +990,17 @@ int main(void){
                 sizeof second_start)==0);
    CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u&&
          push->receipt_count==2u);
+   /* H183 positive static coverage: the entire pair of swept
+      capsules spans four canonical chunks at y=0. Missing chunks are NOT
+      implicitly free. Increase the isolated research grid capacity at
+      initialization, then load the exact free source geometry. */
+   const uint8_t free_cells[NF18A5_CANON_VOXELS]={0};
+   for(int32_t cx=-1;cx<=0;++cx)
+     for(int32_t cz=-1;cz<=0;++cz)
+       CHECK(nf18a5_load_canonical(&two_owner->physical.world.grid,
+                                    cx,0,cz,free_cells,1u));
+   CHECK(two_owner->physical.world.grid.count==4u);
+   CHECK(two_owner->physical.world.grid.global_revision>0u);
    /* H178: real A6 owner tick executes a two-body A4 contact and
       private A5 history via H83 diagnostic callback, then refuses commit. */
    NfRetcMa03TickEvidence *in_tick=calloc(1,sizeof *in_tick);
@@ -1036,6 +1047,44 @@ int main(void){
                 sizeof second_start)==0);
    CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u&&
          push->receipt_count==2u);
+   /* H183: positive H178/H179/H182 owner-tick A4/A5 staging now
+      requires BOTH swept actor routes to be canonically FREE. */
+   CHECK(probe.accepted==3u&&in_tick->staged);
+   /* H184: a missing authoritative chunk cannot be treated as FREE.
+      The world source is deliberately modified then restored. */
+   Nf18a5Chunk *center_chunk=NULL;
+   for(size_t ci=0;ci<two_owner->physical.world.grid.count;++ci){
+    Nf18a5Chunk *chunk=&two_owner->physical.world.grid.chunks[ci];
+    if(chunk->x==0&&chunk->y==0&&chunk->z==0)
+      center_chunk=chunk;
+   }
+   CHECK(center_chunk!=NULL);
+   center_chunk->loaded=0u;
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==6u&&probe.accepted==3u&&!in_tick->staged);
+   center_chunk->loaded=1u;
+   /* H185: a source SOLID voxel overlapping the swept capsule blocks. */
+   const uint8_t previous_cell=center_chunk->canonical[0];
+   center_chunk->canonical[0]=NF18A5_SOLID;
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==7u&&probe.accepted==3u&&!in_tick->staged);
+   /* H186: mixed canonical voxel without valid fine data is PENDING,
+      never a positive static clearance claim. */
+   center_chunk->canonical[0]=NF18A5_MIXED;
+   center_chunk->fine_valid=0u;
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==8u&&probe.accepted==3u&&!in_tick->staged);
+   center_chunk->canonical[0]=previous_cell;
+   /* H187: restored source clears and stages the SAME contact evidence;
+      neither accepted world nor live A5/B3 may reflect any of the probes. */
+   CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+   CHECK(probe.calls==9u&&probe.accepted==4u&&in_tick->staged);
+   CHECK(in_tick->sample.body_a==30u&&in_tick->sample.body_b==40u);
+   CHECK(in_tick->material_candidate.history.raw_samples==a5_before_samples+1u);
+   CHECK(two_owner->physical.world.revision==a5_before_revision&&
+         two_owner->physical.world.history.raw_samples==a5_before_samples&&
+         two_world->tick==source_tick&&push->receipt_count==2u);
+   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
    two_owner->require_dual_contact_preflight=false;
    two_owner->research_dual_stage=NULL;
    two_owner->research_dual_context=NULL;
