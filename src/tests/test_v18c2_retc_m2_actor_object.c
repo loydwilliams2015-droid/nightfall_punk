@@ -876,6 +876,39 @@ int main(void){
        owner->physical.committed_receipts==0u&&
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x);
+ /* H273A (preflight only): real source crate-rival contact would
+    occur BEFORE actor-crate arrival. The actor-first scheduler MUST
+    reject, never misidentify event ordering or publish any A5 edge.
+    Full reversed-order scheduling remains an unimplemented challenger. */
+ const float reversal_gap=.02f;
+ rival->transform.position.x=touching_x+reversal_gap;
+ owner->physical.object.velocity.x=.75f;
+ rival->transform.velocity.x=0.f;
+ /* Independent constant-speed arrival estimate places crate-rival
+    first; actor-to-crate source closing speed is smaller than 4m/s. */
+ const float reversal_crate_rival_t=reversal_gap/.75f;
+ CHECK(reversal_crate_rival_t<scheduled->first_time);
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(ev.calls==12u&&ev.passed==7u&&!scheduled->staged);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ /* Replaying the same prohibited order cannot fabricate a receipt. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(ev.calls==13u&&ev.passed==7u&&!scheduled->staged);
+ /* Restore baseline and demonstrate source-exact recovery of the
+    original two-edge PRIVATE event candidate and history digest. */
+ rival->transform.position.x=touching_x+.04f;
+ owner->physical.object.velocity.x=moving_source_crate;
+ rival->transform.velocity.x=moving_source_rival;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(ev.calls==14u&&ev.passed==8u&&scheduled->staged);
+ CHECK(scheduled->first_time==moving_baseline_first&&
+       scheduled->second_time==moving_baseline_second&&
+       nf18a5_history_hash(&scheduled->material.history)==moving_baseline_hash);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
  free(scheduled);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
