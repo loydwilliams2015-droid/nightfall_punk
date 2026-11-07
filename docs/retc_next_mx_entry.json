@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "programme": "RET-C next Mx (provisional M3) entry",
+  "source_sha": "00f8c9e9e1f32b3c41c070ee6067e15acf6f1556",
+  "incumbent_pr": 207,
+  "entry": "HOLD",
+  "production_release": false,
+  "gates": [
+    {
+      "id": "MXN-01",
+      "name": "complete M2 collision-event geometry",
+      "status": "HOLD",
+      "prerequisites": [
+        "H273 positive source-derived reversed event ordering",
+        "H274 simultaneous collision event arbiter",
+        "H275 multi-axis A4/A5 witness with independent physics oracle"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "MXN-02",
+      "name": "source-bound contract integration",
+      "status": "HOLD",
+      "prerequisites": [
+        "real B2 eligibility and revocation checked by A6",
+        "B3 contract consequences source-identical to A4/A5",
+        "zero authority from diagnostic callbacks"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "MXN-03",
+      "name": "atomic world-frame publication",
+      "status": "HOLD",
+      "prerequisites": [
+        "one immutable accepted A6 frame owns all consequences",
+        "reject leaves A4/A5/B2/B3 live projections unchanged",
+        "reader and writer authority inventory complete"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "MXN-04",
+      "name": "durable crash recovery",
+      "status": "HOLD",
+      "prerequisites": [
+        "whole-transaction persistent commit/recovery",
+        "fault injection at each writer/restart boundary",
+        "replay protection and continued deterministic ticking"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "MXN-05",
+      "name": "independent full-engine release eligibility",
+      "status": "HOLD",
+      "prerequisites": [
+        "source-exact GCC and Clang sanitizers plus race checks",
+        "canonical randomized pathological boundary held-out acceptance",
+        "representative frame p95/p99 and independent review"
+      ],
+      "evidence": []
+    }
+  ],
+  "m25_manifest": "docs/retc_m25_final_gate_manifest.json",
+  "m2x_manifest": "docs/retc_m2x_implementation_matrix.json",
+  "policy": "Research-only; no automatic gate promotion, no accepted live tick/1.8C.3 or production release."
+}
