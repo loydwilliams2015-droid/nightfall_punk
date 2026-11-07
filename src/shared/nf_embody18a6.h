@@ -69,6 +69,10 @@ typedef struct Nf18a6Runtime {
     /* Research-only H178 owner-tick staging callback, never publication. */
     bool (*research_dual_stage)(const NfWorld *,const struct Nf18a6Runtime *,float,void *);
     void *research_dual_context;
+    /* M2.2 research-only actor-object A5 stage; rejected after callback. */
+    bool require_pair_research;
+    bool (*research_pair_stage)(const NfWorld *,const struct Nf18a6Runtime *,float,void *);
+    void *research_pair_context;
     uint32_t object_collider_index; /* NfWorld material/weapon geometry mirror */
     uint32_t last_hash;
     uint32_t model;
