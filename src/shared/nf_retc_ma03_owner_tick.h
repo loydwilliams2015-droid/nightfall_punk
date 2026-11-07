@@ -1,0 +1,90 @@
+#ifndef NF_RETC_MA03_OWNER_TICK_H
+#define NF_RETC_MA03_OWNER_TICK_H
+/* H178-H182: actual A6 H83 in-tick read-only owner research stage.
+ * Executes two-body A4 collision, independently verifies its oracle,
+ * records the real A4 contact receipt in a PRIVATE A5 world/history.
+ * NEVER publishes A6 world, physical bodies, B3, WAL or readers.
+ * Static A5 swept-volume clearance and two-event contractual
+ * materialization remain open acceptance requirements. */
+#include "nf_retc_ma03_a5_contact_stage.h"
+#include <math.h>
+typedef struct NfRetcMa03TickEvidence {
+ Nf18a5World material_candidate;
+ Nf18a4Body bodies[2];
+ Nf18a5Sample sample;
+ uint64_t source_tick;
+ uint32_t owner_actor,impacts;
+ bool staged;
+} NfRetcMa03TickEvidence;
+static inline bool nf_retc_ma03_a5_stage_in_owner_tick(
+ const NfWorld *w,const Nf18a6Runtime *owner,float dt,
+ NfRetcMa03TickEvidence *out){
+ if(!out)return false;
+ out->staged=false;
+ if(!w||!owner||!w->tick_in_progress||
+    w->tick_owner_context!=owner||!w->tick_owner||
+    !owner->require_dual_contact_preflight||
+    !isfinite(dt)||dt<=0.f||w->tick>=UINT32_MAX||
+    owner->last_commit_tick!=w->tick||
+    owner->physical.world.tick!=w->tick||
+    owner->physical.world.revision==UINT32_MAX)return false;
+ NfMa03Roster roster={0};
+ if(!nf_ma03_roster_capture_in_tick(w,&roster)||
+    roster.count!=2u||roster.source_tick!=w->tick)return false;
+ Nf18a4Body bodies[2]={{0}};
+ bool owner_seen=false;
+ for(size_t i=0;i<2u;++i){
+  const NfMa03Participant *p=&roster.actors[i];
+  const NfActor *a=nf_world_find_actor_const(w,p->id);
+  if(!a||!a->combat.alive||!a->active||
+     fabsf(a->movement.body_height-owner->physical.actor.height)>.0001f)
+    return false;
+  if(p->id==owner->actor_id){
+   owner_seen=true;
+   const Nf18a4Body *bound=&owner->physical.actor;
+   if(bound->id!=p->id||
+      fabsf(bound->center.x-p->position.x)>.0001f||
+      fabsf(bound->center.z-p->position.z)>.0001f||
+      fabsf(bound->velocity.x-p->velocity.x)>.0001f||
+      fabsf(bound->velocity.z-p->velocity.z)>.0001f)
+      return false;
+  }
+  bodies[i].id=p->id;
+  bodies[i].center=(NfVec3){p->position.x,
+      p->position.y+a->movement.body_height*.5f,p->position.z};
+  bodies[i].velocity=p->velocity;
+  bodies[i].inverse_mass=1.f/80.f;
+  bodies[i].radius=owner->physical.actor.radius;
+  bodies[i].height=a->movement.body_height;
+ }
+ if(!owner_seen)return false;
+ const uint32_t tick=(uint32_t)w->tick+1u;
+ const uint32_t revision=owner->physical.world.revision;
+ NfMa01c2Result solved=nf_ma01c2_integrate(bodies,2u,dt,tick,revision);
+ NfMa03cEvidence oracle=nf_ma03c_compare(bodies,2u,dt,tick,revision);
+ if(solved.status!=NF_NARROW_OK||solved.count!=2u||
+    solved.impacts!=1u||oracle.matched!=1u||
+    oracle.disagreed||oracle.unresolved)return false;
+ const Nf18a4Receipt *receipt=&solved.receipts[0];
+ if(receipt->status!=NF18A4_ACCEPTED||!receipt->impulses_applied||
+    receipt->tick!=tick||receipt->world_version!=revision)return false;
+ Nf18a5Sample sample={0};
+ if(!nf18a5_receipt_sample(receipt,bodies[0].id,bodies[1].id,0.f,
+                          owner->physical.world.grid.global_revision,
+                          &sample))return false;
+ Nf18a5World next=owner->physical.world;
+ if(!nf18a5_world_commit(&next,revision,tick,owner->actor_id,&sample,1u)||
+    next.revision!=revision+1u||next.tick!=tick||
+    next.history.raw_samples!=owner->physical.world.history.raw_samples+1u)
+    return false;
+ out->material_candidate=next;
+ out->bodies[0]=solved.bodies[0];
+ out->bodies[1]=solved.bodies[1];
+ out->sample=sample;
+ out->source_tick=w->tick;
+ out->owner_actor=owner->actor_id;
+ out->impacts=solved.impacts;
+ out->staged=true;
+ return true;
+}
+#endif
