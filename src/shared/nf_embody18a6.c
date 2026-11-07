@@ -528,6 +528,18 @@ static NfWorldTickStatus nf18a6_tick_dispatch(NfWorld *world,float dt,void *cont
             return NF_WORLD_TICK_REJECTED;
         }
     }
+    /* M2.2: isolated actor-object research stage under the real A6 tick
+       lease. Never calls the production step or joint publisher, regardless
+       of callback result. The test-controls guard is intentional. */
+    if(runtime->require_pair_research){
+#ifdef NF18A6_TEST_CONTROLS
+        if(runtime->research_pair_stage)
+            (void)runtime->research_pair_stage(world,runtime,dt,
+                                               runtime->research_pair_context);
+#endif
+        nf_c2_lease_release(&runtime->world_lease);
+        return NF_WORLD_TICK_REJECTED;
+    }
     /* H83: source-backed two-actor contact witness must be prepared within
        the real A6 owner tick. This narrow diagnostic option refuses until
        the full two-actor material/contract frame can be co-committed. */
