@@ -585,6 +585,60 @@ int main(void){
  CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
        owner->physical.world.history.raw_samples==samples&&
        owner->physical.committed_receipts==0u);
+ /* H248-H252: independent mass-weighted momentum oracle for genuine
+    A4 3-contact chain; preserve exact A5 ancestry and failed rollback. */
+ const float source_crate_inv_mass=owner->physical.object.inverse_mass;
+ const float source_actor_inv_mass=owner->physical.actor.inverse_mass;
+ const float reference_speed=chain->expected_velocity;
+ const uint32_t reference_history=nf18a5_history_hash(&chain->material.history);
+ /* H248: heavier crate (48kg) must share source total momentum across
+    real actor/crate/rival body masses and produce TWO history samples. */
+ owner->physical.object.inverse_mass=1.f/48.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==6u&&chain_probe_state.passed==4u&&chain->staged);
+ const float mass48_expected=(80.f*4.f)/(80.f+48.f+80.f);
+ CHECK(fabsf(chain->expected_velocity-mass48_expected)<.001f);
+ for(unsigned k=0u;k<3u;++k)
+  CHECK(fabsf(chain->bodies[k].velocity.x-mass48_expected)<.004f);
+ CHECK(chain->material.history.raw_samples==samples+2u);
+ /* H249: still heavier crate (96kg) must not retain the prior
+    common velocity or reuse the previous contact history. */
+ owner->physical.object.inverse_mass=1.f/96.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==7u&&chain_probe_state.passed==5u&&chain->staged);
+ const float mass96_expected=(80.f*4.f)/(80.f+96.f+80.f);
+ CHECK(fabsf(chain->expected_velocity-mass96_expected)<.001f);
+ CHECK(fabsf(chain->expected_velocity-mass48_expected)>.02f);
+ CHECK(chain->material.history.raw_samples==samples+2u);
+ /* H250: independently change owner actor mass, not the crate mass.
+    Total source momentum and every solved body must re-evaluate. */
+ owner->physical.object.inverse_mass=source_crate_inv_mass;
+ owner->physical.actor.inverse_mass=1.f/120.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==8u&&chain_probe_state.passed==6u&&chain->staged);
+ const float actor120_expected=(120.f*4.f)/
+     (120.f+1.f/source_crate_inv_mass+80.f);
+ CHECK(fabsf(chain->expected_velocity-actor120_expected)<.001f);
+ for(unsigned k=0u;k<3u;++k)
+  CHECK(fabsf(chain->bodies[k].velocity.x-actor120_expected)<.004f);
+ /* H251: invalid zero inverse-mass for the pushed dynamic crate
+    is refused. A bad mass cannot produce a phantom A5 contact. */
+ owner->physical.actor.inverse_mass=source_actor_inv_mass;
+ owner->physical.object.inverse_mass=0.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==9u&&chain_probe_state.passed==6u&&!chain->staged);
+ /* H252: restoring original mass reproduces the identical
+    two-contact digest; all changes stayed private and fail-closed. */
+ owner->physical.object.inverse_mass=source_crate_inv_mass;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(chain_probe_state.calls==10u&&chain_probe_state.passed==7u&&chain->staged);
+ CHECK(chain->expected_velocity==reference_speed&&
+       nf18a5_history_hash(&chain->material.history)==reference_history);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
  free(chain);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
