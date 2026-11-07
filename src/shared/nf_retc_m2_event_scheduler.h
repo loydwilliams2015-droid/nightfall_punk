@@ -147,25 +147,28 @@ static inline bool nf_retc_m2_event_chain_in_tick(
     fabsf(bodies[0].velocity.x-oracle)>.004f||
     fabsf(bodies[1].velocity.x-oracle)>.004f||
     fabsf(bodies[2].velocity.x-oracle)>.004f)return false;
- /* Static clearance of source-to-first, first-to-second and
-    second-to-end paths. Private material grid does not publish. */
+ /* Full source-to-final swept extent, not merely the final segment.
+    The bounded model is monotone +X; static material queries reject
+    any obstruction across all three physical contact intervals. */
  Nf18a5Grid grid=owner->physical.world.grid;
- const float event_times[3]={t1,second_delay,dt-t2};
- const Nf18a4Body originals[3]={a,b,bodies[2]};
- /* Final outbound path is always checked. Earlier source paths have
-    zero/positive X motion and only canonical/fine static materials. */
+ const NfVec3 start_pos[3]={
+    a.center,b.center,
+    {rival->position.x,
+     rival->position.y+.5f*other->movement.body_height,rival->position.z}};
  for(size_t i=0u;i<3u;++i){
   const float radius=i==1u?fmaxf(b.box_half.x,b.box_half.z):a.radius;
   const float height=i==1u?fmaxf(2.f*b.box_half.y,2.f*radius):a.height;
   const Nf18a2ShapePolicy policy={radius,height,.05f,.4f,.65f};
-  const NfVec3 feet={bodies[i].center.x,
-      bodies[i].center.y-.5f*height,bodies[i].center.z};
-  const NfVec3 delta={bodies[i].velocity.x*event_times[2],0.f,0.f};
+  const NfVec3 feet={start_pos[i].x,
+      start_pos[i].y-.5f*height,start_pos[i].z};
+  const float end_x=bodies[i].center.x+
+      bodies[i].velocity.x*(dt-t2);
+  const NfVec3 delta={end_x-start_pos[i].x,0.f,0.f};
   uint32_t loads=0u;
-  if(nf18a5_sweep_query(&grid,feet,delta,policy,event_times[2],
-      tick,NULL,NULL,&loads)!=NF18A5_Q_FREE)return false;
-  (void)originals;
-  bodies[i].center.x+=delta.x;
+  if(!isfinite(delta.x)||delta.x<-.0001f||
+     nf18a5_sweep_query(&grid,feet,delta,policy,dt,
+         tick,NULL,NULL,&loads)!=NF18A5_Q_FREE)return false;
+  bodies[i].center.x=end_x;
  }
  NfRetcM2EventChain next={0};
  next.material=owner->physical.world;
