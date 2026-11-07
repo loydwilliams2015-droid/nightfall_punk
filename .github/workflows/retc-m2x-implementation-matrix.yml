@@ -1,0 +1,53 @@
+name: RET-C M2.x implementation matrix
+on:
+  push:
+    branches: [engineering/retc-m2x-programme-acceptance]
+    paths:
+      - 'docs/retc_m2x_implementation_matrix.json'
+      - 'src/tests/test_retc_m2x_implementation_matrix.py'
+      - '.github/workflows/retc-m2x-implementation-matrix.yml'
+      - 'src/shared/nf_retc_m2_*.h'
+      - 'src/tests/test_v18c2_retc_m2_actor_object.c'
+  pull_request:
+    paths:
+      - 'docs/retc_m2x_implementation_matrix.json'
+      - 'src/tests/test_retc_m2x_implementation_matrix.py'
+      - '.github/workflows/retc-m2x-implementation-matrix.yml'
+      - 'src/shared/nf_retc_m2_*.h'
+      - 'src/tests/test_v18c2_retc_m2_actor_object.c'
+  workflow_dispatch:
+jobs:
+  programme-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact SHA
+        run: git rev-parse HEAD
+      - name: Verify five M2.x dependency milestones
+        run: python3 src/tests/test_retc_m2x_implementation_matrix.py
+      - name: Verify M2.5 hold manifest
+        run: python3 src/tests/test_retc_m25_closeout_gates.py
+  existing-physical-research:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact SHA
+        run: git rev-parse HEAD
+      - name: Configure research with sanitizers
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-m2x -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build existing M2 physical regression
+        run: cmake --build build-m2x --parallel 2 --target nightfall_v18c2_retc_m2_actor_object_test
+      - name: Execute existing source-backed M2 physical regression
+        env:
+          ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-m2x -R '^retc_m2_actor_object_private_owner_tick_v18c2$' --output-on-failure

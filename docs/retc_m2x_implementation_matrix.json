@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "programme": "RET-C M2.x implementation framework",
+  "baseline_sha": "1a71fc0ed4ab7e6e898b9c1415a8ed2ebed864c4",
+  "promotion": "HOLD",
+  "production_release": false,
+  "stages": [
+    {
+      "id": "M2X-01",
+      "name": "source-owned actor-object A4/A5 staging",
+      "source": "src/shared/nf_retc_m2_pair_tick.h",
+      "symbol": "nf_retc_m2_pair_stage_in_tick",
+      "test_anchor": "H198",
+      "status": "RESEARCH_ONLY"
+    },
+    {
+      "id": "M2X-02",
+      "name": "source-intended PUSH and interruption",
+      "source": "src/shared/nf_retc_m2_push_tick.h",
+      "symbol": "nf_retc_m2_push_stage_in_tick",
+      "test_anchor": "H208",
+      "status": "RESEARCH_ONLY"
+    },
+    {
+      "id": "M2X-03",
+      "name": "bounded multi-actor contention fairness",
+      "source": "src/shared/nf_retc_m2_fairness_tick.h",
+      "symbol": "nf_retc_m2_fair_in_tick",
+      "test_anchor": "H228",
+      "status": "RESEARCH_ONLY"
+    },
+    {
+      "id": "M2X-04",
+      "name": "coupled contact and moving event scheduling",
+      "source": "src/shared/nf_retc_m2_event_scheduler.h",
+      "symbol": "nf_retc_m2_event_chain_in_tick",
+      "test_anchor": "H268",
+      "status": "RESEARCH_ONLY"
+    },
+    {
+      "id": "M2X-05",
+      "name": "joint A6 B2 B3 publication and durable recovery",
+      "source": "src/shared/nf_retc_joint_provider.c",
+      "symbol": "nf_retc_joint_stage_owned",
+      "test_anchor": "H273",
+      "status": "HOLD"
+    }
+  ],
+  "cross_gates": [
+    "source exact provenance",
+    "canonical randomized pathological boundary held-out",
+    "physical material contractual atomicity",
+    "WAL crash recovery replay",
+    "performance concurrency and independent acceptance"
+  ],
+  "m25_manifest": "docs/retc_m25_final_gate_manifest.json",
+  "test_source": "src/tests/test_v18c2_retc_m2_actor_object.c"
+}
