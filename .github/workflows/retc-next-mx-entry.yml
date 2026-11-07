@@ -1,0 +1,51 @@
+name: RET-C next Mx provisional M3 entry
+on:
+  push:
+    branches: [engineering/retc-m3-entry-gates]
+    paths:
+      - 'docs/retc_next_mx_entry.json'
+      - 'src/tests/test_retc_next_mx_entry.py'
+      - '.github/workflows/retc-next-mx-entry.yml'
+  pull_request:
+    paths:
+      - 'docs/retc_next_mx_entry.json'
+      - 'src/tests/test_retc_next_mx_entry.py'
+      - '.github/workflows/retc-next-mx-entry.yml'
+  workflow_dispatch:
+jobs:
+  guarded-programme-entry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact commit
+        run: git rev-parse HEAD
+      - name: Execute five next-Mx admission tests
+        run: python3 src/tests/test_retc_next_mx_entry.py
+      - name: Verify M2.x and M2.5 hold regressions
+        run: |
+          python3 src/tests/test_retc_m2x_implementation_matrix.py
+          python3 src/tests/test_retc_m25_closeout_gates.py
+  m2-incumbent-protection:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact commit
+        run: git rev-parse HEAD
+      - name: Configure source-exact incumbent sanitizer target
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-next-mx -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build incumbent
+        run: cmake --build build-next-mx --parallel 2 --target nightfall_v18c2_retc_m2_actor_object_test
+      - name: Run cumulative physical regression
+        env:
+          ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-next-mx -R '^retc_m2_actor_object_private_owner_tick_v18c2$' --output-on-failure
