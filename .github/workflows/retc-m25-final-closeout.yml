@@ -1,0 +1,47 @@
+name: RET-C M2.5 final closeout gates
+on:
+  push:
+    branches: [engineering/retc-m25-final-closeout-gates]
+    paths:
+      - 'docs/retc_m25_final_gate_manifest.json'
+      - 'src/tests/test_retc_m25_closeout_gates.py'
+      - '.github/workflows/retc-m25-final-closeout.yml'
+  pull_request:
+    paths:
+      - 'docs/retc_m25_final_gate_manifest.json'
+      - 'src/tests/test_retc_m25_closeout_gates.py'
+      - '.github/workflows/retc-m25-final-closeout.yml'
+  workflow_dispatch:
+jobs:
+  fail-closed-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Report source SHA
+        run: git rev-parse HEAD
+      - name: Execute five independent final gate policy regressions
+        run: python3 src/tests/test_retc_m25_closeout_gates.py
+  incumbent-m24-regression:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Report source SHA
+        run: git rev-parse HEAD
+      - name: Configure source-exact M2.4 research incumbent
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-m25-closeout -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build research test target
+        run: cmake --build build-m25-closeout --parallel 2 --target nightfall_v18c2_retc_m2_actor_object_test
+      - name: Run M2.4 source-exact incumbent regression
+        env:
+          ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-m25-closeout -R '^retc_m2_actor_object_private_owner_tick_v18c2$' --output-on-failure

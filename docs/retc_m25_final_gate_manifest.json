@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "programme": "RET-C M2.5 final closeout",
+  "source_base_sha": "9069c204702f72ded51e455eb2a18fa940d9df2b",
+  "production_release": false,
+  "promotion": "HOLD",
+  "gates": [
+    {
+      "id": "M25-01",
+      "name": "physical-source-and-contact",
+      "status": "HOLD",
+      "requirements": [
+        "H273-H275 positive source-backed contact scheduler",
+        "independent contact oracle",
+        "A4/A5 real receipts and rollback"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "M25-02",
+      "name": "b2-b3-authorization",
+      "status": "HOLD",
+      "requirements": [
+        "owner-issued B2 source witness",
+        "B3 realization coupled to exact source intent",
+        "stale revoked missing witness rejection"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "M25-03",
+      "name": "a6-atomic-publication",
+      "status": "HOLD",
+      "requirements": [
+        "A6 sole tick owner",
+        "one accepted immutable frame including A4/A5/B2/B3",
+        "no split success after injection"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "M25-04",
+      "name": "durable-recovery",
+      "status": "HOLD",
+      "requirements": [
+        "durable joint commit decision",
+        "process-kill boundary matrix",
+        "restart replay and continued ticking"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "M25-05",
+      "name": "independent-system-acceptance",
+      "status": "HOLD",
+      "requirements": [
+        "gcc clang source-exact sanitizer",
+        "randomized pathological boundary held-out checks",
+        "representative p95/p99 frame time and race safety"
+      ],
+      "evidence": []
+    }
+  ]
+}
