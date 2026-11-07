@@ -67,6 +67,8 @@ NfMa01c2Result nf_ma01c2_integrate(const Nf18a4Body *b,size_t n,float dt,
   if(receipt.status!=NF18A4_ACCEPTED || !receipt.impulses_applied){
    r.status=NF_NARROW_PENDING;return r;
   }
+  /* Preserve the actual contact solver receipt before private A5 staging. */
+  r.receipts[r.impacts]=receipt;
   r.impacts++;
   /* For exactly two bodies a separating zero-restitution collision cannot
    * generate a second impulse during this constant-velocity substep. */
