@@ -1,12 +1,12 @@
 name: RET-C H268-H272 M2 moving-source event scheduling acceptance
 on:
   push:
-    branches: [engineering/retc-h268-h272-m2-push-interrupt]
+    branches: [engineering/retc-h268-h272-m2-moving-events]
   pull_request:
     paths:
-      - 'src/shared/nf_retc_m2_push_tick.h'
+      - 'src/shared/nf_retc_m2_event_scheduler.h'
       - 'src/tests/test_v18c2_retc_m2_actor_object.c'
-      - '.github/workflows/retc-h268-h272-m2-push.yml'
+      - '.github/workflows/retc-h268-h272-m2-moving-events.yml'
   workflow_dispatch:
 jobs:
   push-source-asan-ubsan:
