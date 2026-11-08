@@ -1169,6 +1169,63 @@ int main(void){
        owner->physical.committed_receipts==0u&&
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x);
+ /* H273H: full source->final static A5 sweep across ALL reversed
+    contact participants. A blocked source cell must fail without
+    exposing privately staged G history or any live consequences. */
+ NfRetcM2ReverseClearance *clearance=calloc(1,sizeof *clearance);
+ CHECK(clearance);
+ M2ReverseClearanceProbe hp={.out=clearance};
+ owner->research_pair_stage=reverse_clearance_probe;
+ owner->research_pair_context=&hp;
+ /* H1: three monotone source-final sweeps and two-edge A5 witness. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(hp.calls==1u&&hp.passed==1u&&clearance->staged);
+ CHECK(clearance->candidate.material.history.raw_samples==samples+2u&&
+       nf18a5_history_hash(&clearance->candidate.material.history)==
+         reverse_a5_digest);
+ CHECK(clearance->end_x[0]>owner->physical.actor.center.x&&
+       clearance->end_x[1]>owner->physical.object.center.x&&
+       clearance->end_x[2]>rival->transform.position.x);
+ /* H2: source-identical re-entry preserves exact swept endpoints. */
+ const float h_end[3]={
+    clearance->end_x[0],clearance->end_x[1],clearance->end_x[2]};
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(hp.calls==2u&&hp.passed==2u&&clearance->staged);
+ CHECK(clearance->end_x[0]==h_end[0]&&
+       clearance->end_x[1]==h_end[1]&&
+       clearance->end_x[2]==h_end[2]);
+ /* H3: a source-backed static blocker invalidates a swept route. */
+ Nf18a5Grid *h_original_grid=malloc(sizeof *h_original_grid);
+ CHECK(h_original_grid);
+ *h_original_grid=owner->physical.world.grid;
+ uint8_t h_blocked[NF18A5_CANON_VOXELS];
+ for(size_t h=0u;h<NF18A5_CANON_VOXELS;++h)h_blocked[h]=1u;
+ CHECK(nf18a5_load_canonical(&owner->physical.world.grid,
+     0,0,0,h_blocked,1u));
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(hp.calls==3u&&hp.passed==2u&&!clearance->staged);
+ owner->physical.world.grid=*h_original_grid;
+ /* H4: missing material revision is fail-closed even with free cells. */
+ owner->physical.world.grid.global_revision=0u;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(hp.calls==4u&&hp.passed==2u&&!clearance->staged);
+ owner->physical.world.grid=*h_original_grid;
+ free(h_original_grid);
+ /* H5: restored unblocked source replays exact A5 and swept witness,
+    and all world/material/contractual live projections remain unchanged. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(hp.calls==5u&&hp.passed==3u&&clearance->staged);
+ CHECK(clearance->end_x[0]==h_end[0]&&
+       clearance->end_x[1]==h_end[1]&&
+       clearance->end_x[2]==h_end[2]&&
+       nf18a5_history_hash(&clearance->candidate.material.history)==
+         reverse_a5_digest);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
+ free(clearance);
  free(dual);
  free(second);
  owner->physical.object.velocity.x=moving_source_crate;
