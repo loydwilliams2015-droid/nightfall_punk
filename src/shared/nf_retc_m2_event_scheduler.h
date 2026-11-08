@@ -310,6 +310,74 @@ static inline bool nf_retc_m2_reverse_material_in_tick(
  out->staged=true;
  return true;
 }
+/* H273H: independent source-to-final A5 static clearance proof for
+ * three genuine reversed-order contact participants. The H273G private
+ * A5 graph is already staged; none of its state is exposed or published
+ * if ANY static sweep fails. This is NOT a general 3D dynamic solver. */
+typedef struct NfRetcM2ReverseClearance {
+ NfRetcM2ReverseMaterial candidate;
+ float end_x[3];
+ uint32_t grid_revision;
+ bool staged;
+} NfRetcM2ReverseClearance;
+static inline bool nf_retc_m2_reverse_clearance_in_tick(
+ const NfWorld *w,const Nf18a6Runtime *owner,float dt,
+ NfRetcM2ReverseClearance *out){
+ if(!out)return false;
+ out->staged=false;
+ if(!w||!owner||!isfinite(dt)||dt<=0.f)return false;
+ NfRetcM2ReverseMaterial candidate={0};
+ if(!nf_retc_m2_reverse_material_in_tick(w,owner,dt,&candidate)||
+    !candidate.staged)return false;
+ const NfActor *rival=nf_world_find_actor_const(
+    w,candidate.physical.first.rival_after.id);
+ if(!rival||!rival->active||!rival->combat.alive)return false;
+ const float t2=candidate.physical.first.oracle.actor_time;
+ if(!isfinite(t2)||t2<=0.f||t2>=dt)return false;
+ const Nf18a4Body source[2]={
+    owner->physical.actor,owner->physical.object};
+ const Nf18a4Body final[3]={
+    candidate.physical.actor_after,candidate.physical.crate_after,
+    candidate.physical.rival_after};
+ const NfVec3 source_centers[3]={
+    source[0].center,source[1].center,
+    {rival->transform.position.x,
+     rival->transform.position.y+.5f*rival->movement.body_height,
+     rival->transform.position.z}};
+ const float remaining=dt-t2;
+ const uint32_t tick=(uint32_t)w->tick+1u;
+ Nf18a5Grid grid=owner->physical.world.grid;
+ if(grid.global_revision!=candidate.material.grid.global_revision)return false;
+ float end_x[3]={0.f,0.f,0.f};
+ for(size_t i=0u;i<3u;++i){
+   if(!nf18a4_body_valid(&final[i])||
+      (i==0u&&final[i].id!=source[0].id)||
+      (i==1u&&final[i].id!=source[1].id)||
+      (i==2u&&final[i].id!=rival->id))return false;
+   const float radius=i==1u?
+      fmaxf(source[1].box_half.x,source[1].box_half.z):source[0].radius;
+   const float height=i==1u?
+      fmaxf(2.f*source[1].box_half.y,2.f*radius):
+      (i==0u?source[0].height:rival->movement.body_height);
+   if(!isfinite(radius)||!isfinite(height)||radius<=0.f||
+      height<=0.f)return false;
+   const Nf18a2ShapePolicy policy={radius,height,.05f,.4f,.65f};
+   end_x[i]=final[i].center.x+final[i].velocity.x*remaining;
+   const NfVec3 feet={
+     source_centers[i].x,source_centers[i].y-.5f*height,
+     source_centers[i].z};
+   const NfVec3 delta={end_x[i]-source_centers[i].x,0.f,0.f};
+   uint32_t loads=0u;
+   if(!isfinite(end_x[i])||!isfinite(delta.x)||delta.x<-.0001f||
+      nf18a5_sweep_query(&grid,feet,delta,policy,dt,tick,
+       NULL,NULL,&loads)!=NF18A5_Q_FREE)return false;
+ }
+ out->candidate=candidate;
+ for(size_t i=0u;i<3u;++i)out->end_x[i]=end_x[i];
+ out->grid_revision=grid.global_revision;
+ out->staged=true;
+ return true;
+}
 typedef struct NfRetcM2EventChain {
  Nf18a5World material;
  Nf18a4Body bodies[3];
