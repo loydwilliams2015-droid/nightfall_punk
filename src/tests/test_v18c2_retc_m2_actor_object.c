@@ -937,6 +937,37 @@ int main(void){
  /* C5: invalid A4 event time fails with no usable order. */
  CHECK(!nf_retc_m2_arrival_evidence(.02f,.75f,0.f,NAN,.125f,&clock));
  CHECK(clock.order==0&&!clock.rival_closing);
+ /* H273D: independent mass-weighted rival-first oracle; deliberately
+    predictive and non-authoritative, never fabricates A4/A5 receipts. */
+ NfRetcM2ReverseOracle rev={0};
+ /* D1: actual source order is rival first; then actor reaches merged
+    crate/rival pair, preserving full three-body 1D momentum. */
+ CHECK(nf_retc_m2_reverse_oracle(.02f,4.f,.75f,0.f,
+        80.f,24.f,80.f,.08f,.125f,&rev));
+ const float rival_first_ref=.02f/.75f;
+ const float crate_post_ref=24.f*.75f/(24.f+80.f);
+ const float actor_next_ref=rival_first_ref+
+     (4.f-.75f)*(.08f-rival_first_ref)/(4.f-crate_post_ref);
+ CHECK(rev.predicted&&
+       fabsf(rev.rival_time-rival_first_ref)<.00001f&&
+       fabsf(rev.crate_after_rival-crate_post_ref)<.00001f&&
+       fabsf(rev.actor_time-actor_next_ref)<.00001f&&
+       fabsf(rev.final_common_speed-
+             (80.f*4.f+24.f*.75f)/(80.f+24.f+80.f))<.00001f);
+ /* D2: event-time tie cannot be silently elevated into order. */
+ CHECK(!nf_retc_m2_reverse_oracle(.06f,4.f,.75f,0.f,
+       80.f,24.f,80.f,.08f,.125f,&rev)&&!rev.predicted);
+ /* D3: actor-first incumbent stays separate from reversed oracle. */
+ CHECK(!nf_retc_m2_reverse_oracle(.09f,4.f,.75f,0.f,
+       80.f,24.f,80.f,.08f,.125f,&rev)&&!rev.predicted);
+ /* D4: nonclosing crate-rival pair cannot create a first event. */
+ CHECK(!nf_retc_m2_reverse_oracle(.02f,4.f,.25f,.5f,
+       80.f,24.f,80.f,.08f,.125f,&rev)&&!rev.predicted);
+ /* D5: invalid body mass and stale/nonfinite event inputs fail. */
+ CHECK(!nf_retc_m2_reverse_oracle(.02f,4.f,.75f,0.f,
+       80.f,0.f,80.f,.08f,.125f,&rev)&&!rev.predicted);
+ CHECK(!nf_retc_m2_reverse_oracle(.02f,4.f,.75f,0.f,
+       80.f,24.f,80.f,NAN,.125f,&rev)&&!rev.predicted);
 
  /* Tested private staging remains bytewise source-derived and fails
     closed on rival-first geometry (H273A above); restoring source
