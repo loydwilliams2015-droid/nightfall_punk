@@ -982,6 +982,43 @@ int main(void){
  /* C5: invalid A4 event time fails with no usable order. */
  CHECK(!nf_retc_m2_arrival_evidence(.02f,.75f,0.f,NAN,.125f,&clock));
  CHECK(clock.order==0&&!clock.rival_closing);
+ /* H274A: five independent source-event arbitration categories; a tie
+    is NOT a permit to solve or publish a simultaneous A4 impulse. */
+ NfRetcM2EventArbitration arbitration={0};
+ /* A1: exact source actor-first must select the incumbent order. */
+ CHECK(nf_retc_m2_arbitrate_contact_events(
+       .09f,.75f,0.f,.08f,.125f,&arbitration));
+ CHECK(arbitration.order==NF_RETC_M2_ORDER_ACTOR_FIRST&&
+       arbitration.can_stage_sequential&&arbitration.signed_arrival_delta>0.f);
+ /* A2: genuinely rival-first order remains a separate A4 challenger. */
+ CHECK(nf_retc_m2_arbitrate_contact_events(
+       .02f,.75f,0.f,.08f,.125f,&arbitration));
+ CHECK(arbitration.order==NF_RETC_M2_ORDER_RIVAL_FIRST&&
+       arbitration.can_stage_sequential&&arbitration.signed_arrival_delta<0.f);
+ /* A3: true simultaneous contact has NO deterministic preference. */
+ CHECK(nf_retc_m2_arbitrate_contact_events(
+       .06f,.75f,0.f,.08f,.125f,&arbitration));
+ CHECK(arbitration.order==NF_RETC_M2_ORDER_SIMULTANEOUS&&
+       !arbitration.can_stage_sequential);
+ /* A4: a nearly simultaneous but source-nonidentical event is also
+    rejected; exact margin is 10 microseconds in the event clock. */
+ CHECK(nf_retc_m2_arbitrate_contact_events(
+       .060004f,.75f,0.f,.08f,.125f,&arbitration));
+ CHECK(arbitration.order==NF_RETC_M2_ORDER_SIMULTANEOUS&&
+       !arbitration.can_stage_sequential&&
+       fabsf(arbitration.signed_arrival_delta)<=arbitration.source.tie_margin);
+ /* A5: nonclosing and nonfinite clocks never acquire authority. */
+ CHECK(nf_retc_m2_arbitrate_contact_events(
+       .02f,.25f,.5f,.08f,.125f,&arbitration));
+ CHECK(arbitration.order==NF_RETC_M2_ORDER_NOT_CLOSING&&
+       !arbitration.can_stage_sequential);
+ CHECK(!nf_retc_m2_arbitrate_contact_events(
+       .02f,.75f,0.f,NAN,.125f,&arbitration));
+ CHECK(arbitration.order==NF_RETC_M2_ORDER_INVALID&&
+       !arbitration.can_stage_sequential);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
  /* H273D: independent mass-weighted rival-first oracle; deliberately
     predictive and non-authoritative, never fabricates A4/A5 receipts. */
  NfRetcM2ReverseOracle rev={0};
