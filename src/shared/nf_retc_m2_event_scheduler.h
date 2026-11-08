@@ -92,6 +92,107 @@ static inline bool nf_retc_m2_reverse_oracle(
  out->predicted=true;
  return true;
 }
+/* H273E: PRIVATE first genuine A4 rival-first contact from the actual
+ * A6 owner and roster. This is NOT the complete two-impact solver and
+ * provides NO A5 revision, B2/B3 authorization or accepted world tick. */
+typedef struct NfRetcM2ReverseFirst {
+ Nf18a4Body crate_after,rival_after;
+ Nf18a4Receipt receipt;
+ NfRetcM2ReverseOracle oracle;
+ uint64_t source_tick;
+ uint32_t source_revision;
+ bool staged;
+} NfRetcM2ReverseFirst;
+static inline bool nf_retc_m2_reverse_first_in_tick(
+ const NfWorld *w,const Nf18a6Runtime *owner,float dt,
+ NfRetcM2ReverseFirst *out){
+ if(!out)return false;
+ *out=(NfRetcM2ReverseFirst){0};
+ if(!w||!owner||!w->tick_in_progress||!w->tick_owner||
+    w->tick_owner_context!=owner||!owner->require_pair_research||
+    !owner->research_pair_stage||!isfinite(dt)||dt<=0.f||
+    dt>.25f||w->tick>=UINT32_MAX||
+    owner->last_commit_tick!=w->tick||
+    owner->physical.world.tick!=w->tick||
+    owner->physical.world.revision==UINT32_MAX)return false;
+ NfMa03Roster roster={0};
+ if(!nf_ma03_roster_capture_in_tick(w,&roster)||
+    roster.count!=2u||roster.source_tick!=w->tick)return false;
+ const NfActor *actor=nf_world_find_actor_const(w,owner->actor_id);
+ const NfMa03Participant *rival=NULL;
+ for(size_t i=0;i<2u;++i)
+   if(roster.actors[i].id!=owner->actor_id)rival=&roster.actors[i];
+ if(!actor||!rival)return false;
+ const NfActor *other=nf_world_find_actor_const(w,rival->id);
+ Nf18a4Body a=owner->physical.actor,b=owner->physical.object;
+ if(!other||!actor->active||!actor->combat.alive||
+    !other->active||!other->combat.alive||
+    !actor->input.interact_held||actor->input.forward<=.1f||
+    a.id!=owner->actor_id||a.id==b.id||b.id==rival->id||
+    !nf18a4_body_valid(&a)||!nf18a4_body_valid(&b)||
+    a.inverse_mass<=0.f||b.inverse_mass<=0.f||
+    a.velocity.x<=b.velocity.x||b.velocity.x<=rival->velocity.x||
+    b.velocity.x<0.f||rival->velocity.x<0.f||
+    fabsf(a.velocity.y)>.0001f||fabsf(a.velocity.z)>.0001f||
+    fabsf(b.velocity.y)>.0001f||fabsf(b.velocity.z)>.0001f||
+    fabsf(rival->velocity.y)>.0001f||fabsf(rival->velocity.z)>.0001f||
+    fabsf(rival->position.z-b.center.z)>.0001f||
+    fabsf(a.center.z-b.center.z)>.0001f||
+    fabsf(actor->transform.position.x-a.center.x)>.0001f||
+    fabsf(actor->transform.velocity.x-a.velocity.x)>.0001f||
+    fabsf(other->transform.position.x-rival->position.x)>.0001f||
+    fabsf(other->transform.velocity.x-rival->velocity.x)>.0001f||
+    owner->object_collider_index>=w->collider_count)return false;
+ const NfCollider *mirror=&w->colliders[owner->object_collider_index];
+ if(mirror->kind!=NF_COLLIDER_SOLID||
+    fabsf(mirror->min.x-(b.center.x-b.box_half.x))>.0001f||
+    fabsf(mirror->max.x-(b.center.x+b.box_half.x))>.0001f||
+    fabsf(mirror->min.y-(b.center.y-b.box_half.y))>.0001f||
+    fabsf(mirror->max.y-(b.center.y+b.box_half.y))>.0001f||
+    fabsf(mirror->min.z-(b.center.z-b.box_half.z))>.0001f||
+    fabsf(mirror->max.z-(b.center.z+b.box_half.z))>.0001f)return false;
+ const float gap=rival->position.x-(b.center.x+b.box_half.x+a.radius);
+ if(!isfinite(gap)||gap<.01f||gap>.3f)return false;
+ const uint32_t tick=(uint32_t)w->tick+1u;
+ const uint32_t revision=owner->physical.world.revision;
+ const Nf18a2ShapePolicy shape={a.radius,a.height,.05f,.4f,.65f};
+ const Nf18a4Motor motor={a.velocity,0.f,0.f};
+ const Nf18a4PairResult predicted=nf18a4_pair_step(
+  a,b,shape,motor,NF18A4_RECIPROCAL_LINEAR,dt,tick,revision,0.f,0.f);
+ if(predicted.status!=NF18A4_ACCEPTED||!predicted.swept_hit||
+    !isfinite(predicted.toi)||predicted.toi<=0.f||
+    predicted.toi>=1.f)return false;
+ NfRetcM2ReverseOracle reference={0};
+ if(!nf_retc_m2_reverse_oracle(gap,a.velocity.x,b.velocity.x,
+   rival->velocity.x,1.f/a.inverse_mass,1.f/b.inverse_mass,
+   80.f,predicted.toi*dt,dt,&reference))return false;
+ Nf18a4Body target={0};
+ target.id=rival->id;
+ target.center=(NfVec3){rival->position.x,
+   rival->position.y+.5f*other->movement.body_height,rival->position.z};
+ target.velocity=rival->velocity;
+ target.inverse_mass=1.f/80.f;
+ target.radius=a.radius;
+ target.height=other->movement.body_height;
+ if(!nf18a4_body_valid(&target))return false;
+ b.center.x+=b.velocity.x*reference.rival_time;
+ target.center.x+=target.velocity.x*reference.rival_time;
+ if(fabsf(target.center.x-(b.center.x+b.box_half.x+target.radius))>.004f)
+   return false;
+ Nf18a4Constraint c={0};
+ c.body_a=b.id;c.body_b=target.id;c.feature_id=b.id^target.id;
+ c.normal_b_to_a=(NfVec3){-1.f,0.f,0.f};
+ c.contact_point=(NfVec3){b.center.x+b.box_half.x,b.center.y,b.center.z};
+ const Nf18a4Receipt receipt=nf18a4_apply_contact(&b,&target,c,
+   NF18A4_RECIPROCAL_LINEAR,tick,revision);
+ if(receipt.status!=NF18A4_ACCEPTED||!receipt.impulses_applied||
+    fabsf(b.velocity.x-reference.crate_after_rival)>.004f||
+    fabsf(target.velocity.x-reference.crate_after_rival)>.004f)return false;
+ out->crate_after=b;out->rival_after=target;out->receipt=receipt;
+ out->oracle=reference;out->source_tick=w->tick;
+ out->source_revision=revision;out->staged=true;
+ return true;
+}
 typedef struct NfRetcM2EventChain {
  Nf18a5World material;
  Nf18a4Body bodies[3];
