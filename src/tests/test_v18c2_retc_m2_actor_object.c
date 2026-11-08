@@ -183,6 +183,19 @@ static bool simultaneous_material_probe(const NfWorld *w,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2OffaxisProbe {
+ NfRetcM2OffaxisCorner *out;
+ unsigned calls,passed;
+} M2OffaxisProbe;
+static bool offaxis_probe(const NfWorld *w,const Nf18a6Runtime *owner,
+ float dt,void *ctx){
+ (void)dt;
+ M2OffaxisProbe *p=(M2OffaxisProbe *)ctx;
+ ++p->calls;
+ const bool ok=nf_retc_m2_offaxis_corner_in_tick(w,owner,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
