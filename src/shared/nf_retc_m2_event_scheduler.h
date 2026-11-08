@@ -193,6 +193,62 @@ static inline bool nf_retc_m2_reverse_first_in_tick(
  out->source_revision=revision;out->staged=true;
  return true;
 }
+/* H273F: second TRUE A4 event, after the source-backed rival-first
+ * A4 impulse. Still PRIVATE: the two event receipts are not an accepted
+ * A5 material history or an A6/B2/B3 publication.
+ * The second collision solves actor+crate; the rival can separate, so a
+ * global all-three common-speed oracle is NOT assumed here. */
+typedef struct NfRetcM2ReverseSecond {
+ NfRetcM2ReverseFirst first;
+ Nf18a4Body actor_after,crate_after,rival_after;
+ Nf18a4Receipt second_receipt;
+ float expected_pair_velocity;
+ bool staged;
+} NfRetcM2ReverseSecond;
+static inline bool nf_retc_m2_reverse_second_in_tick(
+ const NfWorld *w,const Nf18a6Runtime *owner,float dt,
+ NfRetcM2ReverseSecond *out){
+ if(!out)return false;
+ *out=(NfRetcM2ReverseSecond){0};
+ NfRetcM2ReverseFirst first={0};
+ if(!nf_retc_m2_reverse_first_in_tick(w,owner,dt,&first)||
+    !first.staged)return false;
+ Nf18a4Body a=owner->physical.actor;
+ Nf18a4Body b=first.crate_after;
+ Nf18a4Body rival=first.rival_after;
+ const float t1=first.oracle.rival_time,t2=first.oracle.actor_time;
+ if(!nf18a4_body_valid(&a)||!nf18a4_body_valid(&b)||
+    !nf18a4_body_valid(&rival)||!isfinite(t1)||!isfinite(t2)||
+    !(t1>0.f&&t2>t1&&t2<dt))return false;
+ const float delay=t2-t1;
+ /* Actor moves at source speed up to event two. Crate and rival move
+    at the genuine first A4 velocities, not the diagnostic oracle. */
+ a.center.x+=a.velocity.x*t2;
+ b.center.x+=b.velocity.x*delay;
+ rival.center.x+=rival.velocity.x*delay;
+ if(fabsf(a.center.x+a.radius-(b.center.x-b.box_half.x))>.004f||
+    fabsf(rival.center.x-(b.center.x+b.box_half.x+rival.radius))>.004f)
+    return false;
+ const float ma=1.f/a.inverse_mass,mb=1.f/b.inverse_mass;
+ const float reference=(ma*a.velocity.x+mb*b.velocity.x)/(ma+mb);
+ if(!isfinite(reference))return false;
+ Nf18a4Constraint c={0};
+ c.body_a=a.id;c.body_b=b.id;c.feature_id=b.id;
+ c.normal_b_to_a=(NfVec3){-1.f,0.f,0.f};
+ c.contact_point=(NfVec3){b.center.x-b.box_half.x,b.center.y,b.center.z};
+ const Nf18a4Receipt rr=nf18a4_apply_contact(
+     &a,&b,c,NF18A4_RECIPROCAL_LINEAR,
+     (uint32_t)w->tick+1u,first.source_revision);
+ if(rr.status!=NF18A4_ACCEPTED||!rr.impulses_applied||
+    fabsf(a.velocity.x-reference)>.004f||
+    fabsf(b.velocity.x-reference)>.004f||
+    fabsf(rival.velocity.x-first.rival_after.velocity.x)>.00001f)
+    return false;
+ out->first=first;out->actor_after=a;out->crate_after=b;
+ out->rival_after=rival;out->second_receipt=rr;
+ out->expected_pair_velocity=reference;out->staged=true;
+ return true;
+}
 typedef struct NfRetcM2EventChain {
  Nf18a5World material;
  Nf18a4Body bodies[3];
