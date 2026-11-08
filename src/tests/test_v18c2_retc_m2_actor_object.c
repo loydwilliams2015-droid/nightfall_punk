@@ -111,6 +111,18 @@ static bool event_probe(const NfWorld *w,const Nf18a6Runtime *owner,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2ReverseProbe {
+ NfRetcM2ReverseFirst *out;
+ unsigned calls,passed;
+} M2ReverseProbe;
+static bool reverse_probe(const NfWorld *w,const Nf18a6Runtime *owner,
+                          float dt,void *context){
+ M2ReverseProbe *p=(M2ReverseProbe *)context;
+ ++p->calls;
+ const bool ok=nf_retc_m2_reverse_first_in_tick(w,owner,dt,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
