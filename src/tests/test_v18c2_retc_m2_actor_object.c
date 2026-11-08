@@ -111,6 +111,18 @@ static bool event_probe(const NfWorld *w,const Nf18a6Runtime *owner,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2ReverseProbe {
+ NfRetcM2ReverseFirst *out;
+ unsigned calls,passed;
+} M2ReverseProbe;
+static bool reverse_probe(const NfWorld *w,const Nf18a6Runtime *owner,
+                          float dt,void *context){
+ M2ReverseProbe *p=(M2ReverseProbe *)context;
+ ++p->calls;
+ const bool ok=nf_retc_m2_reverse_first_in_tick(w,owner,dt,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
@@ -972,6 +984,74 @@ int main(void){
  /* Tested private staging remains bytewise source-derived and fails
     closed on rival-first geometry (H273A above); restoring source
     still returns the exact two-contact A5 history hash. */
+ /* H273E: real SOURCE-backed A4 first collision, private owner tick.
+    This is a genuine crate->rival impulse, not yet a second A4
+    actor->crate event, two-edge A5 commit, or live publication. */
+ NfRetcM2ReverseFirst *reverse_stage=calloc(1,sizeof *reverse_stage);
+ CHECK(reverse_stage);
+ M2ReverseProbe reverse_state={.out=reverse_stage};
+ owner->research_pair_stage=reverse_probe;
+ owner->research_pair_context=&reverse_state;
+ rival->transform.position.x=touching_x+.02f;
+ owner->physical.object.velocity.x=.75f;
+ rival->transform.velocity.x=0.f;
+ /* E1: genuine first A4 receipt and reference agreement. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(reverse_state.calls==1u&&reverse_state.passed==1u&&reverse_stage->staged);
+ CHECK(reverse_stage->receipt.status==NF18A4_ACCEPTED&&
+       reverse_stage->receipt.impulses_applied);
+ CHECK(fabsf(reverse_stage->crate_after.velocity.x-
+       reverse_stage->oracle.crate_after_rival)<.004f);
+ CHECK(fabsf(reverse_stage->rival_after.velocity.x-
+       reverse_stage->oracle.crate_after_rival)<.004f);
+ CHECK(reverse_stage->oracle.rival_time<reverse_stage->oracle.actor_time);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ /* E2: repeat same original A6 source gives deterministic first impulse. */
+ const float first_rival_impulse=reverse_stage->receipt.normal_impulse.x;
+ const float first_rival_time=reverse_stage->oracle.rival_time;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(reverse_state.calls==2u&&reverse_state.passed==2u&&reverse_stage->staged);
+ CHECK(reverse_stage->receipt.normal_impulse.x==first_rival_impulse&&
+       reverse_stage->oracle.rival_time==first_rival_time);
+ /* E3: compute the genuine A4 actor-crate TOI for this moving
+    source; arrange crate-rival impact at EXACTLY that time. A static
+    hard-coded .06m gap would not be simultaneous for a moving box. */
+ const Nf18a2ShapePolicy tie_shape={
+    owner->physical.actor.radius,owner->physical.actor.height,
+    .05f,.4f,.65f};
+ const Nf18a4Motor tie_motor={owner->physical.actor.velocity,0.f,0.f};
+ const Nf18a4PairResult tie_pair=nf18a4_pair_step(
+    owner->physical.actor,owner->physical.object,tie_shape,tie_motor,
+    NF18A4_RECIPROCAL_LINEAR,.125f,1u,revision,0.f,0.f);
+ CHECK(tie_pair.status==NF18A4_ACCEPTED&&tie_pair.swept_hit);
+ const float tie_gap=owner->physical.object.velocity.x*tie_pair.toi*.125f;
+ rival->transform.position.x=touching_x+tie_gap;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(reverse_state.calls==3u&&reverse_state.passed==2u&&!reverse_stage->staged);
+ /* E4: detached owner collider mirror must refuse A4 staging. */
+ rival->transform.position.x=touching_x+.02f;
+ NfCollider *reverse_mirror=&world->colliders[owner->object_collider_index];
+ reverse_mirror->max.x+=.1f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(reverse_state.calls==4u&&reverse_state.passed==2u&&!reverse_stage->staged);
+ reverse_mirror->max.x-=.1f;
+ /* E5: source restoration replays the identical first contact;
+    live physical and contractual consequences remain untouched. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(reverse_state.calls==5u&&reverse_state.passed==3u&&reverse_stage->staged);
+ CHECK(reverse_stage->receipt.normal_impulse.x==first_rival_impulse&&
+       reverse_stage->oracle.rival_time==first_rival_time);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
+ owner->physical.object.velocity.x=moving_source_crate;
+ rival->transform.velocity.x=moving_source_rival;
+ rival->transform.position.x=touching_x+.04f;
+ free(reverse_stage);
  free(scheduled);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
