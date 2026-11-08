@@ -123,6 +123,17 @@ static bool reverse_probe(const NfWorld *w,const Nf18a6Runtime *owner,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2ReverseSecondProbe {
+ NfRetcM2ReverseSecond *out;unsigned calls,passed;
+} M2ReverseSecondProbe;
+static bool reverse_second_probe(const NfWorld *w,const Nf18a6Runtime *owner,
+ float dt,void *ctx){
+ M2ReverseSecondProbe *p=(M2ReverseSecondProbe *)ctx;
+ ++p->calls;
+ const bool ok=nf_retc_m2_reverse_second_in_tick(w,owner,dt,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
