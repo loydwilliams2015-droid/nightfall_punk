@@ -226,6 +226,80 @@ static inline bool nf_retc_m2_simultaneous_in_tick(
  out->source_revision=revision;out->passes=passes;out->staged=true;
  return true;
 }
+/* H274C: genuine simultaneous A4 impulses, verified full +X
+ * source-to-final A5 clearance and one PRIVATE two-edge material revision.
+ * No published A6 tick, B2/B3 grant, WAL, or multi-axis claim. */
+typedef struct NfRetcM2SimultaneousMaterial {
+ NfRetcM2Simultaneous physical;
+ Nf18a5World material;
+ Nf18a5Sample samples[2];
+ float end_x[3];
+ uint32_t source_revision;
+ bool staged;
+} NfRetcM2SimultaneousMaterial;
+static inline bool nf_retc_m2_simultaneous_material_in_tick(
+ const NfWorld *w,const Nf18a6Runtime *owner,float dt,
+ bool reverse_visits,NfRetcM2SimultaneousMaterial *out){
+ if(!out)return false;
+ out->staged=false;
+ if(!w||!owner||owner->physical.world.revision==UINT32_MAX||
+    !owner->physical.world.grid.global_revision)return false;
+ NfRetcM2Simultaneous p={0};
+ if(!nf_retc_m2_simultaneous_in_tick(w,owner,dt,reverse_visits,&p)||
+    !p.staged||p.source_revision!=owner->physical.world.revision||
+    p.event_time<=0.f||p.event_time>=dt)return false;
+ const NfActor *rival=nf_world_find_actor_const(w,p.bodies[2].id);
+ if(!rival||!rival->active||!rival->combat.alive)return false;
+ const Nf18a4Body a=owner->physical.actor,b=owner->physical.object;
+ if(p.bodies[0].id!=a.id||p.bodies[1].id!=b.id||
+    p.bodies[2].id!=rival->id)return false;
+ Nf18a5Grid grid=owner->physical.world.grid;
+ const NfVec3 source_centers[3]={
+   a.center,b.center,
+   {rival->transform.position.x,
+    rival->transform.position.y+.5f*rival->movement.body_height,
+    rival->transform.position.z}};
+ const float remaining=dt-p.event_time;
+ const uint32_t tick=(uint32_t)w->tick+1u;
+ float ends[3]={0.f,0.f,0.f};
+ for(size_t i=0u;i<3u;++i){
+  const float radius=i==1u?fmaxf(b.box_half.x,b.box_half.z):a.radius;
+  const float height=i==1u?fmaxf(2.f*b.box_half.y,2.f*radius):
+                      (i==0u?a.height:rival->movement.body_height);
+  if(!isfinite(radius)||radius<=0.f||!isfinite(height)||height<=0.f||
+     !nf18a4_body_valid(&p.bodies[i]))return false;
+  const Nf18a2ShapePolicy policy={radius,height,.05f,.4f,.65f};
+  const NfVec3 feet={source_centers[i].x,
+    source_centers[i].y-.5f*height,source_centers[i].z};
+  ends[i]=p.bodies[i].center.x+p.bodies[i].velocity.x*remaining;
+  const NfVec3 delta={ends[i]-source_centers[i].x,0.f,0.f};
+  uint32_t loads=0u;
+  if(!isfinite(ends[i])||!isfinite(delta.x)||delta.x<-.0001f||
+     nf18a5_sweep_query(&grid,feet,delta,policy,dt,tick,
+                        NULL,NULL,&loads)!=NF18A5_Q_FREE)return false;
+ }
+ Nf18a5World material=owner->physical.world;
+ Nf18a5Sample samples[2]={{0},{0}};
+ if(!p.contacts[0].impulses_applied||!p.contacts[1].impulses_applied||
+    p.contacts[0].status!=NF18A4_ACCEPTED||
+    p.contacts[1].status!=NF18A4_ACCEPTED||
+    !nf18a5_receipt_sample(&p.contacts[0],a.id,b.id,
+      0.f,material.grid.global_revision,&samples[0])||
+    !nf18a5_receipt_sample(&p.contacts[1],b.id,rival->id,
+      0.f,material.grid.global_revision,&samples[1])||
+    samples[0].contact_id==samples[1].contact_id)return false;
+ const uint32_t ids[3]={a.id,b.id,rival->id};
+ const uint32_t rev=owner->physical.world.revision;
+ if(!nf18a5_world_commit_three(&material,rev,tick,a.id,ids,samples)||
+    material.revision!=rev+1u||material.tick!=tick||
+    material.history.raw_samples!=
+      owner->physical.world.history.raw_samples+2u)return false;
+ out->physical=p;out->material=material;
+ out->samples[0]=samples[0];out->samples[1]=samples[1];
+ for(size_t i=0u;i<3u;++i)out->end_x[i]=ends[i];
+ out->source_revision=rev;out->staged=true;
+ return true;
+}
 /* H273D: independent bounded 1D perfectly-inelastic rival-first
  * reference oracle. NO A4 receipt, A5 mutation, B2/B3 grant or tick commit.
  * Used only when the exact source-derived event clock classified rival-first;

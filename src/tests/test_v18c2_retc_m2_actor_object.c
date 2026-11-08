@@ -170,6 +170,19 @@ static bool simultaneous_probe(const NfWorld *w,const Nf18a6Runtime *owner,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2SimultaneousMaterialProbe {
+ NfRetcM2SimultaneousMaterial *out;
+ bool reverse;unsigned calls,passed;
+} M2SimultaneousMaterialProbe;
+static bool simultaneous_material_probe(const NfWorld *w,
+ const Nf18a6Runtime *owner,float dt,void *ctx){
+ M2SimultaneousMaterialProbe *p=(M2SimultaneousMaterialProbe *)ctx;
+ ++p->calls;
+ const bool ok=nf_retc_m2_simultaneous_material_in_tick(
+    w,owner,dt,p->reverse,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
@@ -1325,6 +1338,61 @@ int main(void){
        owner->physical.committed_receipts==0u&&
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x);
+ /* H274C: two simultaneous true A4 impulses must become ONE
+    source-identity-bound private A5 material revision after three
+    source-to-final static clearance checks. Never publish A6/B3. */
+ NfRetcM2SimultaneousMaterial *sm=calloc(1,sizeof *sm);
+ CHECK(sm);
+ M2SimultaneousMaterialProbe sm_probe={.out=sm};
+ owner->research_pair_stage=simultaneous_material_probe;
+ owner->research_pair_context=&sm_probe;
+ /* C1: both material edges atomically accepted in copied A5 history. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sm_probe.calls==1u&&sm_probe.passed==1u&&sm->staged);
+ CHECK(sm->material.revision==revision+1u&&sm->material.tick==1u&&
+       sm->material.history.raw_samples==samples+2u);
+ CHECK(sm->samples[0].body_a==30u&&sm->samples[0].body_b==3050u&&
+       sm->samples[1].body_a==3050u&&sm->samples[1].body_b==40u);
+ const uint32_t sm_hash=nf18a5_history_hash(&sm->material.history);
+ /* C2: opposite constraint order gives same physical source momentum,
+    graph identities and source-to-final clearance. */
+ sm_probe.reverse=true;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sm_probe.calls==2u&&sm_probe.passed==2u&&sm->staged);
+ CHECK(sm->material.history.raw_samples==samples+2u&&
+       sm->samples[0].body_a==30u&&sm->samples[1].body_b==40u);
+ for(unsigned k=0u;k<3u;++k)
+   CHECK(fabsf(sm->physical.bodies[k].velocity.x-sim_expected)<.004f);
+ /* C3: a diagnostic near-tie, not an exact coupled event, cannot
+    privately publish even one material edge. */
+ sm_probe.reverse=false;
+ rival->transform.position.x=touching_x+tie_gap+.000003f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sm_probe.calls==3u&&sm_probe.passed==2u&&!sm->staged);
+ /* C4: real source static obstruction refuses all staged A5 edges. */
+ rival->transform.position.x=touching_x+tie_gap;
+ Nf18a5Grid *sm_grid=malloc(sizeof *sm_grid);
+ CHECK(sm_grid);
+ *sm_grid=owner->physical.world.grid;
+ uint8_t sm_blocked[NF18A5_CANON_VOXELS];
+ for(size_t k=0u;k<NF18A5_CANON_VOXELS;++k)sm_blocked[k]=1u;
+ CHECK(nf18a5_load_canonical(&owner->physical.world.grid,
+      0,0,0,sm_blocked,1u));
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sm_probe.calls==4u&&sm_probe.passed==2u&&!sm->staged);
+ owner->physical.world.grid=*sm_grid;
+ free(sm_grid);
+ /* C5: restored exact source reproduces private A5 digest while the
+    accepted world and B3 remain completely unchanged. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sm_probe.calls==5u&&sm_probe.passed==3u&&sm->staged);
+ CHECK(nf18a5_history_hash(&sm->material.history)==sm_hash);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
+ free(sm);
  free(sim);
  free(clearance);
  free(dual);
