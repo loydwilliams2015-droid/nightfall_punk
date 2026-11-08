@@ -300,6 +300,84 @@ static inline bool nf_retc_m2_simultaneous_material_in_tick(
  out->source_revision=rev;out->staged=true;
  return true;
 }
+/* H275A: bounded source-bound A4 corner contact in the XZ plane.
+ * This is a genuine PRIVATE off-axis normal impulse, not a generalized
+ * multi-contact CCD or A5 material/publication transaction. */
+typedef struct NfRetcM2OffaxisCorner {
+ Nf18a4Body actor_after,crate_after;
+ Nf18a4Receipt receipt;
+ NfVec3 normal;
+ float source_momentum_x,source_momentum_z;
+ bool staged;
+} NfRetcM2OffaxisCorner;
+static inline bool nf_retc_m2_offaxis_corner_in_tick(
+ const NfWorld *w,const Nf18a6Runtime *owner,
+ NfRetcM2OffaxisCorner *out){
+ if(!out)return false;
+ *out=(NfRetcM2OffaxisCorner){0};
+ if(!w||!owner||!w->tick_in_progress||!w->tick_owner||
+    w->tick_owner_context!=owner||!owner->require_pair_research||
+    !owner->research_pair_stage||w->tick>=UINT32_MAX||
+    owner->last_commit_tick!=w->tick||
+    owner->physical.world.tick!=w->tick||
+    owner->physical.world.revision==UINT32_MAX||
+    owner->object_collider_index>=w->collider_count)return false;
+ const NfActor *actor=nf_world_find_actor_const(w,owner->actor_id);
+ Nf18a4Body a=owner->physical.actor,b=owner->physical.object;
+ if(!actor||!actor->active||!actor->combat.alive||
+    !actor->input.interact_held||actor->input.forward<=.1f||
+    !nf18a4_body_valid(&a)||!nf18a4_body_valid(&b)||
+    a.id!=owner->actor_id||a.id==b.id||
+    a.inverse_mass<=0.f||b.inverse_mass<=0.f||
+    b.box_half.x<=0.f||b.box_half.y<=0.f||b.box_half.z<=0.f||
+    fabsf(a.velocity.y)>.0001f||fabsf(b.velocity.y)>.0001f||
+    fabsf(actor->transform.position.x-a.center.x)>.0001f||
+    fabsf(actor->transform.position.z-a.center.z)>.0001f||
+    fabsf(actor->transform.velocity.x-a.velocity.x)>.0001f||
+    fabsf(actor->transform.velocity.z-a.velocity.z)>.0001f)return false;
+ const NfCollider *mirror=&w->colliders[owner->object_collider_index];
+ if(mirror->kind!=NF_COLLIDER_SOLID||
+    fabsf(mirror->min.x-(b.center.x-b.box_half.x))>.0001f||
+    fabsf(mirror->max.x-(b.center.x+b.box_half.x))>.0001f||
+    fabsf(mirror->min.z-(b.center.z-b.box_half.z))>.0001f||
+    fabsf(mirror->max.z-(b.center.z+b.box_half.z))>.0001f)return false;
+ /* The accepted bounded configuration is a front-left crate corner:
+  * source actor is to the -X,+Z side, already at radius contact. */
+ const float dx=a.center.x-(b.center.x-b.box_half.x);
+ const float dz=a.center.z-(b.center.z+b.box_half.z);
+ const float dist2=dx*dx+dz*dz;
+ if(!isfinite(dist2)||dx>=-.001f||dz<=.001f||
+    dist2<=.000001f||dist2>a.radius*a.radius)return false;
+ const float len=sqrtf(dist2);
+ const NfVec3 normal={dx/len,0.f,dz/len};
+ const float closing=(a.velocity.x-b.velocity.x)*normal.x+
+                     (a.velocity.z-b.velocity.z)*normal.z;
+ if(!isfinite(closing)||closing>=-.001f)return false;
+ const float ma=1.f/a.inverse_mass,mb=1.f/b.inverse_mass;
+ const float px=ma*a.velocity.x+mb*b.velocity.x;
+ const float pz=ma*a.velocity.z+mb*b.velocity.z;
+ if(!isfinite(px)||!isfinite(pz))return false;
+ Nf18a4Constraint c={0};
+ c.body_a=a.id;c.body_b=b.id;c.feature_id=b.id;
+ c.normal_b_to_a=normal;
+ c.contact_point=(NfVec3){b.center.x-b.box_half.x,
+                           b.center.y,b.center.z+b.box_half.z};
+ const Nf18a4Receipt receipt=nf18a4_apply_contact(
+     &a,&b,c,NF18A4_RECIPROCAL_LINEAR,
+     (uint32_t)w->tick+1u,owner->physical.world.revision);
+ if(receipt.status!=NF18A4_ACCEPTED||!receipt.impulses_applied||
+    !isfinite(receipt.normal_impulse.x)||
+    !isfinite(receipt.normal_impulse.z)||
+    fabsf(ma*a.velocity.x+mb*b.velocity.x-px)>.004f||
+    fabsf(ma*a.velocity.z+mb*b.velocity.z-pz)>.004f||
+    fabsf(b.velocity.z-owner->physical.object.velocity.z)<.001f)
+    return false;
+ out->actor_after=a;out->crate_after=b;
+ out->receipt=receipt;out->normal=normal;
+ out->source_momentum_x=px;out->source_momentum_z=pz;
+ out->staged=true;
+ return true;
+}
 /* H273D: independent bounded 1D perfectly-inelastic rival-first
  * reference oracle. NO A4 receipt, A5 mutation, B2/B3 grant or tick commit.
  * Used only when the exact source-derived event clock classified rival-first;

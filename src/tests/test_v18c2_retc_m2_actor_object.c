@@ -183,6 +183,19 @@ static bool simultaneous_material_probe(const NfWorld *w,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2OffaxisProbe {
+ NfRetcM2OffaxisCorner *out;
+ unsigned calls,passed;
+} M2OffaxisProbe;
+static bool offaxis_probe(const NfWorld *w,const Nf18a6Runtime *owner,
+ float dt,void *ctx){
+ (void)dt;
+ M2OffaxisProbe *p=(M2OffaxisProbe *)ctx;
+ ++p->calls;
+ const bool ok=nf_retc_m2_offaxis_corner_in_tick(w,owner,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
@@ -1392,6 +1405,76 @@ int main(void){
        owner->physical.committed_receipts==0u&&
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x);
+ /* H275A: real A4 source-bound off-axis CORNER contact, with
+    X and Z momentum conservation; no generic 3D or A5 claim. */
+ NfRetcM2OffaxisCorner *off=calloc(1,sizeof *off);
+ CHECK(off);
+ M2OffaxisProbe off_probe_state={.out=off};
+ owner->research_pair_stage=offaxis_probe;
+ owner->research_pair_context=&off_probe_state;
+ const NfVec3 original_off_center=owner->physical.actor.center;
+ const NfVec3 original_off_velocity=owner->physical.actor.velocity;
+ const NfVec3 original_off_position=a->transform.position;
+ const NfVec3 original_off_actor_velocity=a->transform.velocity;
+ owner->physical.actor.center.x=owner->physical.object.center.x-
+    owner->physical.object.box_half.x-.2f;
+ owner->physical.actor.center.z=owner->physical.object.center.z+
+    owner->physical.object.box_half.z+.2f;
+ owner->physical.actor.velocity.x=4.f;
+ owner->physical.actor.velocity.z=-2.f;
+ a->transform.position.x=owner->physical.actor.center.x;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.x=4.f;
+ a->transform.velocity.z=-2.f;
+ /* H275A-1: genuine source A4 corner normal has X and Z components,
+    crate receives a real off-axis impulse and momentum is conserved. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(off_probe_state.calls==1u&&off_probe_state.passed==1u&&off->staged);
+ CHECK(off->receipt.status==NF18A4_ACCEPTED&&
+       off->receipt.impulses_applied&&off->normal.x<0.f&&off->normal.z>0.f);
+ const float off_ma=1.f/owner->physical.actor.inverse_mass;
+ const float off_mb=1.f/owner->physical.object.inverse_mass;
+ CHECK(fabsf(off_ma*off->actor_after.velocity.x+
+       off_mb*off->crate_after.velocity.x-off->source_momentum_x)<.004f);
+ CHECK(fabsf(off_ma*off->actor_after.velocity.z+
+       off_mb*off->crate_after.velocity.z-off->source_momentum_z)<.004f);
+ /* H275A-2: exact source repetition reproduces both velocity axes. */
+ const float off_result_x=off->crate_after.velocity.x;
+ const float off_result_z=off->crate_after.velocity.z;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(off_probe_state.calls==2u&&off_probe_state.passed==2u&&off->staged);
+ CHECK(off->crate_after.velocity.x==off_result_x&&
+       off->crate_after.velocity.z==off_result_z);
+ /* H275A-3: separating actor motion cannot manufacture a contact. */
+ owner->physical.actor.velocity.x=-4.f;
+ owner->physical.actor.velocity.z=4.f;
+ a->transform.velocity.x=-4.f;
+ a->transform.velocity.z=4.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(off_probe_state.calls==3u&&off_probe_state.passed==2u&&!off->staged);
+ owner->physical.actor.velocity.x=4.f;
+ owner->physical.actor.velocity.z=-2.f;
+ a->transform.velocity.x=4.f;
+ a->transform.velocity.z=-2.f;
+ /* H275A-4: world collider mirror mismatch fails closed. */
+ reverse_mirror->max.z+=.1f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(off_probe_state.calls==4u&&off_probe_state.passed==2u&&!off->staged);
+ reverse_mirror->max.z-=.1f;
+ /* H275A-5: restored source reproduces genuine off-axis A4; no live
+    actor, crate, A5, A6, B2 or B3 publication is admitted. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(off_probe_state.calls==5u&&off_probe_state.passed==3u&&off->staged);
+ CHECK(off->crate_after.velocity.x==off_result_x&&
+       off->crate_after.velocity.z==off_result_z);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ owner->physical.actor.center=original_off_center;
+ owner->physical.actor.velocity=original_off_velocity;
+ a->transform.position=original_off_position;
+ a->transform.velocity=original_off_actor_velocity;
+ free(off);
  free(sm);
  free(sim);
  free(clearance);
