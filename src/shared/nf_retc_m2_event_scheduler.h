@@ -47,6 +47,51 @@ static inline int nf_retc_m2_arrival_order(float gap,float crate_v,
                                 dt,&clock))return 0;
  return clock.order==3?1:clock.order;
 }
+/* H273D: independent bounded 1D perfectly-inelastic rival-first
+ * reference oracle. NO A4 receipt, A5 mutation, B2/B3 grant or tick commit.
+ * Used only when the exact source-derived event clock classified rival-first;
+ * ties are explicitly excluded by its positive separation requirement. */
+typedef struct NfRetcM2ReverseOracle {
+ float rival_time,actor_time,crate_after_rival,final_common_speed;
+ bool predicted;
+} NfRetcM2ReverseOracle;
+static inline bool nf_retc_m2_reverse_oracle(
+ float gap,float actor_v,float crate_v,float rival_v,
+ float actor_mass,float crate_mass,float rival_mass,
+ float actor_crate_t,float dt,NfRetcM2ReverseOracle *out){
+ if(!out)return false;
+ *out=(NfRetcM2ReverseOracle){0};
+ NfRetcM2ArrivalEvidence clock={0};
+ if(!nf_retc_m2_arrival_evidence(gap,crate_v,rival_v,
+                                actor_crate_t,dt,&clock)||
+    clock.order!=2||!clock.rival_closing||
+    clock.actor_time-clock.rival_time<=clock.tie_margin||
+    !isfinite(actor_v)||actor_v<=crate_v||
+    !isfinite(actor_mass)||!isfinite(crate_mass)||
+    !isfinite(rival_mass)||actor_mass<=0.f||
+    crate_mass<=0.f||rival_mass<=0.f)return false;
+ const float total=crate_mass+rival_mass;
+ const float post=(crate_mass*crate_v+rival_mass*rival_v)/total;
+ /* The pre-impact actor/crate source gap is determined from
+    real A4 source TOI and pre-contact relative speed. */
+ const float remaining_gap=(actor_v-crate_v)*
+     (actor_crate_t-clock.rival_time);
+ const float closing=actor_v-post;
+ if(!isfinite(total)||!isfinite(post)||!isfinite(remaining_gap)||
+    remaining_gap<=0.f||!isfinite(closing)||closing<=0.f)return false;
+ const float t2=clock.rival_time+remaining_gap/closing;
+ const float total_mass=actor_mass+total;
+ const float vfinal=(actor_mass*actor_v+
+                     crate_mass*crate_v+rival_mass*rival_v)/total_mass;
+ if(!isfinite(t2)||t2<=clock.rival_time+clock.tie_margin||
+    t2>=dt||!isfinite(total_mass)||!isfinite(vfinal))return false;
+ out->rival_time=clock.rival_time;
+ out->actor_time=t2;
+ out->crate_after_rival=post;
+ out->final_common_speed=vfinal;
+ out->predicted=true;
+ return true;
+}
 typedef struct NfRetcM2EventChain {
  Nf18a5World material;
  Nf18a4Body bodies[3];
