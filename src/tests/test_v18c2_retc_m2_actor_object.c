@@ -984,6 +984,63 @@ int main(void){
  /* Tested private staging remains bytewise source-derived and fails
     closed on rival-first geometry (H273A above); restoring source
     still returns the exact two-contact A5 history hash. */
+ /* H273E: real SOURCE-backed A4 first collision, private owner tick.
+    This is a genuine crate->rival impulse, not yet a second A4
+    actor->crate event, two-edge A5 commit, or live publication. */
+ NfRetcM2ReverseFirst *reverse_stage=calloc(1,sizeof *reverse_stage);
+ CHECK(reverse_stage);
+ M2ReverseProbe reverse_state={.out=reverse_stage};
+ owner->research_pair_stage=reverse_probe;
+ owner->research_pair_context=&reverse_state;
+ rival->transform.position.x=touching_x+.02f;
+ owner->physical.object.velocity.x=.75f;
+ rival->transform.velocity.x=0.f;
+ /* E1: genuine first A4 receipt and reference agreement. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(reverse_state.calls==1u&&reverse_state.passed==1u&&reverse_stage->staged);
+ CHECK(reverse_stage->receipt.status==NF18A4_ACCEPTED&&
+       reverse_stage->receipt.impulses_applied);
+ CHECK(fabsf(reverse_stage->crate_after.velocity.x-
+       reverse_stage->oracle.crate_after_rival)<.004f);
+ CHECK(fabsf(reverse_stage->rival_after.velocity.x-
+       reverse_stage->oracle.crate_after_rival)<.004f);
+ CHECK(reverse_stage->oracle.rival_time<reverse_stage->oracle.actor_time);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ /* E2: repeat same original A6 source gives deterministic first impulse. */
+ const float first_rival_impulse=reverse_stage->receipt.normal_impulse.x;
+ const float first_rival_time=reverse_stage->oracle.rival_time;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(reverse_state.calls==2u&&reverse_state.passed==2u&&reverse_stage->staged);
+ CHECK(reverse_stage->receipt.normal_impulse.x==first_rival_impulse&&
+       reverse_stage->oracle.rival_time==first_rival_time);
+ /* E3: near-simultaneous impact is unsupported and refuses. */
+ rival->transform.position.x=touching_x+.06f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(reverse_state.calls==3u&&reverse_state.passed==2u&&!reverse_stage->staged);
+ /* E4: detached owner collider mirror must refuse A4 staging. */
+ rival->transform.position.x=touching_x+.02f;
+ NfCollider *reverse_mirror=&world->colliders[owner->object_collider_index];
+ reverse_mirror->max.x+=.1f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(reverse_state.calls==4u&&reverse_state.passed==2u&&!reverse_stage->staged);
+ reverse_mirror->max.x-=.1f;
+ /* E5: source restoration replays the identical first contact;
+    live physical and contractual consequences remain untouched. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(reverse_state.calls==5u&&reverse_state.passed==3u&&reverse_stage->staged);
+ CHECK(reverse_stage->receipt.normal_impulse.x==first_rival_impulse&&
+       reverse_stage->oracle.rival_time==first_rival_time);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
+ owner->physical.object.velocity.x=moving_source_crate;
+ rival->transform.velocity.x=moving_source_rival;
+ rival->transform.position.x=touching_x+.04f;
+ free(reverse_stage);
  free(scheduled);
  owner->require_pair_research=false;
  owner->research_pair_stage=NULL;
