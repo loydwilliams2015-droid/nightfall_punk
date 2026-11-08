@@ -145,6 +145,17 @@ static bool reverse_material_probe(const NfWorld *w,const Nf18a6Runtime *owner,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2ReverseClearanceProbe {
+ NfRetcM2ReverseClearance *out;unsigned calls,passed;
+} M2ReverseClearanceProbe;
+static bool reverse_clearance_probe(const NfWorld *w,const Nf18a6Runtime *owner,
+ float dt,void *ctx){
+ M2ReverseClearanceProbe *p=(M2ReverseClearanceProbe *)ctx;
+ ++p->calls;
+ const bool ok=nf_retc_m2_reverse_clearance_in_tick(w,owner,dt,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
