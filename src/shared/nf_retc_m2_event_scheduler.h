@@ -249,6 +249,67 @@ static inline bool nf_retc_m2_reverse_second_in_tick(
  out->expected_pair_velocity=reference;out->staged=true;
  return true;
 }
+/* H273G: two authentic reversed-arrival A4 contacts become one PRIVATE
+ * A5 three-participant history revision. A5's graph contract indexes
+ * samples actor->crate, crate->rival, while the physical temporal order
+ * is crate->rival THEN actor->crate. No live A6/B2/B3 publication.
+ * Caller must not misread these graph-indexed arrays as event order. */
+typedef struct NfRetcM2ReverseMaterial {
+ NfRetcM2ReverseSecond physical;
+ Nf18a5World material;
+ Nf18a5Sample samples[2];
+ uint32_t first_contact_id,second_contact_id;
+ bool staged;
+} NfRetcM2ReverseMaterial;
+static inline bool nf_retc_m2_reverse_material_in_tick(
+ const NfWorld *w,const Nf18a6Runtime *owner,float dt,
+ NfRetcM2ReverseMaterial *out){
+ if(!out)return false;
+ out->staged=false;
+ if(!w||!owner||owner->physical.world.revision==UINT32_MAX||
+    !owner->physical.world.grid.global_revision)return false;
+ NfRetcM2ReverseSecond physical={0};
+ if(!nf_retc_m2_reverse_second_in_tick(w,owner,dt,&physical)||
+    !physical.staged)return false;
+ const uint32_t revision=owner->physical.world.revision;
+ const uint32_t tick=(uint32_t)w->tick+1u;
+ if(physical.first.source_tick!=w->tick||
+    physical.first.source_revision!=revision||
+    physical.first.receipt.status!=NF18A4_ACCEPTED||
+    physical.second_receipt.status!=NF18A4_ACCEPTED||
+    !physical.first.receipt.impulses_applied||
+    !physical.second_receipt.impulses_applied||
+    physical.first.oracle.rival_time>=physical.first.oracle.actor_time)return false;
+ Nf18a5World material=owner->physical.world;
+ Nf18a5Sample samples[2]={{0},{0}};
+ const uint32_t actor=owner->actor_id,crate=owner->physical.object.id;
+ const uint32_t rival=physical.first.rival_after.id;
+ if(!actor||!crate||!rival||actor==crate||actor==rival||
+    crate==rival||physical.actor_after.id!=actor||
+    physical.crate_after.id!=crate||
+    physical.first.crate_after.id!=crate||
+    physical.first.rival_after.id!=rival||
+    physical.rival_after.id!=rival)return false;
+ /* Commit order follows canonical graph topology, NOT event chronology. */
+ if(!nf18a5_receipt_sample(&physical.second_receipt,actor,crate,
+     0.f,material.grid.global_revision,&samples[0])||
+    !nf18a5_receipt_sample(&physical.first.receipt,crate,rival,
+     0.f,material.grid.global_revision,&samples[1]))return false;
+ if(samples[0].contact_id==samples[1].contact_id)return false;
+ const uint32_t ids[3]={actor,crate,rival};
+ if(!nf18a5_world_commit_three(&material,revision,tick,actor,
+      ids,samples)||material.revision!=revision+1u||
+    material.tick!=tick||
+    material.history.raw_samples!=
+      owner->physical.world.history.raw_samples+2u)return false;
+ /* Publish only the privately staged candidate after both edges succeed. */
+ out->physical=physical;out->material=material;
+ out->samples[0]=samples[0];out->samples[1]=samples[1];
+ out->first_contact_id=samples[1].contact_id;
+ out->second_contact_id=samples[0].contact_id;
+ out->staged=true;
+ return true;
+}
 typedef struct NfRetcM2EventChain {
  Nf18a5World material;
  Nf18a4Body bodies[3];
