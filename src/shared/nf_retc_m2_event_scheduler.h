@@ -287,10 +287,9 @@ static inline bool nf_retc_m2_reverse_material_in_tick(
  if(!actor||!crate||!rival||actor==crate||actor==rival||
     crate==rival||physical.actor_after.id!=actor||
     physical.crate_after.id!=crate||
-    physical.second_receipt.body_a!=actor||
-    physical.second_receipt.body_b!=crate||
-    physical.first.receipt.body_a!=crate||
-    physical.first.receipt.body_b!=rival)return false;
+    physical.first.crate_after.id!=crate||
+    physical.first.rival_after.id!=rival||
+    physical.rival_after.id!=rival)return false;
  /* Commit order follows canonical graph topology, NOT event chronology. */
  if(!nf18a5_receipt_sample(&physical.second_receipt,actor,crate,
      0.f,material.grid.global_revision,&samples[0])||
