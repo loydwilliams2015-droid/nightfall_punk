@@ -47,6 +47,49 @@ static inline int nf_retc_m2_arrival_order(float gap,float crate_v,
                                 dt,&clock))return 0;
  return clock.order==3?1:clock.order;
 }
+/* H274A: source-exact contact-event arbitration, diagnostics ONLY.
+ * Distinguish rival-first, actor-first, simultaneous/near-simultaneous,
+ * not-closing and invalid without ever selecting an arbitrary tie winner.
+ * Old H273 ordering API remains unchanged to preserve the incumbent. */
+typedef enum NfRetcM2EventOrder {
+ NF_RETC_M2_ORDER_INVALID=0,
+ NF_RETC_M2_ORDER_ACTOR_FIRST=1,
+ NF_RETC_M2_ORDER_RIVAL_FIRST=2,
+ NF_RETC_M2_ORDER_SIMULTANEOUS=3,
+ NF_RETC_M2_ORDER_NOT_CLOSING=4
+} NfRetcM2EventOrder;
+typedef struct NfRetcM2EventArbitration {
+ NfRetcM2ArrivalEvidence source;
+ float signed_arrival_delta;
+ NfRetcM2EventOrder order;
+ bool can_stage_sequential;
+} NfRetcM2EventArbitration;
+static inline bool nf_retc_m2_arbitrate_contact_events(
+ float gap,float crate_v,float rival_v,float actor_crate_t,
+ float dt,NfRetcM2EventArbitration *out){
+ if(!out)return false;
+ *out=(NfRetcM2EventArbitration){0};
+ NfRetcM2ArrivalEvidence source={0};
+ if(!nf_retc_m2_arrival_evidence(gap,crate_v,rival_v,
+                                actor_crate_t,dt,&source))return false;
+ out->source=source;
+ if(!source.rival_closing){
+  out->signed_arrival_delta=INFINITY;
+  out->order=NF_RETC_M2_ORDER_NOT_CLOSING;
+  return true;
+ }
+ const float delta=source.rival_time-source.actor_time;
+ if(!isfinite(delta))return false;
+ out->signed_arrival_delta=delta;
+ if(fabsf(delta)<=source.tie_margin){
+  out->order=NF_RETC_M2_ORDER_SIMULTANEOUS;
+  return true;
+ }
+ out->order=delta<0.f?NF_RETC_M2_ORDER_RIVAL_FIRST:
+                       NF_RETC_M2_ORDER_ACTOR_FIRST;
+ out->can_stage_sequential=true;
+ return true;
+}
 /* H273D: independent bounded 1D perfectly-inelastic rival-first
  * reference oracle. NO A4 receipt, A5 mutation, B2/B3 grant or tick commit.
  * Used only when the exact source-derived event clock classified rival-first;
