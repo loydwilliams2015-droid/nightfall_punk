@@ -1015,8 +1015,19 @@ int main(void){
  CHECK(reverse_state.calls==2u&&reverse_state.passed==2u&&reverse_stage->staged);
  CHECK(reverse_stage->receipt.normal_impulse.x==first_rival_impulse&&
        reverse_stage->oracle.rival_time==first_rival_time);
- /* E3: near-simultaneous impact is unsupported and refuses. */
- rival->transform.position.x=touching_x+.06f;
+ /* E3: compute the genuine A4 actor-crate TOI for this moving
+    source; arrange crate-rival impact at EXACTLY that time. A static
+    hard-coded .06m gap would not be simultaneous for a moving box. */
+ const Nf18a2ShapePolicy tie_shape={
+    owner->physical.actor.radius,owner->physical.actor.height,
+    .05f,.4f,.65f};
+ const Nf18a4Motor tie_motor={owner->physical.actor.velocity,0.f,0.f};
+ const Nf18a4PairResult tie_pair=nf18a4_pair_step(
+    owner->physical.actor,owner->physical.object,tie_shape,tie_motor,
+    NF18A4_RECIPROCAL_LINEAR,.125f,1u,revision,0.f,0.f);
+ CHECK(tie_pair.status==NF18A4_ACCEPTED&&tie_pair.swept_hit);
+ const float tie_gap=owner->physical.object.velocity.x*tie_pair.toi*.125f;
+ rival->transform.position.x=touching_x+tie_gap;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
  CHECK(reverse_state.calls==3u&&reverse_state.passed==2u&&!reverse_stage->staged);
  /* E4: detached owner collider mirror must refuse A4 staging. */
