@@ -1059,6 +1059,51 @@ int main(void){
        owner->physical.committed_receipts==0u&&
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x);
+ /* H273F: source-backed SECOND genuine A4 impulse after the
+    rival-first contact; both receipts live only in copied state. */
+ NfRetcM2ReverseSecond *second=calloc(1,sizeof *second);
+ CHECK(second);
+ M2ReverseSecondProbe second_state={.out=second};
+ owner->research_pair_stage=reverse_second_probe;
+ owner->research_pair_context=&second_state;
+ /* F1: both actual A4 contact receipts, conservation along actor/crate
+    at event two, and no invented rival re-impulse. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(second_state.calls==1u&&second_state.passed==1u&&second->staged);
+ CHECK(second->first.receipt.status==NF18A4_ACCEPTED&&
+       second->first.receipt.impulses_applied);
+ CHECK(second->second_receipt.status==NF18A4_ACCEPTED&&
+       second->second_receipt.impulses_applied);
+ CHECK(fabsf(second->actor_after.velocity.x-
+              second->expected_pair_velocity)<.004f&&
+       fabsf(second->crate_after.velocity.x-
+              second->expected_pair_velocity)<.004f);
+ CHECK(second->first.oracle.rival_time<second->first.oracle.actor_time);
+ /* F2: deterministic replay of both real A4 impulses. */
+ const float second_impulse=second->second_receipt.normal_impulse.x;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(second_state.calls==2u&&second_state.passed==2u&&second->staged);
+ CHECK(second->second_receipt.normal_impulse.x==second_impulse);
+ /* F3: tie in source event order must refuse BOTH staged events. */
+ rival->transform.position.x=touching_x+tie_gap;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(second_state.calls==3u&&second_state.passed==2u&&!second->staged);
+ /* F4: world collider diverges from A6 crate; refuse. */
+ rival->transform.position.x=touching_x+.02f;
+ reverse_mirror->max.x+=.1f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(second_state.calls==4u&&second_state.passed==2u&&!second->staged);
+ reverse_mirror->max.x-=.1f;
+ /* F5: restored source replays private physics, no world/A5/B3 change. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(second_state.calls==5u&&second_state.passed==3u&&second->staged);
+ CHECK(second->second_receipt.normal_impulse.x==second_impulse);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
+ free(second);
  owner->physical.object.velocity.x=moving_source_crate;
  rival->transform.velocity.x=moving_source_rival;
  rival->transform.position.x=touching_x+.04f;
