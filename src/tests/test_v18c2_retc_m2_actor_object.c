@@ -917,6 +917,27 @@ int main(void){
  CHECK(nf_retc_m2_arrival_order(.09f,.75f,0.f,.08f,.125f)==1);
  CHECK(nf_retc_m2_arrival_order(.02f,.25f,.5f,.08f,.125f)==1);
  CHECK(nf_retc_m2_arrival_order(.02f,.75f,0.f,NAN,.125f)==0);
+ /* H273C: explicit dual-clock source evidence for the future positive
+    reversed-event solver, still fail-closed in the incumbent. */
+ NfRetcM2ArrivalEvidence clock={0};
+ /* C1: crate/rival impact precedes authentic actor/crate event time. */
+ CHECK(nf_retc_m2_arrival_evidence(.02f,.75f,0.f,.08f,.125f,&clock));
+ CHECK(clock.order==2&&clock.rival_closing&&
+       fabsf(clock.rival_time-(.02f/.75f))<.00001f&&
+       clock.actor_time==.08f);
+ /* C2: equal arrival times are a conservative unsupported tie. */
+ CHECK(nf_retc_m2_arrival_evidence(.06f,.75f,0.f,.08f,.125f,&clock));
+ CHECK(clock.order==2&&fabsf(clock.rival_time-clock.actor_time)<.00001f);
+ /* C3: actor-first ordering preserves exact independent event clock. */
+ CHECK(nf_retc_m2_arrival_evidence(.09f,.75f,0.f,.08f,.125f,&clock));
+ CHECK(clock.order==1&&fabsf(clock.rival_time-.12f)<.00001f);
+ /* C4: no rival closing cannot invent an arrival in the tick. */
+ CHECK(nf_retc_m2_arrival_evidence(.02f,.25f,.5f,.08f,.125f,&clock));
+ CHECK(clock.order==3&&!clock.rival_closing&&isinf(clock.rival_time));
+ /* C5: invalid A4 event time fails with no usable order. */
+ CHECK(!nf_retc_m2_arrival_evidence(.02f,.75f,0.f,NAN,.125f,&clock));
+ CHECK(clock.order==0&&!clock.rival_closing);
+
  /* Tested private staging remains bytewise source-derived and fails
     closed on rival-first geometry (H273A above); restoring source
     still returns the exact two-contact A5 history hash. */
