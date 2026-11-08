@@ -367,7 +367,7 @@ int main(void){
  owner->research_pair_stage=contention_probe;
  owner->research_pair_context=&mp;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
- CHECK(mp.calls==1u&&mp.passed==1u&&cont->staged&&
+ CHECK(g_material_probe.calls==1u&&g_material_probe.passed==1u&&cont->staged&&
        cont->claim_count==2u&&cont->winning_actor==30u);
  CHECK(cont->winner_effect.staged&&
        cont->winner_effect.pair.candidate.world.history.raw_samples==samples+1u);
@@ -385,21 +385,21 @@ int main(void){
     any rival-owned physical consequence or A5 sample. */
  rival->id=20u;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
- CHECK(mp.calls==2u&&mp.passed==1u&&!cont->staged&&
+ CHECK(g_material_probe.calls==2u&&g_material_probe.passed==1u&&!cont->staged&&
        cont->claim_count==2u&&cont->winning_actor==20u);
  rival->id=40u;
  /* H226: owner releases and source rival remains held: competitor wins
     the proposal, but this A6 owner may not act on its behalf. */
  a->input.interact_held=false;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
- CHECK(mp.calls==3u&&mp.passed==1u&&!cont->staged&&
+ CHECK(g_material_probe.calls==3u&&g_material_probe.passed==1u&&!cont->staged&&
        cont->claim_count==1u&&cont->winning_actor==40u);
  /* H227: rival release and source owner re-entry deterministically
     restores private staging. Still no live world/body/A5/B3 effects. */
  a->input.interact_held=true;
  rival->input.interact_held=false;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
- CHECK(mp.calls==4u&&mp.passed==2u&&cont->staged&&
+ CHECK(g_material_probe.calls==4u&&g_material_probe.passed==2u&&cont->staged&&
        cont->winning_actor==30u&&cont->claim_count==1u);
  CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
        owner->physical.world.history.raw_samples==samples&&
@@ -1118,13 +1118,13 @@ int main(void){
     reversed-order A4 impulses; no live tick or B3 publication. */
  NfRetcM2ReverseMaterial *dual=calloc(1,sizeof *dual);
  CHECK(dual);
- M2ReverseMaterialProbe mp={.out=dual};
+ M2ReverseMaterialProbe g_material_probe={.out=dual};
  owner->research_pair_stage=reverse_material_probe;
- owner->research_pair_context=&mp;
+ owner->research_pair_context=&g_material_probe;
  /* G1: source-exact positive two-edge private ancestry; physical event
     order is rival-first, graph storage is actor/crate then crate/rival. */
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
- CHECK(mp.calls==1u&&mp.passed==1u&&dual->staged);
+ CHECK(g_material_probe.calls==1u&&g_material_probe.passed==1u&&dual->staged);
  CHECK(dual->material.revision==revision+1u&&dual->material.tick==1u&&
        dual->material.history.raw_samples==samples+2u);
  CHECK(dual->samples[0].body_a==30u&&dual->samples[0].body_b==3050u&&
@@ -1135,23 +1135,23 @@ int main(void){
  /* G2: repeated source proves deterministic physical + A5 results. */
  const float g_impulse=dual->physical.second_receipt.normal_impulse.x;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
- CHECK(mp.calls==2u&&mp.passed==2u&&dual->staged);
+ CHECK(g_material_probe.calls==2u&&g_material_probe.passed==2u&&dual->staged);
  CHECK(nf18a5_history_hash(&dual->material.history)==reverse_a5_digest&&
        dual->physical.second_receipt.normal_impulse.x==g_impulse);
  /* G3: source-exact tie refuses a partial private material transaction. */
  rival->transform.position.x=touching_x+tie_gap;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
- CHECK(mp.calls==3u&&mp.passed==2u&&!dual->staged);
+ CHECK(g_material_probe.calls==3u&&g_material_probe.passed==2u&&!dual->staged);
  /* G4: stale source material epoch fails without committing an edge. */
  rival->transform.position.x=touching_x+.02f;
  const uint32_t g_epoch=owner->physical.world.grid.global_revision;
  owner->physical.world.grid.global_revision=0u;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
- CHECK(mp.calls==4u&&mp.passed==2u&&!dual->staged);
+ CHECK(g_material_probe.calls==4u&&g_material_probe.passed==2u&&!dual->staged);
  owner->physical.world.grid.global_revision=g_epoch;
  /* G5: source restores original digest, preserves ALL live state. */
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
- CHECK(mp.calls==5u&&mp.passed==3u&&dual->staged);
+ CHECK(g_material_probe.calls==5u&&g_material_probe.passed==3u&&dual->staged);
  CHECK(nf18a5_history_hash(&dual->material.history)==reverse_a5_digest);
  CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
        owner->physical.world.history.raw_samples==samples&&
