@@ -7,21 +7,45 @@
  * with two authentic A4 receipts committed to one PRIVATE A5 revision.
  * No 3D generalization, B2/B3 grant, WAL or A6 publication. */
 #include "nf_retc_m2_three_contact_tick.h"
-/* Source-derived collinear event-order preflight. Conservative ties are
- * unsupported: no A4 impulse or A5 sample may be staged in this scheduler
- * when crate->rival meets actor->crate first or nearly simultaneously.
- * 0=invalid, 1=actor-first, 2=preempted/tied. Research-only. */
-static inline int nf_retc_m2_arrival_order(float gap,float crate_v,
- float rival_v,float actor_crate_t,float dt){
+/* H273C: source-derived 1D event clock. Input actor_t comes from real
+ * A4 swept capsule-box TOI. Crate/rival time comes from independent
+ * source velocities and source geometry; no staged impulse is applied.
+ * 0=invalid; 1=actor-first; 2=rival-first/tie (unsupported);
+ * 3=rival is not closing (actor-first if A4 TOI valid). */
+typedef struct NfRetcM2ArrivalEvidence {
+ float actor_time,rival_time,tie_margin;
+ int order;
+ bool rival_closing;
+} NfRetcM2ArrivalEvidence;
+static inline bool nf_retc_m2_arrival_evidence(
+ float gap,float crate_v,float rival_v,float actor_crate_t,
+ float dt,NfRetcM2ArrivalEvidence *out){
+ if(!out)return false;
+ *out=(NfRetcM2ArrivalEvidence){0};
  if(!isfinite(gap)||gap<=0.f||!isfinite(crate_v)||
     !isfinite(rival_v)||!isfinite(actor_crate_t)||
     !isfinite(dt)||actor_crate_t<=0.f||dt<=0.f||
-    actor_crate_t>=dt)return 0;
- const float relative=crate_v-rival_v;
- if(relative<=0.f)return 1; /* no pre-existing closing rival contact */
- const float t=gap/relative;
- if(!isfinite(t)||t<0.f)return 0;
- return t<=actor_crate_t+0.00001f?2:1;
+    actor_crate_t>=dt)return false;
+ out->actor_time=actor_crate_t;
+ out->tie_margin=0.00001f;
+ const float closing=crate_v-rival_v;
+ if(!isfinite(closing))return false;
+ if(closing<=0.f){
+   out->rival_time=INFINITY;out->order=3;return true;
+ }
+ const float rival_time=gap/closing;
+ if(!isfinite(rival_time)||rival_time<0.f)return false;
+ out->rival_closing=true;
+ out->rival_time=rival_time;
+ out->order=(rival_time<=actor_crate_t+out->tie_margin)?2:1;
+ return true;
+}
+static inline int nf_retc_m2_arrival_order(float gap,float crate_v,
+ float rival_v,float actor_crate_t,float dt){
+ NfRetcM2ArrivalEvidence clock={0};
+ if(!nf_retc_m2_arrival_evidence(gap,crate_v,rival_v,actor_crate_t,
+                                dt,&clock))return 0;
+ return clock.order==3?1:clock.order;
 }
 typedef struct NfRetcM2EventChain {
  Nf18a5World material;
