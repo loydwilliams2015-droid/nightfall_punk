@@ -156,6 +156,20 @@ static bool reverse_clearance_probe(const NfWorld *w,const Nf18a6Runtime *owner,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2SimultaneousProbe {
+ NfRetcM2Simultaneous *out;
+ bool reverse;
+ unsigned calls,passed;
+} M2SimultaneousProbe;
+static bool simultaneous_probe(const NfWorld *w,const Nf18a6Runtime *owner,
+ float dt,void *ctx){
+ M2SimultaneousProbe *p=(M2SimultaneousProbe *)ctx;
+ ++p->calls;
+ const bool ok=nf_retc_m2_simultaneous_in_tick(
+    w,owner,dt,p->reverse,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
