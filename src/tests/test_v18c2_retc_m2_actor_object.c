@@ -156,6 +156,20 @@ static bool reverse_clearance_probe(const NfWorld *w,const Nf18a6Runtime *owner,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2SimultaneousProbe {
+ NfRetcM2Simultaneous *out;
+ bool reverse;
+ unsigned calls,passed;
+} M2SimultaneousProbe;
+static bool simultaneous_probe(const NfWorld *w,const Nf18a6Runtime *owner,
+ float dt,void *ctx){
+ M2SimultaneousProbe *p=(M2SimultaneousProbe *)ctx;
+ ++p->calls;
+ const bool ok=nf_retc_m2_simultaneous_in_tick(
+    w,owner,dt,p->reverse,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
@@ -1262,6 +1276,56 @@ int main(void){
        owner->physical.committed_receipts==0u&&
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x);
+ /* H274B: exact source-timed simultaneous A4 dual-contact
+    challenger. TRUE coupled private A4 impulses, no A5/B2/B3 commit. */
+ NfRetcM2Simultaneous *sim=calloc(1,sizeof *sim);
+ CHECK(sim);
+ M2SimultaneousProbe sim_probe={.out=sim};
+ owner->research_pair_stage=simultaneous_probe;
+ owner->research_pair_context=&sim_probe;
+ rival->transform.position.x=touching_x+tie_gap;
+ /* B1: both true A4 impulses and independent whole-system momentum. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sim_probe.calls==1u&&sim_probe.passed==1u&&sim->staged);
+ CHECK(sim->contacts[0].status==NF18A4_ACCEPTED&&
+       sim->contacts[0].impulses_applied&&
+       sim->contacts[1].status==NF18A4_ACCEPTED&&
+       sim->contacts[1].impulses_applied);
+ const float sim_expected=(80.f*4.f+24.f*.75f)/(80.f+24.f+80.f);
+ CHECK(fabsf(sim->oracle_velocity-sim_expected)<.004f);
+ for(unsigned k=0u;k<3u;++k)
+   CHECK(fabsf(sim->bodies[k].velocity.x-sim_expected)<.004f);
+ /* B2: reversing visit order retains both authentic receipts and
+    independent conservation under source-identical simultaneous impact. */
+ sim_probe.reverse=true;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sim_probe.calls==2u&&sim_probe.passed==2u&&sim->staged);
+ for(unsigned k=0u;k<3u;++k)
+   CHECK(fabsf(sim->bodies[k].velocity.x-sim_expected)<.004f);
+ /* B3: near-tie outside the solver's stricter exact-contact tolerance
+    stays a diagnostic tie but may not fabricate A4 simultaneous impulses. */
+ sim_probe.reverse=false;
+ rival->transform.position.x=touching_x+tie_gap+.000003f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sim_probe.calls==3u&&sim_probe.passed==2u&&!sim->staged);
+ /* B4: source collider mismatch cannot stage either A4 edge. */
+ rival->transform.position.x=touching_x+tie_gap;
+ reverse_mirror->max.x+=.1f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sim_probe.calls==4u&&sim_probe.passed==2u&&!sim->staged);
+ reverse_mirror->max.x-=.1f;
+ /* B5: restored source replays two private authentic A4 contacts,
+    no A6 accepted world tick or A5/B3 side effect. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sim_probe.calls==5u&&sim_probe.passed==3u&&sim->staged);
+ CHECK(fabsf(sim->oracle_velocity-sim_expected)<.004f&&
+       world->tick==0u&&
+       owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       a->transform.position.x==before_actor.x&&
+       owner->physical.object.center.x==before_crate.x);
+ free(sim);
  free(clearance);
  free(dual);
  free(second);
