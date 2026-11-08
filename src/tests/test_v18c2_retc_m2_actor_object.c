@@ -367,7 +367,7 @@ int main(void){
  owner->research_pair_stage=contention_probe;
  owner->research_pair_context=&mp;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
- CHECK(g_material_probe.calls==1u&&g_material_probe.passed==1u&&cont->staged&&
+ CHECK(mp.calls==1u&&mp.passed==1u&&cont->staged&&
        cont->claim_count==2u&&cont->winning_actor==30u);
  CHECK(cont->winner_effect.staged&&
        cont->winner_effect.pair.candidate.world.history.raw_samples==samples+1u);
@@ -385,21 +385,21 @@ int main(void){
     any rival-owned physical consequence or A5 sample. */
  rival->id=20u;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
- CHECK(g_material_probe.calls==2u&&g_material_probe.passed==1u&&!cont->staged&&
+ CHECK(mp.calls==2u&&mp.passed==1u&&!cont->staged&&
        cont->claim_count==2u&&cont->winning_actor==20u);
  rival->id=40u;
  /* H226: owner releases and source rival remains held: competitor wins
     the proposal, but this A6 owner may not act on its behalf. */
  a->input.interact_held=false;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
- CHECK(g_material_probe.calls==3u&&g_material_probe.passed==1u&&!cont->staged&&
+ CHECK(mp.calls==3u&&mp.passed==1u&&!cont->staged&&
        cont->claim_count==1u&&cont->winning_actor==40u);
  /* H227: rival release and source owner re-entry deterministically
     restores private staging. Still no live world/body/A5/B3 effects. */
  a->input.interact_held=true;
  rival->input.interact_held=false;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
- CHECK(g_material_probe.calls==4u&&g_material_probe.passed==2u&&cont->staged&&
+ CHECK(mp.calls==4u&&mp.passed==2u&&cont->staged&&
        cont->winning_actor==30u&&cont->claim_count==1u);
  CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
        owner->physical.world.history.raw_samples==samples&&
