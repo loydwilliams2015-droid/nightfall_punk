@@ -1741,6 +1741,17 @@ int main(void){
  M2OffaxisMaterialProbe om_probe={.out=om};
  owner->research_pair_stage=offaxis_material_probe;
  owner->research_pair_context=&om_probe;
+ /* Set an explicit canonical face source instead of inheriting the
+    preceding H275D probe's restored, unrelated source fixture. */
+ owner->physical.actor.center.x=owner->physical.object.center.x-
+    owner->physical.object.box_half.x-.45f;
+ owner->physical.actor.center.z=owner->physical.object.center.z+.05f;
+ owner->physical.actor.velocity.x=4.f;
+ owner->physical.actor.velocity.z=.5f;
+ a->transform.position.x=owner->physical.actor.center.x;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.x=4.f;
+ a->transform.velocity.z=.5f;
  /* E1: authentic FACE contact and one atomic private A5 sample. */
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
  CHECK(om_probe.calls==1u&&om_probe.passed==1u&&om->staged);
