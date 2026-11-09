@@ -232,6 +232,18 @@ static bool region_probe(const NfWorld *w,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2OffaxisMaterialProbe {
+ NfRetcM2OffaxisMaterial *out;
+ unsigned calls,passed;
+} M2OffaxisMaterialProbe;
+static bool offaxis_material_probe(const NfWorld *w,
+ const Nf18a6Runtime *owner,float dt,void *ctx){
+ M2OffaxisMaterialProbe *p=(M2OffaxisMaterialProbe *)ctx;
+ ++p->calls;
+ const bool ok=nf_retc_m2_offaxis_material_in_tick(w,owner,dt,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
