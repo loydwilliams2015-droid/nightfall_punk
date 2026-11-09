@@ -1918,6 +1918,75 @@ int main(void){
  CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
        owner->physical.world.history.raw_samples==samples&&
        owner->physical.committed_receipts==0u);
+ /* H276A B2/B3 witness-shape PRE-FLIGHT. Deliberately synthetic
+    server-side fixture: it tests source-binding and denial only. It is
+    NOT a genuine owner-issued grant nor permission to publish a frame. */
+ Nf18b2EncounterRuntime *b2shape=calloc(1,sizeof *b2shape);
+ Nf18b6Push *b3shape=calloc(1,sizeof *b3shape);
+ NfRetcJointContext *auth_joint=calloc(1,sizeof *auth_joint);
+ NfRetcM2B2Preflight *auth_out=calloc(1,sizeof *auth_out);
+ CHECK(b2shape&&b3shape&&auth_joint&&auth_out);
+ auth_joint->owner=owner;auth_joint->encounter=b2shape;
+ auth_joint->push=b3shape;
+ b2shape->world=world;b2shape->owner=owner;
+ b2shape->prepared=1u;b2shape->queue_count=1u;
+ b2shape->granted[0]=1u;b2shape->trace_count=1u;
+ b2shape->queue[0].intent=(Nf18b2Intent){
+     owner->actor_id,owner->physical.object.id,9u,NF18B2_PUSH};
+ b2shape->queue[0].trace_index=0u;
+ b2shape->queue[0].witness.tick=1u;
+ b2shape->queue[0].witness.world_revision=revision;
+ b2shape->queue[0].witness.material_epoch=
+     owner->physical.world.grid.global_revision;
+ b2shape->traces[0].revalidation.status=NF18B2_ELIGIBLE;
+ b2shape->traces[0].revalidation.physical=NF18B2_ELIGIBLE;
+ b2shape->traces[0].revalidation.contract=NF18B2_ELIGIBLE;
+ b3shape->staged_commit_valid=true;
+ b3shape->staged_commit.kind=NF18B3_PUSH;
+ b3shape->staged_commit.phase=NF18B3_APPLIED;
+ b3shape->staged_commit.actor=owner->actor_id;
+ b3shape->staged_commit.object=owner->physical.object.id;
+ b3shape->staged_commit.action=9u;
+ b3shape->staged_commit.tick=1u;
+ M2B2PreflightProbe bp={.joint=auth_joint,.out=auth_out};
+ owner->research_pair_stage=b2_preflight_probe;
+ owner->research_pair_context=&bp;
+ /* A1: structural witness shape checks correctly, but this synthetic
+    fixture is explicitly NOT source-issued and grants no authority. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(bp.calls==1u&&bp.passes==1u&&bp.last_result&&
+       auth_out->eligible_witness&&
+       auth_out->actor_id==owner->actor_id&&
+       auth_out->object_id==owner->physical.object.id);
+ /* A2: a withdrawn (or no-longer-granted) B2 intent fails closed. */
+ b2shape->queue[0].withdrawn=1u;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(bp.calls==2u&&bp.passes==1u&&!bp.last_result&&
+       !auth_out->eligible_witness);
+ b2shape->queue[0].withdrawn=0u;
+ /* A3: stale B2 world revision denies this A6 source. */
+ b2shape->queue[0].witness.world_revision=revision+1u;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(bp.calls==3u&&bp.passes==1u&&!bp.last_result);
+ b2shape->queue[0].witness.world_revision=revision;
+ /* A4: a B3 action unbound from the source B2 action is rejected. */
+ b3shape->staged_commit.action=10u;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(bp.calls==4u&&bp.passes==1u&&!bp.last_result);
+ b3shape->staged_commit.action=9u;
+ /* A5: detached encounter owner rejected. Restoring shape only
+    recreates a read-only diagnostic, never an A6 accepted transaction. */
+ b2shape->owner=NULL;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(bp.calls==5u&&bp.passes==1u&&!bp.last_result);
+ b2shape->owner=owner;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(bp.calls==6u&&bp.passes==2u&&bp.last_result);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u&&
+       owner->retc_pending==NULL);
+ free(auth_out);free(auth_joint);free(b3shape);free(b2shape);
  free(joint);
  free(om);
  free(choice);
