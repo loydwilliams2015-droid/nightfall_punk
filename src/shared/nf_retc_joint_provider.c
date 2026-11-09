@@ -165,20 +165,46 @@ bool nf_retc_joint_contact_lineage(
     candidate->committed_receipts!=source->committed_receipts+1u||
     candidate->world.history.raw_samples!=
       source->world.history.raw_samples+1u||
-    candidate->world.history.raw_retained==0u||
-    candidate->world.history.raw_retained>
-      NF18A5_RAW_RETAIN||
+    candidate->world.history.last_tick!=candidate->world.tick||
+    candidate->world.history.last_world_version!=
+      candidate->world.revision||
+    candidate->world.history.owner!=source->actor.id||
+    candidate->world.history.policy!=source->world.history.policy||
     candidate->world.grid.global_revision!=
       source->world.grid.global_revision)return false;
- const Nf18a5Sample *last=&candidate->world.history.raw_records[
-    candidate->world.history.raw_retained-1u];
- if(last->tick!=candidate->world.tick||
-    !last->contact_id||
-    last->body_a!=source->actor.id||
-    last->body_b!=source->object.id||
-    last->material_epoch!=source->world.grid.global_revision||
-    !isfinite(last->normal_impulse)||last->normal_impulse<=0.f)
+ /* Production A5 cumulative durable history retains contact STREAMS,
+  * not raw sample records. Raw retention is a diagnostic-only policy,
+  * never a prerequisite for a genuine authoritative contact. */
+ const Nf18a5History *history=&candidate->world.history;
+ unsigned matches=0u;
+ for(size_t i=0u;i<NF18A5_MAX_STREAMS;++i){
+  const Nf18a5Stream *st=&history->streams[i];
+  if(!st->active||st->last_tick!=candidate->world.tick)continue;
+  if(!st->contact_id||
+     st->body_a!=source->actor.id||
+     st->body_b!=source->object.id||
+     st->last_material_epoch!=source->world.grid.global_revision||
+     !isfinite(st->epoch_peak)||st->epoch_peak<=0.f||
+     st->epoch_count==0u||
+     st->window.last_tick!=candidate->world.tick)
     return false;
+  ++matches;
+ }
+ if(matches!=1u)return false;
+ /* Where RAW_ALL is explicitly chosen, verify its retained source. */
+ if(history->policy==NF18A5_RAW_ALL){
+  if(!history->raw_retained||
+     history->raw_retained>NF18A5_RAW_RETAIN)return false;
+  const Nf18a5Sample *last=&history->raw_records[
+     history->raw_retained-1u];
+  if(last->tick!=candidate->world.tick||
+     !last->contact_id||
+     last->body_a!=source->actor.id||
+     last->body_b!=source->object.id||
+     last->material_epoch!=source->world.grid.global_revision||
+     !isfinite(last->normal_impulse)||last->normal_impulse<=0.f)
+     return false;
+ }
  return true;
 }
 static NfRetcFrame *joint_stage_checked(const NfWorld *w,
