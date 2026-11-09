@@ -1486,6 +1486,79 @@ int main(void){
  owner->physical.actor.velocity=original_off_velocity;
  a->transform.position=original_off_position;
  a->transform.velocity=original_off_actor_velocity;
+ /* H275B: source-owned moving off-axis XZ corner CCD. The
+    starting actor is separated from the corner and must hit it at a
+    strictly positive swept time, rather than staging an overlap. */
+ NfRetcM2SweptCorner *swept=calloc(1,sizeof *swept);
+ CHECK(swept);
+ M2SweptCornerProbe sweep_probe={.out=swept};
+ owner->research_pair_stage=swept_corner_probe;
+ owner->research_pair_context=&sweep_probe;
+ owner->physical.actor.center.x=owner->physical.object.center.x-
+    owner->physical.object.box_half.x-.45f;
+ owner->physical.actor.center.z=owner->physical.object.center.z+
+    owner->physical.object.box_half.z+.45f;
+ owner->physical.actor.velocity.x=4.f;
+ owner->physical.actor.velocity.z=-4.f;
+ a->transform.position.x=owner->physical.actor.center.x;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.x=4.f;
+ a->transform.velocity.z=-4.f;
+ /* B1: real positive TOI, genuine off-axis A4, and independent 2-axis
+    momentum conservation on the resulting pair. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sweep_probe.calls==1u&&sweep_probe.passed==1u&&swept->staged);
+ CHECK(swept->toi>0.f&&swept->toi<1.f&&
+       swept->impact_time>0.f&&swept->impact_time<.125f&&
+       swept->normal.x<0.f&&swept->normal.z>0.f&&
+       swept->receipt.status==NF18A4_ACCEPTED&&
+       swept->receipt.impulses_applied);
+ CHECK(fabsf(off_ma*swept->actor_after.velocity.x+
+       off_mb*swept->crate_after.velocity.x-swept->source_momentum_x)<.004f);
+ CHECK(fabsf(off_ma*swept->actor_after.velocity.z+
+       off_mb*swept->crate_after.velocity.z-swept->source_momentum_z)<.004f);
+ /* B2: exact source replay preserves TOI and both post-contact axes. */
+ const float sweep_t=swept->impact_time;
+ const float sweep_x=swept->crate_after.velocity.x;
+ const float sweep_z=swept->crate_after.velocity.z;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sweep_probe.calls==2u&&sweep_probe.passed==2u&&swept->staged);
+ CHECK(swept->impact_time==sweep_t&&
+       swept->crate_after.velocity.x==sweep_x&&
+       swept->crate_after.velocity.z==sweep_z);
+ /* B3: separating velocities never create a positive TOI. */
+ owner->physical.actor.velocity.x=-4.f;
+ owner->physical.actor.velocity.z=4.f;
+ a->transform.velocity.x=-4.f;a->transform.velocity.z=4.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sweep_probe.calls==3u&&sweep_probe.passed==2u&&!swept->staged);
+ /* B4: a grazing near-miss (Z remains outside the corner radius) is
+    rejected rather than manufacturing contact. */
+ owner->physical.actor.velocity.x=4.f;
+ owner->physical.actor.velocity.z=0.f;
+ a->transform.velocity.x=4.f;a->transform.velocity.z=0.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sweep_probe.calls==4u&&sweep_probe.passed==2u&&!swept->staged);
+ /* B5: source collider detachment refuses, then restoration reproduces
+    the same exact TOI and preserves all live authority and history. */
+ owner->physical.actor.velocity.z=-4.f;a->transform.velocity.z=-4.f;
+ reverse_mirror->max.x+=.1f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sweep_probe.calls==5u&&sweep_probe.passed==2u&&!swept->staged);
+ reverse_mirror->max.x-=.1f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(sweep_probe.calls==6u&&sweep_probe.passed==3u&&swept->staged);
+ CHECK(swept->impact_time==sweep_t&&
+       swept->crate_after.velocity.x==sweep_x&&
+       swept->crate_after.velocity.z==sweep_z);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ owner->physical.actor.center=original_off_center;
+ owner->physical.actor.velocity=original_off_velocity;
+ a->transform.position=original_off_position;
+ a->transform.velocity=original_off_actor_velocity;
+ free(swept);
  free(off);
  free(sm);
  free(sim);
