@@ -1,4 +1,5 @@
 #include "nf_retc_joint_provider.h"
+#include "nf_retc_m2_real_contract_audit.h"
 #include "nf_retc_multi_plan.h"
 #include "nf_retc_multi_preflight.h"
 #include "nf_retc_multi_physical.h"
@@ -252,6 +253,38 @@ int main(void){
       return 1;
    }
    CHECK(verify(w,r,enc,push,publisher,tick));
+   /* H276B: all positives below originate in the REAL server-issued
+      B2 proposal, real B3 arm, A6 joint owner tick and accepted frame.
+      Private clone corruption never changes the authoritative pointer. */
+   const NfRetcFrame *h276b_accepted=nf_retc_read(publisher);
+   CHECK(h276b_accepted&&
+         nf_retc_m2_real_contract_audit(
+            w,r,enc,push,h276b_accepted)); /* B1: genuine joint result */
+   NfRetcFrame *h276b_probe=malloc(sizeof *h276b_probe);
+   CHECK(h276b_probe);
+   *h276b_probe=*h276b_accepted;
+   /* B2: stale source B2 grant tick cannot masquerade as accepted. */
+   h276b_probe->b2_use.tick=tick+1u;
+   CHECK(!nf_retc_m2_real_contract_audit(w,r,enc,push,h276b_probe));
+   *h276b_probe=*h276b_accepted;
+   /* B3: mismatched typed B3 action must be rejected. */
+   h276b_probe->event.action+=1u;
+   CHECK(!nf_retc_m2_real_contract_audit(w,r,enc,push,h276b_probe));
+   *h276b_probe=*h276b_accepted;
+   /* B4: invalid material/physical projection never borrows B2 grant. */
+   h276b_probe->physical.object.center.x+=.1f;
+   CHECK(!nf_retc_m2_real_contract_audit(w,r,enc,push,h276b_probe));
+   *h276b_probe=*h276b_accepted;
+   /* B5: unbound B2 decision or encounter ledger fails closed; full
+      restoration recovers the genuine accepted source without mutation. */
+   h276b_probe->b2_decision.contract=NF18B2_BLOCKED;
+   CHECK(!nf_retc_m2_real_contract_audit(w,r,enc,push,h276b_probe));
+   *h276b_probe=*h276b_accepted;
+   h276b_probe->encounter_registry.contract_epoch+=1u;
+   CHECK(!nf_retc_m2_real_contract_audit(w,r,enc,push,h276b_probe));
+   CHECK(nf_retc_read(publisher)==h276b_accepted&&
+         nf_retc_m2_real_contract_audit(w,r,enc,push,h276b_accepted));
+   free(h276b_probe);
    /* H43: externally owned record from ONE accepted immutable frame. */
    NfRetcExternalRecord exported={0};
    CHECK(nf_retc_external_capture(publisher,&exported));
