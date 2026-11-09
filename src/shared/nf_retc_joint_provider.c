@@ -199,6 +199,21 @@ static NfRetcFrame *joint_stage_checked(const NfWorld *w,
  if(j->push->event.contract_epoch!=j->encounter->staged.contract_epoch){fprintf(stderr,"RET-C joint_stage_checked predicate 13: j->push->event.contract_epoch!=j->encounter->staged.contract_epoch\n");return NULL;}
  if(j->require_contact_lineage&&
     !nf_retc_joint_contact_lineage(&j->owner->physical,candidate)){
+    const Nf18a5History *hist=&candidate->world.history;
+    const Nf18a5Sample *sample=hist->raw_retained?
+       &hist->raw_records[hist->raw_retained-1u]:NULL;
+    fprintf(stderr,
+       "RET-C H276C diagnostic: srcTick=%u dstTick=%u srcRev=%u dstRev=%u srcRec=%u dstRec=%u srcSamples=%u dstSamples=%u retained=%u sourceIds=%u,%u lastSample=%u,%u tick=%u epoch=%u impulse=%g grid=%u\\n",
+       j->owner->physical.world.tick,candidate->world.tick,
+       j->owner->physical.world.revision,candidate->world.revision,
+       j->owner->physical.committed_receipts,candidate->committed_receipts,
+       j->owner->physical.world.history.raw_samples,hist->raw_samples,
+       hist->raw_retained,j->owner->physical.actor.id,
+       j->owner->physical.object.id,
+       sample?sample->body_a:0u,sample?sample->body_b:0u,
+       sample?sample->tick:0u,sample?sample->material_epoch:0u,
+       sample?sample->normal_impulse:0.f,
+       candidate->world.grid.global_revision);
     fprintf(stderr,"RET-C H276C source A4/A5 lineage denied\\n");
     return NULL;
  }
