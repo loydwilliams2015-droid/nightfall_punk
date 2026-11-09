@@ -614,6 +614,80 @@ static inline bool nf_retc_m2_region_select_in_tick(
  out->staged=true;
  return true;
 }
+/* H275E: source-bound XZ face/corner A4 receipt -> a single PRIVATE
+ * A5 material history revision. Both actor and crate must clear their
+ * full source-to-final XZ sweeps before the one-contact A5 commit.
+ * No accepted world tick, B2/B3 authority, or 3D manifold claim. */
+typedef struct NfRetcM2OffaxisMaterial {
+ NfRetcM2RegionChoice physical;
+ Nf18a5World material;
+ Nf18a5Sample sample;
+ NfVec3 actor_final,crate_final;
+ uint32_t source_revision;
+ bool staged;
+} NfRetcM2OffaxisMaterial;
+static inline bool nf_retc_m2_offaxis_material_in_tick(
+ const NfWorld *w,const Nf18a6Runtime *owner,float dt,
+ NfRetcM2OffaxisMaterial *out){
+ if(!out)return false;
+ out->staged=false;
+ if(!w||!owner||!isfinite(dt)||dt<=0.f||
+    owner->physical.world.revision==UINT32_MAX||
+    !owner->physical.world.grid.global_revision)return false;
+ NfRetcM2RegionChoice p={0};
+ if(!nf_retc_m2_region_select_in_tick(w,owner,dt,&p)||
+    !p.staged||p.candidate_count!=1u||
+    p.receipt.status!=NF18A4_ACCEPTED||
+    !p.receipt.impulses_applied||
+    !isfinite(p.impact_time)||p.impact_time<=0.f||
+    p.impact_time>=dt)return false;
+ const Nf18a4Body source[2]={
+    owner->physical.actor,owner->physical.object};
+ const Nf18a4Body final[2]={p.actor_after,p.crate_after};
+ if(source[0].id!=final[0].id||source[1].id!=final[1].id||
+    source[0].id==source[1].id||
+    !nf18a4_body_valid(&final[0])||
+    !nf18a4_body_valid(&final[1]))return false;
+ Nf18a5World material=owner->physical.world;
+ const uint32_t tick=(uint32_t)w->tick+1u;
+ const float remaining=dt-p.impact_time;
+ NfVec3 positions[2]={{0.f,0.f,0.f},{0.f,0.f,0.f}};
+ for(size_t i=0u;i<2u;++i){
+  const float radius=i==0u?source[0].radius:
+    fmaxf(source[1].box_half.x,source[1].box_half.z);
+  const float height=i==0u?source[0].height:
+    fmaxf(2.f*source[1].box_half.y,2.f*radius);
+  if(!isfinite(radius)||radius<=0.f||
+     !isfinite(height)||height<=0.f)return false;
+  const Nf18a2ShapePolicy policy={radius,height,.05f,.4f,.65f};
+  const NfVec3 feet={source[i].center.x,
+    source[i].center.y-.5f*height,source[i].center.z};
+  positions[i]=final[i].center;
+  positions[i].x+=final[i].velocity.x*remaining;
+  positions[i].z+=final[i].velocity.z*remaining;
+  const NfVec3 delta={
+    positions[i].x-source[i].center.x,0.f,
+    positions[i].z-source[i].center.z};
+  uint32_t loads=0u;
+  if(!isfinite(delta.x)||!isfinite(delta.z)||
+     !isfinite(positions[i].x)||!isfinite(positions[i].z)||
+     nf18a5_sweep_query(&material.grid,feet,delta,policy,
+       dt,tick,NULL,NULL,&loads)!=NF18A5_Q_FREE)return false;
+ }
+ Nf18a5Sample sample={0};
+ if(!nf18a5_receipt_sample(&p.receipt,source[0].id,source[1].id,
+    0.f,material.grid.global_revision,&sample))return false;
+ const uint32_t rev=owner->physical.world.revision;
+ if(!nf18a5_world_commit(&material,rev,tick,source[0].id,
+     &sample,1u)||material.revision!=rev+1u||
+    material.tick!=tick||
+    material.history.raw_samples!=
+       owner->physical.world.history.raw_samples+1u)return false;
+ out->physical=p;out->material=material;out->sample=sample;
+ out->actor_final=positions[0];out->crate_final=positions[1];
+ out->source_revision=rev;out->staged=true;
+ return true;
+}
 /* H273D: independent bounded 1D perfectly-inelastic rival-first
  * reference oracle. NO A4 receipt, A5 mutation, B2/B3 grant or tick commit.
  * Used only when the exact source-derived event clock classified rival-first;
