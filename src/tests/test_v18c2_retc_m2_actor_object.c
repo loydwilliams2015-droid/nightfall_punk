@@ -220,6 +220,18 @@ static bool swept_face_probe(const NfWorld *w,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2RegionProbe {
+ NfRetcM2RegionChoice *out;
+ unsigned calls,passed;
+} M2RegionProbe;
+static bool region_probe(const NfWorld *w,
+ const Nf18a6Runtime *owner,float dt,void *ctx){
+ M2RegionProbe *p=(M2RegionProbe *)ctx;
+ ++p->calls;
+ const bool ok=nf_retc_m2_region_select_in_tick(w,owner,dt,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
