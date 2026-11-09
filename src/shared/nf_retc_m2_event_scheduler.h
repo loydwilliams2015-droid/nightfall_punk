@@ -651,7 +651,7 @@ static inline bool nf_retc_m2_offaxis_material_in_tick(
  Nf18a5World material=owner->physical.world;
  const uint32_t tick=(uint32_t)w->tick+1u;
  const float remaining=dt-p.impact_time;
- NfVec3 positions[2]={{0},{0}};
+ NfVec3 positions[2]={{0.f,0.f,0.f},{0.f,0.f,0.f}};
  for(size_t i=0u;i<2u;++i){
   const float radius=i==0u?source[0].radius:
     fmaxf(source[1].box_half.x,source[1].box_half.z);
