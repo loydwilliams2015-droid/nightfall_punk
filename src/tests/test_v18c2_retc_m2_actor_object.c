@@ -244,6 +244,18 @@ static bool offaxis_material_probe(const NfWorld *w,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2JointProjectionProbe {
+ NfRetcM2JointProjection *out;
+ unsigned calls,passed;
+} M2JointProjectionProbe;
+static bool joint_projection_probe(const NfWorld *w,
+ const Nf18a6Runtime *owner,float dt,void *ctx){
+ M2JointProjectionProbe *p=(M2JointProjectionProbe *)ctx;
+ ++p->calls;
+ const bool ok=nf_retc_m2_joint_projection_in_tick(w,owner,dt,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
