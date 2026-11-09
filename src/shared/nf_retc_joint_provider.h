@@ -14,9 +14,16 @@ typedef struct {
  Nf18b2Object object;
  Nf18b2Authority authority;
  uint32_t transaction_id;
+ /* H276C: opt-in same-source A4/A5 contact ancestry before joint B2/B3. */
+ bool require_contact_lineage;
  /* Full pre-tick B2 state for rejection rollback; never authoritative WAL. */
  Nf18b2EncounterRuntime *rollback_encounter;
 } NfRetcJointContext;
+/* H276C: a true A5 contact sample is necessary, not alone sufficient,
+ * to authorize B3; verify the same actor/crate as the private A6 source.
+ * Pure validation only; does not issue authorization or publish a frame. */
+bool nf_retc_joint_contact_lineage(
+ const Nf18a5Integrated *source,const Nf18a5Integrated *candidate);
 /* Source-derived variant: requires exactly one granted encounter PUSH with
  * matching B3 source receipt; rejects detached caller-supplied B2 fields. */
 /* A6 exclusive composite ownership: installs one RET-C hook, not B2/B3
