@@ -113,6 +113,7 @@ int main(void){
  CHECK(nf18b6_push_require_b2(push,b2_provider,enc,NF18B2_M4_MATERIAL_FIRST));
  NfRetcJointContext joint={0};joint.owner=r;joint.encounter=enc;
  joint.push=push;joint.transaction_id=1;
+ joint.require_contact_lineage=true; /* H276C real source gate */
  CHECK(nf_retc_joint_attach(w,&joint));
  /* H90 actual source-owned encounter queue fixture: force a second queued
     intent into the live B2 runtime, exercise the production joint staging
@@ -242,6 +243,11 @@ int main(void){
        r->physical.object.center.y,r->physical.object.center.z);
      return 1;
    }
+   /* H276C: preserve the genuine pre-A6 source for independent
+      physical/material lineage checks after the real joint publication. */
+   Nf18a5Integrated *h276c_source=malloc(sizeof *h276c_source);
+   CHECK(h276c_source);
+   *h276c_source=r->physical;
    NfMoveInput move={0};move.strafe=1;
    nf_world_set_input(w,10,move);
    const NfWorldTickStatus status=nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
@@ -253,6 +259,45 @@ int main(void){
       return 1;
    }
    CHECK(verify(w,r,enc,push,publisher,tick));
+   const NfRetcFrame *h276c_accepted=nf_retc_read(publisher);
+   CHECK(h276c_accepted&&
+      nf_retc_joint_contact_lineage(
+        h276c_source,&h276c_accepted->physical)); /* C1 actual B2/B3 pass */
+   Nf18a5Integrated *h276c_tamper=malloc(sizeof *h276c_tamper);
+   CHECK(h276c_tamper);
+   *h276c_tamper=h276c_accepted->physical;
+   /* C2 stale source A5 revision denies prospective joint acceptance. */
+   ++h276c_source->world.revision;
+   CHECK(!nf_retc_joint_contact_lineage(h276c_source,h276c_tamper));
+   --h276c_source->world.revision;
+   /* C3 forged contact-stream body identity rejects a B3 action even
+      when A5 cumulative policy deliberately retains no RAW samples. */
+   unsigned h276c_stream=NF18A5_MAX_STREAMS;
+   for(unsigned k=0u;k<NF18A5_MAX_STREAMS;++k){
+      if(h276c_tamper->world.history.streams[k].active&&
+         h276c_tamper->world.history.streams[k].last_tick==tick){
+         h276c_stream=k;break;
+      }
+   }
+   CHECK(h276c_stream<NF18A5_MAX_STREAMS);
+   h276c_tamper->world.history.streams[h276c_stream].body_b+=1u;
+   CHECK(!nf_retc_joint_contact_lineage(h276c_source,h276c_tamper));
+   *h276c_tamper=h276c_accepted->physical;
+   /* C4 stale contact stream tick cannot borrow real contractual receipt. */
+   --h276c_tamper->world.history.streams[h276c_stream].last_tick;
+   CHECK(!nf_retc_joint_contact_lineage(h276c_source,h276c_tamper));
+   *h276c_tamper=h276c_accepted->physical;
+   /* C5 forged source material epoch or receipt count fails closed. */
+   ++h276c_tamper->world.history.streams[h276c_stream].last_material_epoch;
+   CHECK(!nf_retc_joint_contact_lineage(h276c_source,h276c_tamper));
+   *h276c_tamper=h276c_accepted->physical;
+   ++h276c_tamper->committed_receipts;
+   CHECK(!nf_retc_joint_contact_lineage(h276c_source,h276c_tamper));
+   CHECK(nf_retc_read(publisher)==h276c_accepted&&
+         nf_retc_joint_contact_lineage(
+            h276c_source,&h276c_accepted->physical));
+   free(h276c_tamper);
+   free(h276c_source);
    /* H276B: all positives below originate in the REAL server-issued
       B2 proposal, real B3 arm, A6 joint owner tick and accepted frame.
       Private clone corruption never changes the authoritative pointer. */

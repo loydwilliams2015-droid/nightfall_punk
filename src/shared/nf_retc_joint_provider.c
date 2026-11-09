@@ -1,5 +1,6 @@
 #include "nf_retc_joint_provider.h"
 #include <stdlib.h>
+#include <math.h>
 #include <stdio.h>
 NfRetcFrame *nf_retc_joint_stage(const NfWorld *w,
  const Nf18a5Integrated *p,void *context){
@@ -145,6 +146,67 @@ static void joint_finish(const NfWorld *w,const Nf18a6Outcome *out,void *arg){
  j->rollback_encounter=NULL;
  (void)w;
 }
+/* H276C: source-exact, single-contact A4/A5 ancestry verification.
+ * Reject a proposed physical transaction if its newly retained A5
+ * contact does not name the same actor/crate or the right tick/epoch.
+ * This supplements, but never substitutes, real B2/B3 joint validation. */
+bool nf_retc_joint_contact_lineage(
+ const Nf18a5Integrated *source,const Nf18a5Integrated *candidate){
+ if(!source||!candidate||
+    source->actor.id==0u||source->object.id==0u||
+    source->actor.id==source->object.id||
+    candidate->actor.id!=source->actor.id||
+    candidate->object.id!=source->object.id||
+    source->world.tick==UINT32_MAX||
+    source->world.revision==UINT32_MAX||
+    source->committed_receipts==UINT32_MAX||
+    candidate->world.tick!=source->world.tick+1u||
+    candidate->world.revision!=source->world.revision+1u||
+    candidate->committed_receipts!=source->committed_receipts+1u||
+    candidate->world.history.raw_samples!=
+      source->world.history.raw_samples+1u||
+    candidate->world.history.last_tick!=candidate->world.tick||
+    candidate->world.history.last_world_version!=
+      candidate->world.revision||
+    candidate->world.history.owner!=source->actor.id||
+    candidate->world.history.policy!=source->world.history.policy||
+    candidate->world.grid.global_revision!=
+      source->world.grid.global_revision)return false;
+ /* Production A5 cumulative durable history retains contact STREAMS,
+  * not raw sample records. Raw retention is a diagnostic-only policy,
+  * never a prerequisite for a genuine authoritative contact. */
+ const Nf18a5History *history=&candidate->world.history;
+ unsigned matches=0u;
+ for(size_t i=0u;i<NF18A5_MAX_STREAMS;++i){
+  const Nf18a5Stream *st=&history->streams[i];
+  if(!st->active||st->last_tick!=candidate->world.tick)continue;
+  if(!st->contact_id||
+     st->body_a!=source->actor.id||
+     st->body_b!=source->object.id||
+     st->last_material_epoch!=source->world.grid.global_revision||
+     !isfinite(st->epoch_peak)||st->epoch_peak<=0.f||
+     st->epoch_count==0u||
+     st->window.last_tick!=candidate->world.tick)
+    return false;
+  ++matches;
+ }
+ if(matches!=1u)return false;
+ /* Where RAW_ALL is explicitly chosen, verify its retained source. */
+ if(history->policy==NF18A5_RAW_ALL){
+  if(!history->raw_retained||
+     history->raw_retained>NF18A5_RAW_RETAIN)return false;
+  const Nf18a5Sample *last=&history->raw_records[
+     history->raw_retained-1u];
+  if(last->tick!=candidate->world.tick||
+     !last->contact_id||
+     last->body_a!=source->actor.id||
+     last->body_b!=source->object.id||
+     last->material_epoch!=source->world.grid.global_revision||
+     !isfinite(last->normal_impulse)||last->normal_impulse<=0.f)
+     return false;
+ }
+ return true;
+}
 static NfRetcFrame *joint_stage_checked(const NfWorld *w,
  const Nf18a5Integrated *candidate,void *arg){
  NfRetcJointContext *j=arg;
@@ -161,6 +223,26 @@ static NfRetcFrame *joint_stage_checked(const NfWorld *w,
  if(j->push->event.actor!=candidate->actor.id){fprintf(stderr,"RET-C joint_stage_checked predicate 11: j->push->event.actor!=candidate->actor.id\n");return NULL;}
  if(j->push->event.object!=candidate->object.id){fprintf(stderr,"RET-C joint_stage_checked predicate 12: j->push->event.object!=candidate->object.id\n");return NULL;}
  if(j->push->event.contract_epoch!=j->encounter->staged.contract_epoch){fprintf(stderr,"RET-C joint_stage_checked predicate 13: j->push->event.contract_epoch!=j->encounter->staged.contract_epoch\n");return NULL;}
+ if(j->require_contact_lineage&&
+    !nf_retc_joint_contact_lineage(&j->owner->physical,candidate)){
+    const Nf18a5History *hist=&candidate->world.history;
+    const Nf18a5Sample *sample=hist->raw_retained?
+       &hist->raw_records[hist->raw_retained-1u]:NULL;
+    fprintf(stderr,
+       "RET-C H276C diagnostic: srcTick=%u dstTick=%u srcRev=%u dstRev=%u srcRec=%u dstRec=%u srcSamples=%u dstSamples=%u retained=%u sourceIds=%u,%u lastSample=%u,%u tick=%u epoch=%u impulse=%g grid=%u\\n",
+       j->owner->physical.world.tick,candidate->world.tick,
+       j->owner->physical.world.revision,candidate->world.revision,
+       j->owner->physical.committed_receipts,candidate->committed_receipts,
+       j->owner->physical.world.history.raw_samples,hist->raw_samples,
+       hist->raw_retained,j->owner->physical.actor.id,
+       j->owner->physical.object.id,
+       sample?sample->body_a:0u,sample?sample->body_b:0u,
+       sample?sample->tick:0u,sample?sample->material_epoch:0u,
+       sample?sample->normal_impulse:0.f,
+       candidate->world.grid.global_revision);
+    fprintf(stderr,"RET-C H276C source A4/A5 lineage denied\\n");
+    return NULL;
+ }
  if(candidate->committed_receipts<=j->push->before_contacts){fprintf(stderr,"RET-C receipt gate: candidate=%u before=%u samples=%u before_samples=%u tick=%u\n",candidate->committed_receipts,j->push->before_contacts,candidate->world.history.raw_samples,j->push->before_history,candidate->world.tick);return NULL;}
  if(candidate->world.history.raw_samples<=j->push->before_history){fprintf(stderr,"RET-C joint_stage_checked predicate 15: candidate->world.history.raw_samples<=j->push->before_history\n");return NULL;}
  /* Prepare, never realize: no independent B3 finish or secondary WAL. */
