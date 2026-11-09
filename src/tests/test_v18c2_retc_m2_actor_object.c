@@ -220,6 +220,18 @@ static bool swept_face_probe(const NfWorld *w,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2RegionProbe {
+ NfRetcM2RegionChoice *out;
+ unsigned calls,passed;
+} M2RegionProbe;
+static bool region_probe(const NfWorld *w,
+ const Nf18a6Runtime *owner,float dt,void *ctx){
+ M2RegionProbe *p=(M2RegionProbe *)ctx;
+ ++p->calls;
+ const bool ok=nf_retc_m2_region_select_in_tick(w,owner,dt,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
@@ -1640,6 +1652,77 @@ int main(void){
  owner->physical.actor.velocity=original_off_velocity;
  a->transform.position=original_off_position;
  a->transform.velocity=original_off_actor_velocity;
+ /* H275D: first combined FACE/CORNER private source dispatcher.
+    Exactly one supported contact region gets one genuine A4 receipt. */
+ NfRetcM2RegionChoice *choice=calloc(1,sizeof *choice);
+ CHECK(choice);
+ M2RegionProbe region_state={.out=choice};
+ owner->research_pair_stage=region_probe;
+ owner->research_pair_context=&region_state;
+ owner->physical.actor.center.x=owner->physical.object.center.x-
+    owner->physical.object.box_half.x-.45f;
+ owner->physical.actor.center.z=owner->physical.object.center.z+.05f;
+ owner->physical.actor.velocity.x=4.f;
+ owner->physical.actor.velocity.z=.5f;
+ a->transform.position.x=owner->physical.actor.center.x;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.x=4.f;a->transform.velocity.z=.5f;
+ /* D1: face is uniquely selected; never double-stage two receipts. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(region_state.calls==1u&&region_state.passed==1u&&choice->staged);
+ CHECK(choice->candidate_count==1u&&
+       choice->region==NF_RETC_M2_REGION_FACE&&
+       choice->receipt.status==NF18A4_ACCEPTED&&
+       choice->receipt.impulses_applied&&choice->normal.x==-1.f);
+ const float selected_face_t=choice->impact_time;
+ const float selected_face_v=choice->crate_after.velocity.x;
+ /* D2: source corner selects CORNER, not face or two contacts. */
+ owner->physical.actor.center.z=owner->physical.object.center.z+
+    owner->physical.object.box_half.z+.45f;
+ owner->physical.actor.velocity.z=-4.f;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.z=-4.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(region_state.calls==2u&&region_state.passed==2u&&choice->staged);
+ CHECK(choice->candidate_count==1u&&
+       choice->region==NF_RETC_M2_REGION_CORNER&&
+       choice->receipt.status==NF18A4_ACCEPTED&&
+       choice->receipt.impulses_applied&&choice->normal.x<0.f&&
+       choice->normal.z>0.f);
+ /* D3: unsupported face/corner threshold refuses all staging. */
+ owner->physical.actor.center.z=owner->physical.object.center.z+
+    owner->physical.object.box_half.z-.005f;
+ owner->physical.actor.velocity.z=0.f;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.z=0.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(region_state.calls==3u&&region_state.passed==2u&&!choice->staged);
+ CHECK(choice->candidate_count==0u&&choice->region==NF_RETC_M2_REGION_NONE);
+ /* D4: source collider mismatch refuses both candidates. */
+ owner->physical.actor.center.z=owner->physical.object.center.z+.05f;
+ owner->physical.actor.velocity.z=.5f;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.z=.5f;
+ reverse_mirror->max.z+=.1f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(region_state.calls==4u&&region_state.passed==2u&&!choice->staged);
+ reverse_mirror->max.z-=.1f;
+ /* D5: restored source replays exactly one face result without ever
+    publishing an A6 tick, material history or contractual receipt. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(region_state.calls==5u&&region_state.passed==3u&&choice->staged);
+ CHECK(choice->candidate_count==1u&&
+       choice->region==NF_RETC_M2_REGION_FACE&&
+       choice->impact_time==selected_face_t&&
+       choice->crate_after.velocity.x==selected_face_v);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ owner->physical.actor.center=original_off_center;
+ owner->physical.actor.velocity=original_off_velocity;
+ a->transform.position=original_off_position;
+ a->transform.velocity=original_off_actor_velocity;
+ free(choice);
  free(face);
  free(swept);
  free(off);

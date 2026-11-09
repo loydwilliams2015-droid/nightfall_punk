@@ -557,6 +557,63 @@ static inline bool nf_retc_m2_swept_face_in_tick(
  out->staged=true;
  return true;
 }
+/* H275D: conservative source-exact region dispatcher. Both bounded
+ * swept candidates operate on PRIVATE copies of the SAME A6 source;
+ * exactly one distinct supported contact region may be selected. Never
+ * apply both impulses or substitute face contact for corner contact.
+ * Neither an unsupported contact nor competing candidates can publish. */
+typedef enum NfRetcM2Region {
+ NF_RETC_M2_REGION_NONE=0,
+ NF_RETC_M2_REGION_FACE=1,
+ NF_RETC_M2_REGION_CORNER=2
+} NfRetcM2Region;
+typedef struct NfRetcM2RegionChoice {
+ Nf18a4Body actor_after,crate_after;
+ Nf18a4Receipt receipt;
+ NfVec3 normal;
+ float impact_time,toi;
+ NfRetcM2Region region;
+ unsigned candidate_count;
+ bool staged;
+} NfRetcM2RegionChoice;
+static inline bool nf_retc_m2_region_select_in_tick(
+ const NfWorld *w,const Nf18a6Runtime *owner,float dt,
+ NfRetcM2RegionChoice *out){
+ if(!out)return false;
+ *out=(NfRetcM2RegionChoice){0};
+ NfRetcM2SweptFace face={0};
+ NfRetcM2SweptCorner corner={0};
+ const bool face_valid=nf_retc_m2_swept_face_in_tick(w,owner,dt,&face);
+ const bool corner_valid=nf_retc_m2_swept_corner_in_tick(w,owner,dt,&corner);
+ const unsigned count=(unsigned)face_valid+(unsigned)corner_valid;
+ out->candidate_count=count;
+ if(count!=1u)return false;
+ if(face_valid){
+   if(!face.staged||face.receipt.status!=NF18A4_ACCEPTED||
+      !face.receipt.impulses_applied||!isfinite(face.impact_time)||
+      face.impact_time<=0.f||face.impact_time>=dt)return false;
+   out->actor_after=face.actor_after;
+   out->crate_after=face.crate_after;
+   out->receipt=face.receipt;
+   out->normal=face.normal;
+   out->impact_time=face.impact_time;
+   out->toi=face.toi;
+   out->region=NF_RETC_M2_REGION_FACE;
+ }else{
+   if(!corner.staged||corner.receipt.status!=NF18A4_ACCEPTED||
+      !corner.receipt.impulses_applied||!isfinite(corner.impact_time)||
+      corner.impact_time<=0.f||corner.impact_time>=dt)return false;
+   out->actor_after=corner.actor_after;
+   out->crate_after=corner.crate_after;
+   out->receipt=corner.receipt;
+   out->normal=corner.normal;
+   out->impact_time=corner.impact_time;
+   out->toi=corner.toi;
+   out->region=NF_RETC_M2_REGION_CORNER;
+ }
+ out->staged=true;
+ return true;
+}
 /* H273D: independent bounded 1D perfectly-inelastic rival-first
  * reference oracle. NO A4 receipt, A5 mutation, B2/B3 grant or tick commit.
  * Used only when the exact source-derived event clock classified rival-first;
