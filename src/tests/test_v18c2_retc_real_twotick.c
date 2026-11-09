@@ -270,18 +270,25 @@ int main(void){
    ++h276c_source->world.revision;
    CHECK(!nf_retc_joint_contact_lineage(h276c_source,h276c_tamper));
    --h276c_source->world.revision;
-   /* C3 forged A5 sample body identity rejects physical-only success. */
-   const uint32_t h276c_last=h276c_tamper->world.history.raw_retained-1u;
-   h276c_tamper->world.history.raw_records[h276c_last].body_b+=1u;
+   /* C3 forged contact-stream body identity rejects a B3 action even
+      when A5 cumulative policy deliberately retains no RAW samples. */
+   unsigned h276c_stream=NF18A5_MAX_STREAMS;
+   for(unsigned k=0u;k<NF18A5_MAX_STREAMS;++k){
+      if(h276c_tamper->world.history.streams[k].active&&
+         h276c_tamper->world.history.streams[k].last_tick==tick){
+         h276c_stream=k;break;
+      }
+   }
+   CHECK(h276c_stream<NF18A5_MAX_STREAMS);
+   h276c_tamper->world.history.streams[h276c_stream].body_b+=1u;
    CHECK(!nf_retc_joint_contact_lineage(h276c_source,h276c_tamper));
    *h276c_tamper=h276c_accepted->physical;
-   /* C4 stale contact tick must not borrow a valid contractual receipt. */
-   --h276c_tamper->world.history.raw_records[h276c_last].tick;
+   /* C4 stale contact stream tick cannot borrow real contractual receipt. */
+   --h276c_tamper->world.history.streams[h276c_stream].last_tick;
    CHECK(!nf_retc_joint_contact_lineage(h276c_source,h276c_tamper));
    *h276c_tamper=h276c_accepted->physical;
-   /* C5 stale material epoch / fabricated physical receipt count fails,
-      restoration preserves the SAME accepted immutable provider pointer. */
-   ++h276c_tamper->world.history.raw_records[h276c_last].material_epoch;
+   /* C5 forged source material epoch or receipt count fails closed. */
+   ++h276c_tamper->world.history.streams[h276c_stream].last_material_epoch;
    CHECK(!nf_retc_joint_contact_lineage(h276c_source,h276c_tamper));
    *h276c_tamper=h276c_accepted->physical;
    ++h276c_tamper->committed_receipts;
