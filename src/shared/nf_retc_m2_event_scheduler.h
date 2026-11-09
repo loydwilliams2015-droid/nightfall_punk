@@ -688,6 +688,65 @@ static inline bool nf_retc_m2_offaxis_material_in_tick(
  out->source_revision=rev;out->staged=true;
  return true;
 }
+/* H275F: one PRIVATE physically and materially consistent copied A6
+ * candidate. The source-backed off-axis A4 impulse and native A5 contact
+ * commit must BOTH succeed before projecting full XZ body centers,
+ * velocities, the material world, and receipt count together. Never
+ * publish this copy into live A6/B2/B3 or a durable frame. */
+typedef struct NfRetcM2JointProjection {
+ Nf18a5Integrated candidate;
+ Nf18a5Sample sample;
+ NfRetcM2Region region;
+ uint64_t source_tick;
+ uint32_t source_revision;
+ bool staged;
+} NfRetcM2JointProjection;
+static inline bool nf_retc_m2_joint_projection_in_tick(
+ const NfWorld *w,const Nf18a6Runtime *owner,float dt,
+ NfRetcM2JointProjection *out){
+ if(!out)return false;
+ out->staged=false;
+ if(!w||!owner||!w->tick_in_progress||!w->tick_owner||
+    w->tick_owner_context!=owner||w->tick>=UINT32_MAX||
+    owner->physical.committed_receipts==UINT32_MAX)return false;
+ NfRetcM2OffaxisMaterial material={0};
+ if(!nf_retc_m2_offaxis_material_in_tick(w,owner,dt,&material)||
+    !material.staged||
+    material.source_revision!=owner->physical.world.revision||
+    material.physical.candidate_count!=1u||
+    material.sample.body_a!=owner->physical.actor.id||
+    material.sample.body_b!=owner->physical.object.id||
+    material.material.revision!=owner->physical.world.revision+1u||
+    material.material.history.raw_samples!=
+      owner->physical.world.history.raw_samples+1u)return false;
+ Nf18a5Integrated candidate=owner->physical;
+ candidate.world=material.material;
+ candidate.actor=material.physical.actor_after;
+ candidate.object=material.physical.crate_after;
+ candidate.actor.center=material.actor_final;
+ candidate.object.center=material.crate_final;
+ candidate.committed_receipts=owner->physical.committed_receipts+1u;
+ if(!nf18a4_body_valid(&candidate.actor)||
+    !nf18a4_body_valid(&candidate.object)||
+    candidate.actor.id!=owner->actor_id||
+    candidate.object.id!=owner->physical.object.id||
+    !isfinite(candidate.actor.center.x)||
+    !isfinite(candidate.actor.center.z)||
+    !isfinite(candidate.object.center.x)||
+    !isfinite(candidate.object.center.z)||
+    candidate.world.tick!=(uint32_t)w->tick+1u||
+    candidate.world.history.raw_samples!=
+      owner->physical.world.history.raw_samples+1u||
+    candidate.committed_receipts!=owner->physical.committed_receipts+1u)
+    return false;
+ out->candidate=candidate;
+ out->sample=material.sample;
+ out->region=material.physical.region;
+ out->source_tick=w->tick;
+ out->source_revision=material.source_revision;
+ out->staged=true;
+ return true;
+}
 /* H273D: independent bounded 1D perfectly-inelastic rival-first
  * reference oracle. NO A4 receipt, A5 mutation, B2/B3 grant or tick commit.
  * Used only when the exact source-derived event clock classified rival-first;
