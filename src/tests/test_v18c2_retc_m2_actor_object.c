@@ -244,6 +244,18 @@ static bool offaxis_material_probe(const NfWorld *w,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2JointProjectionProbe {
+ NfRetcM2JointProjection *out;
+ unsigned calls,passed;
+} M2JointProjectionProbe;
+static bool joint_projection_probe(const NfWorld *w,
+ const Nf18a6Runtime *owner,float dt,void *ctx){
+ M2JointProjectionProbe *p=(M2JointProjectionProbe *)ctx;
+ ++p->calls;
+ const bool ok=nf_retc_m2_joint_projection_in_tick(w,owner,dt,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
@@ -1811,6 +1823,86 @@ int main(void){
  CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
        owner->physical.world.history.raw_samples==samples&&
        owner->physical.committed_receipts==0u);
+ /* H275F: A4 XZ physical outcomes and the exact A5 contact
+    revision are copied together into one PRIVATE integrated projection. */
+ NfRetcM2JointProjection *joint=calloc(1,sizeof *joint);
+ CHECK(joint);
+ M2JointProjectionProbe joint_probe={.out=joint};
+ owner->research_pair_stage=joint_projection_probe;
+ owner->research_pair_context=&joint_probe;
+ /* F1: genuine FACE A4 impulse and A5 receipt become a single copy,
+    with source-authorized IDs, tick/revision and both body projections. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(joint_probe.calls==1u&&joint_probe.passed==1u&&joint->staged);
+ CHECK(joint->region==NF_RETC_M2_REGION_FACE&&
+       joint->candidate.actor.id==owner->actor_id&&
+       joint->candidate.object.id==owner->physical.object.id&&
+       joint->candidate.world.revision==revision+1u&&
+       joint->candidate.world.tick==1u&&
+       joint->candidate.committed_receipts==
+           owner->physical.committed_receipts+1u&&
+       joint->candidate.world.history.raw_samples==samples+1u&&
+       joint->sample.body_a==30u&&joint->sample.body_b==3050u);
+ const uint32_t joint_hash=nf18a5_history_hash(&joint->candidate.world.history);
+ const NfVec3 joint_actor=joint->candidate.actor.center;
+ const NfVec3 joint_crate=joint->candidate.object.center;
+ const NfVec3 joint_v=joint->candidate.object.velocity;
+ /* F2: CORNER geometry retains real Z-component physical publication
+    projection and exactly one same-source A5 history entry. */
+ owner->physical.actor.center.z=owner->physical.object.center.z+
+    owner->physical.object.box_half.z+.45f;
+ owner->physical.actor.velocity.z=-4.f;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.z=-4.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(joint_probe.calls==2u&&joint_probe.passed==2u&&joint->staged);
+ CHECK(joint->region==NF_RETC_M2_REGION_CORNER&&
+       joint->candidate.world.history.raw_samples==samples+1u&&
+       joint->candidate.committed_receipts==
+           owner->physical.committed_receipts+1u&&
+       fabsf(joint->candidate.object.velocity.z-
+             owner->physical.object.velocity.z)>.001f);
+ /* F3: unsupported face/corner threshold admits neither physical
+    projection nor a partially successful material transaction. */
+ owner->physical.actor.center.z=owner->physical.object.center.z+
+    owner->physical.object.box_half.z-.005f;
+ owner->physical.actor.velocity.z=0.f;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.z=0.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(joint_probe.calls==3u&&joint_probe.passed==2u&&!joint->staged);
+ /* F4: source material clearance denial forbids a combined candidate. */
+ owner->physical.actor.center.z=owner->physical.object.center.z+.05f;
+ owner->physical.actor.velocity.z=.5f;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.z=.5f;
+ Nf18a5Grid *joint_grid=malloc(sizeof *joint_grid);
+ CHECK(joint_grid);
+ *joint_grid=owner->physical.world.grid;
+ uint8_t joint_blocked[NF18A5_CANON_VOXELS];
+ for(size_t k=0u;k<NF18A5_CANON_VOXELS;++k)joint_blocked[k]=1u;
+ CHECK(nf18a5_load_canonical(&owner->physical.world.grid,
+      0,0,0,joint_blocked,1u));
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(joint_probe.calls==4u&&joint_probe.passed==2u&&!joint->staged);
+ owner->physical.world.grid=*joint_grid;
+ free(joint_grid);
+ /* F5: exact source restores identical physical XZ and material history
+    projections; the actual live A6 tick, source A5 and B3 stay untouched. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(joint_probe.calls==5u&&joint_probe.passed==3u&&joint->staged);
+ CHECK(joint->region==NF_RETC_M2_REGION_FACE&&
+       nf18a5_history_hash(&joint->candidate.world.history)==joint_hash&&
+       joint->candidate.actor.center.x==joint_actor.x&&
+       joint->candidate.actor.center.z==joint_actor.z&&
+       joint->candidate.object.center.x==joint_crate.x&&
+       joint->candidate.object.center.z==joint_crate.z&&
+       joint->candidate.object.velocity.x==joint_v.x&&
+       joint->candidate.object.velocity.z==joint_v.z);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ free(joint);
  free(om);
  free(choice);
  free(face);
