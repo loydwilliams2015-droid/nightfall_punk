@@ -472,6 +472,91 @@ static inline bool nf_retc_m2_swept_corner_in_tick(
  out->staged=true;
  return true;
 }
+/* H275C: first source-derived swept -X crate FACE contact with
+ * tangential Z movement. The face normal is (-1,0,0), unlike H275B's
+ * corner normal. Explicit face Voronoi-region and source mirror checks
+ * make corner/grazing ambiguity fail closed; still PRIVATE A4 only. */
+typedef struct NfRetcM2SweptFace {
+ Nf18a4Body actor_after,crate_after;
+ Nf18a4Receipt receipt;
+ NfVec3 normal;
+ float impact_time,toi,source_momentum_x,source_momentum_z;
+ bool staged;
+} NfRetcM2SweptFace;
+static inline bool nf_retc_m2_swept_face_in_tick(
+ const NfWorld *w,const Nf18a6Runtime *owner,float dt,
+ NfRetcM2SweptFace *out){
+ if(!out)return false;
+ *out=(NfRetcM2SweptFace){0};
+ if(!w||!owner||!w->tick_in_progress||!w->tick_owner||
+    w->tick_owner_context!=owner||!owner->require_pair_research||
+    !owner->research_pair_stage||!isfinite(dt)||dt<=0.f||dt>.25f||
+    w->tick>=UINT32_MAX||owner->last_commit_tick!=w->tick||
+    owner->physical.world.tick!=w->tick||
+    owner->physical.world.revision==UINT32_MAX||
+    owner->object_collider_index>=w->collider_count)return false;
+ const NfActor *actor=nf_world_find_actor_const(w,owner->actor_id);
+ Nf18a4Body a=owner->physical.actor,b=owner->physical.object;
+ if(!actor||!actor->active||!actor->combat.alive||
+    !actor->input.interact_held||actor->input.forward<=.1f||
+    !nf18a4_body_valid(&a)||!nf18a4_body_valid(&b)||
+    a.id!=owner->actor_id||a.id==b.id||
+    a.inverse_mass<=0.f||b.inverse_mass<=0.f||
+    b.box_half.x<=0.f||b.box_half.y<=0.f||b.box_half.z<=.03f||
+    fabsf(a.velocity.y)>.0001f||fabsf(b.velocity.y)>.0001f||
+    fabsf(actor->transform.position.x-a.center.x)>.0001f||
+    fabsf(actor->transform.position.z-a.center.z)>.0001f||
+    fabsf(actor->transform.velocity.x-a.velocity.x)>.0001f||
+    fabsf(actor->transform.velocity.z-a.velocity.z)>.0001f)return false;
+ const NfCollider *mirror=&w->colliders[owner->object_collider_index];
+ if(mirror->kind!=NF_COLLIDER_SOLID||
+    fabsf(mirror->min.x-(b.center.x-b.box_half.x))>.0001f||
+    fabsf(mirror->max.x-(b.center.x+b.box_half.x))>.0001f||
+    fabsf(mirror->min.y-(b.center.y-b.box_half.y))>.0001f||
+    fabsf(mirror->max.y-(b.center.y+b.box_half.y))>.0001f||
+    fabsf(mirror->min.z-(b.center.z-b.box_half.z))>.0001f||
+    fabsf(mirror->max.z-(b.center.z+b.box_half.z))>.0001f)return false;
+ const float face_x=b.center.x-b.box_half.x;
+ const float separation=face_x-a.radius-a.center.x;
+ const float vx=a.velocity.x-b.velocity.x;
+ const float vz=a.velocity.z-b.velocity.z;
+ if(!isfinite(separation)||!isfinite(vx)||!isfinite(vz)||
+    separation<=.0001f||vx<=.001f)return false;
+ const float t=separation/vx;
+ if(!isfinite(t)||t<=.000001f||t>=dt)return false;
+ const float rel_z=a.center.z-b.center.z+vz*t;
+ /* Strictly within the actual face segment, with a fixed safety
+  * margin. Edge and corner contacts are not represented as faces. */
+ if(!isfinite(rel_z)||fabsf(rel_z)>=b.box_half.z-.02f)return false;
+ const float ma=1.f/a.inverse_mass,mb=1.f/b.inverse_mass;
+ const float px=ma*a.velocity.x+mb*b.velocity.x;
+ const float pz=ma*a.velocity.z+mb*b.velocity.z;
+ if(!isfinite(px)||!isfinite(pz))return false;
+ a.center.x+=a.velocity.x*t;a.center.z+=a.velocity.z*t;
+ b.center.x+=b.velocity.x*t;b.center.z+=b.velocity.z*t;
+ if(fabsf(a.center.x+a.radius-(b.center.x-b.box_half.x))>.0002f)
+    return false;
+ Nf18a4Constraint c={0};
+ c.body_a=a.id;c.body_b=b.id;c.feature_id=b.id;
+ c.normal_b_to_a=(NfVec3){-1.f,0.f,0.f};
+ c.contact_point=(NfVec3){b.center.x-b.box_half.x,b.center.y,
+                           a.center.z};
+ const Nf18a4Receipt receipt=nf18a4_apply_contact(
+    &a,&b,c,NF18A4_RECIPROCAL_LINEAR,
+    (uint32_t)w->tick+1u,owner->physical.world.revision);
+ if(receipt.status!=NF18A4_ACCEPTED||!receipt.impulses_applied||
+    !isfinite(receipt.normal_impulse.x)||
+    fabsf(ma*a.velocity.x+mb*b.velocity.x-px)>.004f||
+    fabsf(ma*a.velocity.z+mb*b.velocity.z-pz)>.004f||
+    fabsf(a.velocity.z-owner->physical.actor.velocity.z)>.0001f||
+    fabsf(b.velocity.z-owner->physical.object.velocity.z)>.0001f)
+    return false;
+ out->actor_after=a;out->crate_after=b;out->receipt=receipt;
+ out->normal=c.normal_b_to_a;out->impact_time=t;out->toi=t/dt;
+ out->source_momentum_x=px;out->source_momentum_z=pz;
+ out->staged=true;
+ return true;
+}
 /* H273D: independent bounded 1D perfectly-inelastic rival-first
  * reference oracle. NO A4 receipt, A5 mutation, B2/B3 grant or tick commit.
  * Used only when the exact source-derived event clock classified rival-first;
