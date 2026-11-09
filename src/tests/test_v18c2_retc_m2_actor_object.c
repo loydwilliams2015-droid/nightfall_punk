@@ -1734,6 +1734,73 @@ int main(void){
  owner->physical.actor.velocity=original_off_velocity;
  a->transform.position=original_off_position;
  a->transform.velocity=original_off_actor_velocity;
+ /* H275E: genuine source-selected XZ A4 contact -> one PRIVATE
+    A5 history sample, after full actor + crate source-final clearance. */
+ NfRetcM2OffaxisMaterial *om=calloc(1,sizeof *om);
+ CHECK(om);
+ M2OffaxisMaterialProbe om_probe={.out=om};
+ owner->research_pair_stage=offaxis_material_probe;
+ owner->research_pair_context=&om_probe;
+ /* E1: authentic FACE contact and one atomic private A5 sample. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(om_probe.calls==1u&&om_probe.passed==1u&&om->staged);
+ CHECK(om->physical.region==NF_RETC_M2_REGION_FACE&&
+       om->physical.candidate_count==1u&&
+       om->material.revision==revision+1u&&
+       om->material.history.raw_samples==samples+1u&&
+       om->sample.body_a==30u&&om->sample.body_b==3050u);
+ const uint32_t om_face_hash=nf18a5_history_hash(&om->material.history);
+ const float om_face_end_x=om->actor_final.x;
+ const float om_face_end_z=om->actor_final.z;
+ /* E2: switched CORNER source accepts off-axis A4 receipt plus a
+    genuinely different two-axis swept material path in one A5 history. */
+ owner->physical.actor.center.z=owner->physical.object.center.z+
+    owner->physical.object.box_half.z+.45f;
+ owner->physical.actor.velocity.z=-4.f;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.z=-4.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(om_probe.calls==2u&&om_probe.passed==2u&&om->staged);
+ CHECK(om->physical.region==NF_RETC_M2_REGION_CORNER&&
+       om->material.history.raw_samples==samples+1u&&
+       om->sample.body_a==30u&&om->sample.body_b==3050u);
+ /* E3: unsupported face/corner threshold must not materialize an
+    A5 sample or a partial private history. */
+ owner->physical.actor.center.z=owner->physical.object.center.z+
+    owner->physical.object.box_half.z-.005f;
+ owner->physical.actor.velocity.z=0.f;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.z=0.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(om_probe.calls==3u&&om_probe.passed==2u&&!om->staged);
+ /* E4: blocked source grid denies material even with valid A4 contact. */
+ owner->physical.actor.center.z=owner->physical.object.center.z+.05f;
+ owner->physical.actor.velocity.z=.5f;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.z=.5f;
+ Nf18a5Grid *om_grid=malloc(sizeof *om_grid);
+ CHECK(om_grid);
+ *om_grid=owner->physical.world.grid;
+ uint8_t om_blocked[NF18A5_CANON_VOXELS];
+ for(size_t k=0u;k<NF18A5_CANON_VOXELS;++k)om_blocked[k]=1u;
+ CHECK(nf18a5_load_canonical(&owner->physical.world.grid,
+    0,0,0,om_blocked,1u));
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(om_probe.calls==4u&&om_probe.passed==2u&&!om->staged);
+ owner->physical.world.grid=*om_grid;
+ free(om_grid);
+ /* E5: source restoration reproduces exact A5 digest and X/Z
+    endpoints with zero accepted world tick or material/B3 publication. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(om_probe.calls==5u&&om_probe.passed==3u&&om->staged);
+ CHECK(om->physical.region==NF_RETC_M2_REGION_FACE&&
+       nf18a5_history_hash(&om->material.history)==om_face_hash&&
+       om->actor_final.x==om_face_end_x&&
+       om->actor_final.z==om_face_end_z);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ free(om);
  free(choice);
  free(face);
  free(swept);
