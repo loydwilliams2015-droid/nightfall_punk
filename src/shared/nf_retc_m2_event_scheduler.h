@@ -7,6 +7,7 @@
  * with two authentic A4 receipts committed to one PRIVATE A5 revision.
  * No 3D generalization, B2/B3 grant, WAL or A6 publication. */
 #include "nf_retc_m2_three_contact_tick.h"
+#include "nf_retc_joint_provider.h"
 /* H273C: source-derived 1D event clock. Input actor_t comes from real
  * A4 swept capsule-box TOI. Crate/rival time comes from independent
  * source velocities and source geometry; no staged impulse is applied.
@@ -745,6 +746,65 @@ static inline bool nf_retc_m2_joint_projection_in_tick(
  out->source_tick=w->tick;
  out->source_revision=material.source_revision;
  out->staged=true;
+ return true;
+}
+/* H276A: real B2/B3 owner-source witness PRE-FLIGHT, NOT a grant.
+ * A valid registered encounter, grant, revalidation, and staged B3 PUSH
+ * must all refer to the same A6 owner/object and prospective world tick.
+ * This read-only check cannot authorize or publish a transaction; positive
+ * contractual completion still requires the real nf_retc_joint_stage_owned
+ * provider, A6 owner gate, and immutable frame publication. */
+typedef struct NfRetcM2B2Preflight {
+ uint32_t actor_id,object_id,action_id,source_revision,material_epoch;
+ uint64_t source_tick;
+ bool eligible_witness;
+} NfRetcM2B2Preflight;
+static inline bool nf_retc_m2_b2_preflight_in_tick(
+ const NfWorld *w,const Nf18a6Runtime *owner,
+ const NfRetcJointContext *joint,NfRetcM2B2Preflight *out){
+ if(!out)return false;
+ *out=(NfRetcM2B2Preflight){0};
+ if(!w||!owner||!joint||!joint->encounter||!joint->push||
+    !w->tick_in_progress||!w->tick_owner||
+    w->tick_owner_context!=owner||
+    w->tick>=UINT32_MAX||!owner->require_pair_research||
+    !owner->research_pair_stage||
+    owner->last_commit_tick!=w->tick||
+    owner->physical.world.tick!=w->tick||
+    owner->physical.world.revision==UINT32_MAX||
+    !owner->physical.world.grid.global_revision||
+    joint->owner!=owner||joint->encounter->owner!=owner||
+    joint->encounter->world!=w||joint->encounter->attached||
+    !joint->encounter->prepared||joint->encounter->queue_count!=1u||
+    !joint->encounter->granted[0]||
+    !joint->push->staged_commit_valid)return false;
+ const Nf18b2QueuedIntent *q=&joint->encounter->queue[0];
+ if(q->withdrawn||q->intent.kind!=NF18B2_PUSH||
+    q->intent.actor_id!=owner->actor_id||
+    q->intent.object_id!=owner->physical.object.id||
+    q->trace_index>=joint->encounter->trace_count)return false;
+ const Nf18b2EncounterTrace *trace=
+    &joint->encounter->traces[q->trace_index];
+ const Nf18b3Event *e=&joint->push->staged_commit;
+ if(trace->revalidation.status!=NF18B2_ELIGIBLE||
+    trace->revalidation.physical!=NF18B2_ELIGIBLE||
+    trace->revalidation.contract!=NF18B2_ELIGIBLE||
+    e->kind!=NF18B3_PUSH||e->phase!=NF18B3_APPLIED||
+    e->actor!=q->intent.actor_id||
+    e->object!=q->intent.object_id||
+    e->action!=q->intent.action_id||
+    e->tick!=(uint32_t)w->tick+1u||
+    q->witness.tick!=(uint32_t)w->tick+1u||
+    q->witness.world_revision!=owner->physical.world.revision||
+    q->witness.material_epoch!=
+       owner->physical.world.grid.global_revision)return false;
+ out->actor_id=q->intent.actor_id;
+ out->object_id=q->intent.object_id;
+ out->action_id=q->intent.action_id;
+ out->source_revision=q->witness.world_revision;
+ out->material_epoch=q->witness.material_epoch;
+ out->source_tick=w->tick;
+ out->eligible_witness=true;
  return true;
 }
 /* H273D: independent bounded 1D perfectly-inelastic rival-first
