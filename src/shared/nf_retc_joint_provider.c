@@ -1,5 +1,6 @@
 #include "nf_retc_joint_provider.h"
 #include <stdlib.h>
+#include <math.h>
 #include <stdio.h>
 NfRetcFrame *nf_retc_joint_stage(const NfWorld *w,
  const Nf18a5Integrated *p,void *context){
