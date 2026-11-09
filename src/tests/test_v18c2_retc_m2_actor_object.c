@@ -208,6 +208,18 @@ static bool swept_corner_probe(const NfWorld *w,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2SweptFaceProbe {
+ NfRetcM2SweptFace *out;
+ unsigned calls,passed;
+} M2SweptFaceProbe;
+static bool swept_face_probe(const NfWorld *w,
+ const Nf18a6Runtime *owner,float dt,void *ctx){
+ M2SweptFaceProbe *p=(M2SweptFaceProbe *)ctx;
+ ++p->calls;
+ const bool ok=nf_retc_m2_swept_face_in_tick(w,owner,dt,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
