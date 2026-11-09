@@ -256,6 +256,22 @@ static bool joint_projection_probe(const NfWorld *w,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2B2PreflightProbe {
+ NfRetcJointContext *joint;
+ NfRetcM2B2Preflight *out;
+ unsigned calls,passes;
+ bool last_result;
+} M2B2PreflightProbe;
+static bool b2_preflight_probe(const NfWorld *w,
+ const Nf18a6Runtime *owner,float dt,void *ctx){
+ (void)dt;
+ M2B2PreflightProbe *p=(M2B2PreflightProbe *)ctx;
+ ++p->calls;
+ p->last_result=nf_retc_m2_b2_preflight_in_tick(
+   w,owner,p->joint,p->out);
+ if(p->last_result)++p->passes;
+ return p->last_result;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
