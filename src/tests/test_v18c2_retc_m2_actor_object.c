@@ -208,6 +208,18 @@ static bool swept_corner_probe(const NfWorld *w,
  if(ok)++p->passed;
  return ok;
 }
+typedef struct M2SweptFaceProbe {
+ NfRetcM2SweptFace *out;
+ unsigned calls,passed;
+} M2SweptFaceProbe;
+static bool swept_face_probe(const NfWorld *w,
+ const Nf18a6Runtime *owner,float dt,void *ctx){
+ M2SweptFaceProbe *p=(M2SweptFaceProbe *)ctx;
+ ++p->calls;
+ const bool ok=nf_retc_m2_swept_face_in_tick(w,owner,dt,p->out);
+ if(ok)++p->passed;
+ return ok;
+}
 int main(void){
  NfWorld *world=calloc(1,sizeof *world);
  Nf18a6Runtime *owner=calloc(1,sizeof *owner);
@@ -1558,6 +1570,77 @@ int main(void){
  owner->physical.actor.velocity=original_off_velocity;
  a->transform.position=original_off_position;
  a->transform.velocity=original_off_actor_velocity;
+ /* H275C: distinct moving crate -X FACE TOI with tangential Z
+    motion. The contact is interior to the face, not a corner. */
+ NfRetcM2SweptFace *face=calloc(1,sizeof *face);
+ CHECK(face);
+ M2SweptFaceProbe face_probe={.out=face};
+ owner->research_pair_stage=swept_face_probe;
+ owner->research_pair_context=&face_probe;
+ owner->physical.actor.center.x=owner->physical.object.center.x-
+    owner->physical.object.box_half.x-.45f;
+ owner->physical.actor.center.z=owner->physical.object.center.z+.05f;
+ owner->physical.actor.velocity.x=4.f;
+ owner->physical.actor.velocity.z=.5f;
+ a->transform.position.x=owner->physical.actor.center.x;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.x=4.f;
+ a->transform.velocity.z=.5f;
+ /* C1: real first face impact, X normal and unchanged tangential Z
+    velocity after authentic A4 impulse with momentum conservation. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(face_probe.calls==1u&&face_probe.passed==1u&&face->staged);
+ CHECK(face->impact_time>0.f&&face->impact_time<.125f&&
+       face->toi>0.f&&face->toi<1.f&&
+       face->normal.x==-1.f&&face->normal.z==0.f&&
+       face->receipt.status==NF18A4_ACCEPTED&&
+       face->receipt.impulses_applied);
+ CHECK(fabsf(off_ma*face->actor_after.velocity.x+
+       off_mb*face->crate_after.velocity.x-face->source_momentum_x)<.004f);
+ CHECK(fabsf(off_ma*face->actor_after.velocity.z+
+       off_mb*face->crate_after.velocity.z-face->source_momentum_z)<.004f);
+ CHECK(face->actor_after.velocity.z==.5f);
+ const float face_t=face->impact_time;
+ const float face_x=face->crate_after.velocity.x;
+ /* C2: replay source exact TOI and postimpact normal impulse. */
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(face_probe.calls==2u&&face_probe.passed==2u&&face->staged);
+ CHECK(face->impact_time==face_t&&face->crate_after.velocity.x==face_x);
+ /* C3: actor moving away from the -X face cannot stage contact. */
+ owner->physical.actor.velocity.x=-4.f;
+ a->transform.velocity.x=-4.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(face_probe.calls==3u&&face_probe.passed==2u&&!face->staged);
+ owner->physical.actor.velocity.x=4.f;a->transform.velocity.x=4.f;
+ /* C4: source near the face/corner boundary is excluded explicitly. */
+ owner->physical.actor.center.z=owner->physical.object.center.z+
+    owner->physical.object.box_half.z-.005f;
+ owner->physical.actor.velocity.z=0.f;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.z=0.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(face_probe.calls==4u&&face_probe.passed==2u&&!face->staged);
+ owner->physical.actor.center.z=owner->physical.object.center.z+.05f;
+ owner->physical.actor.velocity.z=.5f;
+ a->transform.position.z=owner->physical.actor.center.z;
+ a->transform.velocity.z=.5f;
+ /* C5: mirror mismatch denied; restored source replays positive
+    face TOI without any A5/B2/B3/live A6 consequences. */
+ reverse_mirror->max.z+=.1f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(face_probe.calls==5u&&face_probe.passed==2u&&!face->staged);
+ reverse_mirror->max.z-=.1f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(face_probe.calls==6u&&face_probe.passed==3u&&face->staged);
+ CHECK(face->impact_time==face_t&&face->crate_after.velocity.x==face_x);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ owner->physical.actor.center=original_off_center;
+ owner->physical.actor.velocity=original_off_velocity;
+ a->transform.position=original_off_position;
+ a->transform.velocity=original_off_actor_velocity;
+ free(face);
  free(swept);
  free(off);
  free(sm);
