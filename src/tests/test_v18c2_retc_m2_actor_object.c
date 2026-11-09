@@ -1761,9 +1761,9 @@ int main(void){
  a->transform.velocity.z=-4.f;
  CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
  CHECK(om_probe.calls==2u&&om_probe.passed==2u&&om->staged);
- CHECK(om->physical.region==NF_RETC_M2_REGION_CORNER&&
-       om->material.history.raw_samples==samples+1u&&
-       om->sample.body_a==30u&&om->sample.body_b==3050u);
+ CHECK(om->physical.region==NF_RETC_M2_REGION_CORNER);
+ CHECK(om->material.history.raw_samples==samples+1u);
+ CHECK(om->sample.body_a==30u&&om->sample.body_b==3050u);
  /* E3: unsupported face/corner threshold must not materialize an
     A5 sample or a partial private history. */
  owner->physical.actor.center.z=owner->physical.object.center.z+
