@@ -279,7 +279,10 @@ int main(void){
    Nf18a5Integrated *h276c_source=malloc(sizeof *h276c_source);
    CHECK(h276c_source);
    *h276c_source=r->physical;
-   NfMoveInput move={0};move.strafe=1;
+   /* H276E: a real server-issued B2/B3 PUSH is the only acceptable
+      source for A6 interact-held input in this production joint tick. */
+   NfMoveInput move={0};move.strafe=1;move.forward=.2f;
+   move.interact_held=true;
    nf_world_set_input(w,10,move);
    const NfWorldTickStatus status=nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
    if(status!=NF_WORLD_TICK_COMMITTED){
