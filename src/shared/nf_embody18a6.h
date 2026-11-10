@@ -43,6 +43,10 @@ struct Nf18a6Outcome;
 typedef struct Nf18a6OwnerHooks {
     Nf18a6OwnerGate (*begin)(const NfWorld *,uint32_t,void *);
     bool (*prepublish)(const NfWorld *,const Nf18a5Integrated *,void *);
+    /* H276E: opt-in owner-supplied interaction input eligibility. Never
+       substitutes for final B2/B3 contract and frame acceptance. */
+    bool (*authorize_interaction_input)(const NfWorld *,
+          const struct Nf18a6Runtime *,const NfMoveInput *,void *);
     /* Single A6 owner-invoked candidate approval; no live state mutation. */
     bool (*accept_candidate)(const NfWorld *,const Nf18a5Integrated *,void *);
     /* Optional full contract supplier: must stage B2 and B3 from owner data. */
