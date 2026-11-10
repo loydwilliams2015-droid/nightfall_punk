@@ -28,7 +28,7 @@ NfRetcFrame *nf_retc_joint_stage(const NfWorld *w,
  if(j->encounter->staged.contract_epoch!=j->push->contract_epoch){fprintf(stderr,"RET-C joint_stage predicate 21: j->encounter->staged.contract_epoch!=j->push->contract_epoch\n");return NULL;}
  if(p->world.tick!=w->tick+1u){fprintf(stderr,"RET-C joint_stage predicate 22: p->world.tick!=w->tick+1u\n");return NULL;}
  if(j->owner->physical.world.tick!=w->tick){fprintf(stderr,"RET-C joint_stage predicate 23: j->owner->physical.world.tick!=w->tick\n");return NULL;}
- const Nf18b3Event *e=&j->push->staged_commit;
+ const Nf18b3Event *e=&j->push->event;
  NfRetcFrame *f=nf_retc_stage_source_push(p,e,j->transaction_id,
       (uint32_t)w->tick,&j->use,&j->decision,
       &j->actor,&j->object,&j->authority);
@@ -124,7 +124,7 @@ static bool joint_authorize_interaction_input(
     !j->rollback_encounter||!j->encounter->prepared||
     j->encounter->queue_count!=1u||
     !j->encounter->granted[0]||
-    !j->push->staged_commit_valid||
+    !j->push->armed||
     j->encounter->queue[0].withdrawn)return false;
  const Nf18b2QueuedIntent *q=&j->encounter->queue[0];
  const Nf18b3Event *e=&j->push->staged_commit;
@@ -138,7 +138,8 @@ static bool joint_authorize_interaction_input(
     j->encounter->traces[q->trace_index].revalidation.status!=NF18B2_ELIGIBLE||
     j->encounter->traces[q->trace_index].revalidation.physical!=NF18B2_ELIGIBLE||
     j->encounter->traces[q->trace_index].revalidation.contract!=NF18B2_ELIGIBLE||
-    e->kind!=NF18B3_PUSH||e->phase!=NF18B3_APPLIED||
+    e->kind!=NF18B3_PUSH||e->phase!=NF18B3_WAITING||
+    !e->authorized||
     e->actor!=q->intent.actor_id||
     e->object!=q->intent.object_id||
     e->action!=q->intent.action_id||
