@@ -67,6 +67,45 @@ static bool h178_owner_tick_probe(const NfWorld *w,
  if(ok)++p->accepted;
  return ok;
 }
+/* H276E: the tests run *inside* the genuine A6 owner tick after
+ * real B2/B3 preparation, not in a synthetic grant fixture.
+ * Private clones vary witnesses without changing source authorization. */
+static bool (*h276e_original_input)(const NfWorld *,
+ const Nf18a6Runtime *,const NfMoveInput *,void *)=NULL;
+static unsigned h276e_positive=0u,h276e_denied=0u;
+static bool h276e_input_probe(const NfWorld *w,const Nf18a6Runtime *r,
+ const NfMoveInput *in,void *context){
+ if(!h276e_original_input||
+    !h276e_original_input(w,r,in,context))return false;
+ NfRetcJointContext *live=(NfRetcJointContext *)context;
+ NfRetcJointContext test=*live;
+ Nf18b2EncounterRuntime *enc=malloc(sizeof *enc);
+ Nf18b6Push *push=malloc(sizeof *push);
+ if(!enc||!push){free(enc);free(push);return false;}
+ *enc=*live->encounter;*push=*live->push;
+ test.encounter=enc;test.push=push;
+ /* 1 genuine positive; 2 withdrawn grant, 3 stale revision,
+    4 mismatched B3, 5 revoked grant and invalid input all denied. */
+ ++h276e_positive;
+ enc->queue[0].withdrawn=1u;
+ const bool withdrawn=!h276e_original_input(w,r,in,&test);
+ enc->queue[0].withdrawn=0u;
+ ++enc->queue[0].witness.world_revision;
+ const bool stale=!h276e_original_input(w,r,in,&test);
+ --enc->queue[0].witness.world_revision;
+ ++push->event.action;
+ const bool wrong_b3=!h276e_original_input(w,r,in,&test);
+ --push->event.action;
+ enc->granted[0]=0u;
+ const bool revoked=!h276e_original_input(w,r,in,&test);
+ enc->granted[0]=1u;
+ NfMoveInput no_forward=*in;no_forward.forward=0.f;
+ const bool invalid_input=!h276e_original_input(w,r,&no_forward,&test);
+ free(enc);free(push);
+ if(!(withdrawn&&stale&&wrong_b3&&revoked&&invalid_input))return false;
+ h276e_denied+=5u;
+ return h276e_original_input(w,r,in,context);
+}
 int main(void){
  NfWorld *w=calloc(1,sizeof *w);
  Nf18a6Runtime *r=calloc(1,sizeof *r);
@@ -114,6 +153,7 @@ int main(void){
  NfRetcJointContext joint={0};joint.owner=r;joint.encounter=enc;
  joint.push=push;joint.transaction_id=1;
  joint.require_contact_lineage=true; /* H276C real source gate */
+ /* H276E probe installs only after the genuine joint provider attaches. */
  /* H276D: publication ownership cannot be borrowed by an H275F
     experimental candidate. Test real provider attachment, never a
     synthetic grant. Every rejected combination preserves zero frames. */
@@ -227,6 +267,9 @@ int main(void){
  uint8_t network_packet[NF_RETC_NETWORK_PACKET_BYTES]={0};
  CHECK(nf_retc_network_emit(publisher,network_packet,sizeof network_packet)==0);
  CHECK(NF_RETC_NETWORK_PACKET_BYTES<=NF_NET_MAX_PACKET_BYTES);
+ h276e_original_input=r->owner_hooks.authorize_interaction_input;
+ CHECK(h276e_original_input!=NULL);
+ r->owner_hooks.authorize_interaction_input=h276e_input_probe;
  for(uint32_t tick=1;tick<=2;++tick){
    const uint32_t action=90u+tick;
    /* A6 publisher requires a strictly increasing transaction identity. */
@@ -279,7 +322,10 @@ int main(void){
    Nf18a5Integrated *h276c_source=malloc(sizeof *h276c_source);
    CHECK(h276c_source);
    *h276c_source=r->physical;
-   NfMoveInput move={0};move.strafe=1;
+   /* H276E: a real server-issued B2/B3 PUSH is the only acceptable
+      source for A6 interact-held input in this production joint tick. */
+   NfMoveInput move={0};move.strafe=1;move.forward=.2f;
+   move.interact_held=true;
    nf_world_set_input(w,10,move);
    const NfWorldTickStatus status=nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
    if(status!=NF_WORLD_TICK_COMMITTED){
@@ -289,6 +335,7 @@ int main(void){
        (int)enc->traces[enc->trace_count-1].revalidation.status,(int)push->last_result);
       return 1;
    }
+   CHECK(h276e_positive==tick&&h276e_denied==5u*tick);
    CHECK(verify(w,r,enc,push,publisher,tick));
    const NfRetcFrame *h276c_accepted=nf_retc_read(publisher);
    CHECK(h276c_accepted&&

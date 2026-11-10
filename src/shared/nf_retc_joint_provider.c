@@ -105,6 +105,47 @@ NfRetcFrame *nf_retc_joint_stage_owned(const NfWorld *w,
  return nf_retc_joint_stage(w,p,&derived);
 }
 
+/* H276E: genuinely A6-owned prepared B2+B3 PUSH is required before
+ * interaction-held movement enters the production A4/A5 solver.
+ * This hook grants no final publication and consumes no capability. */
+static bool joint_authorize_interaction_input(
+ const NfWorld *w,const Nf18a6Runtime *r,
+ const NfMoveInput *in,void *context){
+ const NfRetcJointContext *j=(const NfRetcJointContext *)context;
+ if(!w||!r||!in||!j||!j->encounter||!j->push||
+    !in->interact_held||!isfinite(in->forward)||
+    !isfinite(in->strafe)||!isfinite(in->yaw_radians)||
+    in->forward<=.1f||in->crouch_held||in->jump_pressed||
+    !w->tick_in_progress||w->tick_owner_context!=r||
+    w->tick!=r->last_commit_tick||
+    r->require_pair_research||r->research_pair_stage||
+    j->owner!=r||j->encounter->owner!=r||
+    j->encounter->world!=w||j->push->runtime!=r||
+    !j->rollback_encounter||!j->encounter->prepared||
+    j->encounter->queue_count!=1u||
+    !j->encounter->granted[0]||
+    !j->push->armed||
+    j->encounter->queue[0].withdrawn)return false;
+ const Nf18b2QueuedIntent *q=&j->encounter->queue[0];
+ const Nf18b3Event *e=&j->push->event;
+ if(q->intent.kind!=NF18B2_PUSH||
+    q->intent.actor_id!=r->actor_id||
+    q->intent.object_id!=r->physical.object.id||
+    q->trace_index>=j->encounter->trace_count||
+    q->witness.tick!=w->tick+1u||
+    q->witness.world_revision!=r->physical.world.revision||
+    q->witness.material_epoch!=r->physical.world.grid.global_revision||
+    j->encounter->traces[q->trace_index].revalidation.status!=NF18B2_ELIGIBLE||
+    j->encounter->traces[q->trace_index].revalidation.physical!=NF18B2_ELIGIBLE||
+    j->encounter->traces[q->trace_index].revalidation.contract!=NF18B2_ELIGIBLE||
+    e->kind!=NF18B3_PUSH||e->phase!=NF18B3_WAITING||
+    !e->authorized||
+    e->actor!=q->intent.actor_id||
+    e->object!=q->intent.object_id||
+    e->action!=q->intent.action_id||
+    e->tick!=w->tick+1u)return false;
+ return true;
+}
 static Nf18a6OwnerGate joint_begin(const NfWorld *w,uint32_t tick,void *arg){
  NfRetcJointContext *j=arg;
  if(!j||!j->encounter||!j->push)return NF18A6_GATE_INVALID;
@@ -284,12 +325,14 @@ bool nf_retc_joint_attach(NfWorld *w,NfRetcJointContext *j){
     j->owner->research_pair_stage||
     j->owner->research_dual_stage||
     j->owner->owner_hooks.context||
+    j->owner->owner_hooks.authorize_interaction_input||
     j->owner->owner_hooks.begin||j->owner->owner_hooks.prepublish||
     j->owner->owner_hooks.accept_candidate||
     j->owner->owner_hooks.stage_joint||
     j->owner->owner_hooks.finish||
     j->encounter->attached)return false;
  j->owner->owner_hooks.begin=joint_begin;
+ j->owner->owner_hooks.authorize_interaction_input=joint_authorize_interaction_input;
  j->owner->owner_hooks.stage_joint=joint_stage_checked;
  j->owner->owner_hooks.finish=joint_finish;
  j->owner->owner_hooks.context=j;
