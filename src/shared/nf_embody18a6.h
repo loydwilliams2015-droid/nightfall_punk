@@ -40,6 +40,7 @@ typedef enum Nf18a6OwnerGate {
     NF18A6_GATE_STALE, NF18A6_GATE_INVALID
 } Nf18a6OwnerGate;
 struct Nf18a6Outcome;
+struct Nf18a6Runtime;
 typedef struct Nf18a6OwnerHooks {
     Nf18a6OwnerGate (*begin)(const NfWorld *,uint32_t,void *);
     bool (*prepublish)(const NfWorld *,const Nf18a5Integrated *,void *);
