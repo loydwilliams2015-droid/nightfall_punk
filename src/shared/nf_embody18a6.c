@@ -189,7 +189,12 @@ Nf18a6Outcome nf18a6_step(Nf18a6Runtime *r,NfWorld *w,NfMoveInput in,
     /* Scope guard: no unvalidated stance/jump/ladder mode transition here.
        A6 exercises grounded horizontal dynamic motion only; the 1.8A.3
        verifier must become the runtime authority for expanded traversal. */
-    if(in.crouch_held||in.jump_pressed||in.interact_held||
+    if(in.crouch_held||in.jump_pressed||
+       (in.interact_held&&
+        (!r->retc_publisher||
+         !r->owner_hooks.authorize_interaction_input||
+         !r->owner_hooks.authorize_interaction_input(
+           w,r,&in,r->owner_hooks.context)))||
        a->movement.mode==NF_MOVE_LADDER||a->movement.mode==NF_MOVE_VAULT||
        a->movement.mode==NF_MOVE_MANTLE||
        !a->movement.grounded){fprintf(stderr,"RET-C A6 scope tick=%u grounded=%d mode=%d input=%d%d%d\n",tick,(int)a->movement.grounded,(int)a->movement.mode,(int)in.crouch_held,(int)in.jump_pressed,(int)in.interact_held);return outcome(NF18A6_UNSUPPORTED,r);}
