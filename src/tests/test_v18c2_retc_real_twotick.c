@@ -114,7 +114,38 @@ int main(void){
  NfRetcJointContext joint={0};joint.owner=r;joint.encounter=enc;
  joint.push=push;joint.transaction_id=1;
  joint.require_contact_lineage=true; /* H276C real source gate */
+ /* H276D: publication ownership cannot be borrowed by an H275F
+    experimental candidate. Test real provider attachment, never a
+    synthetic grant. Every rejected combination preserves zero frames. */
+ const NfRetcFrame *h276d_prior=nf_retc_read(publisher);
+ const uint64_t h276d_tick=w->tick;
+ /* D1: isolated actor-object A4/A5 research mode refuses B2/B3 attach. */
+ r->require_pair_research=true;
+ CHECK(!nf_retc_joint_attach(w,&joint));
+ CHECK(nf_retc_read(publisher)==h276d_prior&&w->tick==h276d_tick);
+ r->require_pair_research=false;
+ /* D2: multi-actor research preflight cannot become publication authority. */
+ r->require_dual_contact_preflight=true;
+ CHECK(!nf_retc_joint_attach(w,&joint));
+ CHECK(nf_retc_read(publisher)==h276d_prior&&w->tick==h276d_tick);
+ r->require_dual_contact_preflight=false;
+ /* D3: registered research-only actor-object callback blocks attachment. */
+ r->research_pair_stage=h178_owner_tick_probe;
+ CHECK(!nf_retc_joint_attach(w,&joint));
+ CHECK(nf_retc_read(publisher)==h276d_prior&&w->tick==h276d_tick);
+ r->research_pair_stage=NULL;
+ /* D4: registered dual-contact experiment blocks attachment. */
+ r->research_dual_stage=h178_owner_tick_probe;
+ CHECK(!nf_retc_joint_attach(w,&joint));
+ CHECK(nf_retc_read(publisher)==h276d_prior&&w->tick==h276d_tick);
+ r->research_dual_stage=NULL;
+ /* D5: clean, authentic A6/B2/B3 owner can attach. Any subsequent
+    forced research-mode toggle is rejected at the stage boundary. */
  CHECK(nf_retc_joint_attach(w,&joint));
+ r->require_pair_research=true;
+ CHECK(nf_retc_joint_stage_owned(w,&r->physical,&joint)==NULL);
+ CHECK(nf_retc_read(publisher)==h276d_prior&&w->tick==h276d_tick);
+ r->require_pair_research=false;
  /* H90 actual source-owned encounter queue fixture: force a second queued
     intent into the live B2 runtime, exercise the production joint staging
     boundary, and establish that it cannot produce an accepted frame. This
