@@ -48,6 +48,18 @@ NfRetcFrame *nf_retc_joint_stage_owned(const NfWorld *w,
  if(!j->encounter){fprintf(stderr,"RET-C joint_stage_owned predicate 4: !j->encounter\n");return NULL;}
  if(!j->push){fprintf(stderr,"RET-C joint_stage_owned predicate 5: !j->push\n");return NULL;}
  if(!j->owner){fprintf(stderr,"RET-C joint_stage_owned predicate 6: !j->owner\n");return NULL;}
+ /* H276D: source-authoritative publication and the isolated H275F
+  * research tick must never share the same owner mode. The research
+  * callback is diagnostic and returns a rejected world tick, not a
+  * production physical candidate or B2 grant. Fail closed if a caller
+  * toggles modes after attaching the joint provider. */
+ if(j->owner->require_pair_research||
+    j->owner->require_dual_contact_preflight||
+    j->owner->research_pair_stage||
+    j->owner->research_dual_stage){
+    fprintf(stderr,"RET-C H276D research/production modes conflict\\n");
+    return NULL;
+ }
  if(!j->encounter->prepared){fprintf(stderr,"RET-C joint_stage_owned predicate 7: !j->encounter->prepared\n");return NULL;}
  if(!j->push->staged_commit_valid){fprintf(stderr,"RET-C joint_stage_owned predicate 8: !j->push->staged_commit_valid\n");return NULL;}
  /* H89: explicitly inventory multi-intent B2 transactions. The current
@@ -265,6 +277,12 @@ bool nf_retc_joint_attach(NfWorld *w,NfRetcJointContext *j){
     w->tick_in_progress||w->tick_owner_context!=j->owner||
     j->encounter->world!=w||j->encounter->owner!=j->owner||
     j->push->runtime!=j->owner||
+    /* H276D: never attach a real B2/B3 publisher to any research
+       candidate path, even if that callback has not executed yet. */
+    j->owner->require_pair_research||
+    j->owner->require_dual_contact_preflight||
+    j->owner->research_pair_stage||
+    j->owner->research_dual_stage||
     j->owner->owner_hooks.context||
     j->owner->owner_hooks.begin||j->owner->owner_hooks.prepublish||
     j->owner->owner_hooks.accept_candidate||
