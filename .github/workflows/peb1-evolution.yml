@@ -33,7 +33,7 @@ jobs:
         run: |
           set -eux
           for generation in a6 b6 current; do
-            if test "$generation" = current; then root="$PWD"; else root="/tmp/peb1_$generation"; fi
+            if test "$generation" = current; then root="$PWD"; else root="/tmp/peb1_bin_$generation"; fi
             cmake -S "$root" -B "/tmp/peb1_build_$generation" \
               -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release
             cmake --build "/tmp/peb1_build_$generation" --parallel 2
@@ -41,8 +41,8 @@ jobs:
               -I"$root/src/shared" -I"$root/src/client" \
               src/tests/pacman_three_era_native_probe.c \
               "/tmp/peb1_build_$generation/libnightfall_embody_prod.a" -lm \
-              -o "/tmp/peb1_$generation"
-            "/tmp/peb1_$generation" > "/tmp/peb1_$generation.txt"
+              -o "/tmp/peb1_bin_$generation"
+            "/tmp/peb1_bin_$generation" > "/tmp/peb1_$generation.txt"
             tail -n 2 "/tmp/peb1_$generation.txt"
           done
       - name: Verify common-subset evolutionary comparison
