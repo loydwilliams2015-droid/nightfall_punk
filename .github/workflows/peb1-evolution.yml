@@ -1,0 +1,73 @@
+name: PEB-1 H277 three-generation Pac-Man physical regression
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/peb1-evolution.yml'
+      - 'tools/peb1_evolution_report.py'
+      - 'src/tests/pacman_three_era_native_probe.c'
+  push:
+    branches:
+      - benchmark/peb1-three-native-generations-h277
+  workflow_dispatch:
+
+jobs:
+  common-physics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Exact source and harness provenance
+        run: |
+          set -eux
+          git rev-parse HEAD
+          git cat-file -e e0d6aa1334df92c7f8e4425cac96a9f1d4bb4243^{commit}
+          git cat-file -e 1ebd10049b7f555d9ee037690f6cd090255c98ec^{commit}
+          sha256sum src/tests/pacman_three_era_native_probe.c tools/peb1_evolution_report.py
+      - name: Check out real historical source revisions
+        run: |
+          git worktree add --detach /tmp/peb1_a6 e0d6aa1334df92c7f8e4425cac96a9f1d4bb4243
+          git worktree add --detach /tmp/peb1_b6 1ebd10049b7f555d9ee037690f6cd090255c98ec
+      - name: Compile and run source-identical C probe against three engines
+        run: |
+          set -eux
+          for generation in a6 b6 current; do
+            if test "$generation" = current; then root="$PWD"; else root="/tmp/peb1_$generation"; fi
+            cmake -S "$root" -B "/tmp/peb1_build_$generation" \
+              -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release
+            cmake --build "/tmp/peb1_build_$generation" --parallel 2
+            cc -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror \
+              -I"$root/src/shared" -I"$root/src/client" \
+              src/tests/pacman_three_era_native_probe.c \
+              "/tmp/peb1_build_$generation/libnightfall_embody_prod.a" -lm \
+              -o "/tmp/peb1_bin_$generation"
+            "/tmp/peb1_bin_$generation" > "/tmp/peb1_$generation.txt"
+            tail -n 2 "/tmp/peb1_$generation.txt"
+          done
+      - name: Verify common-subset evolutionary comparison
+        run: |
+          python3 tools/peb1_evolution_report.py \
+            --a6 /tmp/peb1_a6.txt \
+            --b6 /tmp/peb1_b6.txt \
+            --current /tmp/peb1_current.txt \
+            --out /tmp/peb1_report.json
+          python3 -m json.tool /tmp/peb1_report.json >/dev/null
+      - name: Summarize restrictions and results
+        if: always()
+        run: |
+          echo '## PEB-1 H277 Pac-Man Evolution Benchmark' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Historical 1.7x executable, AI policy, concurrent actors, B2/B3, WAL, and user-visible performance are NOT measured.' >> "$GITHUB_STEP_SUMMARY"
+          if test -f /tmp/peb1_report.json; then
+            python3 -c 'import json; r=json.load(open("/tmp/peb1_report.json")); print("A6",r["a6"]);print("B6",r["b6"]);print("Current",r["current"]);print("B6-to-current changed",r["b6_to_current"]["different"])' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: peb1-h277-common-physics
+          path: |
+            /tmp/peb1_a6.txt
+            /tmp/peb1_b6.txt
+            /tmp/peb1_current.txt
+            /tmp/peb1_report.json
+          if-no-files-found: ignore
