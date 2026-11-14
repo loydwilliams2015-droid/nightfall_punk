@@ -543,6 +543,74 @@ finish:
  free(snapshot);free(restored);
  return rc;
 }
+/* H288: one substantive failure mode repeated forty times in eight
+ * 5-run groups. The *real* A6/B2/B3 tick reaches a successful rename,
+ * then the lab-only parent-directory fsync returns EIO. Production should
+ * refuse publication, while cold disk inspection observes a NEXT candidate.
+ * Parent restores the pre-test journal only to preserve positive controls.
+ * This is not full owner restart, power-loss, or a production race test. */
+static int h288_directory_sync_failure_matrix(
+ const char *journal,NfWorld *w,NfRetcPublisher *publisher){
+ if(!journal||!w||!publisher||w->tick!=1u)return 1;
+ const NfRetcFrame *prior=nf_retc_read(publisher);
+ if(!prior||prior->epoch!=1u)return 1;
+ char stage[1024]={0};
+ if(snprintf(stage,sizeof stage,"%s.staging",journal)>=(int)sizeof stage)
+   return 1;
+ FILE *fp=fopen(journal,"rb");
+ if(!fp)return 1;
+ unsigned char *snapshot=NULL;
+ NfRetcFrame *candidate=malloc(sizeof *candidate);
+ int rc=1;
+ if(fseek(fp,0,SEEK_END)!=0)goto finish;
+ long length=ftell(fp);
+ if(length<=0||length>(long)sizeof(NfRetcFrame)+64L||
+    fseek(fp,0,SEEK_SET)!=0)goto finish;
+ size_t n=(size_t)length;
+ snapshot=malloc(n);
+ if(!snapshot||!candidate||fread(snapshot,1,n,fp)!=n)goto finish;
+ if(fclose(fp)!=0){fp=NULL;goto finish;}fp=NULL;
+ for(unsigned i=0u;i<40u;++i){
+    pid_t pid=fork();
+    if(pid<0)goto finish;
+    if(pid==0){
+      if(setenv("NF_RETC_H288_FAIL_DIRSYNC","1",1)!=0)_exit(92);
+      const NfWorldTickStatus st=
+          nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
+      _exit(st!=NF_WORLD_TICK_COMMITTED&&nf_retc_read(publisher)==prior?0:93);
+    }
+    int result=0;
+    if(waitpid(pid,&result,0)!=pid||!WIFEXITED(result)||
+       WEXITSTATUS(result)!=0)goto finish;
+    if(nf_retc_read(publisher)!=prior||w->tick!=1u||
+       !nf_retc_restore_file(journal,candidate)||
+       candidate->epoch!=2u||candidate->prior_epoch!=1u)
+      goto finish;
+    if(nf_retc_recovery_inspect_file(journal,prior->owner_actor,
+       prior->object_id,prior->epoch,prior->transaction_id,candidate)
+       !=NF_RETC_RECOVERY_NEXT)goto finish;
+    if(nf_retc_read(publisher)!=prior)goto finish;
+    fprintf(stderr,
+      "H288 FAIL_CLOSED case=%u group=%u disk_epoch=2 live_epoch=1 status=NEXT\n",
+      i,i/5u);
+    fp=fopen(journal,"wb");
+    if(!fp)goto finish;
+    const bool written=fwrite(snapshot,1,n,fp)==n&&
+       fflush(fp)==0&&fsync(fileno(fp))==0;
+    if(fclose(fp)!=0||!written){fp=NULL;goto finish;}fp=NULL;
+    remove(stage);
+    if(!nf_retc_restore_file(journal,candidate)||
+       candidate->epoch!=1u||nf_retc_read(publisher)!=prior)goto finish;
+ }
+ fprintf(stderr,
+   "H288 FAIL_SYNC_MATRIX PASS injected=40 rejected_publications=40 recovered_next_candidates=40 publisher_unchanged=40\n");
+ rc=0;
+finish:
+ if(fp)fclose(fp);
+ if(stage[0])remove(stage);
+ free(snapshot);free(candidate);
+ return rc;
+}
 /* H285 cold-process integrity audit. Do not construct a simulated world:
  * only read the actual real issuer's journal from a fresh process image.
  * A successful read is not a legitimate owner restart or C3 promotion. */
@@ -621,6 +689,7 @@ int main(int argc,char **argv){
  const bool h285_cold_matrix=argc==2&&strcmp(argv[1],"--cold-matrix")==0;
  const bool h286_admission_matrix=argc==2&&strcmp(argv[1],"--admission-matrix")==0;
  const bool h287_directory_matrix=argc==2&&strcmp(argv[1],"--directory-matrix")==0;
+ const bool h288_sync_failure=argc==2&&strcmp(argv[1],"--sync-failure-matrix")==0;
  if(argc==3&&strcmp(argv[1],"--sweep-case")==0){
    char *end=NULL;
    const unsigned long parsed=strtoul(argv[2],&end,10);
@@ -628,7 +697,7 @@ int main(int argc,char **argv){
       fprintf(stderr,"H281 invalid sweep case; expected 0..39\n");return 2;
    }
    h281_case=(unsigned)parsed;
- }else if(argc!=1&&!h283_journal_probes&&!h284_crash_matrix&&!h285_cold_matrix&&!h286_admission_matrix&&!h287_directory_matrix){
+ }else if(argc!=1&&!h283_journal_probes&&!h284_crash_matrix&&!h285_cold_matrix&&!h286_admission_matrix&&!h287_directory_matrix&&!h288_sync_failure){
    fprintf(stderr,"H281/H284 usage: [--sweep-case 0..39] [--journal-probes] [--crash-matrix]\n");return 2;
  }
  NfWorld *w=calloc(1,sizeof *w);
@@ -865,6 +934,8 @@ int main(int argc,char **argv){
              h286_admission_matrix)==0);
    if(h287_directory_matrix&&tick==2u)
       CHECK(h287_real_directory_matrix(journal,w,r,publisher)==0);
+   if(h288_sync_failure&&tick==2u)
+      CHECK(h288_directory_sync_failure_matrix(journal,w,publisher)==0);
    const NfWorldTickStatus status=nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
    if(status!=NF_WORLD_TICK_COMMITTED){
       fprintf(stderr,"real dispatcher tick %u status=%d lastA6=%d B2=%d B3=%d\
