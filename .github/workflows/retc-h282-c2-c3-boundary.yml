@@ -1,0 +1,66 @@
+name: H282 thirty C2-to-C3 boundary denial gates
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h282-c2-c3-boundary.yml'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - 'src/shared/nf_retc_m2_real_contract_audit.h'
+  workflow_dispatch:
+
+jobs:
+  real-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source-exact evidence
+        run: |
+          git rev-parse HEAD
+          sha256sum src/tests/test_v18c2_retc_real_twotick.c src/shared/nf_retc_m2_real_contract_audit.h
+      - name: Compile genuine joint two-tick source
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-h282 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h282 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Execute all thirty corruption denials on both actual owner ticks
+        run: |
+          set -euo pipefail
+          ctest --test-dir build-h282 -V -R '^retc_real_dispatcher_two_joint_ticks_v18c2$' 2>&1 | tee h282-boundary.log
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+          log=Path("h282-boundary.log").read_text()
+          observations=re.findall(r"H282 BOUNDARY_REJECT tick=(\d+) group=(\d+) case=(\d+)",log)
+          positives=re.findall(r"H282 BOUNDARY_PASS tick=(\d+) rejected=(\d+) source_owned=(\d+)",log)
+          assert len(observations)==60, (len(observations),observations)
+          expected={(str(tick),str(case//5),str(case))
+                    for tick in (1,2) for case in range(30)}
+          assert set(observations)==expected,(set(observations)^expected)
+          assert len(set(observations))==60
+          assert positives==[("1","30","1"),("2","30","1")],positives
+          assert "RET-C real A6 dispatcher two consecutive committed joint ticks PASS" in log
+          report={
+            "passed":True,"unique_corruption_cases":30,
+            "corruption_checks_executed":60,"accepted_real_owner_ticks":2,
+            "groups":["time","identity","b3","b2","contract","physical_xz"],
+            "source":"A6-owned real B2/B3 two-tick accepted frame",
+            "gate":"all 30 tampered clones must fail contract/physical audit without mutating published pointer",
+            "not_tested":["crash-restart full joint WAL","H15 TSAN", "production multi-actor concurrency"]
+          }
+          Path("h282-boundary.json").write_text(json.dumps(report,indent=2)+"\n")
+          print("H282 BOUNDARY COMPLETE PASS 30/30 categories, 60/60 denials, 2/2 real ticks")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h282-c2-c3-boundary-${{ matrix.compiler }}
+          path: |
+            h282-boundary.log
+            h282-boundary.json
+          if-no-files-found: warn
+          retention-days: 14
