@@ -1,0 +1,44 @@
+name: H295 map audio render accepted-witness contract
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_consumer_authority.h'
+      - 'src/tests/test_retc_consumer_authority.c'
+      - '.github/workflows/retc-h295-consumer-authority.yml'
+  workflow_dispatch:
+jobs:
+  accepted-witness:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile strict C11 contract
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          git rev-parse HEAD
+          mkdir -p build-h295
+          "$CC" -std=c11 -Wall -Wextra -Wpedantic -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/shared src/tests/test_retc_consumer_authority.c -o build-h295/test_h295
+      - name: Exercise 50 independent cases across three consumers
+        run: |
+          set -euo pipefail
+          build-h295/test_h295 | tee build-h295/h295.log
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          s=Path("build-h295/h295.log").read_text()
+          rows=re.findall(r"H295 consumer=(\d+) case=(\d+) rejected=1 admitted_control=1 replay_denied=1",s)
+          assert len(rows)==150,len(rows)
+          assert {(int(role),int(case)) for role,case in rows}=={(role,case) for role in range(1,4) for case in range(50)}
+          assert "H295 PASS 50 cases x 3 consumers: 150 denials 150 positive controls 150 replay denials" in s
+          print("H295 verified: 450 executed assertions by consumer-case, plus read-only cursor checks")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h295-contract-${{ matrix.compiler }}
+          path: build-h295/h295.log
+          if-no-files-found: warn
