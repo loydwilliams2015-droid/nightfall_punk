@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <sched.h>
 static uint32_t digest(uint32_t a,uint32_t b,uint32_t c){
  uint32_t v=2166136261u;
@@ -288,6 +290,35 @@ static void h284_kill_boundary(unsigned point){
 #else
 static void h284_kill_boundary(unsigned point){(void)point;}
 #endif
+/* H287: POSIX/Linux directory-entry durability. An fsync of the staged
+ * regular file does not make the rename's parent directory durable. After
+ * rename, fsync the parent directory BEFORE returning persistence success.
+ * If dir sync fails, the new journal may already exist: report failure;
+ * do not pretend rollback or delete an already visible transaction.
+ * Path is bounded by the persistence entrypoint and parent is opened only.
+ * This is not yet a portable versioned WAL or total power-loss proof. */
+static bool retc_sync_parent_directory(const char *path){
+ if(!path||!*path)return false;
+ const char *slash=strrchr(path,'/');
+ char directory[1024];
+ if(!slash)strcpy(directory,".");
+ else if(slash==path)strcpy(directory,"/");
+ else {
+   size_t len=(size_t)(slash-path);
+   if(len>=sizeof directory)return false;
+   memcpy(directory,path,len);
+   directory[len]='\0';
+ }
+ int fd=open(directory,O_RDONLY
+#ifdef O_DIRECTORY
+    |O_DIRECTORY
+#endif
+ );
+ if(fd<0)return false;
+ bool ok=fsync(fd)==0;
+ if(close(fd)!=0)ok=false;
+ return ok;
+}
 bool nf_retc_persist_file(NfRetcPublisher *pub,NfRetcFrame *f,
  const char *path){
  if(!pub||!f||!path||atomic_load_explicit(&pub->read_closing,memory_order_acquire)||
@@ -310,10 +341,13 @@ bool nf_retc_persist_file(NfRetcPublisher *pub,NfRetcFrame *f,
  if(ok)h284_kill_boundary(4u);
  if(fclose(fp)!=0)ok=false;
  if(ok)ok=rename(stage,path)==0;
- if(ok)h284_kill_boundary(5u);
+ if(ok)h284_kill_boundary(5u); /* after rename; directory not yet synced */
+ if(ok)ok=retc_sync_parent_directory(path);
+ if(ok)h284_kill_boundary(6u); /* directory metadata now synced */
  if(!ok){remove(stage);return false;}
- /* Atomic rename protects previous complete frame from a partial write.
-    Directory durability and crash-matrix proof are still outstanding. */
+ /* POSIX local-filesystem directory sync is now part of the success gate.
+    Whole-owner restart, portable serialization, power-failure semantics and
+    atomic B2/B3 world rehydration remain outstanding. */
  return true;
 }
 bool nf_retc_commit_file(NfRetcPublisher *pub,NfRetcFrame *f,
