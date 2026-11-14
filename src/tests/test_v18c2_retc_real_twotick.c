@@ -2022,6 +2022,52 @@ int main(int argc,char **argv){
    /* H194: independently revalidate two actor velocity changes against
       the source-applied A4 contact receipt and private A5 history. */
    CHECK(nf_retc_ma03_reciprocal_effects_valid(in_tick));
+   /* H290: forty real A6-tick PRIVATE material/receipt mutations. Each
+    * changed causal predecessor or A4/A5 reciprocal effect MUST reject;
+    * true accepted source evidence must still pass. This creates no new
+    * publisher, world tick, B2 use, or B3 receipt. */
+   NfRetcMa03TickEvidence *h290_changed=malloc(sizeof *h290_changed);
+   CHECK(h290_changed);
+   for(unsigned h290_case=0;h290_case<40u;++h290_case){
+     *h290_changed=*in_tick;
+     const unsigned field=h290_case/2u;
+     const bool positive=(h290_case%2u)==0u;
+     uint32_t *u=NULL;
+     float *v=NULL;
+     switch(field){
+       case 0: h290_changed->source_tick+=positive?1u:(uint64_t)-1;break;
+       case 1: u=&h290_changed->source_revision;break;
+       case 2: u=&h290_changed->source_material_epoch;break;
+       case 3: u=&h290_changed->source_raw_samples;break;
+       case 4: h290_changed->material_candidate.tick+=positive?1u:(uint32_t)-1;break;
+       case 5: u=&h290_changed->material_candidate.revision;break;
+       case 6: u=&h290_changed->material_candidate.history.raw_samples;break;
+       case 7: u=&h290_changed->material_candidate.grid.global_revision;break;
+       case 8: u=&h290_changed->applied_contact.tick;break;
+       case 9: u=&h290_changed->applied_contact.world_version;break;
+       case 10: u=&h290_changed->sample.tick;break;
+       case 11: u=&h290_changed->sample.material_epoch;break;
+       case 12: u=&h290_changed->sample.body_a;break;
+       case 13: u=&h290_changed->sample.body_b;break;
+       case 14: u=&h290_changed->sample.contact_id;break;
+       case 15: u=&h290_changed->applied_contact.contact_id;break;
+       case 16: u=&h290_changed->bodies[0].id;break;
+       case 17: u=&h290_changed->bodies[1].id;break;
+       case 18: v=&h290_changed->material_impulse[0].x;break;
+       case 19: v=&h290_changed->material_impulse[1].x;break;
+     }
+     if(u)*u+=positive?1u:(uint32_t)-1;
+     if(v)*v+=positive?1.f:-1.f;
+     CHECK(!nf_retc_ma03_reciprocal_effects_valid(h290_changed));
+     CHECK(nf_retc_ma03_reciprocal_effects_valid(in_tick));
+     CHECK(two_world->tick==source_tick&&
+           two_owner->physical.world.revision==a5_before_revision&&
+           push->receipt_count==2u&&nf_retc_read(publisher)==accepted);
+     fprintf(stderr,"H290 A5_LINEAGE_REJECT case=%u field=%u sign=%u original_pass=1\n",
+             h290_case,field,h290_case%2u);
+   }
+   free(h290_changed);
+   fprintf(stderr,"H290 REAL_A5_MATRIX PASS 40 negative and 40 positive source rechecks\n");
    /* H195: a forged second actor impulse cannot cross M2's boundary. */
    in_tick->material_impulse[1].x+=1.f;
    CHECK(!nf_retc_ma03_reciprocal_effects_valid(in_tick));
