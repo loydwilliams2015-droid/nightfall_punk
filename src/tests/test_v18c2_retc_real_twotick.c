@@ -9,6 +9,7 @@
 #include "nf_retc_ma03_a5_contact_stage.h"
 #include "nf_retc_ma03_owner_tick.h"
 #include "nf_retc_external.h"
+#include "nf_retc_consumer_source.h"
 #include "nf_retc_network.h"
 #include "nf_multi_ma03.h"
 #include <math.h>
@@ -27,11 +28,66 @@ static bool b2_provider(void *ctx,const NfWorld *w,const Nf18a6Runtime *owner,
     return false;
  *scene=r->frame.scene;*use=r->queue[0].witness;return true;
 }
+/* H296: verify real A6 leased frame provenance for three potential
+ * consumers, not merely synthetic witness validation. The same accepted
+ * A6/B2/B3 pointer must survive 50 forged read-view projections. */
+static bool h296_leased_source_check(const NfRetcPublisher *pub,
+                                    uint32_t expected){
+ NfRetcReadLease lease={0};
+ if(!nf_retc_read_lease_acquire(pub,&lease))return false;
+ bool ok=false;
+ do{
+  NfRetcReadView v={0};
+  NfRetcSourceObservation observed={0};
+  if(!nf_retc_read_leased_view(&lease,&v)||
+     !nf_retc_consumer_source_validate(&lease,&v,&observed)||
+     observed.tick!=expected||
+     observed.transaction_id!=v.transaction_id||
+     observed.owner_actor!=v.accepted->owner_actor||
+     observed.contract_epoch!=v.event->contract_epoch)
+    break;
+  bool cases_ok=true;
+  for(unsigned h296_case=0;h296_case<50u;++h296_case){
+   NfRetcReadView changed=v;
+   NfRetcSourceObservation sentinel={
+    0xaaaaaaaaU,0xbbbbbbbbU,0xccccccccU,0xddddddddU};
+   const unsigned magnitude=h296_case%5u+1u;
+   switch(h296_case/5u){
+    case 0:changed.accepted=NULL;break;
+    case 1:changed.physical=NULL;break;
+    case 2:changed.event=NULL;break;
+    case 3:changed.contract=NULL;break;
+    case 4:changed.eligibility=NULL;break;
+    case 5:changed.epoch+=magnitude;break;
+    case 6:changed.transaction_id+=magnitude;break;
+    case 7:changed.physical=(const Nf18a5Integrated *)(const void *)&v.accepted->b2_use;break;
+    case 8:changed.event=(const Nf18b3Event *)(const void *)&v.accepted->b2_use;break;
+    case 9:changed.contract=(const Nf18b2Registry *)(const void *)&v.accepted->event;break;
+   }
+   if(nf_retc_consumer_source_validate(&lease,&changed,&sentinel)||
+      sentinel.tick!=0xaaaaaaaaU||
+      sentinel.transaction_id!=0xbbbbbbbbU||
+      sentinel.owner_actor!=0xccccccccU||
+      sentinel.contract_epoch!=0xddddddddU){
+     cases_ok=false;break;
+   }
+   fprintf(stderr,"H296 LEASED_SOURCE_REJECT case=%u real_epoch=%u unchanged=1\n",
+           h296_case,expected);
+  }
+  if(!cases_ok)break;
+  if(!nf_retc_consumer_source_validate(&lease,&v,&observed))break;
+  fprintf(stderr,"H296 REAL_A6_LEASED_SOURCE PASS 50 denials and positive recheck\n");
+  ok=true;
+ }while(0);
+ nf_retc_read_lease_release(&lease);
+ return ok;
+}
 static bool verify(const NfWorld *w,const Nf18a6Runtime *r,
  const Nf18b2EncounterRuntime *enc,const Nf18b6Push *push,
  const NfRetcPublisher *publisher,uint32_t expected){
  NfRetcReadView view={0};
- if(!nf_retc_read_joint_view(publisher,&view))return false;
+ if(!h296_leased_source_check(publisher,expected)||
+    !nf_retc_read_joint_view(publisher,&view))return false;
  const NfRetcFrame *f=view.accepted;
  if(view.epoch!=expected||view.event->tick!=expected||
     view.physical->world.tick!=expected||
