@@ -41,7 +41,15 @@ static inline bool nf_retc_ma03_a5_stage_in_owner_tick(
  for(size_t i=0;i<2u;++i){
   const NfMa03Participant *p=&roster.actors[i];
   const NfActor *a=nf_world_find_actor_const(w,p->id);
+  /* H292: NaN comparisons silently bypass tolerance checks. Validate
+     both actor roster records and their shared capsule shape explicitly. */
   if(!a||!a->combat.alive||!a->active||
+     !isfinite(p->position.x)||!isfinite(p->position.y)||
+     !isfinite(p->position.z)||!isfinite(p->velocity.x)||
+     !isfinite(p->velocity.y)||!isfinite(p->velocity.z)||
+     !isfinite(a->movement.body_height)||
+     !isfinite(owner->physical.actor.height)||
+     !isfinite(owner->physical.actor.radius)||
      fabsf(a->movement.body_height-owner->physical.actor.height)>.0001f)
     return false;
   if(p->id==owner->actor_id){
@@ -50,6 +58,9 @@ static inline bool nf_retc_ma03_a5_stage_in_owner_tick(
    /* H291: the owner-controlled 3D capsule must match the roster in Y,
       not merely in the previously verified horizontal X/Z axes. */
    if(bound->id!=p->id||
+      !isfinite(bound->center.x)||!isfinite(bound->center.y)||
+      !isfinite(bound->center.z)||!isfinite(bound->velocity.x)||
+      !isfinite(bound->velocity.y)||!isfinite(bound->velocity.z)||
       fabsf(bound->center.x-p->position.x)>.0001f||
       fabsf(bound->center.y-(p->position.y+a->movement.body_height*.5f))>.0001f||
       fabsf(bound->center.z-p->position.z)>.0001f||
