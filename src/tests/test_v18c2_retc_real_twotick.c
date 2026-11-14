@@ -394,7 +394,7 @@ finish:
  * only read the actual real issuer's journal from a fresh process image.
  * A successful read is not a legitimate owner restart or C3 promotion. */
 static int h285_cold_audit(const char *path,const char *expected){
- if(!path||!expected||expected[1]!='\\0'||
+ if(!path||!expected||expected[1]!='\0'||
     (expected[0]!='1'&&expected[0]!='2'))return 2;
  const uint32_t epoch=(uint32_t)(expected[0]-'0');
  NfRetcFrame *f=malloc(sizeof *f);
