@@ -1,0 +1,71 @@
+name: H286 40 source-owned cold recovery admission classifications
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h286-recovery-admission.yml'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - 'src/shared/nf_c2_retc_frame.c'
+      - 'src/shared/nf_c2_retc_frame.h'
+  workflow_dispatch:
+jobs:
+  real-admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source exact evidence
+        run: |
+          git rev-parse HEAD
+          sha256sum src/tests/test_v18c2_retc_real_twotick.c src/shared/nf_c2_retc_frame.c src/shared/nf_c2_retc_frame.h
+      - name: Strict A6 joint real owner build
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-h286 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h286 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Execute forty genuine journal process interruptions and fresh admission controls
+        run: |
+          set -euo pipefail
+          build-h286/nightfall_v18c2_retc_real_twotick_test --admission-matrix 2>&1 | tee h286-admission.log
+          python3 - <<'PY'
+          import re,json
+          from pathlib import Path
+          s=Path("h286-admission.log").read_text()
+          cases=re.findall(r"H286 ADMISSION_CASE case=(\d+) group=(\d+) point=(\d+) status=(PRIOR|NEXT) denials=(\d+) checkpoint=(\d+)",s)
+          assert len(cases)==40, cases
+          for c,g,p,st,d,ck in cases:
+              i=int(c)
+              assert (int(g),int(p),st,int(d),int(ck))==(i//5,i%5+1,"NEXT" if i%5==4 else "PRIOR",4,1)
+          assert sorted(int(c) for c,*_ in cases)==list(range(40))
+          cold=re.findall(r"H286 COLD_ADMISSION mode=([\w-]+) status=(\d+) unchanged_on_reject=1",s)
+          assert len(cold)==200, len(cold)
+          assert sum(st=="1" for _,st in cold)==32
+          assert sum(st=="2" for _,st in cold)==8
+          assert sum(st=="0" for _,st in cold)==160
+          assert "H286 ADMISSION_MATRIX PASS kills=40 independent_admissions=40 independent_denials=160 prior=32 next=8" in s
+          assert "RET-C real A6 dispatcher two consecutive committed joint ticks PASS" in s
+          Path("h286-admission.json").write_text(json.dumps({
+            "status":"PASS","real_A6_owner_process_kills":40,
+            "fresh_process_checkpoint_prior":32,"fresh_process_checkpoint_next":8,
+            "fresh_process_wrong_checkpoint_denials":160,
+            "all_denial_outputs_unchanged":True,
+            "no_world_rehydration":True,"no_owner_publication":True,
+            "remaining":["whole-owner atomic restart","versioned portable WAL","directory fsync",
+                         "two competing B2/B3 actor grants","H275F production swept contact",
+                         "independent H15 TSAN","human 1080p FPS tests"]
+          },indent=2)+"\n")
+          print("H286 RECOVERY ADMISSION PASS 40/40; denials 160/160")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h286-recovery-admission-${{ matrix.compiler }}
+          path: |
+            h286-admission.log
+            h286-admission.json
+          retention-days: 14
+          if-no-files-found: warn
