@@ -1936,15 +1936,39 @@ int main(int argc,char **argv){
     two_owner->physical.actor.velocity.y=h291_velocity_y;
    }
    fprintf(stderr,"H291 40 real owner Y-source denials PASS\n");
+   /* H292: 48 genuine owner-source exception/extreme-float denials:
+      six 3D state dimensions x eight adversarial inputs. */
+   const float h292_bad[8]={NAN,INFINITY,-INFINITY,1e30f,
+                            -1e30f,1000.f,-1000.f,3.402823e38f};
+   float *h292_fields[6]={&two_owner->physical.actor.center.x,
+                          &two_owner->physical.actor.center.y,
+                          &two_owner->physical.actor.center.z,
+                          &two_owner->physical.actor.velocity.x,
+                          &two_owner->physical.actor.velocity.y,
+                          &two_owner->physical.actor.velocity.z};
+   for(unsigned h292_case=0;h292_case<48u;++h292_case){
+     const unsigned field=h292_case/8u,pattern=h292_case%8u;
+     const float original=*h292_fields[field];
+     *h292_fields[field]=h292_bad[pattern];
+     CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
+     CHECK(probe.calls==44u+h292_case&&probe.accepted==2u&&!in_tick->staged);
+     CHECK(two_world->tick==source_tick&&
+           two_owner->physical.world.revision==a5_before_revision&&
+           push->receipt_count==2u&&nf_retc_read(publisher)==accepted);
+     fprintf(stderr,"H292 FINITE_OWNER_REJECT case=%u field=%u pattern=%u preserved=1\n",
+             h292_case,field,pattern);
+     *h292_fields[field]=original;
+   }
+   fprintf(stderr,"H292 48 owner-source exceptional/extreme float denials PASS\n");
    /* H181: invalid A5 material epoch never authorizes a history sample. */
    two_owner->physical.world.grid.global_revision=0u;
    CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
-   CHECK(probe.calls==44u&&probe.accepted==2u&&!in_tick->staged);
+   CHECK(probe.calls==92u&&probe.accepted==2u&&!in_tick->staged);
    two_owner->physical.world.grid.global_revision=a5_before_epoch;
    /* H182: H83 cannot publish a partial two-actor transaction even with
       authentic A4 receipt and private A5 history successfully staged. */
    CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
-   CHECK(probe.calls==45u&&probe.accepted==3u&&in_tick->staged);
+   CHECK(probe.calls==93u&&probe.accepted==3u&&in_tick->staged);
    CHECK(two_world->tick==source_tick&&
          two_owner->physical.world.revision==a5_before_revision&&
          two_owner->physical.world.history.raw_samples==a5_before_samples);
@@ -1968,24 +1992,24 @@ int main(int argc,char **argv){
    CHECK(center_chunk!=NULL);
    center_chunk->loaded=0u;
    CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
-   CHECK(probe.calls==46u&&probe.accepted==3u&&!in_tick->staged);
+   CHECK(probe.calls==94u&&probe.accepted==3u&&!in_tick->staged);
    center_chunk->loaded=1u;
    /* H185: a source SOLID voxel overlapping the swept capsule blocks. */
    const uint8_t previous_cell=center_chunk->canonical[0];
    center_chunk->canonical[0]=NF18A5_SOLID;
    CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
-   CHECK(probe.calls==47u&&probe.accepted==3u&&!in_tick->staged);
+   CHECK(probe.calls==95u&&probe.accepted==3u&&!in_tick->staged);
    /* H186: mixed canonical voxel without valid fine data is PENDING,
       never a positive static clearance claim. */
    center_chunk->canonical[0]=NF18A5_MIXED;
    center_chunk->fine_valid=0u;
    CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
-   CHECK(probe.calls==48u&&probe.accepted==3u&&!in_tick->staged);
+   CHECK(probe.calls==96u&&probe.accepted==3u&&!in_tick->staged);
    center_chunk->canonical[0]=previous_cell;
    /* H187: restored source clears and stages the SAME contact evidence;
       neither accepted world nor live A5/B3 may reflect any of the probes. */
    CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
-   CHECK(probe.calls==49u&&probe.accepted==4u&&in_tick->staged);
+   CHECK(probe.calls==97u&&probe.accepted==4u&&in_tick->staged);
    CHECK(in_tick->sample.body_a==30u&&in_tick->sample.body_b==40u);
    CHECK(in_tick->material_candidate.history.raw_samples==a5_before_samples+1u);
    CHECK(two_owner->physical.world.revision==a5_before_revision&&
@@ -2003,29 +2027,29 @@ int main(int argc,char **argv){
    CHECK(nf18a5_load_fine(&two_owner->physical.world.grid,0,0,0,
                           2u,fine_clear,fine_len,fine_parent,1u));
    CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
-   CHECK(probe.calls==50u&&probe.accepted==5u&&in_tick->staged);
+   CHECK(probe.calls==98u&&probe.accepted==5u&&in_tick->staged);
    /* H189: stale fine-parent evidence must never grant static clearance. */
    center_chunk->fine_parent_epoch=fine_parent+1u;
    CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
-   CHECK(probe.calls==51u&&probe.accepted==5u&&!in_tick->staged);
+   CHECK(probe.calls==99u&&probe.accepted==5u&&!in_tick->staged);
    center_chunk->fine_parent_epoch=fine_parent;
    /* H190: fine-resolution SOLID directly in actor 30's swept hull is a
       real obstruction even though nearby exact subvoxels are FREE. */
    center_chunk->fine[0]=NF18A5_SOLID;
    CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
-   CHECK(probe.calls==52u&&probe.accepted==5u&&!in_tick->staged);
+   CHECK(probe.calls==100u&&probe.accepted==5u&&!in_tick->staged);
    center_chunk->fine[0]=NF18A5_FREE;
    /* H191: fine cache release cannot silently downgrade a MIXED cell
       to FREE under an unchanged canonical material claim. */
    CHECK(nf18a5_release_fine(&two_owner->physical.world.grid,0,0,0));
    CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
-   CHECK(probe.calls==53u&&probe.accepted==5u&&!in_tick->staged);
+   CHECK(probe.calls==101u&&probe.accepted==5u&&!in_tick->staged);
    /* H192: reloading exact fine source restores staging with identical
       collision receipt; all live A6/A5/B3 effects remain unpublished. */
    CHECK(nf18a5_load_fine(&two_owner->physical.world.grid,0,0,0,
                           2u,fine_clear,fine_len,fine_parent,1u));
    CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
-   CHECK(probe.calls==54u&&probe.accepted==6u&&in_tick->staged);
+   CHECK(probe.calls==102u&&probe.accepted==6u&&in_tick->staged);
    CHECK(in_tick->sample.normal_impulse==in_tick_impulse&&
          nf18a5_history_hash(&in_tick->material_candidate.history)==in_tick_hash);
    CHECK(two_world->tick==source_tick&&
@@ -2104,7 +2128,7 @@ int main(int argc,char **argv){
    const float first_actor_impulse=in_tick->material_impulse[0].x;
    const float second_actor_impulse=in_tick->material_impulse[1].x;
    CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
-   CHECK(probe.calls==55u&&probe.accepted==7u&&in_tick->staged);
+   CHECK(probe.calls==103u&&probe.accepted==7u&&in_tick->staged);
    CHECK(nf_retc_ma03_reciprocal_effects_valid(in_tick));
    CHECK(in_tick->material_impulse[0].x==first_actor_impulse&&
          in_tick->material_impulse[1].x==second_actor_impulse);
