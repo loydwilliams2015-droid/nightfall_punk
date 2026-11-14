@@ -85,6 +85,20 @@ bool nf_retc_persist_file(NfRetcPublisher *pub,NfRetcFrame *candidate,
 bool nf_retc_commit_file(NfRetcPublisher *pub,NfRetcFrame *candidate,
  const char *path);
 bool nf_retc_restore_file(const char *path,NfRetcFrame *out);
+/* H286: bounded read-only admission inspection, not owner promotion.
+ * TRUSTED tuple must originate outside this journal (e.g. owner checkpoint).
+ * Neither the classifier nor a matching journal grants publishing authority.
+ * On REJECT, out is not modified. This same-ABI research format is not C3 WAL. */
+typedef enum {
+ NF_RETC_RECOVERY_REJECT=0,
+ NF_RETC_RECOVERY_PRIOR=1,
+ NF_RETC_RECOVERY_NEXT=2
+} NfRetcRecoveryStatus;
+NfRetcRecoveryStatus nf_retc_recovery_inspect_file(
+ const char *path,uint32_t trusted_owner,uint32_t trusted_object,
+ uint32_t trusted_epoch,uint32_t trusted_transaction_id,
+ NfRetcFrame *out);
+
 bool nf_retc_publish(NfRetcPublisher *pub,NfRetcFrame *candidate);
 const NfRetcFrame *nf_retc_read(const NfRetcPublisher *pub);
 /* H42 bounded read-only projection: all these domains come from exactly one
