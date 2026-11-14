@@ -47,10 +47,14 @@ static inline bool nf_retc_ma03_a5_stage_in_owner_tick(
   if(p->id==owner->actor_id){
    owner_seen=true;
    const Nf18a4Body *bound=&owner->physical.actor;
+   /* H291: the owner-controlled 3D capsule must match the roster in Y,
+      not merely in the previously verified horizontal X/Z axes. */
    if(bound->id!=p->id||
       fabsf(bound->center.x-p->position.x)>.0001f||
+      fabsf(bound->center.y-(p->position.y+a->movement.body_height*.5f))>.0001f||
       fabsf(bound->center.z-p->position.z)>.0001f||
       fabsf(bound->velocity.x-p->velocity.x)>.0001f||
+      fabsf(bound->velocity.y-p->velocity.y)>.0001f||
       fabsf(bound->velocity.z-p->velocity.z)>.0001f)
       return false;
   }
