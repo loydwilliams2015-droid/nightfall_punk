@@ -163,11 +163,73 @@ static bool h276e_input_probe(const NfWorld *w,const Nf18a6Runtime *r,
  h276e_denied+=16u;
  return h276e_original_input(w,r,in,context);
 }
+/* H283: validate the real A6 accepted joint on-disk journal as a complete
+ * B2/B3/A4/A5 frame; corrupt independent PRIVATE COPIES, never the live
+ * journal or the published pointer. This is integrity preflight, not crash
+ * recovery or a durable directory-sync guarantee. */
+static int h283_journal_readback_probe(
+    const char *journal,const NfRetcPublisher *publisher,
+    const NfRetcFrame *accepted,uint32_t tick){
+    if(!journal||!publisher||!accepted||accepted->epoch!=tick)return 1;
+    NfRetcFrame *restored=malloc(sizeof *restored);
+    NfRetcFrame *unchanged=malloc(sizeof *unchanged);
+    FILE *fp=NULL;
+    unsigned char *bytes=NULL;
+    int rc=1;
+    char scratch[1024]={0};
+    if(!restored||!unchanged||
+       snprintf(scratch,sizeof scratch,"%s.h283-probe",journal)>=(int)sizeof scratch)
+        goto finish;
+    if(!nf_retc_restore_file(journal,restored)||
+       memcmp(restored,accepted,sizeof *restored)!=0||
+       nf_retc_read(publisher)!=accepted)goto finish;
+    fp=fopen(journal,"rb");
+    if(!fp||fseek(fp,0,SEEK_END)!=0)goto finish;
+    const long file_len=ftell(fp);
+    if(file_len<16L+30L||file_len>(long)sizeof *restored+64L||
+       fseek(fp,0,SEEK_SET)!=0)goto finish;
+    const size_t n=(size_t)file_len;
+    bytes=malloc(n);
+    if(!bytes||fread(bytes,1,n,fp)!=n)goto finish;
+    if(fclose(fp)!=0){fp=NULL;goto finish;} fp=NULL;
+    *unchanged=*accepted;
+    for(unsigned c=0;c<30u;++c){
+        const size_t offset=c<16u?(size_t)c:
+          16u+(size_t)(c-16u)*(n-17u)/13u;
+        const unsigned char original=bytes[offset];
+        bytes[offset]^=0x5Au;
+        fp=fopen(scratch,"wb");
+        if(!fp)goto finish;
+        if(fwrite(bytes,1,n,fp)!=n||fclose(fp)!=0){
+          fp=NULL;goto finish;
+        }fp=NULL;
+        *restored=*unchanged;
+        const bool corrupt_recovered=nf_retc_restore_file(scratch,restored);
+        bytes[offset]=original;
+        if(corrupt_recovered||
+           memcmp(restored,unchanged,sizeof *restored)!=0||
+           nf_retc_read(publisher)!=accepted)goto finish;
+        fprintf(stderr,"H283 JOURNAL_REJECT tick=%u group=%u case=%u offset=%zu\n",
+                tick,c/5u,c,offset);
+    }
+    if(!nf_retc_restore_file(journal,restored)||
+       memcmp(restored,accepted,sizeof *restored)!=0||
+       nf_retc_read(publisher)!=accepted)goto finish;
+    fprintf(stderr,"H283 JOURNAL_PASS tick=%u restored=1 corrupt_rejected=30 source_owned=1\n",
+            tick);
+    rc=0;
+finish:
+    if(fp)fclose(fp);
+    if(scratch[0])remove(scratch);
+    free(bytes);free(restored);free(unchanged);
+    return rc;
+}
 int main(int argc,char **argv){
  /* H281: 40 independent source-owned cases. No altered production
   * authorization, synthetic issuer, or research-mode bypass. The default
   * case remains bit-for-bit the H280 positive physical control. */
  unsigned h281_case=0u;
+ const bool h283_journal_probes=argc==2&&strcmp(argv[1],"--journal-probes")==0;
  if(argc==3&&strcmp(argv[1],"--sweep-case")==0){
    char *end=NULL;
    const unsigned long parsed=strtoul(argv[2],&end,10);
@@ -175,8 +237,8 @@ int main(int argc,char **argv){
       fprintf(stderr,"H281 invalid sweep case; expected 0..39\n");return 2;
    }
    h281_case=(unsigned)parsed;
- }else if(argc!=1){
-   fprintf(stderr,"H281 usage: [--sweep-case 0..39]\n");return 2;
+ }else if(argc!=1&&!h283_journal_probes){
+   fprintf(stderr,"H281/H283 usage: [--sweep-case 0..39] [--journal-probes]\n");return 2;
  }
  NfWorld *w=calloc(1,sizeof *w);
  Nf18a6Runtime *r=calloc(1,sizeof *r);
@@ -416,6 +478,9 @@ int main(int argc,char **argv){
    CHECK(h276e_positive==tick&&h276e_denied==16u*tick);
    CHECK(verify(w,r,enc,push,publisher,tick));
    const NfRetcFrame *h276c_accepted=nf_retc_read(publisher);
+   if(h283_journal_probes)
+      CHECK(h283_journal_readback_probe(
+          journal,publisher,h276c_accepted,tick)==0);
    CHECK(h276c_accepted&&
       nf_retc_joint_contact_lineage(
         h276c_source,&h276c_accepted->physical)); /* C1 actual B2/B3 pass */
