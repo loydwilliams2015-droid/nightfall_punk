@@ -101,9 +101,33 @@ static bool h276e_input_probe(const NfWorld *w,const Nf18a6Runtime *r,
  enc->granted[0]=1u;
  NfMoveInput no_forward=*in;no_forward.forward=0.f;
  const bool invalid_input=!h276e_original_input(w,r,&no_forward,&test);
+ /* H278: all five additional negative probes are inside the real
+  * owner tick after an authentic B2 grant and staged B3 PUSH.
+  * Restore every private mutation before accepting the live tick. */
+ Nf18a6Runtime *mutable_owner=(Nf18a6Runtime *)r;
+ const bool old_dual=mutable_owner->require_dual_contact_preflight;
+ mutable_owner->require_dual_contact_preflight=true;
+ const bool late_dual_flag=!h276e_original_input(w,r,in,&test);
+ mutable_owner->require_dual_contact_preflight=old_dual;
+ const bool old_callback_present=mutable_owner->research_dual_stage!=NULL;
+ if(old_callback_present){free(enc);free(push);return false;}
+ mutable_owner->research_dual_stage=h178_owner_tick_probe;
+ const bool late_dual_callback=!h276e_original_input(w,r,in,&test);
+ mutable_owner->research_dual_stage=NULL;
+ test.owner=NULL;
+ const bool detached_owner=!h276e_original_input(w,r,in,&test);
+ test.owner=live->owner;
+ enc->queue_count=2u;
+ const bool multiple_requests=!h276e_original_input(w,r,in,&test);
+ enc->queue_count=1u;
+ ++push->event.object;
+ const bool wrong_object=!h276e_original_input(w,r,in,&test);
+ --push->event.object;
  free(enc);free(push);
- if(!(withdrawn&&stale&&wrong_b3&&revoked&&invalid_input))return false;
- h276e_denied+=5u;
+ if(!(withdrawn&&stale&&wrong_b3&&revoked&&invalid_input&&
+      late_dual_flag&&late_dual_callback&&detached_owner&&
+      multiple_requests&&wrong_object))return false;
+ h276e_denied+=10u;
  return h276e_original_input(w,r,in,context);
 }
 int main(void){
@@ -335,7 +359,7 @@ int main(void){
        (int)enc->traces[enc->trace_count-1].revalidation.status,(int)push->last_result);
       return 1;
    }
-   CHECK(h276e_positive==tick&&h276e_denied==5u*tick);
+   CHECK(h276e_positive==tick&&h276e_denied==10u*tick);
    CHECK(verify(w,r,enc,push,publisher,tick));
    const NfRetcFrame *h276c_accepted=nf_retc_read(publisher);
    CHECK(h276c_accepted&&
