@@ -413,7 +413,7 @@ int main(void){
                               h276c_source->object.center.x;
    const float h280_crate_dz=h280_next->object.center.z-
                               h276c_source->object.center.z;
-   fprintf(stderr,"H280 SOURCE_POSITIVE tick=%u yaw=%.5f actor_dx=%.8f actor_dz=%.8f crate_dx=%.8f crate_dz=%.8f receipts=%u\\n",
+   fprintf(stderr,"H280 SOURCE_POSITIVE tick=%u yaw=%.5f actor_dx=%.8f actor_dz=%.8f crate_dx=%.8f crate_dz=%.8f receipts=%u\n",
        tick,move.yaw_radians,h280_actor_dx,h280_actor_dz,
        h280_crate_dx,h280_crate_dz,h280_next->committed_receipts);
    CHECK(isfinite(h280_actor_dx)&&isfinite(h280_actor_dz)&&
