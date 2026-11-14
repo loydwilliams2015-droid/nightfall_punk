@@ -50,6 +50,10 @@ static inline bool nf_retc_ma03_a5_stage_in_owner_tick(
      !isfinite(a->movement.body_height)||
      !isfinite(owner->physical.actor.height)||
      !isfinite(owner->physical.actor.radius)||
+     /* H293: invalid capsule dimensions may not reach swept A5/A4. */
+     owner->physical.actor.radius<=0.f||
+     owner->physical.actor.height<=0.f||
+     a->movement.body_height<=0.f||
      fabsf(a->movement.body_height-owner->physical.actor.height)>.0001f)
     return false;
   if(p->id==owner->actor_id){
