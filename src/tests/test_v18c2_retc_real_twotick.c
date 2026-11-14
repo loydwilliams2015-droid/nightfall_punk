@@ -10,6 +10,7 @@
 #include "nf_retc_ma03_owner_tick.h"
 #include "nf_retc_external.h"
 #include "nf_retc_consumer_source.h"
+#include "nf_retc_map_projection.h"
 #include "nf_retc_network.h"
 #include "nf_multi_ma03.h"
 #include <math.h>
@@ -82,11 +83,80 @@ static bool h296_leased_source_check(const NfRetcPublisher *pub,
  nf_retc_read_lease_release(&lease);
  return ok;
 }
+/* H297: accepted A6/B2/B3 source drives a real read-only actor/crate
+ * map projection. Each denied source mutation must leave both the
+ * consumer projection and the consumer cursor bit-for-bit unchanged. */
+static bool h297_real_map_check(const NfRetcPublisher *pub,uint32_t expected){
+ NfRetcReadLease lease={0};
+ if(!nf_retc_read_lease_acquire(pub,&lease))return false;
+ bool ok=false;
+ do{
+  NfRetcReadView v={0};
+  if(!nf_retc_read_leased_view(&lease,&v))break;
+  const NfRetcFrame *f=v.accepted;
+  if(!f||f->epoch!=expected)break;
+  NfRetcMapCursor cursor={0};
+  NfRetcMapProjection accepted={0};
+  if(!nf_retc_map_project_lease(&lease,&v,f->epoch,f->transaction_id,
+       f->owner_actor,f->object_id,f->event.contract_epoch,
+       &cursor,&accepted))break;
+  const Nf18a4Body *a=&f->physical.actor,*b=&f->physical.object;
+  if(accepted.actor_center.x!=a->center.x||
+     accepted.actor_center.y!=a->center.y||
+     accepted.actor_center.z!=a->center.z||
+     accepted.object_min.x!=b->center.x-b->box_half.x||
+     accepted.object_max.z!=b->center.z+b->box_half.z||
+     accepted.tick!=expected)break;
+  bool valid=true;
+  for(unsigned h297_case=0;h297_case<50u;++h297_case){
+   const unsigned kind=h297_case/5u;
+   const uint32_t n=h297_case%5u+1u;
+   NfRetcReadView forged=v;
+   uint32_t tick=f->epoch,tx=f->transaction_id,
+     owner=f->owner_actor,obj=f->object_id,
+     contract=f->event.contract_epoch;
+   NfRetcMapCursor denied_cursor={0};
+   NfRetcMapProjection denied_map=accepted;
+   switch(kind){
+    case 0:tick+=n;break;
+    case 1:tx+=n;break;
+    case 2:owner+=n;break;
+    case 3:obj+=n;break;
+    case 4:contract+=n;break;
+    case 5:denied_cursor.tick=f->epoch+n;break;
+    case 6:denied_cursor.transaction_id=f->transaction_id+n;break;
+    case 7:forged.accepted=NULL;break;
+    case 8:forged.physical=NULL;break;
+    case 9:forged.event=NULL;break;
+   }
+   const NfRetcMapCursor old_cursor=denied_cursor;
+   if(nf_retc_map_project_lease(&lease,&forged,tick,tx,owner,obj,contract,
+        &denied_cursor,&denied_map)||
+      memcmp(&old_cursor,&denied_cursor,sizeof old_cursor)!=0||
+      memcmp(&accepted,&denied_map,sizeof accepted)!=0){
+     valid=false;break;
+   }
+   fprintf(stderr,"H297 REAL_A6_MAP_DENIAL case=%u epoch=%u unchanged=1\n",
+           h297_case,expected);
+  }
+  if(!valid)break;
+  NfRetcMapProjection duplicate=accepted;
+  if(nf_retc_map_project_lease(&lease,&v,f->epoch,f->transaction_id,
+       f->owner_actor,f->object_id,f->event.contract_epoch,
+       &cursor,&duplicate)||
+     memcmp(&accepted,&duplicate,sizeof accepted)!=0)break;
+  fprintf(stderr,"H297 REAL_A6_MAP PASS 50 denials, original bounds and replay denial\n");
+  ok=true;
+ }while(0);
+ nf_retc_read_lease_release(&lease);
+ return ok;
+}
 static bool verify(const NfWorld *w,const Nf18a6Runtime *r,
  const Nf18b2EncounterRuntime *enc,const Nf18b6Push *push,
  const NfRetcPublisher *publisher,uint32_t expected){
  NfRetcReadView view={0};
  if(!h296_leased_source_check(publisher,expected)||
+    !h297_real_map_check(publisher,expected)||
     !nf_retc_read_joint_view(publisher,&view))return false;
  const NfRetcFrame *f=view.accepted;
  if(view.epoch!=expected||view.event->tick!=expected||

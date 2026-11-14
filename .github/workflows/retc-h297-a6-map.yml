@@ -1,0 +1,41 @@
+name: H297 real A6 leased map projection
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_map_projection.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h297-a6-map.yml'
+  workflow_dispatch:
+jobs:
+  real-map:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source-exact compile
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h297 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h297 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Real A6 leased map tests
+        run: |
+          set -euo pipefail
+          build-h297/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h297/h297.log
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          s=Path("build-h297/h297.log").read_text()
+          rows=re.findall(r"H297 REAL_A6_MAP_DENIAL case=(\d+) epoch=(\d+) unchanged=1",s)
+          assert len(rows)>=50,len(rows)
+          for epoch in {e for _,e in rows}:
+              assert {int(c) for c,e in rows if e==epoch}==set(range(50))
+          assert "H297 REAL_A6_MAP PASS 50 denials, original bounds and replay denial" in s
+          assert "H296 REAL_A6_LEASED_SOURCE PASS" in s
+          print("H297 SOURCE-EXACT real owner map read-model acceptance PASS")
+          PY
