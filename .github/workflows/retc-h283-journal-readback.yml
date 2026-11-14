@@ -1,0 +1,64 @@
+name: H283 genuine joint journal readback and 30 corruption denials
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h283-journal-readback.yml'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - 'src/shared/nf_c2_retc_frame.c'
+  workflow_dispatch:
+
+jobs:
+  joint-journal-readback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin exact source and journal implementation
+        run: |
+          git rev-parse HEAD
+          sha256sum src/tests/test_v18c2_retc_real_twotick.c src/shared/nf_c2_retc_frame.c
+      - name: Build actual joint issuer/owner two tick test
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-h283 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h283 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Real joint journal clean readback plus six-by-five corruption probes
+        run: |
+          set -euo pipefail
+          build-h283/nightfall_v18c2_retc_real_twotick_test --journal-probes 2>&1 | tee h283-journal.log
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+          data=Path("h283-journal.log").read_text()
+          checks=re.findall(r"H283 JOURNAL_REJECT tick=(\d+) group=(\d+) case=(\d+) offset=(\d+)",data)
+          positives=re.findall(r"H283 JOURNAL_PASS tick=(\d+) restored=(\d+) corrupt_rejected=(\d+) source_owned=(\d+)",data)
+          expected={(str(t),str(c//5),str(c)) for t in (1,2) for c in range(30)}
+          assert len(checks)==60, (len(checks),checks)
+          assert {(t,g,c) for t,g,c,_ in checks}==expected
+          assert positives==[("1","1","30","1"),("2","1","30","1")], positives
+          assert "RET-C real A6 dispatcher two consecutive committed joint ticks PASS" in data
+          result={
+            "passed": True,"unique_disk_corruption_probes":30,
+            "negative_restore_checks":60,"clean_full_joint_restore":2,
+            "real_A6_B2_B3_accepted_ticks":2,"compiler":"source exact",
+            "scope":"bounded same-ABI research journal readback and byte-integrity rejection",
+            "not_tested":["process kill during persisted rename","directory fsync",
+                          "cross-version portable recovery","full C3 recovery","multi-actor recovery"]
+          }
+          Path("h283-journal.json").write_text(json.dumps(result,indent=2)+"\n")
+          print("H283 JOINT JOURNAL PASS clean=2/2 corruption=60/60")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h283-joint-journal-${{ matrix.compiler }}
+          path: |
+            h283-journal.log
+            h283-journal.json
+          if-no-files-found: warn
+          retention-days: 14
