@@ -1,0 +1,64 @@
+name: H290 forty real A6 in-tick two-actor A4/A5 lineage denials
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h290-material-lineage.yml'
+      - 'src/shared/nf_retc_ma03_owner_tick.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+  workflow_dispatch:
+jobs:
+  real-owner-material:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin exact owner and A5 sources
+        run: |
+          git rev-parse HEAD
+          sha256sum src/shared/nf_retc_ma03_owner_tick.h src/tests/test_v18c2_retc_real_twotick.c
+      - name: Strict source-owner real A6 test build
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-h290 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h290 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Execute forty private A6 source material history negative gates
+        run: |
+          set -euo pipefail
+          build-h290/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee h290-lineage.log
+          python3 - <<'PY'
+          import re,json
+          from pathlib import Path
+          s=Path("h290-lineage.log").read_text()
+          cases=re.findall(r"H290 A5_LINEAGE_REJECT case=(\d+) field=(\d+) sign=(\d+) original_pass=1",s)
+          assert len(cases)==40, cases
+          assert sorted((int(c),int(f),int(sign)) for c,f,sign in cases)==[
+             (c,c//2,c%2) for c in range(40)]
+          assert "H290 REAL_A5_MATRIX PASS 40 negative and 40 positive source rechecks" in s
+          assert "RET-C real A6 dispatcher two consecutive committed joint ticks PASS" in s
+          report={
+            "source":"real A6 in-tick private 2-body A4/A5 stage",
+            "distinct_mutation_fields":20,"signed_cases":40,
+            "rejected_modified_private_evidence":40,
+            "accepted_unchanged_private_evidence":40,
+            "no_new_world_commits_or_B3_receipts":True,
+            "not_done":["live dual B2/B3 commit","H275F production full swept solver",
+                        "portable C3 WAL and true A6 owner restart","independent TSAN",
+                        "representative real GPU frame pacing","human playtests"]
+          }
+          Path("h290-lineage.json").write_text(json.dumps(report,indent=2)+"\n")
+          print("H290 REAL OWNER A5 MATERIAL LINEAGE PASS 40/40 mutation denials and 40/40 controls")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h290-a5-source-${{ matrix.compiler }}
+          path: |
+            h290-lineage.log
+            h290-lineage.json
+          if-no-files-found: warn
+          retention-days: 14
