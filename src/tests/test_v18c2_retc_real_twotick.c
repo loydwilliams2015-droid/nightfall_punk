@@ -433,6 +433,116 @@ finish:
  free(snapshot);free(restored);
  return rc;
 }
+/* H287: directory durability experiment: 40 source-authorized child
+ * process interruptions, including before vs AFTER parent-directory fsync.
+ * Source journal is reset only by the independent research parent, never by
+ * the production persistence implementation. */
+static int h287_real_directory_matrix(const char *journal,
+ NfWorld *w,Nf18a6Runtime *r,NfRetcPublisher *publisher){
+ if(!journal||!w||!r||!publisher||w->tick!=1u)return 1;
+ const NfRetcFrame *prior=nf_retc_read(publisher);
+ if(!prior||prior->epoch!=1u)return 1;
+ FILE *fp=fopen(journal,"rb");
+ if(!fp)return 1;
+ int rc=1;
+ unsigned char *snapshot=NULL;
+ NfRetcFrame *restored=NULL;
+ char stage[1024]={0};
+ if(fseek(fp,0,SEEK_END)!=0)goto finish;
+ const long n_long=ftell(fp);
+ if(n_long<=0L||n_long>(long)sizeof(NfRetcFrame)+64L||
+    fseek(fp,0,SEEK_SET)!=0)goto finish;
+ const size_t n=(size_t)n_long;
+ snapshot=malloc(n);
+ restored=malloc(sizeof *restored);
+ if(!snapshot||!restored||fread(snapshot,1,n,fp)!=n)goto finish;
+ if(fclose(fp)!=0){fp=NULL;goto finish;}fp=NULL;
+ if(snprintf(stage,sizeof stage,"%s.staging",journal)>=(int)sizeof stage)
+    goto finish;
+ for(unsigned case_id=0;case_id<40u;++case_id){
+    /* Five different persistence boundaries across eight source trials. */
+    static const unsigned points[5]={1u,2u,4u,5u,6u};
+    const unsigned point=points[case_id%5u];
+    char setting[3]={0};
+    setting[0]=(char)('0'+point);
+    const pid_t pid=fork();
+    if(pid<0)goto finish;
+    if(pid==0){
+       if(setenv("NF_RETC_H284_KILL_POINT",setting,1)!=0)_exit(90);
+       const NfWorldTickStatus status=
+          nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
+       (void)status;
+       _exit(91); /* must instead terminate from real journal hook */
+    }
+    int status=0;
+    if(waitpid(pid,&status,0)!=pid||!WIFEXITED(status)||
+       WEXITSTATUS(status)!=(int)(110u+point))goto finish;
+    if(!nf_retc_restore_file(journal,restored)||
+       restored->epoch!=(point>=5u?2u:1u)||
+       nf_retc_read(publisher)!=prior||w->tick!=1u)goto finish;
+    /* Independently exec a cold reader in a FRESH process after every
+     * genuine A6 child dies. The new process has no inherited owner,
+     * publisher, encounter registry, or in-memory authoritative frame.
+     * It can validate a journal snapshot but cannot choose C3 promotion. */
+    const pid_t reader=fork();
+    if(reader<0)goto finish;
+    if(reader==0){
+       char epoch_arg[4]={0};
+       epoch_arg[0]=(char)('0'+(point>=5u?2u:1u));
+       execl("/proc/self/exe","nightfall-retc-h285-cold",
+             "--cold-audit",journal,epoch_arg,(char *)NULL);
+       _exit(93);
+    }
+    int reader_status=0;
+    if(waitpid(reader,&reader_status,0)!=reader||
+       !WIFEXITED(reader_status)||WEXITSTATUS(reader_status)!=0)
+      goto finish;
+    /* A separate clean process must NOT accept a journal under the
+     * wrong expected epoch. This catches stale/future replay. */
+    const pid_t denied_reader=fork();
+    if(denied_reader<0)goto finish;
+    if(denied_reader==0){
+       const char *wrong_epoch=point>=5u?"1":"2";
+       execl("/proc/self/exe","nightfall-retc-h285-cold",
+             "--cold-audit",journal,wrong_epoch,(char *)NULL);
+       _exit(94);
+    }
+    int denied_status=0;
+    if(waitpid(denied_reader,&denied_status,0)!=denied_reader||
+       !WIFEXITED(denied_status)||WEXITSTATUS(denied_status)!=4)
+      goto finish;
+    fprintf(stderr,"H287 COLD_DENIAL case=%u wrong_epoch_rejected=1\n",case_id);
+    if((access(stage,F_OK)==0)!=(point<5u))goto finish;
+    fprintf(stderr,
+      "H287 DIRSYNC_RESTART case=%u group=%u point=%u expected_epoch=%u fresh_process=1 stage_present=%u\n",
+      case_id,case_id/5u,point,restored->epoch,point<5u);
+    /* Journal can be overwritten with a complete new epoch before
+     * publication. This is NOT yet a C3 restart acceptance proof. */
+    if(point>=5u)
+      fprintf(stderr,"H287 AFTER_RENAME case=%u disk_epoch=2 live_epoch=1\n",
+              case_id);
+    fprintf(stderr,"H287 PROCESS_KILL case=%u group=%u point=%u recovered_epoch=%u\n",
+            case_id,case_id/5u,point,restored->epoch);
+    fp=fopen(journal,"wb");
+    if(!fp)goto finish;
+    if(fwrite(snapshot,1,n,fp)!=n||fflush(fp)!=0||
+       fsync(fileno(fp))!=0||fclose(fp)!=0){
+       fp=NULL;goto finish;
+    }fp=NULL;
+    if(stage[0])remove(stage);
+    if(!nf_retc_restore_file(journal,restored)||
+       restored->epoch!=1u||nf_retc_read(publisher)!=prior)
+      goto finish;
+ }
+ fprintf(stderr,
+   "H287 DIRSYNC_MATRIX PASS killed=40 clean_cold=40 rejected_cold=40 before_rename=24 after_rename=16 post_dirsync=8\n");
+ rc=0;
+finish:
+ if(fp)fclose(fp);
+ if(stage[0])remove(stage);
+ free(snapshot);free(restored);
+ return rc;
+}
 /* H285 cold-process integrity audit. Do not construct a simulated world:
  * only read the actual real issuer's journal from a fresh process image.
  * A successful read is not a legitimate owner restart or C3 promotion. */
@@ -510,6 +620,7 @@ int main(int argc,char **argv){
  const bool h284_crash_matrix=argc==2&&strcmp(argv[1],"--crash-matrix")==0;
  const bool h285_cold_matrix=argc==2&&strcmp(argv[1],"--cold-matrix")==0;
  const bool h286_admission_matrix=argc==2&&strcmp(argv[1],"--admission-matrix")==0;
+ const bool h287_directory_matrix=argc==2&&strcmp(argv[1],"--directory-matrix")==0;
  if(argc==3&&strcmp(argv[1],"--sweep-case")==0){
    char *end=NULL;
    const unsigned long parsed=strtoul(argv[2],&end,10);
@@ -517,7 +628,7 @@ int main(int argc,char **argv){
       fprintf(stderr,"H281 invalid sweep case; expected 0..39\n");return 2;
    }
    h281_case=(unsigned)parsed;
- }else if(argc!=1&&!h283_journal_probes&&!h284_crash_matrix&&!h285_cold_matrix&&!h286_admission_matrix){
+ }else if(argc!=1&&!h283_journal_probes&&!h284_crash_matrix&&!h285_cold_matrix&&!h286_admission_matrix&&!h287_directory_matrix){
    fprintf(stderr,"H281/H284 usage: [--sweep-case 0..39] [--journal-probes] [--crash-matrix]\n");return 2;
  }
  NfWorld *w=calloc(1,sizeof *w);
@@ -752,6 +863,8 @@ int main(int argc,char **argv){
    if((h285_cold_matrix||h286_admission_matrix)&&tick==2u)
       CHECK(h285_real_cold_restart_matrix(journal,w,r,publisher,
              h286_admission_matrix)==0);
+   if(h287_directory_matrix&&tick==2u)
+      CHECK(h287_real_directory_matrix(journal,w,r,publisher)==0);
    const NfWorldTickStatus status=nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
    if(status!=NF_WORLD_TICK_COMMITTED){
       fprintf(stderr,"real dispatcher tick %u status=%d lastA6=%d B2=%d B3=%d\
