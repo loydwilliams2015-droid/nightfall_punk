@@ -302,7 +302,8 @@ finish:
  return rc;
 }
 static int h285_real_cold_restart_matrix(const char *journal,
- NfWorld *w,Nf18a6Runtime *r,NfRetcPublisher *publisher){
+ NfWorld *w,Nf18a6Runtime *r,NfRetcPublisher *publisher,
+ bool h286_admission){
  if(!journal||!w||!r||!publisher||w->tick!=1u)return 1;
  const NfRetcFrame *prior=nf_retc_read(publisher);
  if(!prior||prior->epoch!=1u)return 1;
@@ -374,6 +375,30 @@ static int h285_real_cold_restart_matrix(const char *journal,
        !WIFEXITED(denied_status)||WEXITSTATUS(denied_status)!=4)
       goto finish;
     fprintf(stderr,"H285 COLD_DENIAL case=%u wrong_epoch_rejected=1\n",case_id);
+    if(h286_admission){
+      /* One fresh executable per classification. The independent
+       * checkpoint tuple is deliberately not read from the candidate. */
+      static const char *const denied[]={
+        "wrong-owner","wrong-object","wrong-epoch","wrong-transaction"};
+      for(unsigned audit=0;audit<5u;++audit){
+        const char *mode=audit==0u?
+             (point==5u?"next":"prior"):denied[audit-1u];
+        const pid_t child=fork();
+        if(child<0)goto finish;
+        if(child==0){
+          execl("/proc/self/exe","nightfall-retc-h286",
+                "--admission-audit",journal,mode,(char*)NULL);
+          _exit(95);
+        }
+        int child_status=0;
+        if(waitpid(child,&child_status,0)!=child||
+           !WIFEXITED(child_status)||WEXITSTATUS(child_status)!=0)
+          goto finish;
+      }
+      fprintf(stderr,
+       "H286 ADMISSION_CASE case=%u group=%u point=%u status=%s denials=4 checkpoint=1\n",
+       case_id,case_id/5u,point,point==5u?"NEXT":"PRIOR");
+    }
     if((access(stage,F_OK)==0)!=(point!=5u))goto finish;
     fprintf(stderr,
       "H285 COLD_RESTART case=%u group=%u point=%u expected_epoch=%u fresh_process=1 stage_present=%u\n",
@@ -398,6 +423,9 @@ static int h285_real_cold_restart_matrix(const char *journal,
  }
  fprintf(stderr,
    "H285 COLD_MATRIX PASS killed=40 cold_restarts=40 prior_epoch=32 new_epoch=8 disk_live_gap=8\n");
+ if(h286_admission)
+   fprintf(stderr,
+     "H286 ADMISSION_MATRIX PASS kills=40 independent_admissions=40 independent_denials=160 prior=32 next=8\n");
  rc=0;
 finish:
  if(fp)fclose(fp);
@@ -435,7 +463,43 @@ static int h285_cold_audit(const char *path,const char *expected){
  free(f);
  return good?0:4;
 }
+/* H286 strict read-only admission inspection in a COLD process.
+ * The trusted tuple is supplied independently of the candidate journal.
+ * Wrong identities, epochs and transaction bounds must fail closed without
+ * touching the provided output storage. This is not a new live A6 owner. */
+static int h286_cold_admission(const char *journal,const char *mode){
+ if(!journal||!mode)return 2;
+ NfRetcFrame *out=malloc(sizeof *out);
+ if(!out)return 3;
+ memset(out,0xA5,sizeof *out);
+ uint32_t owner=10u,object=2010u,epoch=1u,tx=1u;
+ NfRetcRecoveryStatus want=NF_RETC_RECOVERY_REJECT;
+ if(strcmp(mode,"prior")==0)want=NF_RETC_RECOVERY_PRIOR;
+ else if(strcmp(mode,"next")==0)want=NF_RETC_RECOVERY_NEXT;
+ else if(strcmp(mode,"wrong-owner")==0)owner=11u;
+ else if(strcmp(mode,"wrong-object")==0)object=2011u;
+ else if(strcmp(mode,"wrong-epoch")==0)epoch=7u;
+ else if(strcmp(mode,"wrong-transaction")==0)tx=999u;
+ else {free(out);return 2;}
+ const NfRetcRecoveryStatus got=nf_retc_recovery_inspect_file(
+    journal,owner,object,epoch,tx,out);
+ bool good=(got==want);
+ if(want==NF_RETC_RECOVERY_REJECT){
+   const unsigned char *bytes=(const unsigned char *)out;
+   for(size_t i=0;i<sizeof *out;++i)
+      if(bytes[i]!=0xA5){good=false;break;}
+ }else{
+   good=good&&out->owner_actor==10u&&out->object_id==2010u&&
+        out->epoch==(want==NF_RETC_RECOVERY_NEXT?2u:1u)&&
+        out->event.kind==NF18B3_PUSH&&out->event.applied&&
+        out->has_b2_contract&&out->has_encounter_registry;
+ }
+ if(good)fprintf(stderr,"H286 COLD_ADMISSION mode=%s status=%u unchanged_on_reject=1\n",mode,(unsigned)got);
+ free(out);return good?0:4;
+}
 int main(int argc,char **argv){
+ if(argc==4&&strcmp(argv[1],"--admission-audit")==0)
+    return h286_cold_admission(argv[2],argv[3]);
  if(argc==4&&strcmp(argv[1],"--cold-audit")==0)
     return h285_cold_audit(argv[2],argv[3]);
  /* H281: 40 independent source-owned cases. No altered production
@@ -445,6 +509,7 @@ int main(int argc,char **argv){
  const bool h283_journal_probes=argc==2&&strcmp(argv[1],"--journal-probes")==0;
  const bool h284_crash_matrix=argc==2&&strcmp(argv[1],"--crash-matrix")==0;
  const bool h285_cold_matrix=argc==2&&strcmp(argv[1],"--cold-matrix")==0;
+ const bool h286_admission_matrix=argc==2&&strcmp(argv[1],"--admission-matrix")==0;
  if(argc==3&&strcmp(argv[1],"--sweep-case")==0){
    char *end=NULL;
    const unsigned long parsed=strtoul(argv[2],&end,10);
@@ -452,7 +517,7 @@ int main(int argc,char **argv){
       fprintf(stderr,"H281 invalid sweep case; expected 0..39\n");return 2;
    }
    h281_case=(unsigned)parsed;
- }else if(argc!=1&&!h283_journal_probes&&!h284_crash_matrix&&!h285_cold_matrix){
+ }else if(argc!=1&&!h283_journal_probes&&!h284_crash_matrix&&!h285_cold_matrix&&!h286_admission_matrix){
    fprintf(stderr,"H281/H284 usage: [--sweep-case 0..39] [--journal-probes] [--crash-matrix]\n");return 2;
  }
  NfWorld *w=calloc(1,sizeof *w);
@@ -684,8 +749,9 @@ int main(int argc,char **argv){
    nf_world_set_input(w,10,move);
    if(h284_crash_matrix&&tick==2u)
       CHECK(h284_real_crash_matrix(journal,w,r,publisher)==0);
-   if(h285_cold_matrix&&tick==2u)
-      CHECK(h285_real_cold_restart_matrix(journal,w,r,publisher)==0);
+   if((h285_cold_matrix||h286_admission_matrix)&&tick==2u)
+      CHECK(h285_real_cold_restart_matrix(journal,w,r,publisher,
+             h286_admission_matrix)==0);
    const NfWorldTickStatus status=nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
    if(status!=NF_WORLD_TICK_COMMITTED){
       fprintf(stderr,"real dispatcher tick %u status=%d lastA6=%d B2=%d B3=%d\
