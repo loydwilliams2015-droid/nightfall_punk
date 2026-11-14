@@ -1,0 +1,33 @@
+name: H294 internal map audio render audit traceability
+on:
+  pull_request:
+    paths:
+      - 'docs/retc_h294_internal_engines_constitutional_audit.md'
+      - '.github/workflows/retc-h294-internal-audit.yml'
+  workflow_dispatch:
+jobs:
+  contract-traceability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate 50 distinct internal contract determinations
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path("docs/retc_h294_internal_engines_constitutional_audit.md")
+          s=p.read_text()
+          rows=re.findall(r"^- \[ \] INT-(\d{2}) (.+) — \*\*oracle:\*\* (.+)$",s,re.M)
+          assert len(rows)==50, len(rows)
+          assert [int(x[0]) for x in rows]==list(range(1,51))
+          assert len(re.findall(r"^### \d\d ",s,re.M))==10
+          for section in ("Map engine","Audio event","Render snapshot","Cross-engine atomic","Durability and disconnected","Constitutional"):
+              assert section.lower() in s.lower(), section
+          assert "Supersedes closed PR #247" in s
+          assert "No 50 production tests" in s
+          assert "NOT accepted" in s
+          assert "Missing => HOLD" in s
+          print("H294 documentation-only traceability PASS: 50/50 cases, 10 sections, provenance/holds present")
+          print("NO engine runtime build or production integration validated by this job")
+          PY
