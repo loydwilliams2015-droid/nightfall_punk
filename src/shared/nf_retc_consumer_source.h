@@ -20,7 +20,7 @@ static inline bool nf_retc_consumer_source_validate(
  /* Do not dereference view pointers until proving their identity as
     subobjects of the A6-owned accepted frame under the active lease. */
  if(view->physical!=&f->physical||view->event!=&f->event||
-    view->contract!=&f->encounter_registry.registry||
+    view->contract!=&f->encounter_registry||
     view->eligibility!=&f->b2_use||
     !f->has_b2_contract||!f->has_encounter_registry||
     !f->epoch||!f->transaction_id||!f->owner_actor||
@@ -29,7 +29,7 @@ static inline bool nf_retc_consumer_source_validate(
     f->event.tick!=f->epoch||
     f->physical.world.tick!=f->epoch||
     f->b2_use.tick!=f->epoch||
-    f->encounter_registry.registry.contract_epoch!=f->event.contract_epoch)
+    f->encounter_registry.contract_epoch!=f->event.contract_epoch)
   return false;
  *out=(NfRetcSourceObservation){
   f->epoch,f->transaction_id,f->owner_actor,f->event.contract_epoch};
