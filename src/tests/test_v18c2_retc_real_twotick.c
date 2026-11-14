@@ -301,13 +301,135 @@ finish:
  free(snapshot);free(restored);
  return rc;
 }
+static int h285_real_cold_restart_matrix(const char *journal,
+ NfWorld *w,Nf18a6Runtime *r,NfRetcPublisher *publisher){
+ if(!journal||!w||!r||!publisher||w->tick!=1u)return 1;
+ const NfRetcFrame *prior=nf_retc_read(publisher);
+ if(!prior||prior->epoch!=1u)return 1;
+ FILE *fp=fopen(journal,"rb");
+ if(!fp)return 1;
+ int rc=1;
+ unsigned char *snapshot=NULL;
+ NfRetcFrame *restored=NULL;
+ char stage[1024]={0};
+ if(fseek(fp,0,SEEK_END)!=0)goto finish;
+ const long n_long=ftell(fp);
+ if(n_long<=0L||n_long>(long)sizeof(NfRetcFrame)+64L||
+    fseek(fp,0,SEEK_SET)!=0)goto finish;
+ const size_t n=(size_t)n_long;
+ snapshot=malloc(n);
+ restored=malloc(sizeof *restored);
+ if(!snapshot||!restored||fread(snapshot,1,n,fp)!=n)goto finish;
+ if(fclose(fp)!=0){fp=NULL;goto finish;}fp=NULL;
+ if(snprintf(stage,sizeof stage,"%s.staging",journal)>=(int)sizeof stage)
+    goto finish;
+ for(unsigned case_id=0;case_id<40u;++case_id){
+    const unsigned point=case_id%5u+1u;
+    char setting[3]={0};
+    setting[0]=(char)('0'+point);
+    const pid_t pid=fork();
+    if(pid<0)goto finish;
+    if(pid==0){
+       if(setenv("NF_RETC_H284_KILL_POINT",setting,1)!=0)_exit(90);
+       const NfWorldTickStatus status=
+          nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
+       (void)status;
+       _exit(91); /* must instead terminate from real journal hook */
+    }
+    int status=0;
+    if(waitpid(pid,&status,0)!=pid||!WIFEXITED(status)||
+       WEXITSTATUS(status)!=(int)(110u+point))goto finish;
+    if(!nf_retc_restore_file(journal,restored)||
+       restored->epoch!=(point==5u?2u:1u)||
+       nf_retc_read(publisher)!=prior||w->tick!=1u)goto finish;
+    /* Independently exec a cold reader in a FRESH process after every
+     * genuine A6 child dies. The new process has no inherited owner,
+     * publisher, encounter registry, or in-memory authoritative frame.
+     * It can validate a journal snapshot but cannot choose C3 promotion. */
+    const pid_t reader=fork();
+    if(reader<0)goto finish;
+    if(reader==0){
+       char epoch_arg[4]={0};
+       epoch_arg[0]=(char)('0'+(point==5u?2u:1u));
+       execl("/proc/self/exe","nightfall-retc-h285-cold",
+             "--cold-audit",journal,epoch_arg,(char *)NULL);
+       _exit(93);
+    }
+    int reader_status=0;
+    if(waitpid(reader,&reader_status,0)!=reader||
+       !WIFEXITED(reader_status)||WEXITSTATUS(reader_status)!=0)
+      goto finish;
+    if((access(stage,F_OK)==0)!=(point!=5u))goto finish;
+    fprintf(stderr,
+      "H285 COLD_RESTART case=%u group=%u point=%u expected_epoch=%u fresh_process=1 stage_present=%u\n",
+      case_id,case_id/5u,point,restored->epoch,point!=5u);
+    /* Journal can be overwritten with a complete new epoch before
+     * publication. This is NOT yet a C3 restart acceptance proof. */
+    if(point==5u)
+      fprintf(stderr,"H285 PREPUBLICATION_GAP case=%u disk_epoch=2 live_epoch=1\n",
+              case_id);
+    fprintf(stderr,"H285 PROCESS_KILL case=%u group=%u point=%u recovered_epoch=%u\n",
+            case_id,case_id/5u,point,restored->epoch);
+    fp=fopen(journal,"wb");
+    if(!fp)goto finish;
+    if(fwrite(snapshot,1,n,fp)!=n||fflush(fp)!=0||
+       fsync(fileno(fp))!=0||fclose(fp)!=0){
+       fp=NULL;goto finish;
+    }fp=NULL;
+    if(stage[0])remove(stage);
+    if(!nf_retc_restore_file(journal,restored)||
+       restored->epoch!=1u||nf_retc_read(publisher)!=prior)
+      goto finish;
+ }
+ fprintf(stderr,
+   "H285 COLD_MATRIX PASS killed=40 cold_restarts=40 prior_epoch=32 new_epoch=8 disk_live_gap=8\n");
+ rc=0;
+finish:
+ if(fp)fclose(fp);
+ if(stage[0])remove(stage);
+ free(snapshot);free(restored);
+ return rc;
+}
+/* H285 cold-process integrity audit. Do not construct a simulated world:
+ * only read the actual real issuer's journal from a fresh process image.
+ * A successful read is not a legitimate owner restart or C3 promotion. */
+static int h285_cold_audit(const char *path,const char *expected){
+ if(!path||!expected||expected[1]!='\\0'||
+    (expected[0]!='1'&&expected[0]!='2'))return 2;
+ const uint32_t epoch=(uint32_t)(expected[0]-'0');
+ NfRetcFrame *f=malloc(sizeof *f);
+ if(!f)return 3;
+ const bool good=nf_retc_restore_file(path,f)&&
+   f->epoch==epoch&&f->prior_epoch==epoch-1u&&
+   f->physical.world.tick==epoch&&
+   f->owner_actor==10u&&f->object_id==2010u&&
+   f->physical.actor.id==10u&&f->physical.object.id==2010u&&
+   f->event.kind==NF18B3_PUSH&&f->event.phase==NF18B3_APPLIED&&
+   f->event.authorized&&f->event.applied&&
+   f->event.tick==epoch&&f->event.actor==10u&&
+   f->event.object==2010u&&
+   f->b2_use.tick==epoch&&f->b2_use.actor_id==10u&&
+   f->b2_use.object_id==2010u&&
+   f->b2_use.action_id==f->event.action&&
+   f->b2_decision.status==NF18B2_ELIGIBLE&&
+   f->b2_decision.physical==NF18B2_ELIGIBLE&&
+   f->b2_decision.contract==NF18B2_ELIGIBLE&&
+   f->event.contract_epoch==f->encounter_registry.contract_epoch&&
+   f->has_b2_contract&&f->has_encounter_registry;
+ if(good)fprintf(stderr,"H285 COLD_SOURCE_OK epoch=%u B2_B3_A4_A5=1\n",epoch);
+ free(f);
+ return good?0:4;
+}
 int main(int argc,char **argv){
+ if(argc==4&&strcmp(argv[1],"--cold-audit")==0)
+    return h285_cold_audit(argv[2],argv[3]);
  /* H281: 40 independent source-owned cases. No altered production
   * authorization, synthetic issuer, or research-mode bypass. The default
   * case remains bit-for-bit the H280 positive physical control. */
  unsigned h281_case=0u;
  const bool h283_journal_probes=argc==2&&strcmp(argv[1],"--journal-probes")==0;
  const bool h284_crash_matrix=argc==2&&strcmp(argv[1],"--crash-matrix")==0;
+ const bool h285_cold_matrix=argc==2&&strcmp(argv[1],"--cold-matrix")==0;
  if(argc==3&&strcmp(argv[1],"--sweep-case")==0){
    char *end=NULL;
    const unsigned long parsed=strtoul(argv[2],&end,10);
@@ -315,7 +437,7 @@ int main(int argc,char **argv){
       fprintf(stderr,"H281 invalid sweep case; expected 0..39\n");return 2;
    }
    h281_case=(unsigned)parsed;
- }else if(argc!=1&&!h283_journal_probes&&!h284_crash_matrix){
+ }else if(argc!=1&&!h283_journal_probes&&!h284_crash_matrix&&!h285_cold_matrix){
    fprintf(stderr,"H281/H284 usage: [--sweep-case 0..39] [--journal-probes] [--crash-matrix]\n");return 2;
  }
  NfWorld *w=calloc(1,sizeof *w);
@@ -547,6 +669,8 @@ int main(int argc,char **argv){
    nf_world_set_input(w,10,move);
    if(h284_crash_matrix&&tick==2u)
       CHECK(h284_real_crash_matrix(journal,w,r,publisher)==0);
+   if(h285_cold_matrix&&tick==2u)
+      CHECK(h285_real_cold_restart_matrix(journal,w,r,publisher)==0);
    const NfWorldTickStatus status=nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
    if(status!=NF_WORLD_TICK_COMMITTED){
       fprintf(stderr,"real dispatcher tick %u status=%d lastA6=%d B2=%d B3=%d\
