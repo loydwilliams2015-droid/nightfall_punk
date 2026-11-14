@@ -155,6 +155,19 @@ static bool joint_authorize_interaction_input(
       (object_body->center.z-object_body->box_half.z))>0.0001f||
     fabsf(object_col->max.z-
       (object_body->center.z+object_body->box_half.z))>0.0001f)return false;
+ /* H280: an issued PUSH cannot authorize movement away from its
+  * physical target. Derive the intended horizontal approach from the
+  * same yaw/strafe/forward transformation used by A6, using only
+  * real owner source geometry. This is not a collision oracle. */
+ const float approach_x=object_body->center.x-r->physical.actor.center.x;
+ const float approach_z=object_body->center.z-r->physical.actor.center.z;
+ const float input_x=sinf(in->yaw_radians)*in->forward+
+                     cosf(in->yaw_radians)*in->strafe;
+ const float input_z=cosf(in->yaw_radians)*in->forward-
+                     sinf(in->yaw_radians)*in->strafe;
+ const float forward_projection=approach_x*input_x+approach_z*input_z;
+ if(!isfinite(forward_projection)||forward_projection<=0.000001f)
+    return false;
  const Nf18b2QueuedIntent *q=&j->encounter->queue[0];
  const Nf18b3Event *e=&j->push->event;
  if(q->intent.kind!=NF18B2_PUSH||

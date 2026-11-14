@@ -1,0 +1,56 @@
+name: H280 measured source-owned off-axis B2/B3 PUSH
+on:
+  push:
+    branches:
+      - engineering/retc-h280-real-offaxis-accepted-geometry
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h280-real-offaxis.yml'
+      - 'src/shared/nf_retc_joint_provider.c'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+  workflow_dispatch:
+
+jobs:
+  real-source-positive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source-exact identity
+        run: |
+          git rev-parse HEAD
+          sha256sum src/shared/nf_retc_joint_provider.c src/tests/test_v18c2_retc_real_twotick.c
+      - name: Compile authentic A6/B2/B3 two-tick test
+        run: |
+          cmake -S . -B build-h280 -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h280 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Execute and retain positive off-axis measurements
+        run: |
+          set -euo pipefail
+          ctest --test-dir build-h280 -V -R '^retc_real_dispatcher_two_joint_ticks_v18c2$' 2>&1 | tee h280-real-joint.log
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+          text=Path("h280-real-joint.log").read_text()
+          r=re.compile(r"H280 SOURCE_POSITIVE tick=(\d+) yaw=([-\d.]+) actor_dx=([-\d.]+) actor_dz=([-\d.]+) crate_dx=([-\d.]+) crate_dz=([-\d.]+) receipts=(\d+)")
+          rows=[]
+          for match in r.finditer(text):
+              tick,yaw,ax,az,cx,cz,receipts=match.groups()
+              rows.append(dict(tick=int(tick),yaw=float(yaw),actor_dx=float(ax),actor_dz=float(az),crate_dx=float(cx),crate_dz=float(cz),receipts=int(receipts)))
+          assert len(rows)==2, ("expected two genuine source-owned PUSH records",rows)
+          assert [x["tick"] for x in rows]==[1,2], rows
+          assert abs(rows[0]["yaw"])<1e-6 and abs(rows[1]["yaw"]+0.1)<1e-5, rows
+          assert all(x["actor_dz"]>1e-6 and x["crate_dx"]>1e-6 for x in rows), rows
+          assert [x["receipts"] for x in rows]==[1,2], rows
+          result={"source":"H280 real A6 B2/B3 two-tick acceptance", "scope":"yawed XZ approach and genuine single owner PUSH, not H275F solver", "observations":rows, "passed":True}
+          Path("h280-real-joint.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h280-positive-offaxis-source-measurements
+          path: |
+            h280-real-joint.log
+            h280-real-joint.json
+          if-no-files-found: warn

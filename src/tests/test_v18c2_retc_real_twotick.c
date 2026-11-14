@@ -148,12 +148,19 @@ static bool h276e_input_probe(const NfWorld *w,const Nf18a6Runtime *r,
  object_col->max.z=saved_max_z+0.01f;
  const bool stale_max_z=!h276e_original_input(w,r,in,&test);
  object_col->max.z=saved_max_z;
+ /* H280: a real B2 PUSH can be granted for an off-axis trajectory,
+  * but a 180-degree yaw inversion must not authorize PUSH movement
+  * away from the source-bound object even with an unchanged grant. */
+ NfMoveInput away=*in;
+ away.yaw_radians=3.14159265f;
+ const bool reverse_approach=!h276e_original_input(w,r,&away,&test);
  free(enc);free(push);
  if(!(withdrawn&&stale&&wrong_b3&&revoked&&invalid_input&&
       late_dual_flag&&late_dual_callback&&detached_owner&&
       multiple_requests&&wrong_object&&forged_actor&&
-      detached_actor&&stale_crate&&stale_min_x&&stale_max_z))return false;
- h276e_denied+=15u;
+      detached_actor&&stale_crate&&stale_min_x&&stale_max_z&&
+      reverse_approach))return false;
+ h276e_denied+=16u;
  return h276e_original_input(w,r,in,context);
 }
 int main(void){
@@ -375,6 +382,8 @@ int main(void){
    /* H276E: a real server-issued B2/B3 PUSH is the only acceptable
       source for A6 interact-held input in this production joint tick. */
    NfMoveInput move={0};move.strafe=1;move.forward=.2f;
+   /* H280: tick 2 carries genuine yawed XZ input into the A6 owner. */
+   move.yaw_radians=tick==1u?0.f:-.10f;
    move.interact_held=true;
    nf_world_set_input(w,10,move);
    const NfWorldTickStatus status=nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
@@ -385,12 +394,37 @@ int main(void){
        (int)enc->traces[enc->trace_count-1].revalidation.status,(int)push->last_result);
       return 1;
    }
-   CHECK(h276e_positive==tick&&h276e_denied==15u*tick);
+   CHECK(h276e_positive==tick&&h276e_denied==16u*tick);
    CHECK(verify(w,r,enc,push,publisher,tick));
    const NfRetcFrame *h276c_accepted=nf_retc_read(publisher);
    CHECK(h276c_accepted&&
       nf_retc_joint_contact_lineage(
         h276c_source,&h276c_accepted->physical)); /* C1 actual B2/B3 pass */
+   /* H280: record actual physically accepted XZ displacement and require
+    * a genuinely off-axis actor result, positive crate PUSH displacement,
+    * and source-identical XZ collider projection. Input alone is not proof
+    * of contact or a valid accepted world consequence. */
+   const Nf18a5Integrated *h280_next=&h276c_accepted->physical;
+   const float h280_actor_dx=h280_next->actor.center.x-
+                              h276c_source->actor.center.x;
+   const float h280_actor_dz=h280_next->actor.center.z-
+                              h276c_source->actor.center.z;
+   const float h280_crate_dx=h280_next->object.center.x-
+                              h276c_source->object.center.x;
+   const float h280_crate_dz=h280_next->object.center.z-
+                              h276c_source->object.center.z;
+   fprintf(stderr,"H280 SOURCE_POSITIVE tick=%u yaw=%.5f actor_dx=%.8f actor_dz=%.8f crate_dx=%.8f crate_dz=%.8f receipts=%u\n",
+       tick,move.yaw_radians,h280_actor_dx,h280_actor_dz,
+       h280_crate_dx,h280_crate_dz,h280_next->committed_receipts);
+   CHECK(isfinite(h280_actor_dx)&&isfinite(h280_actor_dz)&&
+         isfinite(h280_crate_dx)&&isfinite(h280_crate_dz));
+   CHECK(fabsf(h280_actor_dz)>0.000001f);
+   CHECK(h280_crate_dx>0.000001f);
+   const NfCollider *h280_col=&w->colliders[r->object_collider_index];
+   CHECK(fabsf(h280_col->min.z-
+      (h280_next->object.center.z-h280_next->object.box_half.z))<.0001f);
+   CHECK(fabsf(h280_col->max.z-
+      (h280_next->object.center.z+h280_next->object.box_half.z))<.0001f);
    Nf18a5Integrated *h276c_tamper=malloc(sizeof *h276c_tamper);
    CHECK(h276c_tamper);
    *h276c_tamper=h276c_accepted->physical;
