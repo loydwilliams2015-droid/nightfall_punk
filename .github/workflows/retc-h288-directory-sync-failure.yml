@@ -1,0 +1,61 @@
+name: H288 40 source-owned directory-sync failure reconciliation cases
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h288-directory-sync-failure.yml'
+      - 'src/shared/nf_c2_retc_frame.c'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+  workflow_dispatch:
+jobs:
+  fail-closed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source-exact provenance
+        run: |
+          git rev-parse HEAD
+          sha256sum src/shared/nf_c2_retc_frame.c src/tests/test_v18c2_retc_real_twotick.c
+      - name: Build real A6 B2 B3 source
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-h288 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h288 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Forty injected directory sync failures with recovery classification
+        run: |
+          set -euo pipefail
+          build-h288/nightfall_v18c2_retc_real_twotick_test --sync-failure-matrix 2>&1 | tee h288-sync.log
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          s=Path("h288-sync.log").read_text()
+          rows=re.findall(r"H288 FAIL_CLOSED case=(\d+) group=(\d+) disk_epoch=2 live_epoch=1 status=NEXT",s)
+          assert len(rows)==40, rows
+          assert sorted((int(c),int(g)) for c,g in rows)==[(i,i//5) for i in range(40)]
+          assert "H288 FAIL_SYNC_MATRIX PASS injected=40 rejected_publications=40 recovered_next_candidates=40 publisher_unchanged=40" in s
+          assert "RET-C real A6 dispatcher two consecutive committed joint ticks PASS" in s
+          report={
+            "result":"PASS","real_owner_dirsync_EIO_injections":40,
+            "failed_owner_publications":40,"visible_next_disk_epochs":40,
+            "checkpoint_next_classifications":40,"original_parent_publisher_unchanged":40,
+            "not_proven":["full owner rehydration","actual power-loss persistence",
+              "cross-filesystem rename durability","production multi-actor world publication",
+              "human playable FPS"]
+          }
+          Path("h288-sync.json").write_text(json.dumps(report,indent=2)+"\n")
+          print("H288 DIRECTORY SYNC FAILURE PASS 40/40")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h288-dir-failure-${{ matrix.compiler }}
+          path: |
+            h288-sync.log
+            h288-sync.json
+          if-no-files-found: warn
+          retention-days: 14
