@@ -14,6 +14,8 @@ typedef struct NfRetcMa03TickEvidence {
  Nf18a5Sample sample;
  uint64_t source_tick;
  uint32_t owner_actor,impacts;
+ uint32_t source_revision,source_material_epoch;
+ uint32_t source_raw_samples,source_generated_events;
  /* M2 bounded per-actor consequences from source-executed A4 impulse. */
  NfVec3 original_velocity[2],material_impulse[2];
  Nf18a4Receipt applied_contact;
@@ -128,6 +130,11 @@ static inline bool nf_retc_ma03_a5_stage_in_owner_tick(
  out->source_tick=w->tick;
  out->owner_actor=owner->actor_id;
  out->impacts=solved.impacts;
+ /* H290: retain the authoritative A6/A5 predecessor identity. */
+ out->source_revision=revision;
+ out->source_material_epoch=owner->physical.world.grid.global_revision;
+ out->source_raw_samples=owner->physical.world.history.raw_samples;
+ out->source_generated_events=owner->physical.world.history.generated_events;
  for(size_t i=0;i<2u;++i){
   out->original_velocity[i]=bodies[i].velocity;
   out->material_impulse[i]=impulse[i];
@@ -142,6 +149,17 @@ static inline bool nf_retc_ma03_a5_stage_in_owner_tick(
 static inline bool nf_retc_ma03_reciprocal_effects_valid(
  const NfRetcMa03TickEvidence *e){
  if(!e||!e->staged||e->impacts!=1u||
+    !e->owner_actor||e->source_tick>=UINT32_MAX||
+    !e->source_revision||e->source_revision==UINT32_MAX||
+    e->source_raw_samples==UINT32_MAX||
+    e->material_candidate.tick!=e->source_tick+1u||
+    e->material_candidate.revision!=e->source_revision+1u||
+    e->material_candidate.history.raw_samples!=e->source_raw_samples+1u||
+    e->material_candidate.history.generated_events<e->source_generated_events||
+    e->material_candidate.grid.global_revision!=e->source_material_epoch||
+    e->applied_contact.tick!=e->source_tick+1u||
+    e->applied_contact.world_version!=e->source_revision||
+    e->sample.material_epoch!=e->source_material_epoch||
     e->bodies[0].id==e->bodies[1].id||
     e->sample.body_a!=e->bodies[0].id||
     e->sample.body_b!=e->bodies[1].id||
