@@ -176,7 +176,7 @@ static int h283_journal_readback_probe(
     FILE *fp=NULL;
     unsigned char *bytes=NULL;
     int rc=1;
-    char scratch[1024];
+    char scratch[1024]={0};
     if(!restored||!unchanged||
        snprintf(scratch,sizeof scratch,"%s.h283-probe",journal)>=(int)sizeof scratch)
         goto finish;
