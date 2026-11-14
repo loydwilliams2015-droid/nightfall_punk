@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"RET-C real dispatcher failure line %d: %s\
 ",__LINE__,#x);return 1;}}while(0)
 static bool b2_provider(void *ctx,const NfWorld *w,const Nf18a6Runtime *owner,
@@ -224,12 +225,88 @@ finish:
     free(bytes);free(restored);free(unchanged);
     return rc;
 }
+/* H284: fork 30 real A6/B2/B3 second-tick owner attempts (5 distinct
+ * persistence kill points, 6 independent process executions each).
+ * The parent retains the previous real accepted immutable source frame.
+ * After-rename crashes expose a complete FUTURE disk epoch despite the
+ * parent having no newly published pointer; explicitly record this as an
+ * unresolved C3 recovery boundary rather than falsely declaring atomicity.
+ * Test-only journal restoration does not represent production recovery. */
+static int h284_real_crash_matrix(const char *journal,
+ NfWorld *w,Nf18a6Runtime *r,NfRetcPublisher *publisher){
+ if(!journal||!w||!r||!publisher||w->tick!=1u)return 1;
+ const NfRetcFrame *prior=nf_retc_read(publisher);
+ if(!prior||prior->epoch!=1u)return 1;
+ FILE *fp=fopen(journal,"rb");
+ if(!fp)return 1;
+ int rc=1;
+ unsigned char *snapshot=NULL;
+ NfRetcFrame *restored=NULL;
+ char stage[1024]={0};
+ if(fseek(fp,0,SEEK_END)!=0)goto finish;
+ const long n_long=ftell(fp);
+ if(n_long<=0L||n_long>(long)sizeof(NfRetcFrame)+64L||
+    fseek(fp,0,SEEK_SET)!=0)goto finish;
+ const size_t n=(size_t)n_long;
+ snapshot=malloc(n);
+ restored=malloc(sizeof *restored);
+ if(!snapshot||!restored||fread(snapshot,1,n,fp)!=n)goto finish;
+ if(fclose(fp)!=0){fp=NULL;goto finish;}fp=NULL;
+ if(snprintf(stage,sizeof stage,"%s.staging",journal)>=(int)sizeof stage)
+    goto finish;
+ for(unsigned case_id=0;case_id<30u;++case_id){
+    const unsigned point=case_id/6u+1u;
+    char setting[3]={0};
+    setting[0]=(char)('0'+point);
+    const pid_t pid=fork();
+    if(pid<0)goto finish;
+    if(pid==0){
+       if(setenv("NF_RETC_H284_KILL_POINT",setting,1)!=0)_exit(90);
+       const NfWorldTickStatus status=
+          nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
+       (void)status;
+       _exit(91); /* must instead terminate from real journal hook */
+    }
+    int status=0;
+    if(waitpid(pid,&status,0)!=pid||!WIFEXITED(status)||
+       WEXITSTATUS(status)!=(int)(110u+point))goto finish;
+    if(!nf_retc_restore_file(journal,restored)||
+       restored->epoch!=(point==5u?2u:1u)||
+       nf_retc_read(publisher)!=prior||w->tick!=1u)goto finish;
+    /* Journal can be overwritten with a complete new epoch before
+     * publication. This is NOT yet a C3 restart acceptance proof. */
+    if(point==5u)
+      fprintf(stderr,"H284 PREPUBLICATION_GAP case=%u disk_epoch=2 live_epoch=1\n",
+              case_id);
+    fprintf(stderr,"H284 PROCESS_KILL case=%u group=%u point=%u recovered_epoch=%u\n",
+            case_id,case_id/5u,point,restored->epoch);
+    fp=fopen(journal,"wb");
+    if(!fp)goto finish;
+    if(fwrite(snapshot,1,n,fp)!=n||fflush(fp)!=0||
+       fsync(fileno(fp))!=0||fclose(fp)!=0){
+       fp=NULL;goto finish;
+    }fp=NULL;
+    if(stage[0])remove(stage);
+    if(!nf_retc_restore_file(journal,restored)||
+       restored->epoch!=1u||nf_retc_read(publisher)!=prior)
+      goto finish;
+ }
+ fprintf(stderr,
+   "H284 PROCESS_MATRIX PASS killed=30 before_rename=24 after_rename=6 disk_live_gap=6\n");
+ rc=0;
+finish:
+ if(fp)fclose(fp);
+ if(stage[0])remove(stage);
+ free(snapshot);free(restored);
+ return rc;
+}
 int main(int argc,char **argv){
  /* H281: 40 independent source-owned cases. No altered production
   * authorization, synthetic issuer, or research-mode bypass. The default
   * case remains bit-for-bit the H280 positive physical control. */
  unsigned h281_case=0u;
  const bool h283_journal_probes=argc==2&&strcmp(argv[1],"--journal-probes")==0;
+ const bool h284_crash_matrix=argc==2&&strcmp(argv[1],"--crash-matrix")==0;
  if(argc==3&&strcmp(argv[1],"--sweep-case")==0){
    char *end=NULL;
    const unsigned long parsed=strtoul(argv[2],&end,10);
@@ -237,8 +314,8 @@ int main(int argc,char **argv){
       fprintf(stderr,"H281 invalid sweep case; expected 0..39\n");return 2;
    }
    h281_case=(unsigned)parsed;
- }else if(argc!=1&&!h283_journal_probes){
-   fprintf(stderr,"H281/H283 usage: [--sweep-case 0..39] [--journal-probes]\n");return 2;
+ }else if(argc!=1&&!h283_journal_probes&&!h284_crash_matrix){
+   fprintf(stderr,"H281/H284 usage: [--sweep-case 0..39] [--journal-probes] [--crash-matrix]\n");return 2;
  }
  NfWorld *w=calloc(1,sizeof *w);
  Nf18a6Runtime *r=calloc(1,sizeof *r);
@@ -467,6 +544,8 @@ int main(int argc,char **argv){
       -.10f-.005f*(float)(h281_case/5u);
    move.interact_held=true;
    nf_world_set_input(w,10,move);
+   if(h284_crash_matrix&&tick==2u)
+      CHECK(h284_real_crash_matrix(journal,w,r,publisher)==0);
    const NfWorldTickStatus status=nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
    if(status!=NF_WORLD_TICK_COMMITTED){
       fprintf(stderr,"real dispatcher tick %u status=%d lastA6=%d B2=%d B3=%d\
