@@ -1,0 +1,69 @@
+name: H287 forty real-owner directory durability crash boundaries
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h287-directory-durability.yml'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - 'src/shared/nf_c2_retc_frame.c'
+  workflow_dispatch:
+jobs:
+  directory-crash:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record source-exact identity
+        run: |
+          git rev-parse HEAD
+          sha256sum src/tests/test_v18c2_retc_real_twotick.c src/shared/nf_c2_retc_frame.c
+      - name: Compile source A6 B2/B3 joint transaction owner
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-h287 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h287 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Run 40 actual journal interruption and fresh-process verification cases
+        run: |
+          set -euo pipefail
+          build-h287/nightfall_v18c2_retc_real_twotick_test --directory-matrix 2>&1 | tee h287-directory.log
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          s=Path("h287-directory.log").read_text()
+          rows=re.findall(r"H287 DIRSYNC_RESTART case=(\d+) group=(\d+) point=(\d+) expected_epoch=(\d+) fresh_process=1 stage_present=(\d+)",s)
+          negatives=re.findall(r"H287 COLD_DENIAL case=(\d+) wrong_epoch_rejected=1",s)
+          after=re.findall(r"H287 AFTER_RENAME case=(\d+) disk_epoch=2 live_epoch=1",s)
+          kills=re.findall(r"H287 PROCESS_KILL case=(\d+) group=(\d+) point=(\d+) recovered_epoch=(\d+)",s)
+          assert len(rows)==40 and len(negatives)==40 and len(kills)==40
+          for c,g,p,e,stage in rows:
+              i=int(c);point=[1,2,4,5,6][i%5]
+              assert (int(g),int(p),int(e),int(stage))==(i//5,point,2 if point>=5 else 1,1 if point<5 else 0)
+          assert sorted(int(x) for x in negatives)==list(range(40))
+          assert sorted(int(x) for x in after)==[i for i in range(40) if i%5 in (3,4)]
+          assert "H287 DIRSYNC_MATRIX PASS killed=40 clean_cold=40 rejected_cold=40 before_rename=24 after_rename=16 post_dirsync=8" in s
+          assert "RET-C real A6 dispatcher two consecutive committed joint ticks PASS" in s
+          Path("h287-directory.json").write_text(json.dumps({
+             "passed":True,"real_source_owner_process_kills":40,
+             "fresh_cold_complete_journal_readbacks":40,"cold_wrong_epoch_denials":40,
+             "pre_rename_old_full_journal":24,"after_rename_new_full_journal":16,
+             "after_parent_directory_fsync_new_full_journal":8,
+             "scope":"POSIX Linux journal and cold-read proof; NOT physical power-cut testing",
+             "still_open":["versioned portable record","full owner restart/adoption",
+                 "directory fsync after crash-independent verification",
+                 "multi-actor contractual publication","H15 TSAN","actual human FPS"]
+          },indent=2)+"\n")
+          print("H287 DIRECTORY JOURNAL PASS 40 source crashes, 40 clean cold, 40 negative cold")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h287-directory-${{ matrix.compiler }}
+          path: |
+            h287-directory.log
+            h287-directory.json
+          if-no-files-found: warn
+          retention-days: 14
