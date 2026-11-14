@@ -127,6 +127,34 @@ static bool joint_authorize_interaction_input(
     !j->encounter->granted[0]||
     !j->push->armed||
     j->encounter->queue[0].withdrawn)return false;
+ /* H279: authorization must bind to the actual current A6/world
+  * geometry. A valid B2 grant cannot authorize a detached stale body
+  * or object collider. This is a read-only pre-physics guard. */
+ const NfActor *source_actor=nf_world_find_actor_const(w,r->actor_id);
+ if(!source_actor||!source_actor->active||
+    r->physical.actor.id!=r->actor_id||
+    !isfinite(r->physical.actor.center.x)||
+    !isfinite(r->physical.actor.center.z)||
+    fabsf(source_actor->transform.position.x-
+          r->physical.actor.center.x)>0.0001f||
+    fabsf(source_actor->transform.position.z-
+          r->physical.actor.center.z)>0.0001f||
+    r->object_collider_index>=w->collider_count)return false;
+ const NfCollider *object_col=&w->colliders[r->object_collider_index];
+ const Nf18a4Body *object_body=&r->physical.object;
+ if(object_col->kind!=NF_COLLIDER_SOLID||
+    !isfinite(object_body->center.x)||
+    !isfinite(object_body->center.z)||
+    !isfinite(object_body->box_half.x)||
+    !isfinite(object_body->box_half.z)||
+    fabsf(object_col->min.x-
+      (object_body->center.x-object_body->box_half.x))>0.0001f||
+    fabsf(object_col->max.x-
+      (object_body->center.x+object_body->box_half.x))>0.0001f||
+    fabsf(object_col->min.z-
+      (object_body->center.z-object_body->box_half.z))>0.0001f||
+    fabsf(object_col->max.z-
+      (object_body->center.z+object_body->box_half.z))>0.0001f)return false;
  const Nf18b2QueuedIntent *q=&j->encounter->queue[0];
  const Nf18b3Event *e=&j->push->event;
  if(q->intent.kind!=NF18B2_PUSH||

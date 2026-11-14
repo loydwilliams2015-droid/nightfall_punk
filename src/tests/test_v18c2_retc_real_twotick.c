@@ -123,11 +123,37 @@ static bool h276e_input_probe(const NfWorld *w,const Nf18a6Runtime *r,
  ++push->event.object;
  const bool wrong_object=!h276e_original_input(w,r,in,&test);
  --push->event.object;
+ /* H279: five real-owner-tick geometry mismatches on the existing
+  * authentic B2/B3 grant. Always restore source before publication. */
+ const uint32_t saved_actor_id=mutable_owner->physical.actor.id;
+ mutable_owner->physical.actor.id=saved_actor_id+1u;
+ const bool forged_actor=!h276e_original_input(w,r,in,&test);
+ mutable_owner->physical.actor.id=saved_actor_id;
+ const float saved_actor_x=mutable_owner->physical.actor.center.x;
+ mutable_owner->physical.actor.center.x=saved_actor_x+0.01f;
+ const bool detached_actor=!h276e_original_input(w,r,in,&test);
+ mutable_owner->physical.actor.center.x=saved_actor_x;
+ const float saved_object_x=mutable_owner->physical.object.center.x;
+ mutable_owner->physical.object.center.x=saved_object_x+0.01f;
+ const bool stale_crate=!h276e_original_input(w,r,in,&test);
+ mutable_owner->physical.object.center.x=saved_object_x;
+ NfWorld *mutable_world=(NfWorld *)w;
+ NfCollider *object_col=&mutable_world->colliders[
+   mutable_owner->object_collider_index];
+ const float saved_min_x=object_col->min.x;
+ object_col->min.x=saved_min_x+0.01f;
+ const bool stale_min_x=!h276e_original_input(w,r,in,&test);
+ object_col->min.x=saved_min_x;
+ const float saved_max_z=object_col->max.z;
+ object_col->max.z=saved_max_z+0.01f;
+ const bool stale_max_z=!h276e_original_input(w,r,in,&test);
+ object_col->max.z=saved_max_z;
  free(enc);free(push);
  if(!(withdrawn&&stale&&wrong_b3&&revoked&&invalid_input&&
       late_dual_flag&&late_dual_callback&&detached_owner&&
-      multiple_requests&&wrong_object))return false;
- h276e_denied+=10u;
+      multiple_requests&&wrong_object&&forged_actor&&
+      detached_actor&&stale_crate&&stale_min_x&&stale_max_z))return false;
+ h276e_denied+=15u;
  return h276e_original_input(w,r,in,context);
 }
 int main(void){
@@ -359,7 +385,7 @@ int main(void){
        (int)enc->traces[enc->trace_count-1].revalidation.status,(int)push->last_result);
       return 1;
    }
-   CHECK(h276e_positive==tick&&h276e_denied==10u*tick);
+   CHECK(h276e_positive==tick&&h276e_denied==15u*tick);
    CHECK(verify(w,r,enc,push,publisher,tick));
    const NfRetcFrame *h276c_accepted=nf_retc_read(publisher);
    CHECK(h276c_accepted&&
