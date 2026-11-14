@@ -1,0 +1,47 @@
+name: H296 real A6 leased map audio render source
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_consumer_source.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h296-leased-consumer.yml'
+  workflow_dispatch:
+jobs:
+  real-owner-lease:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile real A6 owner / B2 B3 retained frame
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          cmake -S . -B build-h296 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h296 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Execute 50 real leased-source denial checks
+        run: |
+          set -euo pipefail
+          build-h296/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h296/h296.log
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          s=Path("build-h296/h296.log").read_text()
+          lines=re.findall(r"H296 LEASED_SOURCE_REJECT case=(\d+) real_epoch=(\d+) unchanged=1",s)
+          assert len(lines)>=50, len(lines)
+          for epoch in {e for _,e in lines}:
+              cases={int(n) for n,e in lines if e==epoch}
+              assert cases==set(range(50)),(epoch,len(cases))
+          assert "H296 REAL_A6_LEASED_SOURCE PASS 50 denials and positive recheck" in s
+          assert "H290 REAL_A5_MATRIX PASS 40 negative and 40 positive source rechecks" in s
+          print(f"H296 verified {len(lines)} source-exact lease denials in actual A6 publisher fixture")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h296-real-lease-${{ matrix.cc }}
+          path: build-h296/h296.log
+          if-no-files-found: warn
