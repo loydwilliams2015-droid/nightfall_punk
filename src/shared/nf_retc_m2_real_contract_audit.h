@@ -59,7 +59,14 @@ static inline bool nf_retc_m2_real_contract_audit(
     fabsf(mirror->min.x-(f->physical.object.center.x-
                           f->physical.object.box_half.x))>.0001f||
     fabsf(mirror->max.x-(f->physical.object.center.x+
-                          f->physical.object.box_half.x))>.0001f)return false;
+                          f->physical.object.box_half.x))>.0001f||
+    /* H282: the same immutable crate projection must account for Z
+       as well as X. No B2/B3 receipt can validate a physically
+       impossible off-axis accepted-frame collider. */
+    fabsf(mirror->min.z-(f->physical.object.center.z-
+                          f->physical.object.box_half.z))>.0001f||
+    fabsf(mirror->max.z-(f->physical.object.center.z+
+                          f->physical.object.box_half.z))>.0001f)return false;
  return true;
 }
 #endif
