@@ -255,7 +255,7 @@ static int h284_real_crash_matrix(const char *journal,
  if(snprintf(stage,sizeof stage,"%s.staging",journal)>=(int)sizeof stage)
     goto finish;
  for(unsigned case_id=0;case_id<30u;++case_id){
-    const unsigned point=case_id/6u+1u;
+    const unsigned point=case_id%5u+1u;
     char setting[3]={0};
     setting[0]=(char)('0'+point);
     const pid_t pid=fork();
