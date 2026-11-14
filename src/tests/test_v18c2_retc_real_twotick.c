@@ -359,6 +359,21 @@ static int h285_real_cold_restart_matrix(const char *journal,
     if(waitpid(reader,&reader_status,0)!=reader||
        !WIFEXITED(reader_status)||WEXITSTATUS(reader_status)!=0)
       goto finish;
+    /* A separate clean process must NOT accept a journal under the
+     * wrong expected epoch. This catches stale/future replay. */
+    const pid_t denied_reader=fork();
+    if(denied_reader<0)goto finish;
+    if(denied_reader==0){
+       const char *wrong_epoch=point==5u?"1":"2";
+       execl("/proc/self/exe","nightfall-retc-h285-cold",
+             "--cold-audit",journal,wrong_epoch,(char *)NULL);
+       _exit(94);
+    }
+    int denied_status=0;
+    if(waitpid(denied_reader,&denied_status,0)!=denied_reader||
+       !WIFEXITED(denied_status)||WEXITSTATUS(denied_status)!=4)
+      goto finish;
+    fprintf(stderr,"H285 COLD_DENIAL case=%u wrong_epoch_rejected=1\n",case_id);
     if((access(stage,F_OK)==0)!=(point!=5u))goto finish;
     fprintf(stderr,
       "H285 COLD_RESTART case=%u group=%u point=%u expected_epoch=%u fresh_process=1 stage_present=%u\n",
