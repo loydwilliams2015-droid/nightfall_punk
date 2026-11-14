@@ -1,0 +1,60 @@
+name: H289 forty MA03 source-owned 3D physical replay denials
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h289-physical-replay.yml'
+      - 'src/shared/nf_retc_ma03_physics_stage.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+  workflow_dispatch:
+jobs:
+  two-actor-physical:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact-source provenance
+        run: |
+          git rev-parse HEAD
+          sha256sum src/shared/nf_retc_ma03_physics_stage.h src/tests/test_v18c2_retc_real_twotick.c
+      - name: Build genuine real-source MA03 test
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-h289 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h289 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Test forty two-actor physical replay denials and source acceptance
+        run: |
+          set -euo pipefail
+          build-h289/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee h289-physical.log
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          s=Path("h289-physical.log").read_text()
+          cases=re.findall(r"H289 SOURCE_RECHECK_REJECT case=(\d+) field=(\d+) sign=(\d+) original_pass=1",s)
+          assert len(cases)==40, cases
+          assert sorted((int(c),int(f),int(sign)) for c,f,sign in cases)==[
+             (c,c//2,c%2) for c in range(40)]
+          assert "H289 TWO_ACTOR_MATRIX PASS private_mutations=40 denied=40 original_replays=40" in s
+          assert "RET-C real A6 dispatcher two consecutive committed joint ticks PASS" in s
+          Path("h289-physical.json").write_text(json.dumps({
+            "scope":"source-owned private MA03 2-body A4 solver, non-authoritative preflight",
+            "cases":40,"distinct_fields":20,"signed_mutations_per_field":2,
+            "rejected_modified_candidates":40,"accepted_unchanged_replays":40,
+            "not_tested":["production H275F broad collision","two competing B2/B3 owned commits",
+                "atomic multi-event publisher","TSAN","GPU performance","human playtest"]
+          },indent=2)+"\n")
+          print("H289 PHYSICAL SOURCE-REPLAY PASS 40/40 negative, 40/40 positive")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h289-twoactor-replay-${{ matrix.compiler }}
+          path: |
+            h289-physical.log
+            h289-physical.json
+          if-no-files-found: warn
+          retention-days: 14
