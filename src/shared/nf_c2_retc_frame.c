@@ -242,6 +242,17 @@ bool nf_retc_restore_file(const char *path,NfRetcFrame *out){
  if(ok)*out=*temp;
  free(temp);return ok;
 }
+/* H284 lab-only deterministic kill boundaries. Production builds do not
+ * compile this hook. These exits model process termination, not power loss,
+ * and do not imply directory durability or whole-owner restart recovery. */
+#ifdef NF_CONTACT_LAB_ONLY
+static void h284_kill_boundary(unsigned point){
+ const char *flag=getenv("NF_RETC_H284_KILL_POINT");
+ if(flag&&flag[0]==(char)('0'+point)&&flag[1]=='\0')_exit(110+(int)point);
+}
+#else
+static void h284_kill_boundary(unsigned point){(void)point;}
+#endif
 bool nf_retc_persist_file(NfRetcPublisher *pub,NfRetcFrame *f,
  const char *path){
  if(!pub||!f||!path||atomic_load_explicit(&pub->read_closing,memory_order_acquire)||
@@ -253,12 +264,18 @@ bool nf_retc_persist_file(NfRetcPublisher *pub,NfRetcFrame *f,
  /* Full frame includes source-bound B2, B3 and A5; write before pointer. */
  char stage[1024];if(strlen(path)>990u||snprintf(stage,sizeof stage,"%s.staging",path)>=(int)sizeof stage)return false;
  FILE *fp=fopen(stage,"wb");if(!fp)return false;
+ h284_kill_boundary(1u);
  const RetcDiskHeader h={0x52455443u,1u,(uint32_t)sizeof *f,
    frame_checksum((const unsigned char *)f,sizeof *f)};
  bool ok=fwrite(&h,sizeof h,1,fp)==1&&fwrite(f,sizeof *f,1,fp)==1;
- if(ok)ok=fflush(fp)==0&&fsync(fileno(fp))==0;
+ if(ok)h284_kill_boundary(2u);
+ if(ok)ok=fflush(fp)==0;
+ if(ok)h284_kill_boundary(3u);
+ if(ok)ok=fsync(fileno(fp))==0;
+ if(ok)h284_kill_boundary(4u);
  if(fclose(fp)!=0)ok=false;
  if(ok)ok=rename(stage,path)==0;
+ if(ok)h284_kill_boundary(5u);
  if(!ok){remove(stage);return false;}
  /* Atomic rename protects previous complete frame from a partial write.
     Directory durability and crash-matrix proof are still outstanding. */
