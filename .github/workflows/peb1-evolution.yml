@@ -5,6 +5,8 @@ on:
       - '.github/workflows/peb1-evolution.yml'
       - 'tools/peb1_evolution_report.py'
       - 'src/tests/pacman_three_era_native_probe.c'
+      - 'src/shared/nf_retc_joint_provider.c'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
   push:
     branches:
       - benchmark/peb1-three-native-generations-h277
