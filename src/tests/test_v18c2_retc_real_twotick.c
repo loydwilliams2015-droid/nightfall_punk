@@ -1689,6 +1689,40 @@ int main(int argc,char **argv){
          candidate.solved.bodies[1].center.x>second_start.x);
    /* H159: an unchanged world rechecks the same deterministic solution. */
    CHECK(nf_retc_ma03_recheck_physics(two_world,two_owner,.125f,&candidate));
+   /* H289: 40 independent signed perturbations across 20 actual
+    * A6-roster / solved-A4 dimensions. Each private candidate mutation
+    * must fail recheck, while the original stays source-valid.
+    * This is NOT a second actor authoritative commit or gameplay tick. */
+   for(unsigned h289_case=0u;h289_case<40u;++h289_case){
+     NfRetcMa03PhysicalCandidate tampered=candidate;
+     const unsigned field=h289_case/2u;
+     float *target=NULL;
+     NfMa03Participant *source=&tampered.source.actors[field<9u?0u:1u];
+     switch(field%9u){
+       case 0u: target=&source->position.x;break;
+       case 1u: target=&source->position.y;break;
+       case 2u: target=&source->position.z;break;
+       case 3u: target=&source->velocity.x;break;
+       case 4u: target=&source->velocity.y;break;
+       case 5u: target=&source->velocity.z;break;
+       case 6u: target=&source->input.forward;break;
+       case 7u: target=&source->input.strafe;break;
+       case 8u: target=&source->input.yaw_radians;break;
+     }
+     if(field==18u)target=&tampered.solved.bodies[0].center.z;
+     if(field==19u)target=&tampered.solved.bodies[1].velocity.z;
+     CHECK(target);
+     *target+=(h289_case%2u==0u?0.125f:-0.125f);
+     CHECK(!nf_retc_ma03_recheck_physics(two_world,two_owner,.125f,
+                                         &tampered));
+     CHECK(nf_retc_ma03_recheck_physics(two_world,two_owner,.125f,
+                                        &candidate));
+     CHECK(two_world->tick==source_tick&&
+           two_owner->last_commit_tick==source_tick);
+     fprintf(stderr,"H289 SOURCE_RECHECK_REJECT case=%u field=%u sign=%u original_pass=1\n",
+             h289_case,field,h289_case%2u);
+   }
+   fprintf(stderr,"H289 TWO_ACTOR_MATRIX PASS private_mutations=40 denied=40 original_replays=40\n");
    /* H160: change the second real actor velocity and reject old result. */
    secondary->transform.velocity.x=1.f;
    CHECK(!nf_retc_ma03_recheck_physics(two_world,two_owner,.125f,&candidate));

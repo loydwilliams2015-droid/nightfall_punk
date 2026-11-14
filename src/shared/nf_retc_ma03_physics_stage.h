@@ -69,6 +69,10 @@ static inline bool nf_retc_ma03_stage_physics(
  *out=c;
  return true;
 }
+/* H289: the private two-actor contact candidate must be EXACTLY
+ * reproducible from the real immutable A6-owned roster and A4 solver.
+ * Equality is per-field rather than memcmp over padding bytes.
+ * Research-only: recheck does NOT commit, authorize, or publish. */
 static inline bool nf_retc_ma03_recheck_physics(
  const NfWorld *world,const Nf18a6Runtime *owner,float dt,
  const NfRetcMa03PhysicalCandidate *expected){
@@ -77,12 +81,21 @@ static inline bool nf_retc_ma03_recheck_physics(
  if(!nf_retc_ma03_stage_physics(world,owner,dt,&fresh))return false;
  if(fresh.source_tick!=expected->source_tick||
     fresh.owner_actor!=expected->owner_actor||
+    fresh.eligible!=expected->eligible||
+    fresh.source.source_tick!=expected->source.source_tick||
     fresh.source.count!=expected->source.count||
+    fresh.solved.status!=expected->solved.status||
     fresh.solved.count!=expected->solved.count||
-    fresh.solved.impacts!=expected->solved.impacts)return false;
+    fresh.solved.impacts!=expected->solved.impacts||
+    fresh.reference.matched!=expected->reference.matched||
+    fresh.reference.disagreed!=expected->reference.disagreed||
+    fresh.reference.unresolved!=expected->reference.unresolved)
+    return false;
  for(size_t i=0;i<2u;++i){
   const NfMa03Participant *a=&fresh.source.actors[i];
   const NfMa03Participant *b=&expected->source.actors[i];
+  const Nf18a4Body *sa=&fresh.solved.bodies[i];
+  const Nf18a4Body *sb=&expected->solved.bodies[i];
   if(a->id!=b->id||
      a->position.x!=b->position.x||a->position.y!=b->position.y||
      a->position.z!=b->position.z||
@@ -90,8 +103,21 @@ static inline bool nf_retc_ma03_recheck_physics(
      a->velocity.z!=b->velocity.z||
      a->input.forward!=b->input.forward||
      a->input.strafe!=b->input.strafe||
-     fresh.solved.bodies[i].velocity.x!=expected->solved.bodies[i].velocity.x||
-     fresh.solved.bodies[i].center.x!=expected->solved.bodies[i].center.x)
+     a->input.yaw_radians!=b->input.yaw_radians||
+     a->input.jump_pressed!=b->input.jump_pressed||
+     a->input.crouch_held!=b->input.crouch_held||
+     a->input.sprint_held!=b->input.sprint_held||
+     a->input.interact_held!=b->input.interact_held||
+     sa->id!=sb->id||
+     sa->center.x!=sb->center.x||
+     sa->center.y!=sb->center.y||
+     sa->center.z!=sb->center.z||
+     sa->velocity.x!=sb->velocity.x||
+     sa->velocity.y!=sb->velocity.y||
+     sa->velocity.z!=sb->velocity.z||
+     sa->inverse_mass!=sb->inverse_mass||
+     sa->radius!=sb->radius||
+     sa->height!=sb->height)
      return false;
  }
  return true;
