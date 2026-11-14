@@ -299,6 +299,13 @@ static void h284_kill_boundary(unsigned point){(void)point;}
  * This is not yet a portable versioned WAL or total power-loss proof. */
 static bool retc_sync_parent_directory(const char *path){
  if(!path||!*path)return false;
+#ifdef NF_CONTACT_LAB_ONLY
+ /* H288: emulate a directory-fsync error only in the isolated C research
+  * lab, AFTER rename. Production builds do not read this environment knob.
+  * The renamed file may remain visible: never advertise commit success. */
+ const char *fail=getenv("NF_RETC_H288_FAIL_DIRSYNC");
+ if(fail&&strcmp(fail,"1")==0){errno=EIO;return false;}
+#endif
  const char *slash=strrchr(path,'/');
  char directory[1024];
  if(!slash)strcpy(directory,".");
