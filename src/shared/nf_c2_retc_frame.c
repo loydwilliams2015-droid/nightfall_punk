@@ -242,6 +242,41 @@ bool nf_retc_restore_file(const char *path,NfRetcFrame *out){
  if(ok)*out=*temp;
  free(temp);return ok;
 }
+/* H286: no A6 tick, no publisher mutation, no filesystem write.
+ * The caller supplies a separately trusted checkpoint. These simple
+ * identities are a bounded scientific prerequisite, not cryptographic
+ * provenance or a production C3 replay authority. */
+NfRetcRecoveryStatus nf_retc_recovery_inspect_file(
+ const char *path,uint32_t trusted_owner,uint32_t trusted_object,
+ uint32_t trusted_epoch,uint32_t trusted_transaction_id,
+ NfRetcFrame *out){
+ if(!path||!out||!trusted_owner||!trusted_object)return NF_RETC_RECOVERY_REJECT;
+ NfRetcFrame *candidate=malloc(sizeof *candidate);
+ if(!candidate)return NF_RETC_RECOVERY_REJECT;
+ NfRetcRecoveryStatus status=NF_RETC_RECOVERY_REJECT;
+ if(nf_retc_restore_file(path,candidate)&&
+    candidate->owner_actor==trusted_owner&&
+    candidate->object_id==trusted_object&&
+    candidate->event.kind==NF18B3_PUSH&&
+    candidate->event.phase==NF18B3_APPLIED&&
+    candidate->event.authorized&&candidate->event.applied&&
+    candidate->b2_decision.status==NF18B2_ELIGIBLE&&
+    candidate->b2_decision.physical==NF18B2_ELIGIBLE&&
+    candidate->b2_decision.contract==NF18B2_ELIGIBLE&&
+    candidate->event.contract_epoch==candidate->encounter_registry.contract_epoch){
+   if(candidate->epoch==trusted_epoch&&
+      candidate->transaction_id==trusted_transaction_id)
+      status=NF_RETC_RECOVERY_PRIOR;
+   else if(trusted_epoch<UINT32_MAX&&
+           candidate->epoch==trusted_epoch+1u&&
+           candidate->prior_epoch==trusted_epoch&&
+           candidate->transaction_id>trusted_transaction_id)
+      status=NF_RETC_RECOVERY_NEXT;
+ }
+ if(status!=NF_RETC_RECOVERY_REJECT)*out=*candidate;
+ free(candidate);
+ return status;
+}
 /* H284 lab-only deterministic kill boundaries. Production builds do not
  * compile this hook. These exits model process termination, not power loss,
  * and do not imply directory durability or whole-owner restart recovery. */
