@@ -1,0 +1,77 @@
+name: H285 40 real-owner interruptions with independent cold-process journal audit
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h285-cold-process-recovery.yml'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - 'src/shared/nf_c2_retc_frame.c'
+  workflow_dispatch:
+
+jobs:
+  cold-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source exact input
+        run: |
+          git rev-parse HEAD
+          sha256sum src/tests/test_v18c2_retc_real_twotick.c src/shared/nf_c2_retc_frame.c
+      - name: Build genuine issuer A6 owner
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-h285 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h285 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Run 40 fork kills, 40 cold restores, 40 epoch denials
+        run: |
+          set -euo pipefail
+          build-h285/nightfall_v18c2_retc_real_twotick_test --cold-matrix 2>&1 | tee h285-cold.log
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          raw=Path("h285-cold.log").read_text()
+          a=re.findall(r"H285 COLD_RESTART case=(\d+) group=(\d+) point=(\d+) expected_epoch=(\d+) fresh_process=(\d+) stage_present=(\d+)",raw)
+          n=re.findall(r"H285 COLD_DENIAL case=(\d+) wrong_epoch_rejected=1",raw)
+          d=re.findall(r"H285 PREPUBLICATION_GAP case=(\d+) disk_epoch=2 live_epoch=1",raw)
+          k=re.findall(r"H285 PROCESS_KILL case=(\d+) group=(\d+) point=(\d+) recovered_epoch=(\d+)",raw)
+          assert len(a)==40 and len(k)==40 and len(n)==40, (len(a),len(k),len(n))
+          for case,grp,point,epoch,fresh,stage in a:
+              c=int(case);p=int(point)
+              assert (int(grp),p,int(epoch),int(fresh),int(stage))==(
+                 c//5,c%5+1,2 if p==5 else 1,1,0 if p==5 else 1)
+          assert sorted(int(x) for x in n)==list(range(40))
+          assert sorted(int(x) for x in d)==[4,9,14,19,24,29,34,39]
+          assert sorted((int(c),int(g),int(p),int(e)) for c,g,p,e in k)==[
+              (c,c//5,c%5+1,2 if c%5==4 else 1) for c in range(40)]
+          assert "H285 COLD_MATRIX PASS killed=40 cold_restarts=40 prior_epoch=32 new_epoch=8 disk_live_gap=8" in raw
+          assert "RET-C real A6 dispatcher two consecutive committed joint ticks PASS" in raw
+          result={
+            "characterization":"PASS",
+            "genuine_A6_B2_B3_owner_child_kills":40,
+            "independent_exec_readonly_clean_restore":40,
+            "independent_exec_wrong_epoch_rejections":40,
+            "pre_rename_journal_prior_complete":32,
+            "post_rename_disk_ahead_of_unpublished_owner":8,
+            "interpretation":"C3 requires explicit reconciliation; world reconstruction NOT attempted",
+            "not_tested":["independently restarted live world owner",
+              "atomic replay of A4/A5/B2/B3 side effects",
+              "fsync parent directory","power interruption",
+              "multi-actor authoritative transactions","real frame time"]
+          }
+          Path("h285-cold.json").write_text(json.dumps(result,indent=2)+"\n")
+          print("H285 COLD-RESTART SOURCE PASS kills=40/40 readbacks=40/40 denials=40/40 disk_live_gaps=8")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h285-cold-process-${{ matrix.compiler }}
+          path: |
+            h285-cold.log
+            h285-cold.json
+          if-no-files-found: warn
+          retention-days: 14
