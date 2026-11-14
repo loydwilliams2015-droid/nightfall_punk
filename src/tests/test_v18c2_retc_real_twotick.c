@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "nf_retc_joint_provider.h"
 #include "nf_retc_m2_real_contract_audit.h"
 #include "nf_retc_multi_plan.h"
