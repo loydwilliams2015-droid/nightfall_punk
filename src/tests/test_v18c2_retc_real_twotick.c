@@ -1930,12 +1930,12 @@ int main(int argc,char **argv){
     CHECK(two_world->tick==source_tick&&
           two_owner->physical.world.revision==a5_before_revision&&
           push->receipt_count==2u&&nf_retc_read(publisher)==accepted);
-    fprintf(stderr,"H291 A6_Y_SOURCE_DENIAL case=%u axis=%s preserved=1\\n",
+    fprintf(stderr,"H291 A6_Y_SOURCE_DENIAL case=%u axis=%s preserved=1\n",
             h291_case,(h291_case%2u)==0u?"center_y":"velocity_y");
     two_owner->physical.actor.center.y=h291_source_y;
     two_owner->physical.actor.velocity.y=h291_velocity_y;
    }
-   fprintf(stderr,"H291 40 real owner Y-source denials PASS\\n");
+   fprintf(stderr,"H291 40 real owner Y-source denials PASS\n");
    /* H181: invalid A5 material epoch never authorizes a history sample. */
    two_owner->physical.world.grid.global_revision=0u;
    CHECK(nf_world_step_checked(two_world,.125f)==NF_WORLD_TICK_REJECTED);
