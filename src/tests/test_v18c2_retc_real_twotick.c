@@ -516,6 +516,59 @@ int main(int argc,char **argv){
    CHECK(nf_retc_read(publisher)==h276b_accepted&&
          nf_retc_m2_real_contract_audit(w,r,enc,push,h276b_accepted));
    free(h276b_probe);
+   /* H282 C2->C3 litmus: thirty independent rejected corruptions of
+      a REAL owner-accepted B2/B3 frame, organized into six groups of
+      five (time / owner IDs / B3 / B2 / contract / physical geometry).
+      The original accepted frame and live publisher remain untouched.
+      This is a fail-closed audit test, NOT a crash-recovery simulation. */
+   NfRetcFrame *h282_probe=malloc(sizeof *h282_probe);
+   CHECK(h282_probe);
+   for(unsigned h282_case=0u;h282_case<30u;++h282_case){
+      *h282_probe=*h276b_accepted;
+      NfRetcFrame *probe=h282_probe;
+      switch(h282_case){
+      case 0u: probe->epoch+=1u; break; /* epoch */
+      case 1u: probe->physical.world.tick+=1u; break; /* physical_world_tick */
+      case 2u: probe->physical.world.revision+=1u; break; /* physical_revision */
+      case 3u: probe->b2_use.tick+=1u; break; /* b2_tick */
+      case 4u: probe->event.tick+=1u; break; /* b3_tick */
+      case 5u: probe->owner_actor+=1u; break; /* owner_actor */
+      case 6u: probe->object_id+=1u; break; /* object_id */
+      case 7u: probe->physical.actor.id+=1u; break; /* physical_actor_id */
+      case 8u: probe->physical.object.id+=1u; break; /* physical_object_id */
+      case 9u: probe->event.actor+=1u; break; /* event_actor */
+      case 10u: probe->event.object+=1u; break; /* event_object */
+      case 11u: probe->event.action+=1u; break; /* event_action */
+      case 12u: probe->event.kind=0; break; /* event_kind */
+      case 13u: probe->event.phase=0; break; /* event_phase */
+      case 14u: probe->event.authorized=false; break; /* event_authorized */
+      case 15u: probe->b2_use.actor_id+=1u; break; /* b2_actor */
+      case 16u: probe->b2_use.object_id+=1u; break; /* b2_object */
+      case 17u: probe->b2_use.action_id+=1u; break; /* b2_action */
+      case 18u: probe->b2_decision.status=NF18B2_BLOCKED; break; /* b2_eligible_status */
+      case 19u: probe->b2_decision.physical=NF18B2_BLOCKED; break; /* b2_physical_status */
+      case 20u: probe->b2_decision.contract=NF18B2_BLOCKED; break; /* b2_contract_status */
+      case 21u: probe->encounter_registry.contract_epoch+=1u; break; /* ledger_contract_epoch */
+      case 22u: probe->has_b2_contract=false; break; /* b2_presence */
+      case 23u: probe->has_encounter_registry=false; break; /* ledger_presence */
+      case 24u: probe->event.contract_epoch+=1u; break; /* event_contract_epoch */
+      case 25u: probe->physical.actor.center.x+=.01f; break; /* actor_center_x */
+      case 26u: probe->physical.actor.center.z+=.01f; break; /* actor_center_z */
+      case 27u: probe->physical.object.center.x+=.01f; break; /* crate_center_x */
+      case 28u: probe->physical.object.box_half.x+=.01f; break; /* crate_half_x */
+      case 29u: probe->physical.object.center.z+=.01f; break; /* crate_center_z */
+        default: CHECK(false);
+      }
+      CHECK(!nf_retc_m2_real_contract_audit(
+          w,r,enc,push,h282_probe));
+      CHECK(nf_retc_read(publisher)==h276b_accepted&&
+            nf_retc_m2_real_contract_audit(
+               w,r,enc,push,h276b_accepted));
+      fprintf(stderr,"H282 BOUNDARY_REJECT tick=%u group=%u case=%u\n",
+        tick,h282_case/5u,h282_case);
+   }
+   free(h282_probe);
+   fprintf(stderr,"H282 BOUNDARY_PASS tick=%u rejected=30 source_owned=1\n",tick);
    /* H43: externally owned record from ONE accepted immutable frame. */
    NfRetcExternalRecord exported={0};
    CHECK(nf_retc_external_capture(publisher,&exported));
