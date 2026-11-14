@@ -1,0 +1,50 @@
+name: H291 real A6 owner 3D Y-source coherence 40 trials
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h291-owner-y-source.yml'
+      - 'src/shared/nf_retc_ma03_owner_tick.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+  workflow_dispatch:
+jobs:
+  owner-source-y:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin source exact
+        run: |
+          git rev-parse HEAD
+          sha256sum src/shared/nf_retc_ma03_owner_tick.h src/tests/test_v18c2_retc_real_twotick.c
+      - name: Build real owner source tests
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          cmake -S . -B build-h291 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h291 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Run 40 Y-source denial tests and cumulative regression
+        run: |
+          set -euo pipefail
+          build-h291/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee h291.log
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          log=Path("h291.log").read_text()
+          cases=re.findall(r"H291 A6_Y_SOURCE_DENIAL case=(\d+) axis=(center_y|velocity_y) preserved=1",log)
+          expected=[(str(n),"center_y" if n%2==0 else "velocity_y") for n in range(40)]
+          assert cases==expected,(len(cases),cases[:5])
+          assert "H291 40 real owner Y-source denials PASS" in log
+          assert "H290 REAL_A5_MATRIX PASS 40 negative and 40 positive source rechecks" in log
+          assert "RET-C real A6 dispatcher two consecutive committed joint ticks PASS" in log
+          print("H291 40/40 Y-source denials and inherited H290 source regression PASS")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h291-owner-source-y-${{ matrix.compiler }}
+          path: h291.log
+          retention-days: 14
