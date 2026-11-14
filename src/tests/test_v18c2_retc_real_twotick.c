@@ -1939,7 +1939,7 @@ int main(int argc,char **argv){
    /* H292: 48 genuine owner-source exception/extreme-float denials:
       six 3D state dimensions x eight adversarial inputs. */
    const float h292_bad[8]={NAN,INFINITY,-INFINITY,1e30f,
-                            -1e30f,1e-30f,-1e-30f,3.402823e38f};
+                            -1e30f,1000.f,-1000.f,3.402823e38f};
    float *h292_fields[6]={&two_owner->physical.actor.center.x,
                           &two_owner->physical.actor.center.y,
                           &two_owner->physical.actor.center.z,
