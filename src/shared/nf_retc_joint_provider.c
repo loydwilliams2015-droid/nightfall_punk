@@ -119,6 +119,7 @@ static bool joint_authorize_interaction_input(
     !w->tick_in_progress||w->tick_owner_context!=r||
     w->tick!=r->last_commit_tick||
     r->require_pair_research||r->research_pair_stage||
+    r->require_dual_contact_preflight||r->research_dual_stage||
     j->owner!=r||j->encounter->owner!=r||
     j->encounter->world!=w||j->push->runtime!=r||
     !j->rollback_encounter||!j->encounter->prepared||
