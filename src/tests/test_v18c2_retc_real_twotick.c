@@ -163,7 +163,21 @@ static bool h276e_input_probe(const NfWorld *w,const Nf18a6Runtime *r,
  h276e_denied+=16u;
  return h276e_original_input(w,r,in,context);
 }
-int main(void){
+int main(int argc,char **argv){
+ /* H281: 40 independent source-owned cases. No altered production
+  * authorization, synthetic issuer, or research-mode bypass. The default
+  * case remains bit-for-bit the H280 positive physical control. */
+ unsigned h281_case=0u;
+ if(argc==3&&strcmp(argv[1],"--sweep-case")==0){
+   char *end=NULL;
+   const unsigned long parsed=strtoul(argv[2],&end,10);
+   if(!argv[2][0]||!end||*end||parsed>=40ul){
+      fprintf(stderr,"H281 invalid sweep case; expected 0..39\n");return 2;
+   }
+   h281_case=(unsigned)parsed;
+ }else if(argc!=1){
+   fprintf(stderr,"H281 usage: [--sweep-case 0..39]\n");return 2;
+ }
  NfWorld *w=calloc(1,sizeof *w);
  Nf18a6Runtime *r=calloc(1,sizeof *r);
  Nf18b2EncounterRuntime *enc=calloc(1,sizeof *enc);
@@ -381,9 +395,14 @@ int main(void){
    *h276c_source=r->physical;
    /* H276E: a real server-issued B2/B3 PUSH is the only acceptable
       source for A6 interact-held input in this production joint tick. */
-   NfMoveInput move={0};move.strafe=1;move.forward=.2f;
-   /* H280: tick 2 carries genuine yawed XZ input into the A6 owner. */
-   move.yaw_radians=tick==1u?0.f:-.10f;
+   NfMoveInput move={0};move.strafe=1;
+   /* H281: eight yaw families by five forward-input variations.
+    * All 40 cases retain two real B2/B3 authorized owner ticks.
+    * First tick is the exact H280 unchanged anchor; tick 2 varies.
+    * No geometry or authority structures are fabricated for cases. */
+   move.forward=tick==1u?.2f:.2f+.002f*(float)(h281_case%5u);
+   move.yaw_radians=tick==1u?0.f:
+      -.10f-.005f*(float)(h281_case/5u);
    move.interact_held=true;
    nf_world_set_input(w,10,move);
    const NfWorldTickStatus status=nf_world_step_checked(w,1.f/(float)NF_TICK_RATE);
@@ -416,6 +435,11 @@ int main(void){
    fprintf(stderr,"H280 SOURCE_POSITIVE tick=%u yaw=%.5f actor_dx=%.8f actor_dz=%.8f crate_dx=%.8f crate_dz=%.8f receipts=%u\n",
        tick,move.yaw_radians,h280_actor_dx,h280_actor_dz,
        h280_crate_dx,h280_crate_dz,h280_next->committed_receipts);
+   fprintf(stderr,
+       "H281 SOURCE_MATRIX case=%u tick=%u forward=%.5f yaw=%.5f actor_dx=%.8f actor_dz=%.8f crate_dx=%.8f crate_dz=%.8f receipts=%u\n",
+       h281_case,tick,move.forward,move.yaw_radians,
+       h280_actor_dx,h280_actor_dz,h280_crate_dx,h280_crate_dz,
+       h280_next->committed_receipts);
    CHECK(isfinite(h280_actor_dx)&&isfinite(h280_actor_dz)&&
          isfinite(h280_crate_dx)&&isfinite(h280_crate_dz));
    CHECK(fabsf(h280_actor_dz)>0.000001f);
