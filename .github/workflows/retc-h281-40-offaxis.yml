@@ -1,0 +1,72 @@
+name: H281 forty real-source off-axis joint PUSH cases
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/retc-h281-40-offaxis.yml'
+      - 'tools/retc_h281_matrix_runner.py'
+      - 'tools/retc_h281_matrix_aggregate.py'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - 'src/shared/nf_retc_joint_provider.c'
+  workflow_dispatch:
+
+jobs:
+  real-source-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        family: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source identity
+        run: |
+          git rev-parse HEAD
+          sha256sum src/tests/test_v18c2_retc_real_twotick.c src/shared/nf_retc_joint_provider.c
+          sha256sum tools/retc_h281_matrix_runner.py tools/retc_h281_matrix_aggregate.py
+      - name: Build actual A6 owner B2/B3 two-tick C test
+        run: |
+          cmake -S . -B build-h281 -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h281 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Execute five independent real-world cases twice
+        env:
+          FAMILY: ${{ matrix.family }}
+        run: |
+          set -euo pipefail
+          python3 tools/retc_h281_matrix_runner.py \
+            --executable build-h281/nightfall_v18c2_retc_real_twotick_test \
+            --family "$FAMILY" --out "h281-results/h281_family_$FAMILY.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h281-family-${{ matrix.family }}
+          path: h281-results/
+          if-no-files-found: warn
+          retention-days: 14
+
+  forty-case-acceptance:
+    runs-on: ubuntu-latest
+    needs: real-source-matrix
+    if: always()
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: h281-family-*
+          path: h281-source-reports/
+          merge-multiple: true
+      - name: Assert all 40 independent cases and exact replay
+        run: |
+          set -euo pipefail
+          python3 tools/retc_h281_matrix_aggregate.py \
+            --input h281-source-reports \
+            --out h281-closeout.json
+          python3 -m json.tool h281-closeout.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h281-40-case-closeout
+          path: h281-closeout.json
+          if-no-files-found: warn
+          retention-days: 14
