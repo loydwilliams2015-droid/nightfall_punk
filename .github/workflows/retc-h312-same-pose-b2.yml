@@ -1,0 +1,41 @@
+name: H312 fresh B2 decisions at real two-actor contact poses
+on:
+  pull_request:
+    paths:
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h312-same-pose-b2.yml'
+  workflow_dispatch:
+jobs:
+  current-pose-b2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact commit with real-world B2 and A4 owners
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h312 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h312 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Inspect ten fresh twin-B2 contact-pose decisions and unchanged accepted state
+        run: |
+          set -euo pipefail
+          build-h312/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h312/h312.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path("build-h312/h312.log").read_text()
+          rows=re.findall(r'H312 CURRENT_COLLISION_B2 case=(\d+) first=(\d+) second=(\d+) both=([01]) source=1 preserved=1',s)
+          assert len(rows)==10,len(rows)
+          assert {int(c) for c,_,_,_ in rows}==set(range(10))
+          print("H312 fresh B2 eligibility by pose:")
+          for c,a,b,both in rows:
+              print(f"  variant {c}: actor10={a} actor20={b} both_eligible={both}")
+          assert 'H311 SAME_WORLD_PHYSICAL PASS' in s
+          print("H312 PASS: same A6-world positive A4 trial with freshly re-evaluated B2 decisions, no publication")
+          PY
