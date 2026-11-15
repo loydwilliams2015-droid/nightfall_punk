@@ -1,0 +1,42 @@
+name: H314 actual A3 capsule versus A5 material BODY_BLOCKED audit
+on:
+  pull_request:
+    paths:
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h314-body-clearance.yml'
+  workflow_dispatch:
+jobs:
+  body-jurisdiction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact SHA real B2/A3/A5 and A4 owner fixture
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h314 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h314 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Execute 20 source-derived B2 body clearance component observations
+        run: |
+          set -euo pipefail
+          build-h314/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h314/h314.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('build-h314/h314.log').read_text()
+          rows=re.findall(r'H314 BODY_COMPONENT case=(\d+) actor=(\d+) a3_clear=([01]) a5_query=(\d+) blocked=([01]) preserved=1',s)
+          assert len(rows)==20,len(rows)
+          assert {int(c) for c,_,_,_,_ in rows}==set(range(20))
+          assert all(int(actor)==(10 if int(c)%2==0 else 20) for c,actor,_,_,_ in rows)
+          assert all(int(blocked)==(int(c)%2) for c,_,_,_,blocked in rows),rows
+          assert 'H313 B2_REASON case=9' in s
+          for c,actor,a3,a5,blocked in rows:
+              print(f'H314 source case={c} actor={actor} A3_clear={a3} A5_query={a5} B2_body_blocked={blocked}')
+          print('H314 PASS 20 exact-source A3/A5 component observations; no A6 or B3 mutation')
+          PY

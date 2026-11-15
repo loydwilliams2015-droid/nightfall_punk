@@ -2244,6 +2244,40 @@ int main(int argc,char **argv){
         (int)h312_second,(int)h313_second->authorization.reason,
         (int)h313_second->authorization.physical,
         (int)h313_second->authorization.contract);
+      /* H314: SOURCE-EXACT BODY_BLOCKED jurisdiction split.
+         The B2 evaluator defines BODY_BLOCKED as either A3 capsule
+         interference or A5 solid occupancy. Recompute BOTH for each
+         actual actor at each H311 positive A4 contact pose. No rule
+         relaxation, fabricated B2 grant, B3 effect or A6 publication. */
+      for(unsigned h314_actor=0u;h314_actor<2u;++h314_actor){
+        const Nf18b2Scene *scene=&h312_current->frame.scene;
+        const uint32_t actor_id=h314_actor?20u:10u;
+        const Nf18b2Actor *source_actor=NULL;
+        for(size_t h314_j=0u;h314_j<scene->actor_count;++h314_j)
+          if(scene->actors[h314_j].id==actor_id)
+            source_actor=&scene->actors[h314_j];
+        CHECK(source_actor&&scene->material);
+        const Nf18a2ShapePolicy h314_shape={
+          source_actor->radius,source_actor->height,0.f,0.f,1.f};
+        const bool h314_a3_clear=nf18a3_capsule_clear(
+          scene->geometry,source_actor->feet,h314_shape);
+        const Nf18a5Query h314_a5=nf18a5_sweep_query(
+          &scene->material->grid,source_actor->feet,
+          (NfVec3){0.f,0.f,0.f},h314_shape,1,
+          scene->geometry.tick,NULL,NULL,NULL);
+        const bool h314_body_blocked=
+          !h314_a3_clear||h314_a5==NF18A5_Q_SOLID;
+        CHECK((h314_actor==0u&&!h314_body_blocked)||
+              (h314_actor==1u&&h314_body_blocked));
+        CHECK(w->tick==h311_tick_before&&
+              nf_retc_read(publisher)==h311_frame_before&&
+              push->receipt_count==h311_receipts_before);
+        fprintf(stderr,
+          "H314 BODY_COMPONENT case=%u actor=%u a3_clear=%u a5_query=%u blocked=%u preserved=1\n",
+          2u*h311_case+h314_actor,actor_id,
+          (unsigned)h314_a3_clear,(unsigned)h314_a5,
+          (unsigned)h314_body_blocked);
+      }
       const unsigned h312_both_eligible=
              h312_first==NF18B2_ELIGIBLE&&
              h312_second==NF18B2_ELIGIBLE;
