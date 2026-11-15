@@ -1,0 +1,43 @@
+name: H305 real A6 two-actor A4/A5 swept-source gate
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_ma03_a5_sweep_pair.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h305-pair-sweep.yml'
+  workflow_dispatch:
+jobs:
+  owner-pair-sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build real A6 owner and A4/A5 source
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h305 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h305 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Execute positive and negative static sweeps for two actual actors
+        run: |
+          set -euo pipefail
+          build-h305/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h305/h305.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path("build-h305/h305.log").read_text()
+          rows=re.findall(r"H305 A4_A5_DUAL_SWEEP case=(\d+) kind=([a-z-]+) admitted=(\d+) source_unchanged=1",s)
+          assert len(rows)==40,len(rows)
+          assert {int(c) for c,_,_ in rows}==set(range(40))
+          for c,k,a in rows:
+              i=int(c)
+              assert (k,a)==(("cache-free","1") if i<20 else ("blocked","0")),(i,k,a)
+          assert "H305 A4_A5_PAIR PASS 20 cache-free + 20 blocked private sweeps" in s
+          assert "H304 TWO_BODY_STAGE PASS" in s
+          print("H305 accepted-source two-actor material test PASS")
+          PY
