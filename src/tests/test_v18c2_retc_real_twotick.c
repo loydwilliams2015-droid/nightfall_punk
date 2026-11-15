@@ -2037,10 +2037,15 @@ int main(int argc,char **argv){
    const float bad=variant==0u?NAN:
      variant==1u?INFINITY:variant==2u?-INFINITY:
      variant==3u?1.f:-1.f;
+   /* Finite pose changes must differ from this fixture's true position;
+    * absolute 1.0 can coincide with the legitimate coactor source. */
    switch(dim){
-    case 0:second_actor->transform.position.x=bad;break;
-    case 1:second_actor->transform.position.y=bad;break;
-    case 2:second_actor->transform.position.z=bad;break;
+    case 0:second_actor->transform.position.x=
+       variant>=3u?before_pose.position.x+bad*.25f:bad;break;
+    case 1:second_actor->transform.position.y=
+       variant>=3u?before_pose.position.y+bad*.25f:bad;break;
+    case 2:second_actor->transform.position.z=
+       variant>=3u?before_pose.position.z+bad*.25f:bad;break;
     case 3:second_actor->transform.velocity.x=bad;break;
     case 4:second_actor->transform.velocity.y=bad;break;
     case 5:second_actor->transform.velocity.z=bad;break;
