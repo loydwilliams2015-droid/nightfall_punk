@@ -4,6 +4,8 @@
  * canonical/fine geometry before promoting even a private contact plan.
  * No B2 grants, B3 realization, durable WAL, accepted A6 frame or tick. */
 #include "nf_retc_ma03_a5_contact_stage.h"
+#include <math.h>
+#include <stdlib.h>
 typedef struct NfRetcMa03PairSweepWitness {
  uint32_t tick,material_epoch,actor_ids[2];
  Nf18a5Query query[2];
