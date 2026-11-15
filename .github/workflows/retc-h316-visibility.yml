@@ -1,0 +1,42 @@
+name: H316 A3 line and A5 ray visibility attribution
+on:
+  pull_request:
+    paths:
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h316-visibility.yml'
+  workflow_dispatch:
+jobs:
+  source-visibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build same-source A6 A4 B2 A3 A5 fixture
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h316 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h316 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Compare twenty independent real A3 and A5 visibility observations
+        run: |
+          set -euo pipefail
+          build-h316/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h316/h316.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('build-h316/h316.log').read_text()
+          rows=re.findall(r'H316 VISIBILITY case=(\d+) actor=(\d+) a3_hits=(\d+) first_hit=(\d+) a5_ray=(\d+) occluded=([01]) source_reason=(\d+) preserved=1',s)
+          assert len(rows)==20,len(rows)
+          assert {int(r[0]) for r in rows}==set(range(20))
+          assert all(int(r[1])==(20 if int(r[0])%2 else 10) for r in rows)
+          assert all((int(r[6])==6)==(int(r[5])==1) for r in rows),rows
+          assert 'H315 LATERAL_SEARCH_COMPLETE cases=10 joint_positive=0' in s
+          for r in rows:
+              print('H316 case=%s actor=%s A3_hit_count=%s first_A3_id=%s A5_ray=%s B2_reason=%s'%(r[0],r[1],r[2],r[3],r[4],r[6]))
+          print('H316 20 actual B2 visibility reasons independently decomposed with source exactness')
+          PY
