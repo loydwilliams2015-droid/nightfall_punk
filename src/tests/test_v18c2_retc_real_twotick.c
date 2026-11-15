@@ -4,6 +4,7 @@
 #include "nf_retc_multi_plan.h"
 #include "nf_retc_multi_preflight.h"
 #include "nf_retc_multi_physical.h"
+#include "nf_retc_multi_source_seal.h"
 #include "nf_retc_ma03_physics_stage.h"
 #include "nf_retc_ma03_a5_envelope.h"
 #include "nf_retc_ma03_a5_contact_stage.h"
@@ -2069,6 +2070,38 @@ int main(int argc,char **argv){
   CHECK(nf_retc_multi_physical_preflight(w,r,enc,publisher,&batch));
   CHECK(nf_retc_read(publisher)==accepted&&w->tick==2u);
   CHECK(push->receipt_count==2u);
+  /* H303: a self-consistent canonical B3 batch is still not proof
+   * of TWO genuine current B2 source grants. Seal against the real
+   * encounter queue and its live authorization traces before admitting
+   * even a read-only plan. No A6 or B3 writes occur in this laboratory. */
+  CHECK(nf_retc_multi_source_sealed_preflight(
+       w,r,enc,publisher,first_index,old_count,&batch));
+  for(unsigned h303_case=0u;h303_case<40u;++h303_case){
+   NfRetcCanonicalBatch tampered=batch;
+   const uint32_t n=(uint32_t)(h303_case%4u+1u);
+   const unsigned group=h303_case/4u;
+   switch(group){
+    case 0:tampered.events[0].action+=n;break;
+    case 1:tampered.events[1].action+=n;break;
+    case 2:tampered.events[0].world_epoch+=n;break;
+    case 3:tampered.events[1].world_epoch+=n;break;
+    case 4:tampered.events[0].material_epoch+=n;break;
+    case 5:tampered.events[1].material_epoch+=n;break;
+    case 6:tampered.events[0].contract_epoch+=n;break;
+    case 7:tampered.events[1].contract_epoch+=n;break;
+    case 8:tampered.events[0].tick+=n;break;
+    case 9:tampered.events[1].tick+=n;break;
+   }
+   CHECK(!nf_retc_multi_source_sealed_preflight(
+       w,r,enc,publisher,first_index,old_count,&tampered));
+   CHECK(nf_retc_read(publisher)==accepted&&
+         w->tick==2u&&push->receipt_count==2u);
+   CHECK(nf_retc_multi_source_sealed_preflight(
+       w,r,enc,publisher,first_index,old_count,&batch));
+   fprintf(stderr,"H303 TWO_B2_SOURCE_SEAL_DENIAL case=%u group=%u preserved=1\n",
+           h303_case,group);
+  }
+  fprintf(stderr,"H303 TWO_B2_SOURCE_SEAL PASS 40 source-bound denials\n");
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
      checks independent analytical impulses, and returns two changed body
