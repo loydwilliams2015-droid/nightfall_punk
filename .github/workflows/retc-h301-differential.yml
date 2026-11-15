@@ -1,0 +1,43 @@
+name: H301 actual A6 to A5 map sweep differential
+on:
+  pull_request:
+    paths:
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h301-differential.yml'
+  workflow_dispatch:
+jobs:
+  source-differential:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build actual A6 owner and A5 implementation
+        env:
+          CC: \${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h301 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h301 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Differential semantic check on 40 accepted-source trajectories
+        run: |
+          set -euo pipefail
+          build-h301/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h301/h301.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path("build-h301/h301.log").read_text()
+          cases=re.findall(r"H301 REAL_A6_DIFFERENTIAL case=(\d+) epoch=(\d+) oracle=(\d+) admitted=(\d+) source_unchanged=1",s)
+          assert len(cases)>=40,len(cases)
+          for epoch in {e for _,e,_,_ in cases}:
+              rows=[(int(i),int(q),int(a)) for i,e,q,a in cases if e==epoch]
+              assert {i for i,_,_ in rows}==set(range(40)),(epoch,len(rows))
+              for i,q,a in rows:
+                  assert (q==0 and a==1) if i<20 else (q==2 and a==0),(epoch,i,q,a)
+          assert "H301 REAL_A6_DIFFERENTIAL PASS 40 paths, exact A5 parity" in s
+          assert "H300 REAL_A6_CLEARANCE PASS" in s
+          print("H301 pass: 40 semantic comparisons + preserved authoritative grid")
+          PY
