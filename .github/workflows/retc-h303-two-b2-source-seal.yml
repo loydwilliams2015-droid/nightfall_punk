@@ -1,0 +1,40 @@
+name: H303 real two-B2 source seal preflight
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_multi_source_seal.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h303-two-b2-source-seal.yml'
+  workflow_dispatch:
+jobs:
+  real-source-seal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile source-exact real A6 B2 B3 owner
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h303 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h303 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Run 40 real B2 source-seal denials with owner-state rechecks
+        run: |
+          set -euo pipefail
+          build-h303/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h303/h303.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          log=Path('build-h303/h303.log').read_text()
+          rows=re.findall(r'H303 TWO_B2_SOURCE_SEAL_DENIAL case=(\d+) group=(\d+) preserved=1',log)
+          assert len(rows)==40,len(rows)
+          assert {(int(c),int(g)) for c,g in rows}=={(i,i//4) for i in range(40)}
+          assert 'H303 TWO_B2_SOURCE_SEAL PASS 40 source-bound denials' in log
+          assert 'H302 REAL_B2_COACTOR PASS' in log
+          print('H303 verified 40 two-source proposal rejections and unchanged actual A6 publisher')
+          PY
