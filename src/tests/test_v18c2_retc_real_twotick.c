@@ -9,6 +9,7 @@
 #include "nf_retc_ma03_a5_envelope.h"
 #include "nf_retc_ma03_a5_contact_stage.h"
 #include "nf_retc_ma03_a5_sweep_pair.h"
+#include "nf_retc_h307_cross_source_binding.h"
 #include "nf_retc_ma03_owner_tick.h"
 #include "nf_retc_external.h"
 #include "nf_retc_consumer_source.h"
@@ -2449,6 +2450,57 @@ int main(int argc,char **argv){
          h305_original.actor_ids[1]==40u&&
          h305_original.query[0]==NF18A5_Q_FREE&&
          h305_original.query[1]==NF18A5_Q_FREE);
+   /* H307 cross-branch source binding: these are independently real
+    * but DIFFERENT B2 and physical research scenes (10/20 vs 30/40).
+    * Fail closed rather than laundering their evidence together. */
+   CHECK(!nf_retc_h307_structural_pair_match(
+      &batch,&candidate,&h305_handoff,&h305_original));
+   /* A synthetic B3 proposal is used ONLY to prove the necessary
+    * structural predicate has a positive and independently falsifiable
+    * control. It is NOT an authentic B2 grant or an authorized event. */
+   NfRetcCanonicalBatch h307_structural_control=batch;
+   h307_structural_control.tick=h305_original.tick;
+   for(unsigned h307_actor=0;h307_actor<2u;++h307_actor){
+      Nf18b3Event *e=&h307_structural_control.events[h307_actor];
+      e->actor=candidate.source.actors[h307_actor].id;
+      e->tick=h305_original.tick;
+      e->world_epoch=h305_handoff.source_revision;
+      e->material_epoch=h305_handoff.material_epoch;
+      e->contract_epoch=h307_structural_control.contract_epoch;
+   }
+   CHECK(nf_retc_h307_structural_pair_match(
+       &h307_structural_control,&candidate,&h305_handoff,&h305_original));
+   for(unsigned h307_case=0;h307_case<40u;++h307_case){
+      NfRetcCanonicalBatch forged=h307_structural_control;
+      NfRetcMa03PairSweepWitness forged_sweep=h305_original;
+      const unsigned field=h307_case/4u;
+      const uint32_t delta=h307_case%4u+1u;
+      switch(field){
+       case 0:forged.events[0].actor+=delta;break;
+       case 1:forged.events[1].actor+=delta;break;
+       case 2:forged.events[0].world_epoch+=delta;break;
+       case 3:forged.events[1].world_epoch+=delta;break;
+       case 4:forged.events[0].material_epoch+=delta;break;
+       case 5:forged.events[1].material_epoch+=delta;break;
+       case 6:forged.events[0].tick+=delta;break;
+       case 7:forged.events[1].tick+=delta;break;
+       case 8:forged_sweep.actor_ids[0]+=delta;break;
+       case 9:forged_sweep.material_epoch+=delta;break;
+      }
+      CHECK(!nf_retc_h307_structural_pair_match(
+          &forged,&candidate,&h305_handoff,&forged_sweep));
+      CHECK(nf_retc_h307_structural_pair_match(
+          &h307_structural_control,&candidate,&h305_handoff,&h305_original));
+      CHECK(!nf_retc_h307_structural_pair_match(
+          &batch,&candidate,&h305_handoff,&h305_original));
+      CHECK(two_world->tick==source_tick&&
+            nf_retc_read(publisher)==accepted&&
+            push->receipt_count==2u);
+      fprintf(stderr,
+          "H307 CROSS_SOURCE_REJECT case=%u field=%u delta=%u preserved=1\n",
+          h307_case,field,delta);
+   }
+   fprintf(stderr,"H307 SOURCE_BINDING PASS 40 denials with structural positive and real-source mismatch\n");
    const uint32_t h305_original_cache=two_owner->physical.world.grid.cache_revision;
    for(unsigned h305_case=0;h305_case<40u;++h305_case){
      const uint32_t old_epoch=two_owner->physical.world.grid.global_revision;
