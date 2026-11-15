@@ -2323,6 +2323,104 @@ int main(int argc,char **argv){
   }
   fprintf(stderr,
      "H311 SAME_WORLD_PHYSICAL PASS 10 positive actor10/20 contacts + 10 stale-B2 denials + restores\n");
+  /* H315: search ten genuine same-A6 owner collision configurations
+     LATERALLY AWAY from the A3 crate obstruction, without modifying
+     the A3, A5, B2 rules or authorizing/publishing a transaction.
+     Record actual stage decisions even if the positive intersection is
+     empty; each independent observation is falsifiable and source-derived. */
+  {
+    NfActor *p315=nf_world_find_actor(w,10u);
+    NfActor *q315=nf_world_find_actor(w,20u);
+    CHECK(p315&&q315);
+    const NfTransform original_p315=p315->transform;
+    const NfTransform original_q315=q315->transform;
+    const Nf18a4Body original_a4_315=r->physical.actor;
+    const uint64_t tick315=w->tick;
+    const NfRetcFrame *frame315=nf_retc_read(publisher);
+    const uint32_t receipts315=push->receipt_count;
+    unsigned intersection315=0u;
+    for(unsigned case315=0u;case315<10u;++case315){
+      const float lateral=1.1f+.15f*(float)case315;
+      p315->transform.position.z=original_p315.position.z+lateral;
+      q315->transform.position=(NfVec3){
+        p315->transform.position.x+.80f,
+        p315->transform.position.y,
+        p315->transform.position.z};
+      p315->transform.velocity=(NfVec3){4.5f,0.f,0.f};
+      q315->transform.velocity=(NfVec3){0.f,0.f,0.f};
+      r->physical.actor.center=(NfVec3){
+        p315->transform.position.x,
+        p315->transform.position.y+p315->movement.body_height*.5f,
+        p315->transform.position.z};
+      r->physical.actor.velocity=p315->transform.velocity;
+      r->physical.actor.height=p315->movement.body_height;
+      NfRetcMa03PhysicalCandidate physical315={0};
+      const bool a4_315=nf_retc_ma03_stage_physics(w,r,.125f,&physical315);
+      if(a4_315)CHECK(physical315.eligible&&
+                        physical315.reference.matched==1u&&
+                        physical315.reference.disagreed==0u&&
+                        nf_retc_ma03_recheck_physics(w,r,.125f,&physical315));
+      Nf18b2EncounterRuntime *scratch315=calloc(1,sizeof *scratch315);
+      CHECK(scratch315);
+      *scratch315=*enc;
+      scratch315->queue_count=0u;scratch315->trace_count=0u;
+      scratch315->grant_count=0u;scratch315->prepared=0u;
+      scratch315->attached=0u;
+      scratch315->frame.scene.actors=scratch315->frame.actors;
+      scratch315->frame.scene.objects=scratch315->frame.objects;
+      CHECK(nf18b2_live_frame(scratch315,&scratch315->frame));
+      const Nf18b2Status b10=nf18b2_propose(scratch315,
+          (Nf18b2Intent){10u,2010u,1100u+case315,NF18B2_PUSH});
+      const Nf18b2Status b20=nf18b2_propose(scratch315,
+          (Nf18b2Intent){20u,2010u,1200u+case315,NF18B2_PUSH});
+      CHECK(scratch315->trace_count>=2u);
+      const Nf18b2Reason reason10=scratch315->traces[
+          scratch315->trace_count-2u].authorization.reason;
+      const Nf18b2Reason reason20=scratch315->traces[
+          scratch315->trace_count-1u].authorization.reason;
+      unsigned a3clear[2]={0u,0u};
+      unsigned a5free[2]={0u,0u};
+      for(size_t t315=0;t315<2u;++t315){
+        const Nf18b2Scene *scene=&scratch315->frame.scene;
+        const uint32_t aid=t315?20u:10u;
+        const Nf18b2Actor *src=NULL;
+        for(size_t j315=0;j315<scene->actor_count;++j315)
+          if(scene->actors[j315].id==aid)src=&scene->actors[j315];
+        CHECK(src&&scene->material);
+        const Nf18a2ShapePolicy shape315={
+          src->radius,src->height,0.f,0.f,1.f};
+        a3clear[t315]=(unsigned)nf18a3_capsule_clear(
+          scene->geometry,src->feet,shape315);
+        a5free[t315]=(unsigned)(nf18a5_sweep_query(
+          &scene->material->grid,src->feet,
+          (NfVec3){0.f,0.f,0.f},shape315,1,
+          scene->geometry.tick,NULL,NULL,NULL)==NF18A5_Q_FREE);
+      }
+      const unsigned joint315=(unsigned)(a4_315&&
+          b10==NF18B2_ELIGIBLE&&b20==NF18B2_ELIGIBLE&&
+          a3clear[0]&&a3clear[1]&&a5free[0]&&a5free[1]);
+      intersection315+=joint315;
+      CHECK(w->tick==tick315&&
+            nf_retc_read(publisher)==frame315&&
+            push->receipt_count==receipts315);
+      fprintf(stderr,
+        "H315 LATERAL_SEARCH case=%u z_offset_mm=%u a4=%u b10=%d b20=%d reason10=%d reason20=%d a3_10=%u a3_20=%u a5_10=%u a5_20=%u joint=%u preserved=1\n",
+        case315,(unsigned)(lateral*1000.f+.5f),(unsigned)a4_315,
+        (int)b10,(int)b20,(int)reason10,(int)reason20,
+        a3clear[0],a3clear[1],a5free[0],a5free[1],joint315);
+      free(scratch315);
+      p315->transform=original_p315;
+      q315->transform=original_q315;
+      r->physical.actor=original_a4_315;
+      CHECK(nf_retc_multi_source_sealed_preflight(
+         w,r,enc,publisher,first_index,old_count,&batch));
+    }
+    CHECK(w->tick==tick315&&nf_retc_read(publisher)==frame315&&
+          push->receipt_count==receipts315);
+    fprintf(stderr,
+       "H315 LATERAL_SEARCH_COMPLETE cases=10 joint_positive=%u source_restored=1\n",
+       intersection315);
+  }
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
      checks independent analytical impulses, and returns two changed body
