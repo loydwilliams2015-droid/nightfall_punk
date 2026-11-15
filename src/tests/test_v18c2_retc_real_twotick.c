@@ -12,6 +12,7 @@
 #include "nf_retc_consumer_source.h"
 #include "nf_retc_map_projection.h"
 #include "nf_retc_map_material.h"
+#include "nf_retc_map_sweep.h"
 #include "nf_retc_network.h"
 #include "nf_multi_ma03.h"
 #include <math.h>
@@ -211,6 +212,69 @@ static bool h298_real_material_check(const NfRetcPublisher *pub,uint32_t expecte
  nf_retc_read_lease_release(&lease);
  return ok;
 }
+/* H299: actual accepted A6 material grid -> private A5 swept query.
+ * 50 hostile source/geometry denial controls preserve the last witness. */
+static bool h299_real_swept_map_check(const NfRetcPublisher *pub,
+                                     uint32_t expected){
+ NfRetcReadLease lease={0};
+ if(!nf_retc_read_lease_acquire(pub,&lease))return false;
+ bool ok=false;
+ do{
+  NfRetcReadView v={0};
+  if(!nf_retc_read_leased_view(&lease,&v)||!v.accepted)break;
+  const NfRetcFrame *f=v.accepted;
+  NfVec3 feet={f->physical.actor.center.x,
+               f->physical.actor.center.y-f->physical.actor.height*.5f,
+               f->physical.actor.center.z};
+  NfVec3 zero={0};
+  Nf18a2ShapePolicy shape={.radius=f->physical.actor.radius,
+     .height=f->physical.actor.height,.foot_flat_radius=.05f,
+     .step_height=.4f,.walkable_normal_y=.65f};
+  NfRetcSweptMapWitness baseline={0};
+  if(!nf_retc_map_sweep_from_lease(&lease,&v,f->epoch,f->transaction_id,
+       f->owner_actor,f->object_id,f->event.contract_epoch,feet,zero,
+       shape,.016f,&baseline)||
+     baseline.tick!=expected||
+     baseline.material_epoch!=f->physical.world.grid.global_revision)
+    break;
+  bool passed=true;
+  for(unsigned case_id=0;case_id<50u;++case_id){
+   const uint32_t n=case_id%5u+1u;
+   uint32_t tick=f->epoch,tx=f->transaction_id,
+     owner=f->owner_actor,obj=f->object_id,
+     contract=f->event.contract_epoch;
+   NfVec3 p=feet,d=zero;
+   Nf18a2ShapePolicy sh=shape;
+   float dt=.016f;
+   switch(case_id/5u){
+    case 0:tick+=n;break;
+    case 1:tx+=n;break;
+    case 2:owner+=n;break;
+    case 3:obj+=n;break;
+    case 4:contract+=n;break;
+    case 5:dt=-(float)n;break;
+    case 6:sh.radius=-(float)n;break;
+    case 7:sh.height=-(float)n;break;
+    case 8:p.x=NAN;break;
+    case 9:d.z=NAN;break;
+   }
+   NfRetcSweptMapWitness untouched=baseline;
+   if(nf_retc_map_sweep_from_lease(&lease,&v,tick,tx,owner,obj,
+        contract,p,d,sh,dt,&untouched)||
+      memcmp(&untouched,&baseline,sizeof baseline)!=0){
+     passed=false;break;
+   }
+   fprintf(stderr,"H299 REAL_A6_SWEEP_DENIAL case=%u epoch=%u unchanged=1\n",
+           case_id,expected);
+  }
+  if(!passed)break;
+  fprintf(stderr,"H299 REAL_A6_SWEEP PASS 50 denial cases actual A5 result=%u\n",
+          (unsigned)baseline.result);
+  ok=true;
+ }while(0);
+ nf_retc_read_lease_release(&lease);
+ return ok;
+}
 static bool verify(const NfWorld *w,const Nf18a6Runtime *r,
  const Nf18b2EncounterRuntime *enc,const Nf18b6Push *push,
  const NfRetcPublisher *publisher,uint32_t expected){
@@ -218,6 +282,7 @@ static bool verify(const NfWorld *w,const Nf18a6Runtime *r,
  if(!h296_leased_source_check(publisher,expected)||
     !h297_real_map_check(publisher,expected)||
     !h298_real_material_check(publisher,expected)||
+    !h299_real_swept_map_check(publisher,expected)||
     !nf_retc_read_joint_view(publisher,&view))return false;
  const NfRetcFrame *f=view.accepted;
  if(view.epoch!=expected||view.event->tick!=expected||
