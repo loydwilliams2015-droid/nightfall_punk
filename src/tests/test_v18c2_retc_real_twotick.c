@@ -341,6 +341,76 @@ static bool h300_real_clearance_check(const NfRetcPublisher *pub,
  nf_retc_read_lease_release(&lease);
  return ok;
 }
+/* H301 differential source-oracle sweep: 40 spatial trajectories on the
+ * accepted A6 material frame, compared against A5 directly on a private
+ * grid. Neither the trusted publication nor its cache is modified.
+ * This establishes semantic parity for a bounded resident/non-resident
+ * scene, not full world topology or production B2 actor arbitration. */
+static bool h301_real_sweep_differential(const NfRetcPublisher *pub,
+                                         uint32_t expected){
+ NfRetcReadLease lease={0};
+ if(!nf_retc_read_lease_acquire(pub,&lease))return false;
+ bool ok=false;
+ do{
+  NfRetcReadView v={0};
+  if(!nf_retc_read_leased_view(&lease,&v)||!v.accepted)break;
+  const NfRetcFrame *f=v.accepted;
+  const Nf18a5Grid *source=&f->physical.world.grid;
+  Nf18a5Grid *oracle_grid=malloc(sizeof *oracle_grid);
+  Nf18a5Grid *source_snapshot=malloc(sizeof *source_snapshot);
+  if(!oracle_grid||!source_snapshot){
+   free(oracle_grid);free(source_snapshot);break;
+  }
+  memcpy(source_snapshot,source,sizeof *source_snapshot);
+  bool passed=true;
+  const Nf18a2ShapePolicy shape={
+   .radius=.1f,.height=.5f,.foot_flat_radius=.05f,
+   .step_height=.15f,.walkable_normal_y=.65f};
+  for(unsigned case_id=0;case_id<40u;++case_id){
+   const unsigned j=case_id%10u;
+   NfVec3 p={1.5f,.5f,1.5f};
+   NfVec3 d={0};
+   if(case_id<10u)d.x=.005f*(float)j;
+   else if(case_id<20u)d.z=.005f*(float)j;
+   else if(case_id<30u)p.x=100.f+(float)j;
+   else p.z=-100.f-(float)j;
+   memcpy(oracle_grid,source,sizeof *oracle_grid);
+   uint32_t loads=0;
+   const Nf18a5Query oracle=nf18a5_sweep_query(
+        oracle_grid,p,d,shape,.016f,f->epoch,NULL,NULL,&loads);
+   NfRetcSweptMapWitness observed={0};
+   if(!nf_retc_map_sweep_from_lease(&lease,&v,
+        f->epoch,f->transaction_id,f->owner_actor,f->object_id,
+        f->event.contract_epoch,p,d,shape,.016f,&observed)||
+      oracle!=observed.result||
+      (case_id<20u&&oracle!=NF18A5_Q_FREE)||
+      (case_id>=20u&&oracle!=NF18A5_Q_PENDING)){
+    passed=false;break;
+   }
+   NfRetcSweptMapWitness clearance={
+       0xaaaaU,0xbbbbU,0xccccU,NF18A5_Q_INVALID};
+   const NfRetcSweptMapWitness original=clearance;
+   const bool admitted=nf_retc_map_confirm_free(&lease,&v,
+        f->epoch,f->transaction_id,f->owner_actor,f->object_id,
+        f->event.contract_epoch,p,d,shape,.016f,&clearance);
+   if(admitted!=(oracle==NF18A5_Q_FREE)||
+      (admitted&&clearance.result!=NF18A5_Q_FREE)||
+      (!admitted&&memcmp(&clearance,&original,sizeof original)!=0)||
+      memcmp(source,source_snapshot,sizeof *source_snapshot)!=0){
+    passed=false;break;
+   }
+   fprintf(stderr,
+      "H301 REAL_A6_DIFFERENTIAL case=%u epoch=%u oracle=%u admitted=%u source_unchanged=1\n",
+      case_id,expected,(unsigned)oracle,(unsigned)admitted);
+  }
+  free(oracle_grid);free(source_snapshot);
+  if(!passed)break;
+  fprintf(stderr,"H301 REAL_A6_DIFFERENTIAL PASS 40 paths, exact A5 parity\n");
+  ok=true;
+ }while(0);
+ nf_retc_read_lease_release(&lease);
+ return ok;
+}
 static bool verify(const NfWorld *w,const Nf18a6Runtime *r,
  const Nf18b2EncounterRuntime *enc,const Nf18b6Push *push,
  const NfRetcPublisher *publisher,uint32_t expected){
@@ -350,6 +420,7 @@ static bool verify(const NfWorld *w,const Nf18a6Runtime *r,
     !h298_real_material_check(publisher,expected)||
     !h299_real_swept_map_check(publisher,expected)||
     !h300_real_clearance_check(publisher,expected)||
+    !h301_real_sweep_differential(publisher,expected)||
     !nf_retc_read_joint_view(publisher,&view))return false;
  const NfRetcFrame *f=view.accepted;
  if(view.epoch!=expected||view.event->tick!=expected||
