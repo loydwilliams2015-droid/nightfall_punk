@@ -2221,6 +2221,29 @@ int main(int argc,char **argv){
              (Nf18b2Intent){10u,2010u,700u+h311_case,NF18B2_PUSH});
       const Nf18b2Status h312_second=nf18b2_propose(h312_current,
              (Nf18b2Intent){20u,2010u,800u+h311_case,NF18B2_PUSH});
+      /* H313: actual source B2 trace attribution, never a guessed
+         geometry or contract cause. Both statuses MUST be explained
+         by their own decision from the same current encounter scene. */
+      CHECK(h312_current->trace_count>=2u);
+      const Nf18b2EncounterTrace *h313_first=
+         &h312_current->traces[h312_current->trace_count-2u];
+      const Nf18b2EncounterTrace *h313_second=
+         &h312_current->traces[h312_current->trace_count-1u];
+      CHECK(h313_first->intent.actor_id==10u&&
+            h313_second->intent.actor_id==20u&&
+            h313_first->authorization.status==h312_first&&
+            h313_second->authorization.status==h312_second);
+      CHECK(h313_first->authorization.reason<=NF18B2_REPLAY&&
+            h313_second->authorization.reason<=NF18B2_REPLAY);
+      fprintf(stderr,
+        "H313 B2_REASON case=%u actor10_status=%d actor10_reason=%d actor10_physical=%d actor10_contract=%d actor20_status=%d actor20_reason=%d actor20_physical=%d actor20_contract=%d preserved=1\n",
+        h311_case,(int)h312_first,
+        (int)h313_first->authorization.reason,
+        (int)h313_first->authorization.physical,
+        (int)h313_first->authorization.contract,
+        (int)h312_second,(int)h313_second->authorization.reason,
+        (int)h313_second->authorization.physical,
+        (int)h313_second->authorization.contract);
       const unsigned h312_both_eligible=
              h312_first==NF18B2_ELIGIBLE&&
              h312_second==NF18B2_ELIGIBLE;
