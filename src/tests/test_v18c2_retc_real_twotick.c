@@ -2197,6 +2197,45 @@ int main(int argc,char **argv){
             same_source.reference.matched==1u&&
             same_source.reference.disagreed==0u&&
             nf_retc_ma03_recheck_physics(w,r,.125f,&same_source));
+      /* H312: issue FRESH source-derived B2 decisions at the actual
+         collision pose, in an isolated unbound encounter. This DOES
+         NOT turn a research proposal into owner-issued consumption or
+         production authority. A blocked result is an observed boundary. */
+      Nf18b2EncounterRuntime *h312_current=calloc(1,sizeof *h312_current);
+      CHECK(h312_current);
+      CHECK(nf18b2_encounter_init(h312_current,w,r,
+                                  NF18B2_M4_MATERIAL_FIRST));
+      CHECK(nf18b2_register_actor(h312_current,10u,0u,0u,50u));
+      CHECK(nf18b2_register_actor(h312_current,20u,0u,0u,50u));
+      CHECK(nf18b2_register_object(h312_current,object,
+             r->physical.world.grid.global_revision,0u,0u));
+      const Nf18b2Status h312_first=nf18b2_propose(h312_current,
+             (Nf18b2Intent){10u,2010u,700u+h311_case,NF18B2_PUSH});
+      const Nf18b2Status h312_second=nf18b2_propose(h312_current,
+             (Nf18b2Intent){20u,2010u,800u+h311_case,NF18B2_PUSH});
+      const unsigned h312_both_eligible=
+             h312_first==NF18B2_ELIGIBLE&&
+             h312_second==NF18B2_ELIGIBLE;
+      NfRetcMultiPlan h312_plan={0};
+      if(h312_both_eligible){
+        CHECK(h312_current->queue_count>=2u);
+        CHECK(nf_retc_multi_plan_two(h312_current,
+              h312_current->queue_count-2u,
+              h312_current->queue_count-1u,&h312_plan));
+        CHECK(h312_plan.prepared&&h312_plan.actor_ids[0]==10u&&
+              h312_plan.actor_ids[1]==20u&&
+              h312_plan.object_id==2010u);
+      }else{
+        CHECK(!h312_plan.prepared);
+      }
+      CHECK(nf_retc_ma03_recheck_physics(w,r,.125f,&same_source));
+      CHECK(w->tick==h311_tick_before&&
+            nf_retc_read(publisher)==h311_frame_before&&
+            push->receipt_count==h311_receipts_before);
+      fprintf(stderr,
+        "H312 CURRENT_COLLISION_B2 case=%u first=%d second=%d both=%u source=1 preserved=1\n",
+        h311_case,(int)h312_first,(int)h312_second,h312_both_eligible);
+      free(h312_current);
       CHECK(!nf_retc_multi_source_sealed_preflight(
          w,r,enc,publisher,first_index,old_count,&batch));
       CHECK(w->tick==h311_tick_before&&
