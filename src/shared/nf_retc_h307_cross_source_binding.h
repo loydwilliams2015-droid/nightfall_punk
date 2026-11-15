@@ -26,6 +26,22 @@ static inline bool nf_retc_h307_structural_pair_match(
     sweep->tick!=handoff->source_tick+1u||
     sweep->material_epoch!=handoff->material_epoch)
    return false;
+ /* H308: require an actual accepted two-body A4 receipt with the
+    SAME tick/revision as the A5 material handoff. The existing
+    structural pair alone does not prove physical contact ancestry.
+    These checks are necessary evidence, never B2 authorization. */
+ const Nf18a4Receipt *contact=&physical->solved.receipts[0];
+ if(contact->tick!=batch->tick||
+    contact->world_version!=handoff->source_revision||
+    contact->status!=NF18A4_ACCEPTED||
+    !contact->impulses_applied||!contact->contact_id||
+    !isfinite(contact->normal_impulse.x)||
+    !isfinite(contact->normal_impulse.y)||
+    !isfinite(contact->normal_impulse.z)||
+    !isfinite(contact->tangent_impulse.x)||
+    !isfinite(contact->tangent_impulse.y)||
+    !isfinite(contact->tangent_impulse.z)||
+    !isfinite(contact->signed_energy_delta))return false;
  if(batch->events[0].actor==batch->events[1].actor||
     batch->events[0].object!=batch->events[1].object||
     !batch->events[0].object||!batch->events[0].action||

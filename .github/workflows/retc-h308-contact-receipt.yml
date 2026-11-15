@@ -1,0 +1,40 @@
+name: H308 real A4 contact lineage source-seal
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_h307_cross_source_binding.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h308-contact-receipt.yml'
+  workflow_dispatch:
+jobs:
+  receipt-lineage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile same-source A6 B2 A4 A5 harness
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h308 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h308 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Actual reciprocal A4 receipt rejection matrix
+        run: |
+          set -euo pipefail
+          build-h308/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h308/h308.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('build-h308/h308.log').read_text()
+          rows=re.findall(r'H308 A4_RECEIPT_DENIAL case=(\d+) field=(\d+) variant=(\d+) preserved=1',s)
+          assert len(rows)==24,len(rows)
+          assert {(int(c),int(f),int(v)) for c,f,v in rows}=={(i,i//2,i%2) for i in range(24)}
+          assert 'H308 A4_RECEIPT_LINEAGE PASS 24 refusals + restored structural controls' in s
+          assert 'H307 SOURCE_BINDING PASS 40 denials' in s
+          print('H308 24 genuine private A4 source receipt alteration denials PASS')
+          PY
