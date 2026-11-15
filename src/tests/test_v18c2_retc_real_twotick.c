@@ -13,6 +13,7 @@
 #include "nf_retc_map_projection.h"
 #include "nf_retc_map_material.h"
 #include "nf_retc_map_sweep.h"
+#include "nf_retc_map_clearance.h"
 #include "nf_retc_network.h"
 #include "nf_multi_ma03.h"
 #include <math.h>
@@ -275,6 +276,71 @@ static bool h299_real_swept_map_check(const NfRetcPublisher *pub,
  nf_retc_read_lease_release(&lease);
  return ok;
 }
+/* H300: real A6 accepted A5 terrain must certify FREE, not merely
+ * return a well-formed diagnostic. Fifty edge cases outside resident
+ * A5 chunks must not turn PENDING into an authorized positive result;
+ * 50 bounded positive controls remain within known canonical FREE. */
+static bool h300_real_clearance_check(const NfRetcPublisher *pub,
+                                      uint32_t expected){
+ NfRetcReadLease lease={0};
+ if(!nf_retc_read_lease_acquire(pub,&lease))return false;
+ bool ok=false;
+ do{
+  NfRetcReadView view={0};
+  if(!nf_retc_read_leased_view(&lease,&view)||!view.accepted)break;
+  const NfRetcFrame *f=view.accepted;
+  const Nf18a2ShapePolicy shape={.radius=.1f,.height=.5f,
+     .foot_flat_radius=.05f,.step_height=.15f,.walkable_normal_y=.65f};
+  const NfVec3 known_free={1.5f,.5f,1.5f};
+  bool pass=true;
+  for(unsigned case_id=0;case_id<50u;++case_id){
+   const uint32_t n=case_id%10u+1u;
+   NfVec3 p=known_free,d={0};
+   switch(case_id/10u){
+    case 0:p.x=100.f+(float)n;break;
+    case 1:p.y=100.f+(float)n;break;
+    case 2:p.z=100.f+(float)n;break;
+    case 3:p.x=-100.f-(float)n;break;
+    case 4:p.z=-100.f-(float)n;break;
+   }
+   NfRetcSweptMapWitness diagnostic={0};
+   NfRetcSweptMapWitness unchanged={
+        0xaaaaU,0xbbbbU,0xccccU,NF18A5_Q_SOLID};
+   const NfRetcSweptMapWitness sentinel=unchanged;
+   if(!nf_retc_map_sweep_from_lease(&lease,&view,
+          f->epoch,f->transaction_id,f->owner_actor,f->object_id,
+          f->event.contract_epoch,p,d,shape,.016f,&diagnostic)||
+      diagnostic.result!=NF18A5_Q_PENDING||
+      nf_retc_map_confirm_free(&lease,&view,
+          f->epoch,f->transaction_id,f->owner_actor,f->object_id,
+          f->event.contract_epoch,p,d,shape,.016f,&unchanged)||
+      memcmp(&unchanged,&sentinel,sizeof sentinel)!=0){
+     pass=false;break;
+   }
+   fprintf(stderr,"H300 REAL_A6_PENDING_DENIED case=%u epoch=%u preserved=1\n",
+           case_id,expected);
+  }
+  if(!pass)break;
+  for(unsigned case_id=0;case_id<50u;++case_id){
+   NfVec3 d={.005f*(float)(case_id%10u),0,0};
+   NfRetcSweptMapWitness accepted={0};
+   if(!nf_retc_map_confirm_free(&lease,&view,
+       f->epoch,f->transaction_id,f->owner_actor,f->object_id,
+       f->event.contract_epoch,known_free,d,shape,.016f,&accepted)||
+       accepted.result!=NF18A5_Q_FREE||
+       accepted.tick!=expected){
+      pass=false;break;
+   }
+   fprintf(stderr,"H300 REAL_A6_FREE_CONTROL case=%u epoch=%u accepted=1\n",
+           case_id,expected);
+  }
+  if(!pass)break;
+  fprintf(stderr,"H300 REAL_A6_CLEARANCE PASS 50 pending denials + 50 free controls\n");
+  ok=true;
+ }while(0);
+ nf_retc_read_lease_release(&lease);
+ return ok;
+}
 static bool verify(const NfWorld *w,const Nf18a6Runtime *r,
  const Nf18b2EncounterRuntime *enc,const Nf18b6Push *push,
  const NfRetcPublisher *publisher,uint32_t expected){
@@ -283,6 +349,7 @@ static bool verify(const NfWorld *w,const Nf18a6Runtime *r,
     !h297_real_map_check(publisher,expected)||
     !h298_real_material_check(publisher,expected)||
     !h299_real_swept_map_check(publisher,expected)||
+    !h300_real_clearance_check(publisher,expected)||
     !nf_retc_read_joint_view(publisher,&view))return false;
  const NfRetcFrame *f=view.accepted;
  if(view.epoch!=expected||view.event->tick!=expected||
