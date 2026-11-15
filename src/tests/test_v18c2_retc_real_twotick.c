@@ -2470,6 +2470,42 @@ int main(int argc,char **argv){
    }
    CHECK(nf_retc_h307_structural_pair_match(
        &h307_structural_control,&candidate,&h305_handoff,&h305_original));
+   /* H308: 12 actual reciprocal A4 receipt fields x 2 bad variants.
+    * A caller-supplied proposal matched to actors/epochs is insufficient
+    * if the accepted A4 contact receipt was altered. Structurally valid
+    * synthetic B3 control remains UNAUTHORIZED; no A6 tick can publish. */
+   for(unsigned h308_case=0;h308_case<24u;++h308_case){
+     NfRetcMa03PhysicalCandidate altered=candidate;
+     Nf18a4Receipt *receipt=&altered.solved.receipts[0];
+     const unsigned field=h308_case/2u,variant=h308_case%2u;
+     switch(field){
+       case 0:receipt->tick+=variant+1u;break;
+       case 1:receipt->world_version+=variant+1u;break;
+       case 2:receipt->status=variant?NF18A4_INVALID:NF18A4_SEPARATING;break;
+       case 3:receipt->impulses_applied=0u;break;
+       case 4:receipt->contact_id=0u;break;
+       case 5:receipt->normal_impulse.x=variant?INFINITY:NAN;break;
+       case 6:receipt->normal_impulse.y=variant?INFINITY:NAN;break;
+       case 7:receipt->normal_impulse.z=variant?INFINITY:NAN;break;
+       case 8:receipt->tangent_impulse.x=variant?INFINITY:NAN;break;
+       case 9:receipt->tangent_impulse.y=variant?INFINITY:NAN;break;
+       case 10:receipt->tangent_impulse.z=variant?INFINITY:NAN;break;
+       case 11:receipt->signed_energy_delta=variant?INFINITY:NAN;break;
+     }
+     CHECK(!nf_retc_h307_structural_pair_match(
+        &h307_structural_control,&altered,&h305_handoff,&h305_original));
+     CHECK(nf_retc_h307_structural_pair_match(
+        &h307_structural_control,&candidate,&h305_handoff,&h305_original));
+     CHECK(!nf_retc_h307_structural_pair_match(
+        &batch,&candidate,&h305_handoff,&h305_original));
+     CHECK(two_world->tick==source_tick&&nf_retc_read(publisher)==accepted&&
+           push->receipt_count==2u);
+     fprintf(stderr,
+       "H308 A4_RECEIPT_DENIAL case=%u field=%u variant=%u preserved=1\n",
+       h308_case,field,variant);
+   }
+   fprintf(stderr,
+      "H308 A4_RECEIPT_LINEAGE PASS 24 refusals + restored structural controls\n");
    for(unsigned h307_case=0;h307_case<40u;++h307_case){
       NfRetcCanonicalBatch forged=h307_structural_control;
       NfRetcMa03PairSweepWitness forged_sweep=h305_original;
