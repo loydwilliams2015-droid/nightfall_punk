@@ -1,0 +1,43 @@
+name: H315 real A3-clear lateral-contact joint B2 search
+on:
+  pull_request:
+    paths:
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h315-lateral-search.yml'
+  workflow_dispatch:
+jobs:
+  lateral-contact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile real A6 A4 B2 A3 A5 test on source SHA
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h315 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h315 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Run ten lateral contact search cases and assert source restoration
+        run: |
+          set -euo pipefail
+          build-h315/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h315/h315.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path("build-h315/h315.log").read_text()
+          rows=re.findall(r'H315 LATERAL_SEARCH case=(\d+) z_offset_mm=(\d+) a4=([01]) b10=(\d+) b20=(\d+) reason10=(\d+) reason20=(\d+) a3_10=([01]) a3_20=([01]) a5_10=([01]) a5_20=([01]) joint=([01]) preserved=1',s)
+          assert len(rows)==10,len(rows)
+          assert {int(r[0]) for r in rows}==set(range(10))
+          n=sum(int(r[11]) for r in rows)
+          assert f'H315 LATERAL_SEARCH_COMPLETE cases=10 joint_positive={n} source_restored=1' in s
+          assert 'H314 BODY_COMPONENT case=19' in s
+          for r in rows:
+              print('H315 case %s offset %s mm A4=%s B2=(%s,%s) A3=(%s,%s) A5=(%s,%s) joint=%s'%
+                    (r[0],r[1],r[2],r[3],r[4],r[7],r[8],r[9],r[10],r[11]))
+          print(f'H315 source exact lateral geometry search complete: {n}/10 joint positive')
+          PY
