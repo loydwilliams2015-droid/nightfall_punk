@@ -11,6 +11,7 @@
 #include "nf_retc_external.h"
 #include "nf_retc_consumer_source.h"
 #include "nf_retc_map_projection.h"
+#include "nf_retc_map_material.h"
 #include "nf_retc_network.h"
 #include "nf_multi_ma03.h"
 #include <math.h>
@@ -151,12 +152,72 @@ static bool h297_real_map_check(const NfRetcPublisher *pub,uint32_t expected){
  nf_retc_read_lease_release(&lease);
  return ok;
 }
+/* H298: scan the material grid attached to the actual accepted A6
+ * lease; mutation tests use private copies, NEVER change accepted source. */
+static bool h298_real_material_check(const NfRetcPublisher *pub,uint32_t expected){
+ NfRetcReadLease lease={0};
+ if(!nf_retc_read_lease_acquire(pub,&lease))return false;
+ bool ok=false;
+ do{
+  NfRetcReadView view={0};
+  NfRetcMaterialView actual={0};
+  if(!nf_retc_read_leased_view(&lease,&view)||
+     !nf_retc_map_material_from_lease(&lease,&view,expected,&actual)||
+     actual.tick!=expected||!actual.material_epoch||
+     actual.full_world_clearance)break;
+  const Nf18a5Grid *source=&view.accepted->physical.world.grid;
+  if(!source->count)break;
+  Nf18a5Grid *private_copy=malloc(sizeof *private_copy);
+  if(!private_copy)break;
+  bool passed=true;
+  for(unsigned h298_case=0;h298_case<50u;++h298_case){
+   memcpy(private_copy,source,sizeof *private_copy);
+   Nf18a5Chunk *chunk=&private_copy->chunks[0];
+   const unsigned n=h298_case%5u+1u;
+   switch(h298_case/5u){
+    case 0:private_copy->global_revision=0u;break;
+    case 1:private_copy->capacity=0u;break;
+    case 2:private_copy->count=(uint8_t)(NF18A5_MAX_CHUNKS+n);break;
+    case 3:private_copy->policy=255u;break;
+    case 4:chunk->loaded=0u;break;
+    case 5:chunk->canonical_epoch=0u;break;
+    case 6:chunk->canonical[0]=(uint8_t)(NF18A5_MIXED+n);break;
+    case 7:chunk->fine_valid=1u;chunk->fine_parent_epoch=0u;break;
+    case 8:chunk->fine_valid=1u;chunk->fine_resolution=0u;
+           chunk->fine_parent_epoch=chunk->canonical_epoch;break;
+    case 9:chunk->fine_count=(uint16_t)(NF18A5_FINE_MAX_VOXELS+n);break;
+   }
+   NfRetcMaterialView result=actual;
+   if(nf_retc_map_material_scan(private_copy,expected,&result)||
+      memcmp(&actual,&result,sizeof actual)!=0){passed=false;break;}
+   fprintf(stderr,"H298 A5_RESIDENT_DENIAL case=%u epoch=%u preserved=1\n",
+           h298_case,expected);
+  }
+  if(passed){
+   memcpy(private_copy,source,sizeof *private_copy);
+   Nf18a5Chunk *chunk=&private_copy->chunks[0];
+   chunk->canonical[0]=NF18A5_MIXED;
+   chunk->fine_valid=0u;
+   NfRetcMaterialView pending={0};
+   if(!nf_retc_map_material_scan(private_copy,expected,&pending)||
+      pending.pending_cells==0u||pending.full_world_clearance)
+     passed=false;
+  }
+  free(private_copy);
+  if(!passed)break;
+  fprintf(stderr,"H298 REAL_A6_MATERIAL PASS 50 denials and MIXED pending\n");
+  ok=true;
+ }while(0);
+ nf_retc_read_lease_release(&lease);
+ return ok;
+}
 static bool verify(const NfWorld *w,const Nf18a6Runtime *r,
  const Nf18b2EncounterRuntime *enc,const Nf18b6Push *push,
  const NfRetcPublisher *publisher,uint32_t expected){
  NfRetcReadView view={0};
  if(!h296_leased_source_check(publisher,expected)||
     !h297_real_map_check(publisher,expected)||
+    !h298_real_material_check(publisher,expected)||
     !nf_retc_read_joint_view(publisher,&view))return false;
  const NfRetcFrame *f=view.accepted;
  if(view.epoch!=expected||view.event->tick!=expected||
