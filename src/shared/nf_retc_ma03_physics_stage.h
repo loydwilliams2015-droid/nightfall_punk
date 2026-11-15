@@ -48,11 +48,29 @@ static inline bool nf_retc_ma03_stage_physics(
    found_owner=true;
    /* A6's own A4 physical actor must match its authoritative world actor. */
    const Nf18a4Body *b=&owner->physical.actor;
+   /* H306: reject nonfinite or detached A6 A4-owner fields BEFORE
+      fabsf tolerances; include the previously unverified Y velocity.
+      The owner must provide the same exact capsule dimensions as the
+      actual authoritative actor, not a caller-selected substitute. */
    if(b->id!=p->id||
+      !isfinite(b->center.x)||!isfinite(b->center.y)||
+      !isfinite(b->center.z)||
+      !isfinite(b->velocity.x)||!isfinite(b->velocity.y)||
+      !isfinite(b->velocity.z)||
+      !isfinite(b->omega.x)||!isfinite(b->omega.y)||
+      !isfinite(b->omega.z)||
+      !isfinite(b->radius)||b->radius<=0.f||
+      !isfinite(b->height)||b->height<=0.f||
+      !isfinite(b->inverse_mass)||b->inverse_mass<0.f||
+      !isfinite(b->inverse_inertia.x)||
+      !isfinite(b->inverse_inertia.y)||
+      !isfinite(b->inverse_inertia.z)||
+      fabsf(b->height-a->movement.body_height)>.0001f||
       fabsf(b->center.x-p->position.x)>.0001f||
       fabsf(b->center.z-p->position.z)>.0001f||
       fabsf((b->center.y-b->height*.5f)-p->position.y)>.0001f||
       fabsf(b->velocity.x-p->velocity.x)>.0001f||
+      fabsf(b->velocity.y-p->velocity.y)>.0001f||
       fabsf(b->velocity.z-p->velocity.z)>.0001f)return false;
   }
   bodies[i].id=p->id;
