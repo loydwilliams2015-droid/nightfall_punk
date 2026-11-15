@@ -7,7 +7,7 @@ H311 61/61 configured GitHub PR workflows successful (GCC and Clang), zero failu
 
 ## H312 source-backed experiment
 
-Under each of H311's ten actual collision poses, create a NEW source-derived B2 encounter tied to the SAME current NfWorld and Nf18a6Runtime but **not attached** to production tick hooks, register both actual actor accounts 10 and 20, and register the real 2010 object from source. Reissue two distinct `NF18B2_PUSH` intentions, with unique action IDs, against the current **collision pose**. Record each returned original B2 decision and whether both are concurrently eligible; when both are eligible require the actual `nf_retc_multi_plan_two` source checks and both actor IDs. When either is denied, report that actual eligibility boundary without inventing a grant or treating the negative result as a test failure.
+Under each of H311's ten actual collision poses, create a private copy of the already source-registered B2 encounter tied to the SAME current NfWorld and Nf18a6Runtime. Reset its proposal/trace/grant counters, rebind its internal scene buffers to the cloned storage, refresh the live world snapshot and leave it **unattached** to production tick hooks. A second encounter initialization against an attached A6 owner is explicitly prohibited; the first attempted H312 CI correctly found this fixture lifecycle constraint. Reissue two distinct `NF18B2_PUSH` intentions, with unique action IDs, against the current **collision pose**. Record each returned original B2 decision and whether both are concurrently eligible; when both are eligible require the actual `nf_retc_multi_plan_two` source checks and both actor IDs. When either is denied, report that actual eligibility boundary without inventing a grant or treating the negative result as a test failure.
 
 Each case rechecks the original real A4 positive contact source and proves no A6 world tick, accepted immutable publisher or B3 receipts were changed by the new encounter. On exiting each case the H311 source is restored and original old B2 proposal is reverified. This is **ten fresh independent joint-B2 observation cases per compiler**, plus the inherited H311 positive/negative/reset cases. Any actual eligibility result is data rather than an automatically presumed success.
 
@@ -29,6 +29,10 @@ This is NOT issuer-consumed live production dual B2 authority, a B3 applied effe
 | H321 | Whole-engine adversarial release gate and accountable human ratification | OPEN |
 
 These are ten planned hypothesis lines, **not ten accomplished implementations**. The ten new live-source eligibility observations do not equal ten production features.
+
+## H312 first exact-SHA failure and correction
+
+Initial H312 head `90ad0b6f1127f9bb1d2a1eecb789a43573c97d0f` was red in the H291 GCC/Clang inherited CI and C0 physics-regression job: the H312 test fixture attempted `nf18b2_encounter_init` a **second time** against an already attached owner and `CHECK` failed before any new B2 decision was evaluated. That is an **invalid test-lifecycle assumption**, not evidence that the A4 collision is invalid or that either live B2 actor is blocked. H312-C1 replaces the second init with a private source-registered encounter clone; rerun on its new SHA and do not claim H312 pass until observed.
 
 ## Failure taxonomy and acceptance
 
