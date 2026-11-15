@@ -1,0 +1,41 @@
+name: H299 real A6 A5 swept map reader admission
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_map_sweep.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h299-a5-material.yml'
+  workflow_dispatch:
+jobs:
+  real-material:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile same-source A6 owner and A5 checks
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h299 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h299 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Run real A6 accepted material read model with 50 swept denial cases
+        run: |
+          set -euo pipefail
+          build-h299/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h299/h299.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path("build-h299/h299.log").read_text()
+          rows=re.findall(r"H299 REAL_A6_SWEEP_DENIAL case=(\d+) epoch=(\d+) preserved=1",s)
+          assert len(rows)>=50,len(rows)
+          for epoch in {ep for _,ep in rows}:
+              assert {int(c) for c,e in rows if e==epoch}==set(range(50))
+          assert "H299 REAL_A6_SWEEP PASS 50 denial cases" in s
+          assert "H298 REAL_A6_MATERIAL PASS" in s
+          print("H299 real A6 A5 swept map reader: 50 refusals and stable witness PASS")
+          PY
