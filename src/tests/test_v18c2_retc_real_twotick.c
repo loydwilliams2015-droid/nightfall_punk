@@ -8,6 +8,7 @@
 #include "nf_retc_ma03_physics_stage.h"
 #include "nf_retc_ma03_a5_envelope.h"
 #include "nf_retc_ma03_a5_contact_stage.h"
+#include "nf_retc_ma03_a5_sweep_pair.h"
 #include "nf_retc_ma03_owner_tick.h"
 #include "nf_retc_external.h"
 #include "nf_retc_consumer_source.h"
@@ -2389,6 +2390,66 @@ int main(int argc,char **argv){
                                     cx,0,cz,free_cells,1u));
    CHECK(two_owner->physical.world.grid.count==4u);
    CHECK(two_owner->physical.world.grid.global_revision>0u);
+   /* H305: previously the two actual A4 actor trajectories and the A5
+      static swept-material gate lived in separate research acceptance paths.
+      Bind both to the SAME A6 owner / roster and current A5 material epoch
+      before any PRIVATE contact plan is admitted. No A6 tick is published. */
+   NfRetcMa03A5Envelope h305_handoff={0};
+   CHECK(nf_retc_ma03_a5_prepare(two_world,two_owner,.125f,
+                                 &candidate,&h305_handoff));
+   NfRetcMa03PairSweepWitness h305_original={0};
+   CHECK(nf_retc_ma03_pair_swept_clearance(two_world,two_owner,.125f,
+                              &candidate,&h305_handoff,&h305_original));
+   CHECK(h305_original.prepared&&h305_original.actor_ids[0]==30u&&
+         h305_original.actor_ids[1]==40u&&
+         h305_original.query[0]==NF18A5_Q_FREE&&
+         h305_original.query[1]==NF18A5_Q_FREE);
+   const uint32_t h305_original_cache=two_owner->physical.world.grid.cache_revision;
+   for(unsigned h305_case=0;h305_case<40u;++h305_case){
+     const uint32_t old_epoch=two_owner->physical.world.grid.global_revision;
+     const uint32_t old_raw=two_owner->physical.world.history.raw_samples;
+     const uint32_t old_b3=push->receipt_count;
+     NfRetcMa03PairSweepWitness witnessed=h305_original;
+     bool admitted=false;
+     if(h305_case<20u){
+       /* Twenty separate cache-only generations: cache bookkeeping
+          cannot silently change material authority or swept clearance. */
+       two_owner->physical.world.grid.cache_revision=
+                      h305_original_cache+h305_case+1u;
+       admitted=nf_retc_ma03_pair_swept_clearance(
+          two_world,two_owner,.125f,&candidate,&h305_handoff,&witnessed);
+       CHECK(admitted&&witnessed.prepared&&
+             witnessed.query[0]==NF18A5_Q_FREE&&
+             witnessed.query[1]==NF18A5_Q_FREE);
+       two_owner->physical.world.grid.cache_revision=h305_original_cache;
+     }else{
+       /* Twenty denied alterations: each of four actually resident
+          canonical chunks is made SOLID or unresolved MIXED. */
+       const unsigned variant=h305_case-20u;
+       const unsigned chunk_id=variant%4u;
+       Nf18a5Chunk *chunk=&two_owner->physical.world.grid.chunks[chunk_id];
+       const Nf18a5Chunk old_chunk=*chunk;
+       memset(chunk->canonical,variant<10u?NF18A5_SOLID:NF18A5_MIXED,
+              sizeof chunk->canonical);
+       chunk->fine_valid=0u;
+       admitted=nf_retc_ma03_pair_swept_clearance(
+          two_world,two_owner,.125f,&candidate,&h305_handoff,&witnessed);
+       *chunk=old_chunk;
+       CHECK(!admitted&&
+             memcmp(&witnessed,&h305_original,sizeof witnessed)==0);
+     }
+     CHECK(nf_retc_ma03_pair_swept_clearance(
+         two_world,two_owner,.125f,&candidate,&h305_handoff,&witnessed));
+     CHECK(two_owner->physical.world.grid.global_revision==old_epoch&&
+           two_owner->physical.world.history.raw_samples==old_raw&&
+           push->receipt_count==old_b3&&two_world->tick==source_tick&&
+           nf_retc_read(publisher)==accepted);
+     fprintf(stderr,
+       "H305 A4_A5_DUAL_SWEEP case=%u kind=%s admitted=%u source_unchanged=1\n",
+       h305_case,h305_case<20u?"cache-free":"blocked",(unsigned)admitted);
+   }
+   fprintf(stderr,
+       "H305 A4_A5_PAIR PASS 20 cache-free + 20 blocked private sweeps\n");
    /* H178: real A6 owner tick executes a two-body A4 contact and
       private A5 history via H83 diagnostic callback, then refuses commit. */
    NfRetcMa03TickEvidence *in_tick=calloc(1,sizeof *in_tick);
