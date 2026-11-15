@@ -2152,6 +2152,51 @@ int main(int argc,char **argv){
          candidate.solved.bodies[1].center.x>second_start.x);
    /* H159: an unchanged world rechecks the same deterministic solution. */
    CHECK(nf_retc_ma03_recheck_physics(two_world,two_owner,.125f,&candidate));
+   /* H306: A6-owned A4 capsule is a separate authoritative source
+    * from the roster. A nonfinite owner center, velocity, capsule,
+    * inverse mass, or angular speed must not escape fabsf comparisons.
+    * 10 actual A6 owner fields x 4 invalid floating-point forms.
+    * Restore the original bound source and recheck the real A4 result. */
+   for(unsigned h306_case=0u;h306_case<40u;++h306_case){
+     const unsigned dim=h306_case/4u;
+     const unsigned variant=h306_case%4u;
+     Nf18a4Body *bound=&two_owner->physical.actor;
+     float *target=NULL;
+     switch(dim){
+       case 0:target=&bound->center.x;break;
+       case 1:target=&bound->center.y;break;
+       case 2:target=&bound->center.z;break;
+       case 3:target=&bound->velocity.x;break;
+       case 4:target=&bound->velocity.y;break;
+       case 5:target=&bound->velocity.z;break;
+       case 6:target=&bound->radius;break;
+       case 7:target=&bound->height;break;
+       case 8:target=&bound->inverse_mass;break;
+       case 9:target=&bound->omega.x;break;
+     }
+     CHECK(target);
+     const float original=*target;
+     *target=variant==0u?NAN:
+        variant==1u?-NAN:variant==2u?INFINITY:-INFINITY;
+     NfRetcMa03PhysicalCandidate refused={0};
+     const bool denied=!nf_retc_ma03_stage_physics(
+                          two_world,two_owner,.125f,&refused);
+     *target=original;
+     CHECK(denied&&!refused.eligible&&
+           nf_retc_ma03_recheck_physics(two_world,two_owner,.125f,&candidate)&&
+           two_world->tick==source_tick&&
+           two_owner->last_commit_tick==source_tick&&
+           memcmp(&primary->transform.position,&first_start,
+                  sizeof first_start)==0&&
+           memcmp(&secondary->transform.position,&second_start,
+                  sizeof second_start)==0&&
+           nf_retc_read(publisher)==accepted&&push->receipt_count==2u);
+     fprintf(stderr,
+       "H306 A6_OWNER_A4_SOURCE_DENIAL case=%u field=%u variant=%u preserved=1\n",
+       h306_case,dim,variant);
+   }
+   fprintf(stderr,
+      "H306 A6_OWNER_A4_SOURCE PASS 40 owner-field refusals and 40 rechecks\n");
    /* H304 real A6-bound private 2-body source safety matrix:
     * 10 dimensions x 4 nonfinite forms; rejection must preserve
     * the prior valid candidate, A6 world tick and actor projections.

@@ -1,0 +1,40 @@
+name: H306 real A6-owned A4 3D source seal
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_ma03_physics_stage.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h306-a4-owner-seal.yml'
+  workflow_dispatch:
+jobs:
+  owner-a4-seal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile real A6 and A4 source-exact owner test
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h306 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h306 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Run 40 A6 owner finite-source denials and positive rechecks
+        run: |
+          set -euo pipefail
+          build-h306/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h306/h306.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('build-h306/h306.log').read_text()
+          rows=re.findall(r'H306 A6_OWNER_A4_SOURCE_DENIAL case=(\d+) field=(\d+) variant=(\d+) preserved=1',s)
+          assert len(rows)==40,len(rows)
+          assert {(int(c),int(d),int(v)) for c,d,v in rows}=={(i,i//4,i%4) for i in range(40)}
+          assert 'H306 A6_OWNER_A4_SOURCE PASS 40 owner-field refusals and 40 rechecks' in s
+          assert 'H305 A4_A5_PAIR PASS' in s
+          print('H306 PASS: real A6 owner 3D A4 source cannot bypass private two-actor preflight')
+          PY
