@@ -4,7 +4,7 @@ on:
     paths:
       - 'src/shared/nf_retc_map_sweep.h'
       - 'src/tests/test_v18c2_retc_real_twotick.c'
-      - '.github/workflows/retc-h299-a5-material.yml'
+      - '.github/workflows/retc-h299-a5-sweep.yml'
   workflow_dispatch:
 jobs:
   real-material:
@@ -31,7 +31,7 @@ jobs:
           from pathlib import Path
           import re
           s=Path("build-h299/h299.log").read_text()
-          rows=re.findall(r"H299 REAL_A6_SWEEP_DENIAL case=(\d+) epoch=(\d+) preserved=1",s)
+          rows=re.findall(r"H299 REAL_A6_SWEEP_DENIAL case=(\d+) epoch=(\d+) unchanged=1",s)
           assert len(rows)>=50,len(rows)
           for epoch in {ep for _,ep in rows}:
               assert {int(c) for c,e in rows if e==epoch}==set(range(50))
