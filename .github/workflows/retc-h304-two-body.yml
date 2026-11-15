@@ -1,0 +1,40 @@
+name: H304 real two-body A4 source finite stage
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_ma03_physics_stage.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h304-two-body.yml'
+  workflow_dispatch:
+jobs:
+  source-stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build source-exact real A6 owner and A4 two-body physics
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h304 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h304 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Execute 40 real-world two-actor denial and positive controls
+        run: |
+          set -euo pipefail
+          build-h304/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h304/h304.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('build-h304/h304.log').read_text()
+          rows=re.findall(r'H304 TWO_BODY_SOURCE_DENIAL case=(\d+) dim=(\d+) variant=(\d+) original_pass=1',s)
+          assert len(rows)==40,len(rows)
+          assert {(int(c),int(d),int(v)) for c,d,v in rows}=={(i,i//4,i%4) for i in range(40)}
+          assert 'H304 TWO_BODY_STAGE PASS 40 nonfinite source denials' in s
+          assert 'H303 TWO_B2_SOURCE_SEAL PASS' in s
+          print('H304 real A6 private A4 two-body source safety PASS')
+          PY

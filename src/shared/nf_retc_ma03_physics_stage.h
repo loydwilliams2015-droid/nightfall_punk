@@ -33,7 +33,15 @@ static inline bool nf_retc_ma03_stage_physics(
  for(size_t i=0;i<2u;++i){
   const NfMa03Participant *p=&c.source.actors[i];
   const NfActor *a=nf_world_find_actor_const(world,p->id);
+  /* H304: refuse nonfinite actor/intent sources BEFORE the A4 solver.
+   * NaN values can otherwise bypass later equality/tolerance comparisons. */
   if(!a||!a->active||!a->combat.alive||
+     !isfinite(p->position.x)||!isfinite(p->position.y)||
+     !isfinite(p->position.z)||
+     !isfinite(p->velocity.x)||!isfinite(p->velocity.y)||
+     !isfinite(p->velocity.z)||
+     !isfinite(p->input.forward)||!isfinite(p->input.strafe)||
+     !isfinite(p->input.yaw_radians)||
      !isfinite(a->movement.body_height)||a->movement.body_height<=0.f)
    return false;
   if(p->id==owner->actor_id){
