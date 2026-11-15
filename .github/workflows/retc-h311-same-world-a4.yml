@@ -1,0 +1,40 @@
+name: H311 positive same-A6-world two-actor A4 feasibility
+on:
+  pull_request:
+    paths:
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h311-same-world-a4.yml'
+  workflow_dispatch:
+jobs:
+  same-world-a4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile exact-SHA real A6 actor10/20 test
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h311 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h311 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Verify positive A4 contact and revoked stale B2 before publication
+        run: |
+          set -euo pipefail
+          build-h311/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h311/h311.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('build-h311/h311.log').read_text()
+          a=re.findall(r'H311 SAME_WORLD_A4_CONTACT case=(\d+) actors=10,20 source=1 stale_b2_denied=1',s)
+          b=re.findall(r'H311 SOURCE_RESTORE case=(\d+) b2_valid=1 preserved=1',s)
+          assert sorted(map(int,a))==list(range(10)),a
+          assert sorted(map(int,b))==list(range(10)),b
+          assert 'H311 SAME_WORLD_PHYSICAL PASS 10 positive actor10/20 contacts + 10 stale-B2 denials + restores' in s
+          assert 'H310 OWNER_JOINT_PROBE PASS' in s
+          print('H311 source-owned physical positive / stale grant denial PASS')
+          PY
