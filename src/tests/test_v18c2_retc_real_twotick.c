@@ -2378,6 +2378,77 @@ int main(int argc,char **argv){
           scratch315->trace_count-2u].authorization.reason;
       const Nf18b2Reason reason20=scratch315->traces[
           scratch315->trace_count-1u].authorization.reason;
+      /* H316: independent ray/AABB oracle reproduces the full A3
+         visibility jurisdiction; A5 line clearance queried separately.
+         Exact B2 source actors and unchanged object target are used.
+         This is not a new permission or authorized B3 transaction. */
+      const Nf18b2Scene *scene316=&scratch315->frame.scene;
+      const Nf18b2Object *obj316=NULL;
+      for(size_t oi316=0;oi316<scene316->object_count;++oi316)
+        if(scene316->objects[oi316].id==2010u)
+          obj316=&scene316->objects[oi316];
+      CHECK(obj316&&scene316->material);
+      for(unsigned a316=0u;a316<2u;++a316){
+        const uint32_t id316=a316?20u:10u;
+        const Nf18b2Actor *actor316=NULL;
+        for(size_t ai316=0;ai316<scene316->actor_count;++ai316)
+          if(scene316->actors[ai316].id==id316)
+            actor316=&scene316->actors[ai316];
+        CHECK(actor316);
+        const NfVec3 eye316={actor316->feet.x,
+           actor316->feet.y+actor316->eye_height,actor316->feet.z};
+        const NfVec3 end316=obj316->target;
+        const NfVec3 delta316={end316.x-eye316.x,
+            end316.y-eye316.y,end316.z-eye316.z};
+        unsigned a3_hits316=0u;
+        uint32_t first_hit316=0u;
+        for(size_t coll316=0;coll316<scene316->geometry.solid_count;++coll316){
+          const Nf18aCollider *c316=&scene316->geometry.solids[coll316];
+          double near316=0.,far316=1.;
+          const double start316[3]={eye316.x,eye316.y,eye316.z};
+          const double endaxis316[3]={end316.x,end316.y,end316.z};
+          const double lo316[3]={c316->min.x,c316->min.y,c316->min.z};
+          const double hi316[3]={c316->max.x,c316->max.y,c316->max.z};
+          bool hit316=true;
+          for(unsigned axis316=0u;axis316<3u;++axis316){
+            const double move316=endaxis316[axis316]-start316[axis316];
+            if(fabs(move316)<1e-12){
+              if(start316[axis316]<lo316[axis316]||
+                 start316[axis316]>hi316[axis316])hit316=false;
+            }else{
+              double enter316=(lo316[axis316]-start316[axis316])/move316;
+              double leave316=(hi316[axis316]-start316[axis316])/move316;
+              if(enter316>leave316){
+                const double swap316=enter316;enter316=leave316;
+                leave316=swap316;
+              }
+              if(enter316>near316)near316=enter316;
+              if(leave316<far316)far316=leave316;
+              if(near316>far316)hit316=false;
+            }
+            if(!hit316)break;
+          }
+          if(hit316&&near316<1.-1e-6&&far316>=0.){
+            if(!a3_hits316)first_hit316=c316->body_id;
+            ++a3_hits316;
+          }
+        }
+        const Nf18a2ShapePolicy ray316={.0001f,.0002f,0.f,0.f,1.f};
+        const NfVec3 rayfeet316={eye316.x,eye316.y-.0001f,eye316.z};
+        const Nf18a5Query a5ray316=nf18a5_sweep_query(
+           &scene316->material->grid,rayfeet316,delta316,
+           ray316,1,scene316->geometry.tick,NULL,NULL,NULL);
+        const Nf18b2Reason reason316=a316?reason20:reason10;
+        const unsigned occluded316=(unsigned)(
+           a3_hits316>0u||a5ray316==NF18A5_Q_SOLID);
+        CHECK((reason316==NF18B2_OCCLUDED)==(occluded316!=0u));
+        CHECK(w->tick==tick315&&nf_retc_read(publisher)==frame315&&
+              push->receipt_count==receipts315);
+        fprintf(stderr,
+           "H316 VISIBILITY case=%u actor=%u a3_hits=%u first_hit=%u a5_ray=%u occluded=%u source_reason=%u preserved=1\n",
+           2u*case315+a316,id316,a3_hits316,first_hit316,
+           (unsigned)a5ray316,occluded316,(unsigned)reason316);
+      }
       unsigned a3clear[2]={0u,0u};
       unsigned a5free[2]={0u,0u};
       for(size_t t315=0;t315<2u;++t315){
