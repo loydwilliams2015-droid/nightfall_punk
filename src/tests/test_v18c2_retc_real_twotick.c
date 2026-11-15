@@ -2203,12 +2203,20 @@ int main(int argc,char **argv){
          production authority. A blocked result is an observed boundary. */
       Nf18b2EncounterRuntime *h312_current=calloc(1,sizeof *h312_current);
       CHECK(h312_current);
-      CHECK(nf18b2_encounter_init(h312_current,w,r,
-                                  NF18B2_M4_MATERIAL_FIRST));
-      CHECK(nf18b2_register_actor(h312_current,10u,0u,0u,50u));
-      CHECK(nf18b2_register_actor(h312_current,20u,0u,0u,50u));
-      CHECK(nf18b2_register_object(h312_current,object,
-             r->physical.world.grid.global_revision,0u,0u));
+      /* H312-C1: a SECOND encounter_init on an already attached A6
+         owner is correctly refused. For a read-only research probe,
+         clone the previously source-registered encounter instead of
+         violating one-owner initialization. Rebind all internal scene
+         pointers to the cloned storage, clear proposals and never attach. */
+      *h312_current=*enc;
+      h312_current->queue_count=0u;
+      h312_current->trace_count=0u;
+      h312_current->grant_count=0u;
+      h312_current->prepared=0u;
+      h312_current->attached=0u;
+      h312_current->frame.scene.actors=h312_current->frame.actors;
+      h312_current->frame.scene.objects=h312_current->frame.objects;
+      CHECK(nf18b2_live_frame(h312_current,&h312_current->frame));
       const Nf18b2Status h312_first=nf18b2_propose(h312_current,
              (Nf18b2Intent){10u,2010u,700u+h311_case,NF18B2_PUSH});
       const Nf18b2Status h312_second=nf18b2_propose(h312_current,
