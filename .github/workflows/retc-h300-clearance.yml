@@ -1,0 +1,44 @@
+name: H300 real A6 fail-closed terrain clearance
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_map_clearance.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h300-clearance.yml'
+  workflow_dispatch:
+jobs:
+  real-a6-free-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build real A6 owner / A5 swept fixture
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h300 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h300 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Execute real A6 fail-closed semantics
+        run: |
+          set -euo pipefail
+          build-h300/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h300/h300.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          log=Path("build-h300/h300.log").read_text()
+          denied=re.findall(r"H300 REAL_A6_PENDING_DENIED case=(\d+) epoch=(\d+) preserved=1",log)
+          free=re.findall(r"H300 REAL_A6_FREE_CONTROL case=(\d+) epoch=(\d+) accepted=1",log)
+          assert len(denied)>=50,len(denied)
+          assert len(free)>=50,len(free)
+          for rows in (denied,free):
+              for ep in {e for _,e in rows}:
+                  assert {int(case) for case,e in rows if e==ep}==set(range(50))
+          assert "H300 REAL_A6_CLEARANCE PASS 50 pending denials + 50 free controls" in log
+          assert "H299 REAL_A6_SWEEP PASS" in log
+          print("H300 real A6/A5 terrain semantic gate PASS on 50 pending and 50 FREE controls")
+          PY
