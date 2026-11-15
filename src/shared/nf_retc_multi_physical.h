@@ -29,7 +29,17 @@ static inline bool nf_retc_multi_physical_preflight(
   for(size_t j=0;j<enc->frame.scene.actor_count;++j)
    if(enc->frame.scene.actors[j].id==id)
     b2=&enc->frame.scene.actors[j];
-  if(!b2||!isfinite(b2->feet.x)||!isfinite(b2->feet.y)||
+  /* H302: do not let NaN/Inf bypass epsilon comparisons or appear idle.
+   * This is a refusal gate, NOT an active coactor commit capability. */
+  if(!isfinite(roster.actors[i].position.x)||
+     !isfinite(roster.actors[i].position.y)||
+     !isfinite(roster.actors[i].position.z)||
+     !isfinite(roster.actors[i].velocity.x)||
+     !isfinite(roster.actors[i].velocity.y)||
+     !isfinite(roster.actors[i].velocity.z)||
+     !isfinite(roster.actors[i].input.forward)||
+     !isfinite(roster.actors[i].input.strafe)||
+     !b2||!isfinite(b2->feet.x)||!isfinite(b2->feet.y)||
      !isfinite(b2->feet.z)||
      fabsf(roster.actors[i].position.x-b2->feet.x)>0.0001f||
      fabsf(roster.actors[i].position.y-b2->feet.y)>0.0001f||

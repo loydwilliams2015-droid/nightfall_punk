@@ -1290,7 +1290,7 @@ int main(int argc,char **argv){
    if(armed!=NF18B3_OK){
      const Nf18b2QueuedIntent *q=enc->queue_count?&enc->queue[0]:NULL;
      fprintf(stderr,
-       "RET-C B3 arm tick=%u result=%d b2=%d event_phase=%d armed=%d contract_epoch=%u encounter_epoch=%u queue=%zu witness_revision=%u live_revision=%u target=(%.4f,%.4f,%.4f) crate=(%.4f,%.4f,%.4f)\\n",
+       "RET-C B3 arm tick=%u result=%d b2=%d event_phase=%d armed=%d contract_epoch=%u encounter_epoch=%u queue=%zu witness_revision=%u live_revision=%u target=(%.4f,%.4f,%.4f) crate=(%.4f,%.4f,%.4f)\n",
        tick,(int)armed,(int)push->last_b2_status,
        (int)push->event.phase,(int)push->armed,
        push->contract_epoch,enc->registry.contract_epoch,enc->queue_count,
@@ -1732,7 +1732,7 @@ int main(int argc,char **argv){
       enc,(Nf18b2Intent){20,2010,602,NF18B2_PUSH});
    CHECK(nf_retc_read(publisher)==accepted&&w->tick==previous_tick);
    /* Record exact B2 status, do not invent or promote an eligible grant. */
-   fprintf(stderr,"H92 real B2 submissions: actor10=%d actor20=%d queue=%zu\\n",
+   fprintf(stderr,"H92 real B2 submissions: actor10=%d actor20=%d queue=%zu\n",
         (int)first,(int)second,enc->queue_count);
    CHECK(first!=NF18B2_INVALID&&second!=NF18B2_INVALID);
    CHECK(enc->queue_count==prior_count+2u);
@@ -1750,7 +1750,7 @@ int main(int argc,char **argv){
    CHECK(second!=NF18B2_ELIGIBLE);
    CHECK(t1->authorization.physical!=NF18B2_ELIGIBLE ||
          t1->authorization.contract!=NF18B2_ELIGIBLE);
-   fprintf(stderr,"H93 source B2 authorization: actor10 status=%d reason=%d physical=%d contract=%d; actor20 status=%d reason=%d physical=%d contract=%d\\n",
+   fprintf(stderr,"H93 source B2 authorization: actor10 status=%d reason=%d physical=%d contract=%d; actor20 status=%d reason=%d physical=%d contract=%d\n",
     (int)t0->authorization.status,(int)t0->authorization.reason,
     (int)t0->authorization.physical,(int)t0->authorization.contract,
     (int)t1->authorization.status,(int)t1->authorization.reason,
@@ -1768,14 +1768,14 @@ int main(int argc,char **argv){
   second_actor->transform.position=(NfVec3){1.0f,0.f,1.65f};
   const Nf18b2Status nearby=nf18b2_propose(
        enc,(Nf18b2Intent){20,2010,603,NF18B2_PUSH});
-  fprintf(stderr,"H95 nearby source B2: status=%d count=%zu\\n",
+  fprintf(stderr,"H95 nearby source B2: status=%d count=%zu\n",
       (int)nearby,enc->queue_count);
   CHECK(nearby!=NF18B2_INVALID);
   CHECK(enc->queue_count==old_count+1u);
   const Nf18b2QueuedIntent *q=&enc->queue[old_count];
   CHECK(q->intent.actor_id==20u&&q->trace_index<enc->trace_count);
   const Nf18b2EncounterTrace *t=&enc->traces[q->trace_index];
-  fprintf(stderr,"H95 nearby reason=%d physical=%d contract=%d\\n",
+  fprintf(stderr,"H95 nearby reason=%d physical=%d contract=%d\n",
       (int)t->authorization.reason,(int)t->authorization.physical,
       (int)t->authorization.contract);
   CHECK(nearby==t->authorization.status);
@@ -1800,7 +1800,7 @@ int main(int argc,char **argv){
       &enc->frame.scene,h126_first->witness,enc->model);
   const Nf18b2UseDecision h126_second_eval=nf18b2_evaluate(
       &enc->frame.scene,h126_second->witness,enc->model);
-  fprintf(stderr,"H126 plan diagnostics: first_status=%d first_reason=%d first_physical=%d first_contract=%d second_status=%d second_reason=%d first_trace=%d second_trace=%d first_registry=%u second_registry=%u live_registry=%u first_contract_epoch=%u second_contract_epoch=%u live_contract_epoch=%u\\n",
+  fprintf(stderr,"H126 plan diagnostics: first_status=%d first_reason=%d first_physical=%d first_contract=%d second_status=%d second_reason=%d first_trace=%d second_trace=%d first_registry=%u second_registry=%u live_registry=%u first_contract_epoch=%u second_contract_epoch=%u live_contract_epoch=%u\n",
       (int)h126_first_eval.status,(int)h126_first_eval.reason,
       (int)h126_first_eval.physical,(int)h126_first_eval.contract,
       (int)h126_second_eval.status,(int)h126_second_eval.reason,
@@ -2025,6 +2025,45 @@ int main(int argc,char **argv){
   second_actor->transform.velocity.x=1.f;
   CHECK(!nf_retc_multi_physical_preflight(w,r,enc,publisher,&batch));
   second_actor->transform.velocity=before_second_velocity;
+  /* H302: 40 real-A6-source coactor refusal cases, 8 motion/input
+   * dimensions x 5 invalid/unauthorized values. Every iteration restores
+   * the live actor and proves no publication or B3 receipt occurred.
+   * This closes an admission vulnerability, NOT active multi-actor B3. */
+  for(unsigned h302_case=0u;h302_case<40u;++h302_case){
+   const NfTransform before_pose=second_actor->transform;
+   const NfMoveInput before_input=second_actor->input;
+   const unsigned dim=h302_case/5u;
+   const unsigned variant=h302_case%5u;
+   const float bad=variant==0u?NAN:
+     variant==1u?INFINITY:variant==2u?-INFINITY:
+     variant==3u?1.f:-1.f;
+   /* Finite pose changes must differ from this fixture's true position;
+    * absolute 1.0 can coincide with the legitimate coactor source. */
+   switch(dim){
+    case 0:second_actor->transform.position.x=
+       variant>=3u?before_pose.position.x+bad*.25f:bad;break;
+    case 1:second_actor->transform.position.y=
+       variant>=3u?before_pose.position.y+bad*.25f:bad;break;
+    case 2:second_actor->transform.position.z=
+       variant>=3u?before_pose.position.z+bad*.25f:bad;break;
+    case 3:second_actor->transform.velocity.x=bad;break;
+    case 4:second_actor->transform.velocity.y=bad;break;
+    case 5:second_actor->transform.velocity.z=bad;break;
+    case 6:second_actor->input.forward=bad;break;
+    case 7:second_actor->input.strafe=bad;break;
+   }
+   const bool rejected=!nf_retc_multi_physical_preflight(
+       w,r,enc,publisher,&batch);
+   second_actor->transform=before_pose;
+   second_actor->input=before_input;
+   CHECK(rejected&&nf_retc_read(publisher)==accepted&&
+         w->tick==2u&&push->receipt_count==2u);
+   CHECK(nf_retc_multi_physical_preflight(w,r,enc,publisher,&batch));
+   fprintf(stderr,
+      "H302 REAL_B2_COACTOR_DENIAL case=%u dim=%u variant=%u accepted_unchanged=1\n",
+      h302_case,dim,variant);
+  }
+  fprintf(stderr,"H302 REAL_B2_COACTOR PASS 40 denials and positive rechecks\n");
   /* H156: owner-bound physical preflight is read-only and never publishes
      the canonical proposal, changes world tick or adds B3 receipts. */
   CHECK(nf_retc_multi_physical_preflight(w,r,enc,publisher,&batch));

@@ -1,0 +1,40 @@
+name: H302 M2 actual two-actor authority refusal
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_multi_physical.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h302-m2-coactor.yml'
+  workflow_dispatch:
+jobs:
+  real-m2-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile same-SHA real owner test
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h302 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h302 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Prove 40 active/stale coactor source refusals
+        run: |
+          set -euo pipefail
+          build-h302/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h302/h302.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path("build-h302/h302.log").read_text()
+          rows=re.findall(r"H302 REAL_B2_COACTOR_DENIAL case=(\d+) dim=(\d+) variant=(\d+) accepted_unchanged=1",s)
+          assert len(rows)==40,len(rows)
+          assert {(int(c),int(d),int(v)) for c,d,v in rows}=={(i,i//5,i%5) for i in range(40)}
+          assert "H302 REAL_B2_COACTOR PASS 40 denials and positive rechecks" in s
+          assert "H301 REAL_A6_DIFFERENTIAL PASS" in s
+          print("H302: real B2/MA03 source coactor 40 safety denials PASS")
+          PY
