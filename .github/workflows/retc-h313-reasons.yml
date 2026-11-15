@@ -1,0 +1,43 @@
+name: H313 source-traced two-actor B2 rejection reasons
+on:
+  pull_request:
+    paths:
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h313-reasons.yml'
+  workflow_dispatch:
+jobs:
+  reason-traces:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile full real A6 A4 B2 source test
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h313 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h313 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Execute ten source-traced blocked coactor decisions
+        run: |
+          set -euo pipefail
+          build-h313/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h313/h313.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path("build-h313/h313.log").read_text()
+          rx=r'H313 B2_REASON case=(\d+) actor10_status=(\d+) actor10_reason=(\d+) actor10_physical=(\d+) actor10_contract=(\d+) actor20_status=(\d+) actor20_reason=(\d+) actor20_physical=(\d+) actor20_contract=(\d+) preserved=1'
+          rows=re.findall(rx,s)
+          assert len(rows)==10,len(rows)
+          assert {int(x[0]) for x in rows}==set(range(10))
+          assert all(int(x[1])==0 and int(x[5])==1 for x in rows),rows
+          assert 'H311 SAME_WORLD_PHYSICAL PASS' in s
+          for x in rows:
+              print("H313 variant=%s coactor20 reason=%s physical=%s contract=%s"%(
+                  x[0],x[6],x[7],x[8]))
+          print("H313 exact B2 authorization denial reason code captured in all 10 true same-world A4 cases")
+          PY
