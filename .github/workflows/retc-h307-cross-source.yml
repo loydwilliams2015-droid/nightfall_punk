@@ -1,0 +1,41 @@
+name: H307 dual-B2 and A4/A5 cross-source refusal
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_h307_cross_source_binding.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h307-cross-source.yml'
+  workflow_dispatch:
+jobs:
+  cross-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build actual A6 owner B2 and private A4/A5 fixtures
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h307 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h307 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Prove cross-source rejection and falsifiable positive structure
+        run: |
+          set -euo pipefail
+          build-h307/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h307/h307.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path("build-h307/h307.log").read_text()
+          rows=re.findall(r"H307 CROSS_SOURCE_REJECT case=(\d+) field=(\d+) delta=(\d+) preserved=1",s)
+          assert len(rows)==40,len(rows)
+          assert {(int(c),int(f),int(d)) for c,f,d in rows}=={
+              (i,i//4,i%4+1) for i in range(40)}
+          assert "H307 SOURCE_BINDING PASS 40 denials with structural positive and real-source mismatch" in s
+          assert "H306 A6_OWNER_A4_SOURCE PASS" in s
+          print("H307 actual B2 and A4/A5 cross-source mismatch is denied; synthetic structural control is not authorization")
+          PY
