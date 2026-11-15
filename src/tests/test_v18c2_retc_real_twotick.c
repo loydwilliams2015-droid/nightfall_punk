@@ -10,6 +10,7 @@
 #include "nf_retc_ma03_a5_contact_stage.h"
 #include "nf_retc_ma03_a5_sweep_pair.h"
 #include "nf_retc_h307_cross_source_binding.h"
+#include "nf_retc_h310_owner_joint_probe.h"
 #include "nf_retc_ma03_owner_tick.h"
 #include "nf_retc_external.h"
 #include "nf_retc_consumer_source.h"
@@ -2104,6 +2105,56 @@ int main(int argc,char **argv){
            h303_case,group);
   }
   fprintf(stderr,"H303 TWO_B2_SOURCE_SEAL PASS 40 source-bound denials\n");
+  /* H310 diagnostic integration: B2 source-valid actor10/actor20 shares
+     the authoritative A6 encounter, but no positive *active* A4 contact
+     exists in this fixture. Never turn two B2 proposals into a commit. */
+  NfRetcH310ProbeResult h310_base={0};
+  CHECK(!nf_retc_h310_owner_joint_probe(w,r,enc,publisher,
+                 first_index,old_count,.125f,&batch,&h310_base));
+  CHECK(h310_base.stage==NF_RETC_H310_B2_SOURCE_VALID&&
+        !h310_base.prepared);
+  CHECK(nf_retc_read(publisher)==accepted&&
+        w->tick==2u&&push->receipt_count==2u);
+  for(unsigned h310_case=0u;h310_case<20u;++h310_case){
+    NfRetcCanonicalBatch edited=batch;
+    const unsigned group=h310_case/4u;
+    const uint32_t delta=h310_case%4u+1u;
+    switch(group){
+      case 0:edited.events[0].actor+=delta;break;
+      case 1:edited.events[1].actor+=delta;break;
+      case 2:edited.events[0].action+=delta;break;
+      case 3:edited.events[1].contract_epoch+=delta;break;
+      case 4:edited.events[1].tick+=delta;break;
+    }
+    NfRetcH310ProbeResult denied={0};
+    CHECK(!nf_retc_h310_owner_joint_probe(w,r,enc,publisher,
+              first_index,old_count,.125f,&edited,&denied));
+    CHECK(denied.stage==NF_RETC_H310_DENIED_B2&&!denied.prepared);
+    CHECK(!nf_retc_h310_owner_joint_probe(w,r,enc,publisher,
+              first_index,old_count,.125f,&batch,&denied));
+    CHECK(denied.stage==NF_RETC_H310_B2_SOURCE_VALID&&!denied.prepared);
+    CHECK(nf_retc_read(publisher)==accepted&&
+          w->tick==2u&&push->receipt_count==2u);
+    fprintf(stderr,
+       "H310 JOINT_SOURCE_DENIAL case=%u group=%u delta=%u preserved=1\n",
+       h310_case,group,delta);
+  }
+  /* Ten malformed time horizons cannot be used to substitute an A4
+     candidate. They are negative controls, not production time steps. */
+  const float h310_invalid_dt[10]={NAN,-NAN,INFINITY,-INFINITY,
+      0.f,-0.f,-1.f,-.01f,-100.f,-10000.f};
+  for(unsigned h310_time=0;h310_time<10u;++h310_time){
+    NfRetcH310ProbeResult denied={0};
+    CHECK(!nf_retc_h310_owner_joint_probe(w,r,enc,publisher,
+      first_index,old_count,h310_invalid_dt[h310_time],&batch,&denied));
+    CHECK(denied.stage==NF_RETC_H310_B2_SOURCE_VALID&&!denied.prepared);
+    CHECK(nf_retc_read(publisher)==accepted&&
+          w->tick==2u&&push->receipt_count==2u);
+    fprintf(stderr,
+       "H310 JOINT_TIME_DENIAL case=%u preserved=1\n",h310_time);
+  }
+  fprintf(stderr,
+     "H310 OWNER_JOINT_PROBE PASS 20 grant-source refusals + 10 time refusals; authentic B2 stops before active A4\n");
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
      checks independent analytical impulses, and returns two changed body

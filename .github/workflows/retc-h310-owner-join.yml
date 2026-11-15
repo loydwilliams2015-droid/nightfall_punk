@@ -1,0 +1,42 @@
+name: H310 owner-joined B2 to A4 A5 diagnostic stage
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_h310_owner_joint_probe.h'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h310-owner-join.yml'
+  workflow_dispatch:
+jobs:
+  owner-join:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile real owner and B2/A4/A5 source
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h310 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h310 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Prove source-phase diagnostic and 30 refusals
+        run: |
+          set -euo pipefail
+          build-h310/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h310/h310.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path("build-h310/h310.log").read_text()
+          grants=re.findall(r'H310 JOINT_SOURCE_DENIAL case=(\d+) group=(\d+) delta=(\d+) preserved=1',s)
+          times=re.findall(r'H310 JOINT_TIME_DENIAL case=(\d+) preserved=1',s)
+          assert {(int(c),int(g),int(d)) for c,g,d in grants}=={
+            (i,i//4,i%4+1) for i in range(20)},len(grants)
+          assert {int(i) for i in times}==set(range(10)),len(times)
+          assert 'H310 OWNER_JOINT_PROBE PASS 20 grant-source refusals + 10 time refusals; authentic B2 stops before active A4' in s
+          assert 'H308 A4_RECEIPT_LINEAGE PASS' in s
+          print('H310 exact-source fail-closed B2 to A4 staging boundary PASS')
+          PY
