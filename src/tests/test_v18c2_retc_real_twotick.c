@@ -2151,6 +2151,47 @@ int main(int argc,char **argv){
          candidate.solved.bodies[1].center.x>second_start.x);
    /* H159: an unchanged world rechecks the same deterministic solution. */
    CHECK(nf_retc_ma03_recheck_physics(two_world,two_owner,.125f,&candidate));
+   /* H304 real A6-bound private 2-body source safety matrix:
+    * 10 dimensions x 4 nonfinite forms; rejection must preserve
+    * the prior valid candidate, A6 world tick and actor projections.
+    * This is NOT a production coactor commit or B3 realization. */
+   for(unsigned h304_case=0u;h304_case<40u;++h304_case){
+     const unsigned dimension=h304_case/4u;
+     const unsigned variant=h304_case%4u;
+     const NfTransform prior=secondary->transform;
+     const NfMoveInput prior_input=secondary->input;
+     const float prior_height=secondary->movement.body_height;
+     const float invalid=variant==0u?NAN:
+       variant==1u?-NAN:variant==2u?INFINITY:-INFINITY;
+     switch(dimension){
+       case 0:secondary->transform.position.x=invalid;break;
+       case 1:secondary->transform.position.y=invalid;break;
+       case 2:secondary->transform.position.z=invalid;break;
+       case 3:secondary->transform.velocity.x=invalid;break;
+       case 4:secondary->transform.velocity.y=invalid;break;
+       case 5:secondary->transform.velocity.z=invalid;break;
+       case 6:secondary->input.forward=invalid;break;
+       case 7:secondary->input.strafe=invalid;break;
+       case 8:secondary->input.yaw_radians=invalid;break;
+       case 9:secondary->movement.body_height=invalid;break;
+     }
+     NfRetcMa03PhysicalCandidate denied={0};
+     const bool rejected=!nf_retc_ma03_stage_physics(
+                                 two_world,two_owner,.125f,&denied);
+     secondary->transform=prior;
+     secondary->input=prior_input;
+     secondary->movement.body_height=prior_height;
+     CHECK(rejected&&!denied.eligible&&
+           nf_retc_ma03_recheck_physics(two_world,two_owner,.125f,&candidate)&&
+           two_world->tick==source_tick&&
+           two_owner->last_commit_tick==source_tick&&
+           memcmp(&secondary->transform.position,&second_start,
+                  sizeof second_start)==0);
+     fprintf(stderr,
+       "H304 TWO_BODY_SOURCE_DENIAL case=%u dim=%u variant=%u original_pass=1\n",
+       h304_case,dimension,variant);
+   }
+   fprintf(stderr,"H304 TWO_BODY_STAGE PASS 40 nonfinite source denials\n");
    /* H289: 40 independent signed perturbations across 20 actual
     * A6-roster / solved-A4 dimensions. Each private candidate mutation
     * must fail recheck, while the original stays source-valid.
