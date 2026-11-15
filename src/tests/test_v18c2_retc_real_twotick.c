@@ -2155,6 +2155,70 @@ int main(int argc,char **argv){
   }
   fprintf(stderr,
      "H310 OWNER_JOINT_PROBE PASS 20 grant-source refusals + 10 time refusals; authentic B2 stops before active A4\n");
+  /* H311: POSITIVE A4 contact feasibility using the exact real B2
+     identities 10 and 20 in their SAME A6-owner world (not 30/40
+     from the separate laboratory fixture). The B2 proposal is NOT
+     reissued after temporary pose changes: it MUST lose source
+     freshness. Never commit A6/B3 from this physical-only result. */
+  {
+    NfActor *h311_owner_actor=nf_world_find_actor(w,10u);
+    NfActor *h311_coactor=nf_world_find_actor(w,20u);
+    CHECK(h311_owner_actor&&h311_coactor);
+    const NfTransform h311_original_primary=h311_owner_actor->transform;
+    const NfTransform h311_original_second=h311_coactor->transform;
+    const Nf18a4Body h311_original_cached=r->physical.actor;
+    const uint64_t h311_tick_before=w->tick;
+    const NfRetcFrame *h311_frame_before=nf_retc_read(publisher);
+    const uint32_t h311_receipts_before=push->receipt_count;
+    CHECK(nf_retc_multi_source_sealed_preflight(
+        w,r,enc,publisher,first_index,old_count,&batch));
+    for(unsigned h311_case=0u;h311_case<10u;++h311_case){
+      const float speed=4.0f+.1f*(float)h311_case;
+      const float gap=.80f+.01f*(float)h311_case;
+      h311_owner_actor->transform.velocity=(NfVec3){speed,0.f,0.f};
+      h311_coactor->transform.position=(NfVec3){
+          h311_owner_actor->transform.position.x+gap,
+          h311_owner_actor->transform.position.y,
+          h311_owner_actor->transform.position.z};
+      h311_coactor->transform.velocity=(NfVec3){0.f,0.f,0.f};
+      r->physical.actor.center=(NfVec3){
+          h311_owner_actor->transform.position.x,
+          h311_owner_actor->transform.position.y+
+             h311_owner_actor->movement.body_height*.5f,
+          h311_owner_actor->transform.position.z};
+      r->physical.actor.velocity=h311_owner_actor->transform.velocity;
+      r->physical.actor.height=h311_owner_actor->movement.body_height;
+      NfRetcMa03PhysicalCandidate same_source={0};
+      CHECK(nf_retc_ma03_stage_physics(w,r,.125f,&same_source));
+      CHECK(same_source.eligible&&same_source.solved.count==2u&&
+            same_source.solved.impacts==1u&&
+            same_source.source.actors[0].id==10u&&
+            same_source.source.actors[1].id==20u&&
+            same_source.reference.matched==1u&&
+            same_source.reference.disagreed==0u&&
+            nf_retc_ma03_recheck_physics(w,r,.125f,&same_source));
+      CHECK(!nf_retc_multi_source_sealed_preflight(
+         w,r,enc,publisher,first_index,old_count,&batch));
+      CHECK(w->tick==h311_tick_before&&
+            nf_retc_read(publisher)==h311_frame_before&&
+            push->receipt_count==h311_receipts_before);
+      fprintf(stderr,
+        "H311 SAME_WORLD_A4_CONTACT case=%u actors=10,20 source=1 stale_b2_denied=1\n",
+        h311_case);
+      h311_owner_actor->transform=h311_original_primary;
+      h311_coactor->transform=h311_original_second;
+      r->physical.actor=h311_original_cached;
+      CHECK(nf_retc_multi_source_sealed_preflight(
+          w,r,enc,publisher,first_index,old_count,&batch));
+      CHECK(w->tick==h311_tick_before&&
+            nf_retc_read(publisher)==h311_frame_before&&
+            push->receipt_count==h311_receipts_before);
+      fprintf(stderr,"H311 SOURCE_RESTORE case=%u b2_valid=1 preserved=1\n",
+                    h311_case);
+    }
+  }
+  fprintf(stderr,
+     "H311 SAME_WORLD_PHYSICAL PASS 10 positive actor10/20 contacts + 10 stale-B2 denials + restores\n");
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
      checks independent analytical impulses, and returns two changed body
