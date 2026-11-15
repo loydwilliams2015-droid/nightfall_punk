@@ -6,6 +6,10 @@ H312 corrected 62/62 GitHub PR workflows PASS, dedicated GCC and Clang. At TEN r
 
 H312 original head `90ad0b6f1127f9bb1d2a1eecb789a43573c97d0f` failed broadly because its test incorrectly called a second `nf18b2_encounter_init` on an already-attached A6 owner, a shared fixture lifecycle fault. Corrected H312-C1 clones registered encounter into unbound private scratch and reruns the whole source-exact matrix successfully 62/62. That failure did **not** determine actor20's B2 eligibility; corrected trials did.
 
+## Observed H313 source-trace result (Clang exact-SHA checkpoint)
+
+Ten genuine same-A6-world actor10/actor20 collision poses report **actor10 status=0 ELIGIBLE, reason=0 OK, physical=0 ELIGIBLE, contract=0 ELIGIBLE**; **actor20 status=1 BLOCKED, reason=5 NF18B2_BODY_BLOCKED, physical=1 BLOCKED, contract=0 ELIGIBLE**, in **all ten**. This narrows the blocker to *physical body clearance*, not contract eligibility or capacity. Both-body A4 collision positive remains independently verified, but **A4 contact does not imply B2 physical body clearance**. Do not weaken authorization. Clang dedicated test passed; verify GCC and cumulative CI before asserting full source-exact scoped certificate.
+
 ## New H313 experiment
 For each of ten existing real A4 contact-pose trials, capture both *actual source-created* `Nf18b2EncounterTrace` authorizations immediately following fresh `nf18b2_propose`. Assert exact actor IDs and matching returned `Nf18b2Status`, reason code within the real `Nf18b2Reason` enum; log both `reason`, `physical`, and `contract` separately with case identity. This distinguishes reach, occlusion, traversal, material pending, support, credentials, contract, or capacity instead of guessing. The test retains the existing 10 A4 positive cases, 10 stale original B2 denials and restoration checks and asserts no A6 accepted frame, world tick or B3 receipt mutation.
 
