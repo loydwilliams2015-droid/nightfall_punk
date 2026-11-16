@@ -1,0 +1,42 @@
+name: H318 reverse A4 motion and B2 A5 pending attribution
+on:
+  pull_request:
+    paths:
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h318-reverse-attribution.yml'
+  workflow_dispatch:
+jobs:
+  reverse-attribution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile exact SHA real owner A4 and B2 A5 sources
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h318 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h318 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Execute ten exact A4 relative motion and A5 pending diagnostics
+        run: |
+          set -euo pipefail
+          build-h318/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h318/h318.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('build-h318/h318.log').read_text()
+          rows=re.findall(r'H318 REVERSE_SOURCE case=(\d+) a4=([01]) dx_mm=(-?\d+) dv_cms=(-?\d+) projected_closing=([01]) body_a5=(\d+) ray_a5=(\d+) b2_reason=(\d+) preserved=1',s)
+          assert len(rows)==10,len(rows)
+          assert {int(x[0]) for x in rows}==set(range(10))
+          assert all(int(x[1])==0 and int(x[7])==7 for x in rows)
+          assert all(int(x[5])==2 or int(x[6])==2 for x in rows),rows
+          assert 'H317 OPPOSITE_APPROACH_COMPLETE cases=10 joint_positive=0 restored=1' in s
+          for x in rows:
+              print('H318 case=%s A4=%s dx_mm=%s dv_cms=%s projected=%s A5body=%s A5ray=%s reason=%s'%tuple(x))
+          print('H318 ten genuine A4/A5 stage diagnostics PASS')
+          PY
