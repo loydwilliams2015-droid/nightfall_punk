@@ -1,0 +1,41 @@
+name: H317 reverse-approach same-source B2 intersection
+on:
+  pull_request:
+    paths:
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h317-opposite-approach.yml'
+  workflow_dispatch:
+jobs:
+  reverse-approach:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact-source real A6 A4 B2 A3 A5 experiment
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-h317 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h317 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Run and verify ten reverse-approach observations
+        run: |
+          set -euo pipefail
+          build-h317/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h317/h317.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('build-h317/h317.log').read_text()
+          rows=re.findall(r'H317 OPPOSITE_APPROACH case=(\d+) z_offset_mm=(\d+) a4=([01]) b10=(\d+) b20=(\d+) reason10=(\d+) reason20=(\d+) joint=([01]) preserved=1',s)
+          assert len(rows)==10,len(rows)
+          assert {int(r[0]) for r in rows}==set(range(10))
+          n=sum(int(r[7]) for r in rows)
+          assert f'H317 OPPOSITE_APPROACH_COMPLETE cases=10 joint_positive={n} restored=1' in s
+          assert 'H316 VISIBILITY case=19 actor=20' in s
+          for r in rows: print('H317 case=%s offset=%s A4=%s B2=(%s,%s) reasons=(%s,%s) joint=%s'%tuple(r))
+          print('H317 10 real reverse-approach observations; joint-positive:',n)
+          PY
