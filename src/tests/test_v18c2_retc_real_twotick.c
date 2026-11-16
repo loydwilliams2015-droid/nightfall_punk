@@ -2492,6 +2492,78 @@ int main(int argc,char **argv){
        "H315 LATERAL_SEARCH_COMPLETE cases=10 joint_positive=%u source_restored=1\n",
        intersection315);
   }
+  /* H317: opposite-X real-world approach, ten positive-or-negative
+     configurations. Retain the same object target and A3 collider.
+     Never synthesize B2 grants or commit an A6 transaction. */
+  {
+    NfActor *p317=nf_world_find_actor(w,10u);
+    NfActor *q317=nf_world_find_actor(w,20u);
+    CHECK(p317&&q317);
+    const NfTransform p0_317=p317->transform,q0_317=q317->transform;
+    const Nf18a4Body cached317=r->physical.actor;
+    const uint64_t tick317=w->tick;
+    const NfRetcFrame *accepted317=nf_retc_read(publisher);
+    const uint32_t receipts317=push->receipt_count;
+    unsigned joint317=0u;
+    for(unsigned k317=0u;k317<10u;++k317){
+      const float z317=1.10f+.15f*(float)k317;
+      p317->transform.position.z=p0_317.position.z+z317;
+      q317->transform.position=(NfVec3){
+        p317->transform.position.x-.80f,
+        p317->transform.position.y,p317->transform.position.z};
+      p317->transform.velocity=(NfVec3){-4.5f,0.f,0.f};
+      q317->transform.velocity=(NfVec3){0.f,0.f,0.f};
+      r->physical.actor.center=(NfVec3){
+        p317->transform.position.x,
+        p317->transform.position.y+p317->movement.body_height*.5f,
+        p317->transform.position.z};
+      r->physical.actor.velocity=p317->transform.velocity;
+      r->physical.actor.height=p317->movement.body_height;
+      NfRetcMa03PhysicalCandidate a4_317={0};
+      const bool contact317=nf_retc_ma03_stage_physics(w,r,.125f,&a4_317);
+      if(contact317)CHECK(a4_317.eligible&&
+        a4_317.reference.matched==1u&&
+        a4_317.reference.disagreed==0u&&
+        nf_retc_ma03_recheck_physics(w,r,.125f,&a4_317));
+      Nf18b2EncounterRuntime *b317=calloc(1,sizeof *b317);
+      CHECK(b317);
+      *b317=*enc;
+      b317->queue_count=0u;b317->trace_count=0u;
+      b317->grant_count=0u;b317->prepared=0u;b317->attached=0u;
+      b317->frame.scene.actors=b317->frame.actors;
+      b317->frame.scene.objects=b317->frame.objects;
+      CHECK(nf18b2_live_frame(b317,&b317->frame));
+      const Nf18b2Status first317=nf18b2_propose(b317,
+        (Nf18b2Intent){10u,2010u,1310u+k317,NF18B2_PUSH});
+      const Nf18b2Status second317=nf18b2_propose(b317,
+        (Nf18b2Intent){20u,2010u,1320u+k317,NF18B2_PUSH});
+      CHECK(b317->trace_count>=2u);
+      const Nf18b2Reason reasonfirst317=b317->traces[
+         b317->trace_count-2u].authorization.reason;
+      const Nf18b2Reason reasonsecond317=b317->traces[
+         b317->trace_count-1u].authorization.reason;
+      const unsigned jointcase317=(unsigned)(contact317&&
+         first317==NF18B2_ELIGIBLE&&second317==NF18B2_ELIGIBLE);
+      joint317+=jointcase317;
+      CHECK(w->tick==tick317&&nf_retc_read(publisher)==accepted317&&
+            push->receipt_count==receipts317);
+      fprintf(stderr,
+        "H317 OPPOSITE_APPROACH case=%u z_offset_mm=%u a4=%u b10=%d b20=%d reason10=%d reason20=%d joint=%u preserved=1\n",
+        k317,(unsigned)(z317*1000.f+.5f),(unsigned)contact317,
+        (int)first317,(int)second317,(int)reasonfirst317,
+        (int)reasonsecond317,jointcase317);
+      free(b317);
+      p317->transform=p0_317;q317->transform=q0_317;
+      r->physical.actor=cached317;
+      CHECK(nf_retc_multi_source_sealed_preflight(
+         w,r,enc,publisher,first_index,old_count,&batch));
+    }
+    CHECK(w->tick==tick317&&nf_retc_read(publisher)==accepted317&&
+          push->receipt_count==receipts317);
+    fprintf(stderr,
+      "H317 OPPOSITE_APPROACH_COMPLETE cases=10 joint_positive=%u restored=1\n",
+      joint317);
+  }
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
      checks independent analytical impulses, and returns two changed body
