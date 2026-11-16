@@ -2542,6 +2542,55 @@ int main(int argc,char **argv){
          b317->trace_count-2u].authorization.reason;
       const Nf18b2Reason reasonsecond317=b317->traces[
          b317->trace_count-1u].authorization.reason;
+      /* H318: source-exact reverse-side stage attribution.
+         The previously observed PENDING decision can arise from the
+         A5 body capsule or the finite swept visibility ray. Record
+         both using the unmodified B2 scene, and record actual A4
+         relative pose/velocity rather than inferring contact. */
+      const Nf18b2Scene *scene318=&b317->frame.scene;
+      const Nf18b2Actor *actor318=NULL;
+      const Nf18b2Object *target318=NULL;
+      for(size_t ai318=0;ai318<scene318->actor_count;++ai318)
+        if(scene318->actors[ai318].id==20u)
+          actor318=&scene318->actors[ai318];
+      for(size_t oi318=0;oi318<scene318->object_count;++oi318)
+        if(scene318->objects[oi318].id==2010u)
+          target318=&scene318->objects[oi318];
+      CHECK(actor318&&target318&&scene318->material);
+      const Nf18a2ShapePolicy bodyshape318={
+        actor318->radius,actor318->height,0.f,0.f,1.f};
+      const Nf18a5Query body318=nf18a5_sweep_query(
+        &scene318->material->grid,actor318->feet,
+        (NfVec3){0.f,0.f,0.f},bodyshape318,1,
+        scene318->geometry.tick,NULL,NULL,NULL);
+      const NfVec3 eye318={actor318->feet.x,
+         actor318->feet.y+actor318->eye_height,actor318->feet.z};
+      const NfVec3 ray318={target318->target.x-eye318.x,
+         target318->target.y-eye318.y,
+         target318->target.z-eye318.z};
+      const Nf18a2ShapePolicy rayshape318={.0001f,.0002f,0.f,0.f,1.f};
+      const NfVec3 rayfeet318={eye318.x,eye318.y-.0001f,eye318.z};
+      const Nf18a5Query visibility318=nf18a5_sweep_query(
+        &scene318->material->grid,rayfeet318,ray318,
+        rayshape318,1,scene318->geometry.tick,NULL,NULL,NULL);
+      const float dx318=q317->transform.position.x-
+                           p317->transform.position.x;
+      const float dv318=p317->transform.velocity.x-
+                           q317->transform.velocity.x;
+      const unsigned projected318=(unsigned)(dx318*dv318>0.f);
+      CHECK(reasonsecond317!=NF18B2_MATERIAL_PENDING||
+           body318==NF18A5_Q_PENDING||
+           visibility318==NF18A5_Q_PENDING);
+      CHECK(w->tick==tick317&&
+            nf_retc_read(publisher)==accepted317&&
+            push->receipt_count==receipts317);
+      fprintf(stderr,
+        "H318 REVERSE_SOURCE case=%u a4=%u dx_mm=%d dv_cms=%d projected_closing=%u body_a5=%u ray_a5=%u b2_reason=%u preserved=1\n",
+        k317,(unsigned)contact317,
+        (int)lroundf(dx318*1000.f),
+        (int)lroundf(dv318*100.f),projected318,
+        (unsigned)body318,(unsigned)visibility318,
+        (unsigned)reasonsecond317);
       const unsigned jointcase317=(unsigned)(contact317&&
          first317==NF18B2_ELIGIBLE&&second317==NF18B2_ELIGIBLE);
       joint317+=jointcase317;
