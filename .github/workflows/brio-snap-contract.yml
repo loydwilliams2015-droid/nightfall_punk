@@ -6,6 +6,7 @@ on:
     paths:
       - 'tests/brio_snap_contract.*'
       - 'tests/brio_snap_parallel_test.c'
+      - 'tests/brio_snap_metamorphic_test.c'
       - '.github/workflows/brio-snap-contract.yml'
 jobs:
   contract:
@@ -28,3 +29,10 @@ jobs:
           set -euo pipefail
           ${{ matrix.compiler }} -std=c11 -O1 -g -Wall -Wextra -Werror -pthread -fsanitize=address,undefined -fno-omit-frame-pointer tests/brio_snap_contract.c tests/brio_snap_parallel_test.c -o /tmp/brio_snap_parallel
           /tmp/brio_snap_parallel
+      - name: BRIO candidate metamorphic ordering and fail-closed invariant
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.compiler }} -std=c11 -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer tests/brio_snap_contract.c tests/brio_snap_metamorphic_test.c -o /tmp/brio_snap_metamorphic
+          /tmp/brio_snap_metamorphic
+
