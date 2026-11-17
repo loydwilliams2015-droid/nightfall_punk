@@ -48,3 +48,14 @@ X is 5 reserve + 9 outstanding RET-C hypotheses + 10 BRIO experiment recommendat
 A4 negative contact, B2 A5 PENDING, denied/stale gate or out-of-radius rail are expected safe refusals. A traversal candidate returned with any pending/denied gate, source mismatch, collision penetration, or mutated owner epoch would be a genuine defect. Local success on isolated prototype must not be presented as H319, C2 or C3 progress.
 ## Estimated distance
 High-uncertainty existing ledger: 7–14 substantive C2 five-objective sweeps plus 4–10 potentially overlapping C3 sweeps. BRIO adds a distinct non-blocking playable prototype track; not counted in C2 closure.
+
+## H0-S/P serial and parallel observation continuation (2026-11-17)
+New source test: `tests/brio_snap_parallel_test.c`. Same source and data generation are evaluated serially forward, serially reverse, and via four pthread workers with disjoint output regions. Eight rounds × 4096 cases = **32,768 test cases per compiler**, **65,536 pairwise comparisons per compiler**, with seeded deterministic candidate geometry, mixed denied/pending gates, and an order-stable result signature. Positive candidate selection is a *research observation only*. No accepted-world concurrency, live B2 grant, A6 ownership, B3 journal or production traversal is claimed.
+- CI: GCC and Clang ASan/UBSan exact-SHA workflow has been added; completion must be checked at head SHA before certifying. No ThreadSanitizer or human measurement run.
+- Null/denied/pending gates still fail closed; nearest eligible selection remains order-independent. The experiment directly falsifies schedule-dependent pure-prefilter outcomes but cannot establish absence of A6 data races.
+- Total next-sweep accounting **X=28**: 9 production H319–H327 recommendations + 10 BRIO research recommendations + 4 compiler/test execution slots (existing GCC/Clang contract and new GCC/Clang S/P comparison) + 5 reserve recommendations. The reserve items are unimplemented. This is a scope ledger, not 28 completed implementations.
+- Parallel hypothesis **SP01**: independently generated per-case candidates produce identical semantic output in forward/reverse serial and four-worker parallel schedules at the exact same source revision.
+- Serial hypothesis **SP02**: repeating deterministic seeds across GCC and Clang yields equal golden signatures and failure counts.
+- Integration hypothesis **SP03** (OPEN): same A6 source snapshot, live A4/A5/B2 admission, and authoritative A6 publication produce the same accepted epoch across serial and parallel world-schedules, including denied/stale cases.
+- Performance hypothesis **SP04** (OPEN): representative 1080p p95/p99 and response latency from native Linux human play.
+- C2 P*, C3 recovery and P0/P1/P2 remain HOLD without new positive source-backed experiments.
