@@ -1,0 +1,38 @@
+name: BRIO isolated traversal snap contract
+on:
+  push:
+    branches: [research/brio-snap-prefilter-h0]
+  pull_request:
+    paths:
+      - 'tests/brio_snap_contract.*'
+      - 'tests/brio_snap_parallel_test.c'
+      - 'tests/brio_snap_metamorphic_test.c'
+      - '.github/workflows/brio-snap-contract.yml'
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deterministic snap prefilter and sanitizer suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.compiler }} -std=c11 -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer tests/brio_snap_contract.c tests/brio_snap_contract_test.c -o /tmp/brio_snap_contract
+          /tmp/brio_snap_contract
+      - name: Serial versus 4-worker parallel observation with sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.compiler }} -std=c11 -O1 -g -Wall -Wextra -Werror -pthread -fsanitize=address,undefined -fno-omit-frame-pointer tests/brio_snap_contract.c tests/brio_snap_parallel_test.c -o /tmp/brio_snap_parallel
+          /tmp/brio_snap_parallel
+      - name: BRIO candidate metamorphic ordering and fail-closed invariant
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.compiler }} -std=c11 -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer tests/brio_snap_contract.c tests/brio_snap_metamorphic_test.c -o /tmp/brio_snap_metamorphic
+          /tmp/brio_snap_metamorphic
+
