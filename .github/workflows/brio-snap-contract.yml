@@ -1,0 +1,23 @@
+name: BRIO isolated traversal snap contract
+on:
+  push:
+    branches: [research/brio-snap-prefilter-h0]
+  pull_request:
+    paths:
+      - 'tests/brio_snap_contract.*'
+      - '.github/workflows/brio-snap-contract.yml'
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deterministic snap prefilter and sanitizer suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.compiler }} -std=c11 -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer tests/brio_snap_contract.c tests/brio_snap_contract_test.c -o /tmp/brio_snap_contract
+          /tmp/brio_snap_contract
