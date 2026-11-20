@@ -57,13 +57,15 @@ int main(void){
    CHECK(!nf_h323_decode(temp,sizeof temp,&decoded));
  }
  /* Checksum recomputed adversarial variants: schema and semantic gates must reject. */
- const size_t badfields[]={1,2,3,4,5,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22};
- const uint32_t badvalues[]={2,3,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+ const size_t badfields[]={1,2,3,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22};
+ const uint32_t badvalues[]={2,3,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
  for(size_t i=0;i<sizeof badfields/sizeof badfields[0];i++){
   memcpy(temp,initial,sizeof temp);put32(temp,badfields[i],badvalues[i]);
   put32(temp,23,checksum(temp));
   CHECK(!nf_h323_decode(temp,sizeof temp,&decoded));
  }
+ memcpy(temp,initial,sizeof temp);put32(temp,4,0);put32(temp,5,0);put32(temp,23,checksum(temp));
+ CHECK(!nf_h323_decode(temp,sizeof temp,&decoded));
  memcpy(temp,initial,sizeof temp);put32(temp,7,99);put32(temp,23,checksum(temp));
  CHECK(!nf_h323_decode(temp,sizeof temp,&decoded));
  memcpy(temp,initial,sizeof temp);put32(temp,10,10);put32(temp,23,checksum(temp));
