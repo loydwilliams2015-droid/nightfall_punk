@@ -1,0 +1,24 @@
+name: RET-C H323 portable codec research acceptance
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_h323_portable.*'
+      - 'src/tests/test_retc_h323_portable.c'
+      - '.github/workflows/retc-h323-portable-research.yml'
+  push:
+    branches: [planning/retc-h323-h324-d-e-private-recovery]
+jobs:
+  h323-portable:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source exact codec tests and sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.compiler }} -std=c11 -O1 -g -Wall -Wextra -Werror -pedantic -pthread -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/shared src/shared/nf_retc_h323_portable.c src/tests/test_retc_h323_portable.c -o /tmp/retc_h323_portable
+          /tmp/retc_h323_portable
