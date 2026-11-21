@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <threads.h>
+#include <stdatomic.h>
 /* H319I: detached, immutable A4 source-body copies are safe to check in
  * parallel. The authoritative A6 world is NEVER read by worker threads. */
 typedef struct H319IInputs {
@@ -34,11 +35,19 @@ typedef struct H319IInputs {
   NfMa03cEvidence expected[32];
   uint32_t tick;
   bool reversed;
+  atomic_bool *start;
+  atomic_bool *cancel;
   unsigned checked;
   unsigned mismatched;
 } H319IInputs;
 static int h319i_parallel_reference(void *ptr){
   H319IInputs *data=(H319IInputs *)ptr;
+  /* H319J: shared launch gate enforces overlapping worker lifetimes;
+     cancellation wakes partial starts so all threads can be joined. */
+  while(!atomic_load_explicit(data->start,memory_order_acquire))
+    thrd_yield();
+  if(atomic_load_explicit(data->cancel,memory_order_acquire))
+    return 0;
   for(unsigned k=0;k<32u;++k){
     Nf18a4Body privatePairI[2]={
       data->bodies[k][data->reversed?1u:0u],
@@ -3115,26 +3124,44 @@ int main(int argc,char **argv){
        independent immutable source copies, no A6 world or B2 access. */
     thrd_t threadsI[4];
     H319IInputs workI[4];
+    atomic_bool startI=ATOMIC_VAR_INIT(false);
+    atomic_bool cancelI=ATOMIC_VAR_INIT(false);
     unsigned startedI=0u;
     for(unsigned workerI=0u;workerI<4u;++workerI){
       workI[workerI]=sourceI;
       workI[workerI].reversed=(workerI&1u)!=0u;
+      workI[workerI].start=&startI;
+      workI[workerI].cancel=&cancelI;
       if(thrd_create(&threadsI[workerI],h319i_parallel_reference,
                      &workI[workerI])!=thrd_success)break;
       ++startedI;
     }
-    CHECK(startedI==4u);
+    const bool fullLaunchI=startedI==4u;
+    if(!fullLaunchI)
+      atomic_store_explicit(&cancelI,true,memory_order_release);
+    atomic_store_explicit(&startI,true,memory_order_release);
+    bool joinedI=true;
+    bool matchedI=true;
     for(unsigned workerI=0u;workerI<startedI;++workerI){
       int resultI=-1;
-      CHECK(thrd_join(threadsI[workerI],&resultI)==thrd_success);
-      CHECK(resultI==0&&workI[workerI].checked==32u&&
-            workI[workerI].mismatched==0u);
+      const int joinI=thrd_join(threadsI[workerI],&resultI);
+      if(joinI!=thrd_success){
+        joinedI=false;
+        continue;
+      }
+      if(fullLaunchI&&(resultI!=0||workI[workerI].checked!=32u||
+                       workI[workerI].mismatched!=0u))
+        matchedI=false;
     }
+    CHECK(fullLaunchI&&joinedI&&matchedI);
     CHECK(w->tick==tickC&&nf_retc_read(publisher)==frameC&&
           push->receipt_count==receiptsC);
     fprintf(stderr,
       "H319I PARALLEL_REFERENCE workers=%u cases_per_worker=32 reversed_workers=2 mismatches=0 owner_preserved=1\n",
       startedI);
+    fprintf(stderr,
+      "H319J START_GATE workers=%u joined=%u matched=%u cancelled=0 owner_preserved=1\n",
+      startedI,(unsigned)joinedI,(unsigned)matchedI);
   }
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
