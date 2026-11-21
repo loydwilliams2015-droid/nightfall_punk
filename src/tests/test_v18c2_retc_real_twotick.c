@@ -26,6 +26,30 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <threads.h>
+/* H319I: detached, immutable A4 source-body copies are safe to check in
+ * parallel. The authoritative A6 world is NEVER read by worker threads. */
+typedef struct H319IInputs {
+  Nf18a4Body bodies[32][2];
+  NfMa03cEvidence expected[32];
+  uint32_t tick;
+  unsigned checked;
+  unsigned mismatched;
+} H319IInputs;
+static int h319i_parallel_reference(void *ptr){
+  H319IInputs *data=(H319IInputs *)ptr;
+  for(unsigned k=0;k<32u;++k){
+    const NfMa03cEvidence actual=nf_ma03c_compare(
+      data->bodies[k],2u,.125f,data->tick,1u);
+    if(actual.matched!=data->expected[k].matched||
+       actual.unresolved!=data->expected[k].unresolved||
+       actual.disagreed!=data->expected[k].disagreed)
+       ++data->mismatched;
+    ++data->checked;
+  }
+  return 0;
+}
+
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"RET-C real dispatcher failure line %d: %s\
 ",__LINE__,#x);return 1;}}while(0)
 static bool b2_provider(void *ctx,const NfWorld *w,const Nf18a6Runtime *owner,
@@ -2844,6 +2868,8 @@ int main(int argc,char **argv){
     unsigned reversedMatchedE=0u,reversedUnresolvedE=0u;
     unsigned reversedImpactsE=0u,reorderedParityE=0u;
     unsigned keyedSolverMatchesG=0u,keyedSolverComparedG=0u;
+    H319IInputs sourceI={0};
+    sourceI.tick=(uint32_t)w->tick+1u;
     for(unsigned gapC=0u;gapC<4u;++gapC){
       for(unsigned lateralC=0u;lateralC<8u;++lateralC){
         const unsigned caseC=gapC*8u+lateralC;
@@ -2892,6 +2918,9 @@ int main(int argc,char **argv){
             rawBodiesD,2u,.125f,(uint32_t)w->tick+1u,1u);
         const NfMa03cEvidence oracleD=nf_ma03c_compare(
             rawBodiesD,2u,.125f,(uint32_t)w->tick+1u,1u);
+        sourceI.bodies[caseC][0]=rawBodiesD[0];
+        sourceI.bodies[caseC][1]=rawBodiesD[1];
+        sourceI.expected[caseC]=oracleD;
         rawImpactsC+=(unsigned)(rawD.impacts==1u);
         matchedC+=(unsigned)(oracleD.matched==1u);
         rawDisagreeC+=(unsigned)(oracleD.disagreed!=0u||
@@ -3078,6 +3107,29 @@ int main(int argc,char **argv){
     fprintf(stderr,
       "H319G ID_KEYED_COMPLETE cases=32 compared=%u equivalent=%u restored=1\n",
       keyedSolverComparedG,keyedSolverMatchesG);
+    /* H319I: four true simultaneous read-only A4 reference workers on
+       independent immutable source copies, no A6 world or B2 access. */
+    thrd_t threadsI[4];
+    H319IInputs workI[4];
+    unsigned startedI=0u;
+    for(unsigned workerI=0u;workerI<4u;++workerI){
+      workI[workerI]=sourceI;
+      if(thrd_create(&threadsI[workerI],h319i_parallel_reference,
+                     &workI[workerI])!=thrd_success)break;
+      ++startedI;
+    }
+    CHECK(startedI==4u);
+    for(unsigned workerI=0u;workerI<startedI;++workerI){
+      int resultI=-1;
+      CHECK(thrd_join(threadsI[workerI],&resultI)==thrd_success);
+      CHECK(resultI==0&&workI[workerI].checked==32u&&
+            workI[workerI].mismatched==0u);
+    }
+    CHECK(w->tick==tickC&&nf_retc_read(publisher)==frameC&&
+          push->receipt_count==receiptsC);
+    fprintf(stderr,
+      "H319I PARALLEL_REFERENCE workers=%u cases_per_worker=32 mismatches=0 owner_preserved=1\n",
+      startedI);
   }
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
