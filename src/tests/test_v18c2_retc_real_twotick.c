@@ -33,14 +33,18 @@ typedef struct H319IInputs {
   Nf18a4Body bodies[32][2];
   NfMa03cEvidence expected[32];
   uint32_t tick;
+  bool reversed;
   unsigned checked;
   unsigned mismatched;
 } H319IInputs;
 static int h319i_parallel_reference(void *ptr){
   H319IInputs *data=(H319IInputs *)ptr;
   for(unsigned k=0;k<32u;++k){
+    Nf18a4Body privatePairI[2]={
+      data->bodies[k][data->reversed?1u:0u],
+      data->bodies[k][data->reversed?0u:1u]};
     const NfMa03cEvidence actual=nf_ma03c_compare(
-      data->bodies[k],2u,.125f,data->tick,1u);
+      privatePairI,2u,.125f,data->tick,1u);
     if(actual.matched!=data->expected[k].matched||
        actual.unresolved!=data->expected[k].unresolved||
        actual.disagreed!=data->expected[k].disagreed)
@@ -3114,6 +3118,7 @@ int main(int argc,char **argv){
     unsigned startedI=0u;
     for(unsigned workerI=0u;workerI<4u;++workerI){
       workI[workerI]=sourceI;
+      workI[workerI].reversed=(workerI&1u)!=0u;
       if(thrd_create(&threadsI[workerI],h319i_parallel_reference,
                      &workI[workerI])!=thrd_success)break;
       ++startedI;
@@ -3128,7 +3133,7 @@ int main(int argc,char **argv){
     CHECK(w->tick==tickC&&nf_retc_read(publisher)==frameC&&
           push->receipt_count==receiptsC);
     fprintf(stderr,
-      "H319I PARALLEL_REFERENCE workers=%u cases_per_worker=32 mismatches=0 owner_preserved=1\n",
+      "H319I PARALLEL_REFERENCE workers=%u cases_per_worker=32 reversed_workers=2 mismatches=0 owner_preserved=1\n",
       startedI);
   }
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
