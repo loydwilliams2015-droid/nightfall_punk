@@ -34,11 +34,15 @@ static void packet(uint8_t out[PACKET_BYTES],uint32_t phase,const uint8_t data[N
 }
 static int exact_write(int fd,const uint8_t *p,size_t n){
  while(n){ssize_t k=write(fd,p,n);if(k<0&&errno==EINTR)continue;
-   if(k<=0)return 0;p+=(size_t)k;n-=(size_t)k;}return 1;
+   if(k<=0)return 0;
+   p+=(size_t)k;
+   n-=(size_t)k;}return 1;
 }
 static int exact_read(int fd,uint8_t *p,size_t n){
  while(n){ssize_t k=read(fd,p,n);if(k<0&&errno==EINTR)continue;
-   if(k<=0)return 0;p+=(size_t)k;n-=(size_t)k;}return 1;
+   if(k<=0)return 0;
+   p+=(size_t)k;
+   n-=(size_t)k;}return 1;
 }
 static int parent_sync(const char *path){
  size_t n=strlen(path);if(n==0||n>900)return 0;
