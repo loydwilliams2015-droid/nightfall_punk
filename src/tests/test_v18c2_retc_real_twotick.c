@@ -2630,6 +2630,7 @@ int main(int argc,char **argv){
     const uint32_t b3count319=push->receipt_count;
     unsigned contact319=0u,grantpair319=0u,joint319=0u;
     unsigned reason_pending319=0u,reason_occluded319=0u;
+    unsigned order_differences319=0u,reverse_dual319=0u;
     for(unsigned side319=0u;side319<2u;++side319){
       for(unsigned xi319=0u;xi319<4u;++xi319){
         for(unsigned zi319=0u;zi319<8u;++zi319){
@@ -2676,6 +2677,38 @@ int main(int argc,char **argv){
           CHECK(private319->trace_count>=2u);
           const Nf18b2Reason second_reason=private319->traces[
               private319->trace_count-1u].authorization.reason;
+          /* Reverse proposal order in a distinct B2-private clone of the
+             same real owner-world pose. Evaluate source decisions only.
+             Never synthesize issuer grants or mutate the accepted frame. */
+          Nf18b2EncounterRuntime *reverse319=calloc(1,sizeof *reverse319);
+          CHECK(reverse319);
+          *reverse319=*enc;
+          reverse319->queue_count=0u;reverse319->trace_count=0u;
+          reverse319->grant_count=0u;reverse319->prepared=0u;
+          reverse319->attached=0u;
+          reverse319->frame.scene.actors=reverse319->frame.actors;
+          reverse319->frame.scene.objects=reverse319->frame.objects;
+          CHECK(nf18b2_live_frame(reverse319,&reverse319->frame));
+          const Nf18b2Status reverse20=nf18b2_propose(reverse319,
+            (Nf18b2Intent){20u,2010u,3100u+case319,NF18B2_PUSH});
+          const Nf18b2Status reverse10=nf18b2_propose(reverse319,
+            (Nf18b2Intent){10u,2010u,3000u+case319,NF18B2_PUSH});
+          CHECK(reverse319->trace_count>=2u);
+          const Nf18b2Reason reason20reverse=reverse319->traces[
+              reverse319->trace_count-2u].authorization.reason;
+          const bool same319=b10==reverse10&&b20==reverse20&&
+                            second_reason==reason20reverse;
+          order_differences319+=(unsigned)!same319;
+          reverse_dual319+=(unsigned)(reverse10==NF18B2_ELIGIBLE&&
+                                     reverse20==NF18B2_ELIGIBLE);
+          CHECK(w->tick==tick319&&
+                nf_retc_read(publisher)==frame319&&
+                push->receipt_count==b3count319);
+          fprintf(stderr,
+            "H319 REVERSE_ORDER case=%u forward10=%d reverse10=%d forward20=%d reverse20=%d reason20=%d reverse_reason20=%d same=%u preserved=1\n",
+            case319,(int)b10,(int)reverse10,(int)b20,(int)reverse20,
+            (int)second_reason,(int)reason20reverse,(unsigned)same319);
+          free(reverse319);
           if(second_reason==NF18B2_OCCLUDED)++reason_occluded319;
           if(second_reason==NF18B2_MATERIAL_PENDING)++reason_pending319;
           const bool both=b10==NF18B2_ELIGIBLE&&b20==NF18B2_ELIGIBLE;
@@ -2703,9 +2736,9 @@ int main(int argc,char **argv){
     CHECK(w->tick==tick319&&nf_retc_read(publisher)==frame319&&
           push->receipt_count==b3count319);
     fprintf(stderr,
-      "H319 SOURCE_GRID_COMPLETE cases=64 a4=%u dual_b2=%u intersection=%u pending20=%u occluded20=%u restored=1\n",
+      "H319 SOURCE_GRID_COMPLETE cases=64 a4=%u dual_b2=%u intersection=%u pending20=%u occluded20=%u order_differences=%u reverse_dual=%u restored=1\n",
       contact319,grantpair319,joint319,reason_pending319,
-      reason_occluded319);
+      reason_occluded319,order_differences319,reverse_dual319);
   }
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
