@@ -119,5 +119,16 @@ jobs:
           assert matched_new==sum(int(x[1]) for x in stable)
           assert stage_new==matched_new
           print("H319F validated A4 physical references and order invariance",stage_new,matched_new)
+          keyed=re.findall(r"H319G ID_KEYED case=(\d+) compared=([01]) equivalent=([01]) original_status=(\d+) reversed_status=(\d+) preserved=1",s)
+          assert len(keyed)==32,len(keyed)
+          assert {int(x[0]) for x in keyed}==set(range(32))
+          keyed_summary=re.findall(r"H319G ID_KEYED_COMPLETE cases=32 compared=(\d+) equivalent=(\d+) restored=1",s)
+          assert len(keyed_summary)==1,keyed_summary
+          k_comp,k_equiv=map(int,keyed_summary[0])
+          assert k_comp==sum(int(x[1]) for x in keyed)
+          assert k_equiv==sum(int(x[2]) for x in keyed)
+          assert k_equiv==k_comp
+          assert all(int(x[2])<=int(x[1]) for x in keyed)
+          print("H319G source-actor ID-keyed solver order invariance",k_comp,k_equiv)
           print("H319 scope is research observation only, not two actor-to-object PUSH or publication")
           PY
