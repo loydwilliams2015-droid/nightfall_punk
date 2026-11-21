@@ -34,7 +34,7 @@ jobs:
           rows=re.findall(r"H319 SOURCE_GRID case=(\d+) side=(\d+) dx_mm=(-?\d+) z_mm=(\d+) a4=([01]) b10=(\d+) b20=(\d+) reason20=(\d+) joint=([01]) preserved=1",s)
           assert len(rows)==64,len(rows)
           assert {int(row[0]) for row in rows}==set(range(64))
-          totals=re.findall(r"H319 SOURCE_GRID_COMPLETE cases=64 a4=(\d+) dual_b2=(\d+) intersection=(\d+) pending20=(\d+) occluded20=(\d+) restored=1",s)
+          totals=re.findall(r"H319 SOURCE_GRID_COMPLETE cases=64 a4=(\d+) dual_b2=(\d+) intersection=(\d+) pending20=(\d+) occluded20=(\d+) order_differences=(\d+) reverse_dual=(\d+) restored=1",s)
           assert len(totals)==1,totals
           a4,grants,joint,pending,occluded,diffs,reverse_dual=map(int,totals[0])
           assert a4==sum(int(row[4]) for row in rows)
@@ -42,7 +42,7 @@ jobs:
           assert 0<=joint<=min(a4,grants)<=64
           assert pending+occluded<=64
           assert 0<=diffs<=64 and 0<=reverse_dual<=64
-          reverse_rows=re.findall(r"H319 REVERSE_ORDER case=(\\d+) forward10=(\\d+) reverse10=(\\d+) forward20=(\\d+) reverse20=(\\d+) reason20=(\\d+) reverse_reason20=(\\d+) same=([01]) preserved=1",s)
+          reverse_rows=re.findall(r"H319 REVERSE_ORDER case=(\d+) forward10=(\d+) reverse10=(\d+) forward20=(\d+) reverse20=(\d+) reason20=(\d+) reverse_reason20=(\d+) same=([01]) preserved=1",s)
           assert len(reverse_rows)==64,len(reverse_rows)
           assert {int(x[0]) for x in reverse_rows}==set(range(64))
           assert sum(1-int(x[7]) for x in reverse_rows)==diffs
