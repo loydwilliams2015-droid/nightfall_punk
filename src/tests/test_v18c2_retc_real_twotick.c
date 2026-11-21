@@ -2993,6 +2993,44 @@ int main(int argc,char **argv){
         CHECK(scratchC->trace_count>=2u);
         const Nf18b2Reason reasonC=scratchC->traces[
           scratchC->trace_count-1u].authorization.reason;
+        /* H319H: replay actual A5 body occupancy and finite swept
+           visibility for actor20/object2010 from the exact B2 source
+           frame at the same negative-X pose. Merely classifies the
+           MATERIAL_PENDING boundary; never converts it to FREE. */
+        const Nf18b2Scene *sourceH=&scratchC->frame.scene;
+        const Nf18b2Actor *actorH=NULL;
+        const Nf18b2Object *objectH=NULL;
+        for(size_t aiH=0u;aiH<sourceH->actor_count;++aiH)
+          if(sourceH->actors[aiH].id==20u)
+            actorH=&sourceH->actors[aiH];
+        for(size_t oiH=0u;oiH<sourceH->object_count;++oiH)
+          if(sourceH->objects[oiH].id==2010u)
+            objectH=&sourceH->objects[oiH];
+        CHECK(actorH&&objectH&&sourceH->material);
+        const Nf18a2ShapePolicy bodyShapeH={
+          actorH->radius,actorH->height,0.f,0.f,1.f};
+        const Nf18a5Query bodyH=nf18a5_sweep_query(
+          &sourceH->material->grid,actorH->feet,
+          (NfVec3){0.f,0.f,0.f},bodyShapeH,1,
+          sourceH->geometry.tick,NULL,NULL,NULL);
+        const NfVec3 eyeH={actorH->feet.x,
+          actorH->feet.y+actorH->eye_height,actorH->feet.z};
+        const NfVec3 visibilityD={objectH->target.x-eyeH.x,
+          objectH->target.y-eyeH.y,objectH->target.z-eyeH.z};
+        const Nf18a2ShapePolicy rayShapeH={.0001f,.0002f,0.f,0.f,1.f};
+        const NfVec3 originH={eyeH.x,eyeH.y-.0001f,eyeH.z};
+        const Nf18a5Query rayH=nf18a5_sweep_query(
+          &sourceH->material->grid,originH,visibilityD,
+          rayShapeH,1,sourceH->geometry.tick,NULL,NULL,NULL);
+        const bool a3ClearH=nf18a3_capsule_clear(
+          sourceH->geometry,actorH->feet,bodyShapeH);
+        CHECK(reasonC!=NF18B2_MATERIAL_PENDING||
+              bodyH==NF18A5_Q_PENDING||rayH==NF18A5_Q_PENDING);
+        fprintf(stderr,
+          "H319H MATERIAL_SOURCE case=%u reason=%u body_a5=%u ray_a5=%u a3_clear=%u source_tick=%u preserved=1\n",
+          caseC,(unsigned)reasonC,(unsigned)bodyH,(unsigned)rayH,
+          (unsigned)a3ClearH,(unsigned)sourceH->geometry.tick);
+
         CHECK(!contactC||(
            rawD.status==NF_NARROW_OK&&rawD.count==2u&&
            rawD.impacts==1u&&oracleD.matched==1u&&
