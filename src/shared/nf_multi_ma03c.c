@@ -5,11 +5,27 @@ static uint64_t mix(uint64_t h,uint32_t x){return (h^x)*UINT64_C(1099511628211);
 NfMa03cEvidence nf_ma03c_compare(const Nf18a4Body *b,size_t n,float dt,uint32_t tick,uint32_t rev){
  NfMa03cEvidence e={0};
  if(!b||n<2||n>3)return e;
+ /* H319F: the independent 1D oracle is LEFT-to-RIGHT, but owner roster
+  * order is by actor identity, not spatial X. Canonicalize a PRIVATE local
+  * copy for exactly two bodies; never reorder source actors, change A6
+  * ownership or synthesize an authorized physical/B2/B3 consequence.
+  * This preserves the original positive-X reference and also verifies
+  * negative-X approach without treating wrong-order as a safety failure. */
+ Nf18a4Body canonical[2]={{0},{0}};
+ if(n==2){
+  canonical[0]=b[0];canonical[1]=b[1];
+  if(isfinite(canonical[0].center.x)&&isfinite(canonical[1].center.x)&&
+     canonical[0].center.x>canonical[1].center.x){
+   Nf18a4Body tmp=canonical[0];
+   canonical[0]=canonical[1];canonical[1]=tmp;
+  }
+  b=canonical;
+ }
  NfMa01c2Result result=nf_ma01c2_integrate(b,n,dt,tick,rev);
  if(result.status!=NF_NARROW_OK){e.unresolved=1;return e;}
  if(n!=2){e.unresolved=1;return e;}
  /* Independent two-body zero-restitution 1D momentum oracle:
-  * verify only collinear, same-height, stationary target configurations. */
+  * verify only collinear, same-height and closing approach conditions. */
  if(fabsf(b[0].center.z-b[1].center.z)>.00001f||
     fabsf(b[0].velocity.z)>1e-6f||fabsf(b[1].velocity.z)>1e-6f||
     fabsf(b[0].center.y-b[1].center.y)>1e-6f){e.unresolved=1;return e;}
