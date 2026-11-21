@@ -2613,6 +2613,100 @@ int main(int argc,char **argv){
       "H317 OPPOSITE_APPROACH_COMPLETE cases=10 joint_positive=%u restored=1\n",
       joint317);
   }
+  /* H319: no-policy-change, real-source two-actor feasibility grid.
+     This does NOT prove two actor->object A4 contacts, issue owner-owned B2
+     credentials, apply typed B3 or commit A6. A candidate is positive ONLY
+     if A4's genuine same-world actor-pair solver and BOTH independent B2
+     source requests accept the same unchanged source scene. */
+  {
+    NfActor *owner319=nf_world_find_actor(w,10u);
+    NfActor *peer319=nf_world_find_actor(w,20u);
+    CHECK(owner319&&peer319);
+    const NfTransform save_owner319=owner319->transform;
+    const NfTransform save_peer319=peer319->transform;
+    const Nf18a4Body save_cached319=r->physical.actor;
+    const uint64_t tick319=w->tick;
+    const NfRetcFrame *frame319=nf_retc_read(publisher);
+    const uint32_t b3count319=push->receipt_count;
+    unsigned contact319=0u,grantpair319=0u,joint319=0u;
+    unsigned reason_pending319=0u,reason_occluded319=0u;
+    for(unsigned side319=0u;side319<2u;++side319){
+      for(unsigned xi319=0u;xi319<4u;++xi319){
+        for(unsigned zi319=0u;zi319<8u;++zi319){
+          const unsigned case319=side319*32u+xi319*8u+zi319;
+          const float side=(side319==0u)?1.f:-1.f;
+          const float dx=(.65f+.10f*(float)xi319)*side;
+          const float dz=.75f+.25f*(float)zi319;
+          owner319->transform.position=save_owner319.position;
+          owner319->transform.position.z+=dz;
+          peer319->transform.position=(NfVec3){
+            owner319->transform.position.x+dx,
+            owner319->transform.position.y,
+            owner319->transform.position.z};
+          owner319->transform.velocity=(NfVec3){side*4.5f,0.f,0.f};
+          peer319->transform.velocity=(NfVec3){0.f,0.f,0.f};
+          r->physical.actor.center=(NfVec3){
+            owner319->transform.position.x,
+            owner319->transform.position.y+
+                 owner319->movement.body_height*.5f,
+            owner319->transform.position.z};
+          r->physical.actor.velocity=owner319->transform.velocity;
+          r->physical.actor.height=owner319->movement.body_height;
+          NfRetcMa03PhysicalCandidate actual319={0};
+          const bool a4=nf_retc_ma03_stage_physics(w,r,.125f,&actual319);
+          if(a4){
+            CHECK(actual319.eligible&&actual319.reference.matched==1u&&
+                  actual319.reference.disagreed==0u&&
+                  nf_retc_ma03_recheck_physics(w,r,.125f,&actual319));
+            ++contact319;
+          }
+          Nf18b2EncounterRuntime *private319=calloc(1,sizeof *private319);
+          CHECK(private319);
+          *private319=*enc;
+          private319->queue_count=0u;private319->trace_count=0u;
+          private319->grant_count=0u;private319->prepared=0u;
+          private319->attached=0u;
+          private319->frame.scene.actors=private319->frame.actors;
+          private319->frame.scene.objects=private319->frame.objects;
+          CHECK(nf18b2_live_frame(private319,&private319->frame));
+          const Nf18b2Status b10=nf18b2_propose(private319,
+            (Nf18b2Intent){10u,2010u,3000u+case319,NF18B2_PUSH});
+          const Nf18b2Status b20=nf18b2_propose(private319,
+            (Nf18b2Intent){20u,2010u,3100u+case319,NF18B2_PUSH});
+          CHECK(private319->trace_count>=2u);
+          const Nf18b2Reason second_reason=private319->traces[
+              private319->trace_count-1u].authorization.reason;
+          if(second_reason==NF18B2_OCCLUDED)++reason_occluded319;
+          if(second_reason==NF18B2_MATERIAL_PENDING)++reason_pending319;
+          const bool both=b10==NF18B2_ELIGIBLE&&b20==NF18B2_ELIGIBLE;
+          grantpair319+=(unsigned)both;
+          const bool intersection=a4&&both;
+          joint319+=(unsigned)intersection;
+          CHECK(w->tick==tick319&&
+                nf_retc_read(publisher)==frame319&&
+                push->receipt_count==b3count319);
+          fprintf(stderr,
+            "H319 SOURCE_GRID case=%u side=%u dx_mm=%d z_mm=%d a4=%u b10=%d b20=%d reason20=%d joint=%u preserved=1\\n",
+            case319,side319,(int)lroundf(dx*1000.f),
+            (int)lroundf(dz*1000.f),(unsigned)a4,
+            (int)b10,(int)b20,(int)second_reason,
+            (unsigned)intersection);
+          free(private319);
+          owner319->transform=save_owner319;
+          peer319->transform=save_peer319;
+          r->physical.actor=save_cached319;
+          CHECK(nf_retc_multi_source_sealed_preflight(
+            w,r,enc,publisher,first_index,old_count,&batch));
+        }
+      }
+    }
+    CHECK(w->tick==tick319&&nf_retc_read(publisher)==frame319&&
+          push->receipt_count==b3count319);
+    fprintf(stderr,
+      "H319 SOURCE_GRID_COMPLETE cases=64 a4=%u dual_b2=%u intersection=%u pending20=%u occluded20=%u restored=1\\n",
+      contact319,grantpair319,joint319,reason_pending319,
+      reason_occluded319);
+  }
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
      checks independent analytical impulses, and returns two changed body
