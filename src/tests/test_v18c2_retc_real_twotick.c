@@ -2918,7 +2918,22 @@ int main(int argc,char **argv){
           caseC,(unsigned)rawD.impacts,(unsigned)reversedRawE.impacts,
           reversedOracleE.matched,reversedOracleE.disagreed,
           reversedOracleE.unresolved,(unsigned)impactParityE);
+        /* H319F metamorphic guard: spatial-order normalization in the
+           reference cannot alter actor identity or the actual raw solver.
+           Compare private reverse/forward reference results and require
+           owner stage to accept precisely fully validated raw contacts. */
+        CHECK(oracleD.matched==reversedOracleE.matched&&
+              oracleD.disagreed==reversedOracleE.disagreed&&
+              oracleD.unresolved==reversedOracleE.unresolved);
         const bool contactC=nf_retc_ma03_stage_physics(w,r,.125f,&physicalC);
+        CHECK(contactC==(rawD.status==NF_NARROW_OK&&
+              rawD.count==2u&&rawD.impacts==1u&&
+              oracleD.matched==1u&&oracleD.disagreed==0u&&
+              oracleD.unresolved==0u));
+        fprintf(stderr,
+          "H319F REFERENCE_ORDER case=%u forward_match=%u reverse_match=%u stage=%u raw_impact=%u equivalent=1 preserved=1\n",
+          caseC,oracleD.matched,reversedOracleE.matched,
+          (unsigned)contactC,(unsigned)rawD.impacts);
         if(contactC){
           CHECK(physicalC.eligible&&physicalC.reference.matched==1u&&
                 physicalC.reference.disagreed==0u&&
@@ -2982,6 +2997,9 @@ int main(int argc,char **argv){
       "H319E REORDERED_COMPLETE cases=32 swapped_impacts=%u matched=%u unresolved=%u impact_parity=%u restored=1\n",
       reversedImpactsE,reversedMatchedE,reversedUnresolvedE,
       reorderedParityE);
+    fprintf(stderr,
+      "H319F REFERENCE_ORDER_COMPLETE cases=32 stage_a4=%u matched=%u equivalent=32 restored=1\n",
+      contactsC,matchedC);
   }
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
