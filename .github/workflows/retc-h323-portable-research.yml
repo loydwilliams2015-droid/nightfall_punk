@@ -1,0 +1,40 @@
+name: RET-C H323 portable codec research acceptance
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_h323_portable.*'
+      - 'src/tests/test_retc_h323_portable.c'
+      - 'src/shared/nf_retc_h323_journal.*'
+      - 'src/tests/test_retc_h323_journal.c'
+      - 'src/shared/nf_retc_h323_checkpoint.*'
+      - 'src/tests/test_retc_h323_checkpoint.c'
+      - '.github/workflows/retc-h323-portable-research.yml'
+  push:
+    branches: [planning/retc-h323-h324-d-e-private-recovery]
+jobs:
+  h323-portable:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source exact codec tests and sanitizers
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.compiler }} -std=c11 -O1 -g -Wall -Wextra -Werror -pedantic -pthread -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/shared src/shared/nf_retc_h323_portable.c src/tests/test_retc_h323_portable.c -o /tmp/retc_h323_portable
+          /tmp/retc_h323_portable
+      - name: H323.B serial parallel disk journal fault cuts
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.compiler }} -std=c11 -O1 -g -Wall -Wextra -Werror -pedantic -pthread -DNF_H323_TEST_FAULTS -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/shared src/shared/nf_retc_h323_portable.c src/shared/nf_retc_h323_journal.c src/tests/test_retc_h323_journal.c -o /tmp/retc_h323_journal
+          /tmp/retc_h323_journal
+      - name: H323.C immutable checkpoint manifests and five crash cuts
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.compiler }} -std=c11 -O1 -g -Wall -Wextra -Werror -pedantic -pthread -DNF_H323_TEST_FAULTS -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc/shared src/shared/nf_retc_h323_portable.c src/shared/nf_retc_h323_journal.c src/shared/nf_retc_h323_checkpoint.c src/tests/test_retc_h323_checkpoint.c -o /tmp/retc_h323_checkpoint
+          /tmp/retc_h323_checkpoint
