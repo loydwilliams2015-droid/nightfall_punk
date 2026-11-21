@@ -65,5 +65,16 @@ jobs:
           assert p_joint==sum(int(x[7]) for x in peer)
           assert 0<=p_joint<=min(p_a4,p_dual)<=32
           print("H319B peer-origin approach A4/dual/intersection",p_a4,p_dual,p_joint)
+          balanced=re.findall(r"H319C BALANCED_CLOSE case=(\d+) dx_mm=(-?\d+) z_mm=(\d+) a4=([01]) b10=(\d+) b20=(\d+) reason20=(\d+) joint=([01]) preserved=1",s)
+          assert len(balanced)==32,len(balanced)
+          assert {int(x[0]) for x in balanced}==set(range(32))
+          balanced_summary=re.findall(r"H319C BALANCED_CLOSE_COMPLETE cases=32 a4=(\d+) dual_b2=(\d+) intersection=(\d+) restored=1",s)
+          assert len(balanced_summary)==1,balanced_summary
+          b_a4,b_dual,b_joint=map(int,balanced_summary[0])
+          assert b_a4==sum(int(x[3]) for x in balanced)
+          assert b_dual==sum(int(x[4])==0 and int(x[5])==0 for x in balanced)
+          assert b_joint==sum(int(x[7]) for x in balanced)
+          assert 0<=b_joint<=min(b_a4,b_dual)<=32
+          print("H319C balanced closing A4/dual/intersection",b_a4,b_dual,b_joint)
           print("H319 scope is research observation only, not two actor-to-object PUSH or publication")
           PY
