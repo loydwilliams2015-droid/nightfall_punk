@@ -187,6 +187,48 @@ static inline bool nf_retc_m2_three_contact_ordered_in_tick(
  *out=next;
  return true;
 }
+/* H319L: source-exact, read-only TWO-EDGE actor->object<-actor
+ * contact ancestry gate. A4 pair receipts and A5 private material samples
+ * must identify the same three distinct bodies, tick and material epoch.
+ * This does not issue B2 grants, apply B3 effects or publish an A6 frame. */
+static inline bool nf_retc_m2_three_contact_source_witness(
+ const NfRetcM2ThreeContact *candidate,
+ const NfWorld *world,const Nf18a6Runtime *owner){
+ if(!candidate||!world||!owner||!candidate->staged||
+    world->tick_in_progress||world->tick_owner_context!=owner||
+    !world->tick_owner||owner->actor_id==0u||
+    candidate->source_tick!=world->tick||
+    candidate->source_revision!=owner->physical.world.revision||
+    candidate->material.revision!=candidate->source_revision+1u||
+    candidate->material.tick!=candidate->source_tick+1u||
+    candidate->material.history.raw_samples!=
+        owner->physical.world.history.raw_samples+2u||
+    candidate->material.grid.global_revision!=
+        owner->physical.world.grid.global_revision)return false;
+ const uint32_t a=candidate->bodies[0].id;
+ const uint32_t obj=candidate->bodies[1].id;
+ const uint32_t b=candidate->bodies[2].id;
+ if(!a||!obj||!b||a==obj||a==b||obj==b||
+    a!=owner->actor_id||obj!=owner->physical.object.id||
+    !nf_world_find_actor_const(world,b))return false;
+ for(unsigned k=0u;k<2u;++k){
+  const Nf18a4Receipt *r=&candidate->contacts[k];
+  const Nf18a5Sample *s=&candidate->samples[k];
+  if(r->status!=NF18A4_ACCEPTED||!r->impulses_applied||
+     !r->contact_id||r->contact_id!=s->contact_id||
+     r->tick!=candidate->source_tick+1u||
+     s->tick!=r->tick||
+     r->world_version!=candidate->source_revision||
+     s->material_epoch!=owner->physical.world.grid.global_revision||
+     s->body_a!=candidate->bodies[k].id||
+     s->body_b!=candidate->bodies[k+1u].id||
+     !isfinite(s->normal_impulse)||s->normal_impulse<=0.f)
+     return false;
+ }
+ if(candidate->contacts[0].contact_id==
+    candidate->contacts[1].contact_id)return false;
+ return true;
+}
 /* Production-like research incumbent retains its original fixed order.
    Reverse permutation is a challenger ONLY on the same source and
    contact graph, never a claim about actual reversed arrival times. */
