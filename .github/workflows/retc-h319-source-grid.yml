@@ -141,5 +141,12 @@ jobs:
           assert len(simultaneous)==1,simultaneous
           assert tuple(map(int,simultaneous[0]))==(4,32,2,0)
           print("H319I real parallel immutable reference workers",simultaneous[0])
+          gated=re.findall(r"H319J START_GATE workers=(\d+) joined=(\d+) matched=(\d+) cancelled=0 owner_preserved=1",s)
+          assert len(gated)==1,gated
+          assert tuple(map(int,gated[0]))==(4,1,1)
+          cancelled=re.findall(r"H319K CANCELLED_REPLAY workers=(\d+) joined=(\d+) evaluations=(\d+) owner_preserved=1",s)
+          assert len(cancelled)==1,cancelled
+          assert tuple(map(int,cancelled[0]))==(2,2,0)
+          print("H319J/K synchronized four-worker replay and two-worker cancellation passed")
           print("H319 scope is research observation only, not two actor-to-object PUSH or publication")
           PY
