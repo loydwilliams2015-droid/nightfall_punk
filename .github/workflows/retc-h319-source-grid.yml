@@ -137,5 +137,9 @@ jobs:
           assert all(int(x[2])==2 or int(x[3])==2 for x in pending_cases)
           assert len({x[5] for x in material})==1
           print("H319H material-pending cases attributed to original A5",len(pending_cases))
+          simultaneous=re.findall(r"H319I PARALLEL_REFERENCE workers=(\d+) cases_per_worker=(\d+) mismatches=(\d+) owner_preserved=1",s)
+          assert len(simultaneous)==1,simultaneous
+          assert tuple(map(int,simultaneous[0]))==(4,32,0)
+          print("H319I real parallel immutable reference workers",simultaneous[0])
           print("H319 scope is research observation only, not two actor-to-object PUSH or publication")
           PY
