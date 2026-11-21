@@ -88,5 +88,17 @@ jobs:
           assert stage==sum(int(x[7]) for x in raw)
           assert stage<=raw_impacts
           print("H319D raw solver impacts/matched/disagreement/stage",raw_impacts,matched,disagreed,stage)
+          mirrored=re.findall(r"H319E REORDERED case=(\d+) forward_impacts=(\d+) swapped_impacts=(\d+) matched=(\d+) disagreed=(\d+) unresolved=(\d+) impact_parity=([01]) preserved=1",s)
+          assert len(mirrored)==32,len(mirrored)
+          assert {int(x[0]) for x in mirrored}==set(range(32))
+          mirrored_summary=re.findall(r"H319E REORDERED_COMPLETE cases=32 swapped_impacts=(\d+) matched=(\d+) unresolved=(\d+) impact_parity=(\d+) restored=1",s)
+          assert len(mirrored_summary)==1,mirrored_summary
+          s_imp,s_match,s_unresolved,s_parity=map(int,mirrored_summary[0])
+          assert s_imp==sum(int(x[2])==1 for x in mirrored)
+          assert s_match==sum(int(x[3])==1 for x in mirrored)
+          assert s_unresolved==sum(int(x[5])!=0 for x in mirrored)
+          assert s_parity==sum(int(x[6]) for x in mirrored)
+          assert 0<=s_match<=32 and 0<=s_parity<=32
+          print("H319E swapped raw impacts/reference matches/unresolved/parity",s_imp,s_match,s_unresolved,s_parity)
           print("H319 scope is research observation only, not two actor-to-object PUSH or publication")
           PY
