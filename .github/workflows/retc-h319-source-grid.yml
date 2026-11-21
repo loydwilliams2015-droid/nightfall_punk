@@ -76,5 +76,17 @@ jobs:
           assert b_joint==sum(int(x[7]) for x in balanced)
           assert 0<=b_joint<=min(b_a4,b_dual)<=32
           print("H319C balanced closing A4/dual/intersection",b_a4,b_dual,b_joint)
+          raw=re.findall(r"H319D RAW_PAIR case=(\d+) status=(\d+) count=(\d+) impacts=(\d+) matched=(\d+) disagreed=(\d+) unresolved=(\d+) stage=([01]) preserved=1",s)
+          assert len(raw)==32,len(raw)
+          assert {int(x[0]) for x in raw}==set(range(32))
+          raw_summary=re.findall(r"H319D RAW_PAIR_COMPLETE cases=32 raw_impacts=(\d+) matched=(\d+) disagree_or_unresolved=(\d+) stage_a4=(\d+) restored=1",s)
+          assert len(raw_summary)==1,raw_summary
+          raw_impacts,matched,disagreed,stage=map(int,raw_summary[0])
+          assert raw_impacts==sum(int(x[3])==1 for x in raw)
+          assert matched==sum(int(x[4])==1 for x in raw)
+          assert disagreed==sum(int(x[5])!=0 or int(x[6])!=0 for x in raw)
+          assert stage==sum(int(x[7]) for x in raw)
+          assert stage<=raw_impacts
+          print("H319D raw solver impacts/matched/disagreement/stage",raw_impacts,matched,disagreed,stage)
           print("H319 scope is research observation only, not two actor-to-object PUSH or publication")
           PY
