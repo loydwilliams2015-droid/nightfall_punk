@@ -50,8 +50,8 @@ int main(void){
  }
  CHECK(unlink(path)==0);
  const char *cuts[]={"before_open","after_prepare_write","after_prepare_sync",
-    "after_commit_write","after_commit_sync","before_rename",
-    "after_rename","after_dirsync"};
+    "after_commit_write","after_commit_sync","before_link",
+    "after_link","after_dirsync"};
  for(int i=0;i<8;i++){
   pathfor(path,sizeof path,10+i);unlink(path);
   pid_t pid=fork();CHECK(pid>=0);if(pid<0)continue;
@@ -85,6 +85,37 @@ int main(void){
  CHECK(truncate(path,120)==0);
  CHECK(!nf_h323_journal_read(path,&out));
  CHECK(unlink(path)==0);
- printf("H323.B journal checks=%d failures=%d serial_reads=1024 parallel_reads=1024 cuts=8 corrupt_bytes=224\n",checks,failures);
+ /* Atomic no-overwrite publication: four true competing OS processes.
+  * Exactly one may link its committed temp journal to the shared path. */
+ pathfor(path,sizeof path,400);unlink(path);
+ pid_t children[4];int spawned=0,success=0;
+ for(int j=0;j<4;j++){
+  pid_t pid=fork();CHECK(pid>=0);
+  if(pid<0)break;
+  if(pid==0){NfH323Record candidate=fixture();candidate.txn_low+=(uint32_t)j;
+    _exit(nf_h323_journal_write(path,&candidate)?0:1);}
+  children[spawned++]=pid;
+ }
+ for(int j=0;j<spawned;j++){
+  int status=0;CHECK(waitpid(children[j],&status,0)==children[j]&&WIFEXITED(status));
+  if(WIFEXITED(status)&&WEXITSTATUS(status)==0)success++;
+ }
+ CHECK(spawned==4&&success==1);
+ CHECK(nf_h323_journal_read(path,&out)&&out.txn_low>=91&&out.txn_low<=94);
+ CHECK(!nf_h323_journal_write(path,&r));
+ CHECK(unlink(path)==0);
+ /* Inject I/O failures, not only process kills. Directory sync failure may
+  * leave a visible record but never returns durable success. */
+ const char *errors[]={"prepare_sync","commit_sync","publish","dirsync"};
+ for(int j=0;j<4;j++){
+  pathfor(path,sizeof path,410+j);unlink(path);
+  CHECK(setenv("NF_H323_IO_FAIL",errors[j],1)==0);
+  CHECK(!nf_h323_journal_write(path,&r));
+  CHECK(unsetenv("NF_H323_IO_FAIL")==0);
+  CHECK(nf_h323_journal_read(path,&out)==(j==3));
+  if(j==3)CHECK(out.txn_low==91);
+  unlink(path);
+ }
+ printf("H323.B journal checks=%d failures=%d serial_reads=1024 parallel_reads=1024 cuts=8 corrupt_bytes=224 competing_writers=4 io_errors=4\n",checks,failures);
  return failures?1:0;
 }
