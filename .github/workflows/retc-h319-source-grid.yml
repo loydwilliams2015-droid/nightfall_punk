@@ -1,7 +1,15 @@
 name: RET-C H319 same-source dual PUSH feasibility research
 on:
+  push:
+    branches:
+      - 'planning/retc-h323-h324-d-e-private-recovery'
+    paths:
+      - 'src/shared/nf_multi_ma03c.c'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h319-source-grid.yml'
   pull_request:
     paths:
+      - 'src/shared/nf_multi_ma03c.c'
       - 'src/tests/test_v18c2_retc_real_twotick.c'
       - '.github/workflows/retc-h319-source-grid.yml'
   workflow_dispatch:
