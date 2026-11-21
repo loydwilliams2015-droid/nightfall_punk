@@ -3162,6 +3162,42 @@ int main(int argc,char **argv){
     fprintf(stderr,
       "H319J START_GATE workers=%u joined=%u matched=%u cancelled=0 owner_preserved=1\n",
       startedI,(unsigned)joinedI,(unsigned)matchedI);
+    /* H319K: deliberately cancel an immutable parallel-replay batch
+       before start. Every worker must wake, exit with zero evaluations,
+       be joined, and leave the A6 world and receipts untouched. */
+    thrd_t cancelledThreadsK[2];
+    H319IInputs cancelledK[2];
+    atomic_bool gateK=ATOMIC_VAR_INIT(false);
+    atomic_bool cancelK=ATOMIC_VAR_INIT(false);
+    unsigned launchedK=0u;
+    for(unsigned workerK=0u;workerK<2u;++workerK){
+      cancelledK[workerK]=sourceI;
+      cancelledK[workerK].reversed=(workerK&1u)!=0u;
+      cancelledK[workerK].start=&gateK;
+      cancelledK[workerK].cancel=&cancelK;
+      if(thrd_create(&cancelledThreadsK[workerK],
+                     h319i_parallel_reference,
+                     &cancelledK[workerK])!=thrd_success)break;
+      ++launchedK;
+    }
+    atomic_store_explicit(&cancelK,true,memory_order_release);
+    atomic_store_explicit(&gateK,true,memory_order_release);
+    bool cancelledJoinedK=true;
+    bool cancelledCleanK=true;
+    for(unsigned workerK=0u;workerK<launchedK;++workerK){
+      int returnK=-1;
+      if(thrd_join(cancelledThreadsK[workerK],&returnK)!=thrd_success)
+        cancelledJoinedK=false;
+      else if(returnK!=0||cancelledK[workerK].checked!=0u||
+              cancelledK[workerK].mismatched!=0u)
+        cancelledCleanK=false;
+    }
+    CHECK(launchedK==2u&&cancelledJoinedK&&cancelledCleanK);
+    CHECK(w->tick==tickC&&nf_retc_read(publisher)==frameC&&
+          push->receipt_count==receiptsC);
+    fprintf(stderr,
+      "H319K CANCELLED_REPLAY workers=%u joined=2 evaluations=0 owner_preserved=1\n",
+      launchedK);
   }
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
