@@ -100,5 +100,16 @@ jobs:
           assert s_parity==sum(int(x[6]) for x in mirrored)
           assert 0<=s_match<=32 and 0<=s_parity<=32
           print("H319E swapped raw impacts/reference matches/unresolved/parity",s_imp,s_match,s_unresolved,s_parity)
+          stable=re.findall(r"H319F REFERENCE_ORDER case=(\d+) forward_match=([01]) reverse_match=([01]) stage=([01]) raw_impact=([01]) equivalent=1 preserved=1",s)
+          assert len(stable)==32,len(stable)
+          assert {int(x[0]) for x in stable}==set(range(32))
+          assert all(x[1]==x[2] for x in stable)
+          stable_summary=re.findall(r"H319F REFERENCE_ORDER_COMPLETE cases=32 stage_a4=(\d+) matched=(\d+) equivalent=32 restored=1",s)
+          assert len(stable_summary)==1,stable_summary
+          stage_new,matched_new=map(int,stable_summary[0])
+          assert stage_new==sum(int(x[3]) for x in stable)
+          assert matched_new==sum(int(x[1]) for x in stable)
+          assert stage_new==matched_new
+          print("H319F validated A4 physical references and order invariance",stage_new,matched_new)
           print("H319 scope is research observation only, not two actor-to-object PUSH or publication")
           PY
