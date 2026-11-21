@@ -2840,6 +2840,7 @@ int main(int argc,char **argv){
     const NfRetcFrame *frameC=nf_retc_read(publisher);
     const uint32_t receiptsC=push->receipt_count;
     unsigned contactsC=0u,dualC=0u,jointC=0u;
+    unsigned rawImpactsC=0u,matchedC=0u,rawDisagreeC=0u;
     for(unsigned gapC=0u;gapC<4u;++gapC){
       for(unsigned lateralC=0u;lateralC<8u;++lateralC){
         const unsigned caseC=gapC*8u+lateralC;
@@ -2861,6 +2862,37 @@ int main(int argc,char **argv){
         r->physical.actor.velocity=ownerC->transform.velocity;
         r->physical.actor.height=ownerC->movement.body_height;
         NfRetcMa03PhysicalCandidate physicalC={0};
+        /* H319D root-cause instrumentation: capture a REAL world roster,
+           reconstruct the same pair using source actor dimensions and A6
+           cached physical owner, then execute the ORIGINAL raw A4 solver
+           plus independent MA03c oracle. This is not fabricated contact. */
+        NfMa03Roster sourceD={0};
+        CHECK(nf_ma03_roster_capture(w,&sourceD)&&
+              sourceD.count==2u&&sourceD.source_tick==w->tick);
+        Nf18a4Body rawBodiesD[2]={{0},{0}};
+        for(size_t bodyD=0u;bodyD<2u;++bodyD){
+          const NfMa03Participant *participantD=&sourceD.actors[bodyD];
+          const NfActor *actorD=nf_world_find_actor_const(
+              w,participantD->id);
+          CHECK(actorD&&actorD->active&&actorD->combat.alive);
+          rawBodiesD[bodyD].id=participantD->id;
+          rawBodiesD[bodyD].center=(NfVec3){
+             participantD->position.x,
+             participantD->position.y+actorD->movement.body_height*.5f,
+             participantD->position.z};
+          rawBodiesD[bodyD].velocity=participantD->velocity;
+          rawBodiesD[bodyD].inverse_mass=1.f/80.f;
+          rawBodiesD[bodyD].radius=r->physical.actor.radius;
+          rawBodiesD[bodyD].height=actorD->movement.body_height;
+        }
+        const NfMa01c2Result rawD=nf_ma01c2_integrate(
+            rawBodiesD,2u,.125f,(uint32_t)w->tick+1u,1u);
+        const NfMa03cEvidence oracleD=nf_ma03c_compare(
+            rawBodiesD,2u,.125f,(uint32_t)w->tick+1u,1u);
+        rawImpactsC+=(unsigned)(rawD.impacts==1u);
+        matchedC+=(unsigned)(oracleD.matched==1u);
+        rawDisagreeC+=(unsigned)(oracleD.disagreed!=0u||
+                                   oracleD.unresolved!=0u);
         const bool contactC=nf_retc_ma03_stage_physics(w,r,.125f,&physicalC);
         if(contactC){
           CHECK(physicalC.eligible&&physicalC.reference.matched==1u&&
@@ -2884,6 +2916,15 @@ int main(int argc,char **argv){
         CHECK(scratchC->trace_count>=2u);
         const Nf18b2Reason reasonC=scratchC->traces[
           scratchC->trace_count-1u].authorization.reason;
+        CHECK(!contactC||(
+           rawD.status==NF_NARROW_OK&&rawD.count==2u&&
+           rawD.impacts==1u&&oracleD.matched==1u&&
+           oracleD.disagreed==0u&&oracleD.unresolved==0u));
+        fprintf(stderr,
+          "H319D RAW_PAIR case=%u status=%d count=%u impacts=%u matched=%u disagreed=%u unresolved=%u stage=%u preserved=1\n",
+          caseC,(int)rawD.status,(unsigned)rawD.count,
+          (unsigned)rawD.impacts,oracleD.matched,oracleD.disagreed,
+          oracleD.unresolved,(unsigned)contactC);
         const bool bothC=b10C==NF18B2_ELIGIBLE&&
                          b20C==NF18B2_ELIGIBLE;
         dualC+=(unsigned)bothC;
@@ -2909,6 +2950,9 @@ int main(int argc,char **argv){
     fprintf(stderr,
       "H319C BALANCED_CLOSE_COMPLETE cases=32 a4=%u dual_b2=%u intersection=%u restored=1\n",
       contactsC,dualC,jointC);
+    fprintf(stderr,
+      "H319D RAW_PAIR_COMPLETE cases=32 raw_impacts=%u matched=%u disagree_or_unresolved=%u stage_a4=%u restored=1\n",
+      rawImpactsC,matchedC,rawDisagreeC,contactsC);
   }
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
