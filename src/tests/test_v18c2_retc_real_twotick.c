@@ -2841,6 +2841,8 @@ int main(int argc,char **argv){
     const uint32_t receiptsC=push->receipt_count;
     unsigned contactsC=0u,dualC=0u,jointC=0u;
     unsigned rawImpactsC=0u,matchedC=0u,rawDisagreeC=0u;
+    unsigned reversedMatchedE=0u,reversedUnresolvedE=0u;
+    unsigned reversedImpactsE=0u,reorderedParityE=0u;
     for(unsigned gapC=0u;gapC<4u;++gapC){
       for(unsigned lateralC=0u;lateralC<8u;++lateralC){
         const unsigned caseC=gapC*8u+lateralC;
@@ -2893,6 +2895,29 @@ int main(int argc,char **argv){
         matchedC+=(unsigned)(oracleD.matched==1u);
         rawDisagreeC+=(unsigned)(oracleD.disagreed!=0u||
                                    oracleD.unresolved!=0u);
+        /* H319E source exact mirror trial: the independent 1D MA03c
+           oracle only supports a body0-left / body1-right approach.
+           Swap the two original, A6-sourced bodies in a PRIVATE copy,
+           without mutating live actor identity, collision policy, B2,
+           the production stage, or applying any effects. Verify whether
+           that ordering restores a reference match. */
+        Nf18a4Body reversedBodiesE[2]={rawBodiesD[1],rawBodiesD[0]};
+        const NfMa01c2Result reversedRawE=nf_ma01c2_integrate(
+            reversedBodiesE,2u,.125f,(uint32_t)w->tick+1u,1u);
+        const NfMa03cEvidence reversedOracleE=nf_ma03c_compare(
+            reversedBodiesE,2u,.125f,(uint32_t)w->tick+1u,1u);
+        reversedMatchedE+=(unsigned)(reversedOracleE.matched==1u);
+        reversedUnresolvedE+=(unsigned)(reversedOracleE.unresolved!=0u);
+        reversedImpactsE+=(unsigned)(reversedRawE.impacts==1u);
+        const bool impactParityE=rawD.impacts==reversedRawE.impacts;
+        reorderedParityE+=(unsigned)impactParityE;
+        CHECK(reversedBodiesE[0].id==rawBodiesD[1].id&&
+              reversedBodiesE[1].id==rawBodiesD[0].id);
+        fprintf(stderr,
+          "H319E REORDERED case=%u forward_impacts=%u swapped_impacts=%u matched=%u disagreed=%u unresolved=%u impact_parity=%u preserved=1\n",
+          caseC,(unsigned)rawD.impacts,(unsigned)reversedRawE.impacts,
+          reversedOracleE.matched,reversedOracleE.disagreed,
+          reversedOracleE.unresolved,(unsigned)impactParityE);
         const bool contactC=nf_retc_ma03_stage_physics(w,r,.125f,&physicalC);
         if(contactC){
           CHECK(physicalC.eligible&&physicalC.reference.matched==1u&&
@@ -2953,6 +2978,10 @@ int main(int argc,char **argv){
     fprintf(stderr,
       "H319D RAW_PAIR_COMPLETE cases=32 raw_impacts=%u matched=%u disagree_or_unresolved=%u stage_a4=%u restored=1\n",
       rawImpactsC,matchedC,rawDisagreeC,contactsC);
+    fprintf(stderr,
+      "H319E REORDERED_COMPLETE cases=32 swapped_impacts=%u matched=%u unresolved=%u impact_parity=%u restored=1\n",
+      reversedImpactsE,reversedMatchedE,reversedUnresolvedE,
+      reorderedParityE);
   }
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
