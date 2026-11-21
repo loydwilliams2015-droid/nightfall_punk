@@ -130,5 +130,12 @@ jobs:
           assert k_equiv==k_comp
           assert all(int(x[2])<=int(x[1]) for x in keyed)
           print("H319G source-actor ID-keyed solver order invariance",k_comp,k_equiv)
+          material=re.findall(r"H319H MATERIAL_SOURCE case=(\d+) reason=(\d+) body_a5=(\d+) ray_a5=(\d+) a3_clear=([01]) source_tick=(\d+) preserved=1",s)
+          assert len(material)==32,len(material)
+          assert {int(x[0]) for x in material}==set(range(32))
+          pending_cases=[x for x in material if int(x[1])==7]
+          assert all(int(x[2])==2 or int(x[3])==2 for x in pending_cases)
+          assert len({x[5] for x in material})==1
+          print("H319H material-pending cases attributed to original A5",len(pending_cases))
           print("H319 scope is research observation only, not two actor-to-object PUSH or publication")
           PY
