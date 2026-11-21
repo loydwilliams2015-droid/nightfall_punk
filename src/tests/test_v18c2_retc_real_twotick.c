@@ -2843,6 +2843,7 @@ int main(int argc,char **argv){
     unsigned rawImpactsC=0u,matchedC=0u,rawDisagreeC=0u;
     unsigned reversedMatchedE=0u,reversedUnresolvedE=0u;
     unsigned reversedImpactsE=0u,reorderedParityE=0u;
+    unsigned keyedSolverMatchesG=0u,keyedSolverComparedG=0u;
     for(unsigned gapC=0u;gapC<4u;++gapC){
       for(unsigned lateralC=0u;lateralC<8u;++lateralC){
         const unsigned caseC=gapC*8u+lateralC;
@@ -2909,6 +2910,42 @@ int main(int argc,char **argv){
         reversedMatchedE+=(unsigned)(reversedOracleE.matched==1u);
         reversedUnresolvedE+=(unsigned)(reversedOracleE.unresolved!=0u);
         reversedImpactsE+=(unsigned)(reversedRawE.impacts==1u);
+        /* H319G: strict ID-keyed physical-result equivalence in source
+           original vs spatially reversed pair order. The reference fix
+           must never make an order-dependent solver trajectory appear
+           authoritative. Compare only completed, physically valid raw
+           integrator outputs; unresolved/pending remain fail-closed. */
+        bool sourceKeyedG=false;
+        if(rawD.status==NF_NARROW_OK&&
+           reversedRawE.status==NF_NARROW_OK&&
+           rawD.count==2u&&reversedRawE.count==2u){
+          ++keyedSolverComparedG;
+          sourceKeyedG=rawD.impacts==reversedRawE.impacts;
+          for(size_t originalG=0u;originalG<2u;++originalG){
+            const Nf18a4Body *aG=&rawD.bodies[originalG];
+            const Nf18a4Body *bG=NULL;
+            for(size_t reversedG=0u;reversedG<2u;++reversedG)
+              if(reversedRawE.bodies[reversedG].id==aG->id)
+                bG=&reversedRawE.bodies[reversedG];
+            if(!bG||
+               fabsf(aG->center.x-bG->center.x)>.003f||
+               fabsf(aG->center.y-bG->center.y)>.003f||
+               fabsf(aG->center.z-bG->center.z)>.003f||
+               fabsf(aG->velocity.x-bG->velocity.x)>.003f||
+               fabsf(aG->velocity.y-bG->velocity.y)>.003f||
+               fabsf(aG->velocity.z-bG->velocity.z)>.003f)
+              sourceKeyedG=false;
+          }
+          keyedSolverMatchesG+=(unsigned)sourceKeyedG;
+          CHECK(sourceKeyedG);
+        }
+        fprintf(stderr,
+          "H319G ID_KEYED case=%u compared=%u equivalent=%u original_status=%d reversed_status=%d preserved=1\n",
+          caseC,(unsigned)(rawD.status==NF_NARROW_OK&&
+            reversedRawE.status==NF_NARROW_OK&&rawD.count==2u&&
+            reversedRawE.count==2u),
+          (unsigned)sourceKeyedG,(int)rawD.status,
+          (int)reversedRawE.status);
         const bool impactParityE=rawD.impacts==reversedRawE.impacts;
         reorderedParityE+=(unsigned)impactParityE;
         CHECK(reversedBodiesE[0].id==rawBodiesD[1].id&&
@@ -3000,6 +3037,9 @@ int main(int argc,char **argv){
     fprintf(stderr,
       "H319F REFERENCE_ORDER_COMPLETE cases=32 stage_a4=%u matched=%u equivalent=32 restored=1\n",
       contactsC,matchedC);
+    fprintf(stderr,
+      "H319G ID_KEYED_COMPLETE cases=32 compared=%u equivalent=%u restored=1\n",
+      keyedSolverComparedG,keyedSolverMatchesG);
   }
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
