@@ -2686,7 +2686,7 @@ int main(int argc,char **argv){
                 nf_retc_read(publisher)==frame319&&
                 push->receipt_count==b3count319);
           fprintf(stderr,
-            "H319 SOURCE_GRID case=%u side=%u dx_mm=%d z_mm=%d a4=%u b10=%d b20=%d reason20=%d joint=%u preserved=1\\n",
+            "H319 SOURCE_GRID case=%u side=%u dx_mm=%d z_mm=%d a4=%u b10=%d b20=%d reason20=%d joint=%u preserved=1\n",
             case319,side319,(int)lroundf(dx*1000.f),
             (int)lroundf(dz*1000.f),(unsigned)a4,
             (int)b10,(int)b20,(int)second_reason,
@@ -2703,7 +2703,7 @@ int main(int argc,char **argv){
     CHECK(w->tick==tick319&&nf_retc_read(publisher)==frame319&&
           push->receipt_count==b3count319);
     fprintf(stderr,
-      "H319 SOURCE_GRID_COMPLETE cases=64 a4=%u dual_b2=%u intersection=%u pending20=%u occluded20=%u restored=1\\n",
+      "H319 SOURCE_GRID_COMPLETE cases=64 a4=%u dual_b2=%u intersection=%u pending20=%u occluded20=%u restored=1\n",
       contact319,grantpair319,joint319,reason_pending319,
       reason_occluded319);
   }
