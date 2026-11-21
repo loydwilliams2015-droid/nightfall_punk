@@ -1,0 +1,50 @@
+name: RET-C H319 same-source dual PUSH feasibility research
+on:
+  pull_request:
+    paths:
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h319-source-grid.yml'
+  workflow_dispatch:
+jobs:
+  h319-source-grid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build source exact A6 A4 A5 B2 test
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          cmake -S . -B build-h319 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h319 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Run genuine sixty-four-pose A4 B2 source intersection
+        run: |
+          set -euo pipefail
+          build-h319/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h319/h319.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path("build-h319/h319.log").read_text()
+          rows=re.findall(r"H319 SOURCE_GRID case=(\d+) side=(\d+) dx_mm=(-?\d+) z_mm=(\d+) a4=([01]) b10=(\d+) b20=(\d+) reason20=(\d+) joint=([01]) preserved=1",s)
+          assert len(rows)==64,len(rows)
+          assert {int(row[0]) for row in rows}==set(range(64))
+          totals=re.findall(r"H319 SOURCE_GRID_COMPLETE cases=64 a4=(\d+) dual_b2=(\d+) intersection=(\d+) pending20=(\d+) occluded20=(\d+) restored=1",s)
+          assert len(totals)==1,totals
+          a4,grants,joint,pending,occluded=map(int,totals[0])
+          assert a4==sum(int(row[4]) for row in rows)
+          assert joint==sum(int(row[8]) for row in rows)
+          assert 0<=joint<=min(a4,grants)<=64
+          assert pending+occluded<=64
+          assert "H317 OPPOSITE_APPROACH_COMPLETE cases=10 joint_positive=" in s
+          print("H319 observed genuine A4 source pairs",a4)
+          print("H319 B2 dual proposals",grants)
+          print("H319 valid same-pose A4/B2 intersection",joint)
+          print("H319 second-actor pending/occluded",pending,occluded)
+          print("H319 scope is research observation only, not two actor-to-object PUSH or publication")
+          PY
