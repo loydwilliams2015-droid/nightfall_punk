@@ -2740,6 +2740,91 @@ int main(int argc,char **argv){
       contact319,grantpair319,joint319,reason_pending319,
       reason_occluded319,order_differences319,reverse_dual319);
   }
+  /* H319B: the 64-pose H319 grid observed B2 dual-eligible cases only
+     when actor20 was at negative X and A4 was false. Test a physically
+     distinct approach: actor20 advances toward stationary actor10. Do
+     not change A3/A5 materials, B2 policy, source tick, or A6 publication.
+     This remains actor-pair physical feasibility, NOT actor->object PUSH. */
+  {
+    NfActor *ownerB=nf_world_find_actor(w,10u);
+    NfActor *peerB=nf_world_find_actor(w,20u);
+    CHECK(ownerB&&peerB);
+    const NfTransform oldOwnerB=ownerB->transform;
+    const NfTransform oldPeerB=peerB->transform;
+    const Nf18a4Body oldCachedB=r->physical.actor;
+    const uint64_t tickB=w->tick;
+    const NfRetcFrame *frameB=nf_retc_read(publisher);
+    const uint32_t receiptsB=push->receipt_count;
+    unsigned contactsB=0u,dualB=0u,jointB=0u;
+    for(unsigned gapB=0u;gapB<4u;++gapB){
+      for(unsigned lateralB=0u;lateralB<8u;++lateralB){
+        const unsigned caseB=gapB*8u+lateralB;
+        const float dxB=-.65f-.10f*(float)gapB;
+        const float dzB=.75f+.25f*(float)lateralB;
+        ownerB->transform.position=oldOwnerB.position;
+        ownerB->transform.position.z+=dzB;
+        peerB->transform.position=(NfVec3){
+          ownerB->transform.position.x+dxB,
+          ownerB->transform.position.y,
+          ownerB->transform.position.z};
+        ownerB->transform.velocity=(NfVec3){0.f,0.f,0.f};
+        peerB->transform.velocity=(NfVec3){4.5f,0.f,0.f};
+        r->physical.actor.center=(NfVec3){
+          ownerB->transform.position.x,
+          ownerB->transform.position.y+
+             ownerB->movement.body_height*.5f,
+          ownerB->transform.position.z};
+        r->physical.actor.velocity=ownerB->transform.velocity;
+        r->physical.actor.height=ownerB->movement.body_height;
+        NfRetcMa03PhysicalCandidate physicalB={0};
+        const bool contactB=nf_retc_ma03_stage_physics(w,r,.125f,&physicalB);
+        if(contactB){
+          CHECK(physicalB.eligible&&physicalB.reference.matched==1u&&
+                physicalB.reference.disagreed==0u&&
+                nf_retc_ma03_recheck_physics(w,r,.125f,&physicalB));
+          ++contactsB;
+        }
+        Nf18b2EncounterRuntime *scratchB=calloc(1,sizeof *scratchB);
+        CHECK(scratchB);
+        *scratchB=*enc;
+        scratchB->queue_count=0u;scratchB->trace_count=0u;
+        scratchB->grant_count=0u;scratchB->prepared=0u;
+        scratchB->attached=0u;
+        scratchB->frame.scene.actors=scratchB->frame.actors;
+        scratchB->frame.scene.objects=scratchB->frame.objects;
+        CHECK(nf18b2_live_frame(scratchB,&scratchB->frame));
+        const Nf18b2Status b10B=nf18b2_propose(scratchB,
+          (Nf18b2Intent){10u,2010u,4100u+caseB,NF18B2_PUSH});
+        const Nf18b2Status b20B=nf18b2_propose(scratchB,
+          (Nf18b2Intent){20u,2010u,4200u+caseB,NF18B2_PUSH});
+        CHECK(scratchB->trace_count>=2u);
+        const Nf18b2Reason reasonB=scratchB->traces[
+          scratchB->trace_count-1u].authorization.reason;
+        const bool bothB=b10B==NF18B2_ELIGIBLE&&b20B==NF18B2_ELIGIBLE;
+        dualB+=(unsigned)bothB;
+        const bool positiveB=contactB&&bothB;
+        jointB+=(unsigned)positiveB;
+        CHECK(w->tick==tickB&&nf_retc_read(publisher)==frameB&&
+              push->receipt_count==receiptsB);
+        fprintf(stderr,
+          "H319B PEER_APPROACH case=%u dx_mm=%d z_mm=%d a4=%u b10=%d b20=%d reason20=%d joint=%u preserved=1\n",
+          caseB,(int)lroundf(dxB*1000.f),
+          (int)lroundf(dzB*1000.f),(unsigned)contactB,
+          (int)b10B,(int)b20B,(int)reasonB,(unsigned)positiveB);
+        free(scratchB);
+        ownerB->transform=oldOwnerB;
+        peerB->transform=oldPeerB;
+        r->physical.actor=oldCachedB;
+        CHECK(nf_retc_multi_source_sealed_preflight(
+            w,r,enc,publisher,first_index,old_count,&batch));
+      }
+    }
+    CHECK(w->tick==tickB&&nf_retc_read(publisher)==frameB&&
+          push->receipt_count==receiptsB);
+    fprintf(stderr,
+      "H319B PEER_APPROACH_COMPLETE cases=32 a4=%u dual_b2=%u intersection=%u restored=1\n",
+      contactsB,dualB,jointB);
+  }
   /* H157-H161: isolated real A6-bound two-actor physical candidate.
      Unlike B2 proposals, this actually executes the A4 two-body solver,
      checks independent analytical impulses, and returns two changed body
