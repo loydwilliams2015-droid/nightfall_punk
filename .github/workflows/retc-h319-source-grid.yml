@@ -54,5 +54,16 @@ jobs:
           print("H319 second-actor pending/occluded",pending,occluded)
           print("H319 reverse proposal-order differences",diffs)
           print("H319 reverse dual-eligible proposals",reverse_dual)
+          peer=re.findall(r"H319B PEER_APPROACH case=(\d+) dx_mm=(-?\d+) z_mm=(\d+) a4=([01]) b10=(\d+) b20=(\d+) reason20=(\d+) joint=([01]) preserved=1",s)
+          assert len(peer)==32,len(peer)
+          assert {int(x[0]) for x in peer}==set(range(32))
+          summary=re.findall(r"H319B PEER_APPROACH_COMPLETE cases=32 a4=(\d+) dual_b2=(\d+) intersection=(\d+) restored=1",s)
+          assert len(summary)==1,summary
+          p_a4,p_dual,p_joint=map(int,summary[0])
+          assert p_a4==sum(int(x[3]) for x in peer)
+          assert p_dual==sum(int(x[4])==0 and int(x[5])==0 for x in peer)
+          assert p_joint==sum(int(x[7]) for x in peer)
+          assert 0<=p_joint<=min(p_a4,p_dual)<=32
+          print("H319B peer-origin approach A4/dual/intersection",p_a4,p_dual,p_joint)
           print("H319 scope is research observation only, not two actor-to-object PUSH or publication")
           PY
