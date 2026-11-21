@@ -54,6 +54,15 @@ static int parent_sync(const char *path){
  int fd=open(dir,O_RDONLY);if(fd<0)return 0;
  int ok=fsync(fd)==0;if(close(fd)!=0)ok=0;return ok;
 }
+static int injected_error(const char *stage){
+#ifdef NF_H323_TEST_FAULTS
+ const char *requested=getenv("NF_H323_IO_FAIL");
+ return requested && strcmp(requested,stage)==0;
+#else
+ (void)stage;
+ return 0;
+#endif
+}
 static void fault(const char *stage){
 #ifdef NF_H323_TEST_FAULTS
  const char *cut=getenv("NF_H323_KILL");
@@ -65,31 +74,34 @@ static void fault(const char *stage){
 int nf_h323_journal_write(const char *path,const NfH323Record *r){
  uint8_t payload[NF_H323_BYTES],rec[PACKET_BYTES];
  if(!path||strlen(path)>850||!nf_h323_encode(r,payload))return 0;
- /* A no-overwrite research contract, not a multiprocess mutex. */
- if(access(path,F_OK)==0)return 0;
+ /* Atomic destination creation below rejects all competing writers. */
  char tmp[1024];int x=snprintf(tmp,sizeof tmp,"%s.h323tmp.%ld",path,(long)getpid());
  if(x<0||(size_t)x>=sizeof tmp)return 0;
  fault("before_open");
  int fd=open(tmp,O_WRONLY|O_CREAT|O_EXCL,0600);
  if(fd<0)return 0;
- int ok=1,renamed=0;
+ int ok=1,published=0;
  packet(rec,PHASE_PREPARE,payload);
  if(ok)ok=exact_write(fd,rec,sizeof rec);
  if(ok)fault("after_prepare_write");
- if(ok)ok=fsync(fd)==0;
+ if(ok)ok=!injected_error("prepare_sync") && fsync(fd)==0;
  if(ok)fault("after_prepare_sync");
  packet(rec,PHASE_COMMIT,payload);
  if(ok)ok=exact_write(fd,rec,sizeof rec);
  if(ok)fault("after_commit_write");
- if(ok)ok=fsync(fd)==0;
+ if(ok)ok=!injected_error("commit_sync") && fsync(fd)==0;
  if(ok)fault("after_commit_sync");
  if(close(fd)!=0)ok=0;
- if(ok)fault("before_rename");
- if(ok){ok=rename(tmp,path)==0;renamed=ok;}
- if(ok)fault("after_rename");
- if(ok)ok=parent_sync(path);
+ if(ok)fault("before_link");
+ /* Hard-link creation is atomic NO-REPLACE on the same filesystem; rename()
+  * would silently overwrite a competing writer's accepted transaction. */
+ if(ok)ok=!injected_error("publish") && link(tmp,path)==0;
+ if(ok){published=1;fault("after_link");}
+ /* Always remove the private staging name in a non-crashing writer. */
+ if(unlink(tmp)!=0)ok=0;
+ if(ok)ok=!injected_error("dirsync") && parent_sync(path);
  if(ok)fault("after_dirsync");
- if(!renamed)unlink(tmp);
+ (void)published;
  /* If dir-sync failed, the file may be visible but NOT durably acknowledged. */
  return ok;
 }
