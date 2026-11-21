@@ -36,15 +36,23 @@ jobs:
           assert {int(row[0]) for row in rows}==set(range(64))
           totals=re.findall(r"H319 SOURCE_GRID_COMPLETE cases=64 a4=(\d+) dual_b2=(\d+) intersection=(\d+) pending20=(\d+) occluded20=(\d+) restored=1",s)
           assert len(totals)==1,totals
-          a4,grants,joint,pending,occluded=map(int,totals[0])
+          a4,grants,joint,pending,occluded,diffs,reverse_dual=map(int,totals[0])
           assert a4==sum(int(row[4]) for row in rows)
           assert joint==sum(int(row[8]) for row in rows)
           assert 0<=joint<=min(a4,grants)<=64
           assert pending+occluded<=64
+          assert 0<=diffs<=64 and 0<=reverse_dual<=64
+          reverse_rows=re.findall(r"H319 REVERSE_ORDER case=(\\d+) forward10=(\\d+) reverse10=(\\d+) forward20=(\\d+) reverse20=(\\d+) reason20=(\\d+) reverse_reason20=(\\d+) same=([01]) preserved=1",s)
+          assert len(reverse_rows)==64,len(reverse_rows)
+          assert {int(x[0]) for x in reverse_rows}==set(range(64))
+          assert sum(1-int(x[7]) for x in reverse_rows)==diffs
+          assert sum(int(x[2])==0 and int(x[4])==0 for x in reverse_rows)==reverse_dual
           assert "H317 OPPOSITE_APPROACH_COMPLETE cases=10 joint_positive=" in s
           print("H319 observed genuine A4 source pairs",a4)
           print("H319 B2 dual proposals",grants)
           print("H319 valid same-pose A4/B2 intersection",joint)
           print("H319 second-actor pending/occluded",pending,occluded)
+          print("H319 reverse proposal-order differences",diffs)
+          print("H319 reverse dual-eligible proposals",reverse_dual)
           print("H319 scope is research observation only, not two actor-to-object PUSH or publication")
           PY
