@@ -79,8 +79,10 @@ int main(void){
   if(j>=3)CHECK(out.txn_low==100);
   else CHECK(out.txn_low==999);
   /* Crash can leave orphan temp. A full recovery must reconcile these. */
-  char tmp[1024];paths(base,gen,s,m);
-  snprintf(tmp,sizeof tmp,"%s.tmp.%ld",m,(long)pid);unlink(tmp);
+  char tmp[1200];paths(base,gen,s,m);
+  int length=snprintf(tmp,sizeof tmp,"%s.tmp.%ld",m,(long)pid);
+  CHECK(length>0&&(size_t)length<sizeof tmp);
+  if(length>0&&(size_t)length<sizeof tmp)unlink(tmp);
   clean(base,gen);
  }
  /* Every manifest byte must be covered by the manifest integrity checksum. */
