@@ -7,6 +7,7 @@
 #include "nf_retc_m2_fairness_tick.h"
 #include "nf_retc_m2_three_entity_tick.h"
 #include "nf_retc_m2_three_contact_tick.h"
+#include "nf_retc_m2_dual_directed_probe.h"
 #include "nf_retc_m2_event_scheduler.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,6 +91,18 @@ static bool three_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,voi
  const bool ok=nf_retc_m2_three_entity_in_tick(w,owner,dt,p->out);
  if(ok)++p->passed;
  return ok;
+}
+typedef struct M2DirectedProbe {
+ NfRetcM2DualDirected *out;
+ unsigned calls,passed;
+} M2DirectedProbe;
+static bool directed_probe(const NfWorld *w,const Nf18a6Runtime *owner,
+ float dt,void *ctx){
+ M2DirectedProbe *p=ctx;
+ ++p->calls;
+ const bool result=nf_retc_m2_dual_directed_probe_in_tick(w,owner,dt,p->out);
+ if(result)++p->passed;
+ return result;
 }
 typedef struct M2ChainProbe {NfRetcM2ThreeContact *out;unsigned calls,passed;bool reverse;} M2ChainProbe;
 static bool chain_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,void *context){
@@ -784,6 +797,59 @@ int main(void){
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x&&
        fabsf(rival->transform.position.x-(before_crate.x+owner->physical.object.box_half.x+owner->physical.actor.radius))<.0001f);
+ /* H319O: two independent real A4 capsule/box CCD contacts
+    from one source actor roster onto the SAME immutable crate snapshot.
+    Unlike H238, rival is actively closing from the opposite side.
+    This is two PRIVATE pairwise feasibility witnesses, NOT one coupled
+    3-body response, A5 clearance, B2 grants, B3 effects or A6 commit. */
+ NfRetcM2DualDirected *directed=calloc(1,sizeof *directed);
+ CHECK(directed);
+ M2DirectedProbe dprobe={.out=directed};
+ const NfTransform saved_rival= rival->transform;
+ const uint8_t saved_rival_intent=rival->input.interact_held;
+ rival->transform.position.x=owner->physical.object.center.x+
+      owner->physical.object.box_half.x+owner->physical.actor.radius+.25f;
+ rival->transform.velocity.x=-4.f;
+ rival->input.interact_held=true;
+ owner->research_pair_stage=directed_probe;
+ owner->research_pair_context=&dprobe;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(dprobe.calls==1u&&dprobe.passed==1u&&directed->staged);
+ CHECK(directed->source.count==2u&&directed->object_id==3050u&&
+       directed->actor_id[0]!=directed->actor_id[1]);
+ CHECK((directed->actor_id[0]==30u||directed->actor_id[1]==30u)&&
+       (directed->actor_id[0]==40u||directed->actor_id[1]==40u));
+ CHECK(directed->contact[0].receipt.impulses_applied&&
+       directed->contact[1].receipt.impulses_applied&&
+       directed->contact[0].object.id==3050u&&
+       directed->contact[1].object.id==3050u);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ fprintf(stderr,
+   "H319O DUAL_DIRECTED private_pairs=2 actor_ids=30,40 object=3050 owner_preserved=1\n");
+ /* H319P negative: withdrawing the rival's interaction intent denies
+    independently directed contact even when raw CCD would still hit. */
+ rival->input.interact_held=false;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(dprobe.calls==2u&&dprobe.passed==1u&&!directed->staged);
+ rival->input.interact_held=true;
+ /* H319P negative: no inward approach from the rival. */
+ rival->transform.velocity.x=4.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(dprobe.calls==3u&&dprobe.passed==1u&&!directed->staged);
+ rival->transform.velocity.x=-4.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(dprobe.calls==4u&&dprobe.passed==2u&&directed->staged);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples);
+ fprintf(stderr,
+   "H319P DUAL_DIRECTED_DENIAL cases=2 restored=1 owner_preserved=1\n");
+ owner->research_pair_stage=chain_probe;
+ owner->research_pair_context=&chain_probe_state;
+ rival->transform=saved_rival;
+ rival->input.interact_held=saved_rival_intent;
+ free(directed);
  /* H243-H247: material transaction integrity on the true two-edge
     A4 contact graph. All calls use PRIVATE copied A5 world state. */
  const uint32_t chain_ids[3]={30u,3050u,40u};
