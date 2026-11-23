@@ -10,6 +10,7 @@
 typedef struct NfRetcM2DualDirected {
  NfMa03Roster source;
  Nf18a4PairResult contact[2];
+ Nf18a4Body source_actor[2],source_object;
  uint32_t object_id,material_epoch,world_revision,tick;
  uint32_t actor_id[2];
  bool staged;
@@ -50,6 +51,7 @@ static inline bool nf_retc_m2_dual_directed_probe_in_tick(
  candidate.world_revision=owner->physical.world.revision;
  candidate.material_epoch=owner->physical.world.grid.global_revision;
  candidate.object_id=crate.id;
+ candidate.source_object=crate;
  bool saw_owner=false,saw_peer=false;
  for(size_t i=0u;i<2u;++i){
   const NfMa03Participant *p=&roster.actors[i];
@@ -83,6 +85,7 @@ static inline bool nf_retc_m2_dual_directed_probe_in_tick(
    a.height=actor->movement.body_height;
   }
   if(!nf18a4_body_valid(&a))return false;
+  candidate.source_actor[i]=a;
   const Nf18a2ShapePolicy shape={
     a.radius,a.height,.05f,.4f,.65f};
   const Nf18a4Motor motor={a.velocity,0.f,0.f};
