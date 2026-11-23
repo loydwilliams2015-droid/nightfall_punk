@@ -8,6 +8,7 @@
 #include "nf_retc_m2_three_entity_tick.h"
 #include "nf_retc_m2_three_contact_tick.h"
 #include "nf_retc_m2_dual_directed_probe.h"
+#include "nf_retc_m2_dual_coupled_probe.h"
 #include "nf_retc_m2_event_scheduler.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -828,6 +829,34 @@ int main(void){
        owner->physical.committed_receipts==0u);
  fprintf(stderr,
    "H319O DUAL_DIRECTED private_pairs=2 actor_ids=30,40 object=3050 owner_preserved=1\n");
+ /* H319Q: try to couple the independently directed real A4 contacts
+    into the unchanged A4 three-body island from the SAME source snapshot.
+    Unequal times of impact remain a diagnostic refusal, never a forced
+    simultaneous hit or a published physical/contract consequence. */
+ NfRetcM2DualCoupled couplingQ={0};
+ CHECK(nf_retc_m2_dual_coupled_probe(directed,.125f,&couplingQ));
+ CHECK(couplingQ.actor_id[0]!=couplingQ.actor_id[1]&&
+       couplingQ.object_id==3050u&&isfinite(couplingQ.difference));
+ CHECK(!couplingQ.accepted||
+       (couplingQ.contemporaneous&&couplingQ.order_equivalent));
+ CHECK(couplingQ.contemporaneous||!couplingQ.accepted);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ fprintf(stderr,
+   "H319Q COUPLED_SOURCE pairs=2 difference_micros=%u contemporaneous=%u accepted=%u order_equivalent=%u owner_preserved=1\n",
+   (unsigned)lroundf(couplingQ.difference*125000.f),
+   (unsigned)couplingQ.contemporaneous,(unsigned)couplingQ.accepted,
+   (unsigned)couplingQ.order_equivalent);
+ const bool authentic_stageQ=directed->staged;
+ directed->staged=false;
+ CHECK(!nf_retc_m2_dual_coupled_probe(directed,.125f,&couplingQ));
+ directed->staged=authentic_stageQ;
+ CHECK(nf_retc_m2_dual_coupled_probe(directed,.125f,&couplingQ));
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.committed_receipts==0u);
+ fprintf(stderr,
+   "H319Q SOURCE_DENIAL stale_stage=1 restored=1 owner_preserved=1\n");
  /* H319P negative: withdrawing the rival's interaction intent denies
     independently directed contact even when raw CCD would still hit. */
  rival->input.interact_held=false;
