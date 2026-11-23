@@ -222,7 +222,19 @@ static inline bool nf_retc_m2_three_contact_source_witness(
      s->material_epoch!=owner->physical.world.grid.global_revision||
      s->body_a!=candidate->bodies[k].id||
      s->body_b!=candidate->bodies[k+1u].id||
-     !isfinite(s->normal_impulse)||s->normal_impulse<=0.f)
+     !isfinite(s->normal_impulse)||s->normal_impulse<=0.f||
+     !isfinite(r->normal_impulse.x)||
+     !isfinite(r->normal_impulse.y)||
+     !isfinite(r->normal_impulse.z))return false;
+  const double magnitude=sqrt((double)r->normal_impulse.x*r->normal_impulse.x+
+      (double)r->normal_impulse.y*r->normal_impulse.y+
+      (double)r->normal_impulse.z*r->normal_impulse.z);
+  /* H319M: A5 magnitude must be derived from this exact A4 receipt,
+     not merely a positive caller-selected number. This validation is
+     diagnostic and creates no public or durable state. */
+  if(!isfinite(magnitude)||magnitude<=0.0||
+     fabs((double)s->normal_impulse-magnitude)>
+       fmax(0.0002,0.00002*magnitude))
      return false;
  }
  if(candidate->contacts[0].contact_id==
