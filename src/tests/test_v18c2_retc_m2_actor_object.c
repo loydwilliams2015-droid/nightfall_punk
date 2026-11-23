@@ -674,6 +674,7 @@ int main(void){
  const uint64_t authentic_source_tick=chain->source_tick;
  const uint32_t authentic_material_revision=chain->material.revision;
  const float authentic_impulse=chain->samples[1].normal_impulse;
+ const float authentic_a4_impulse_x=chain->contacts[1].normal_impulse.x;
  unsigned forged_denials=0u;
  #define H319L_DENY() do { \
    CHECK(!nf_retc_m2_three_contact_source_witness(chain,world,owner)); \
@@ -715,8 +716,16 @@ int main(void){
  chain->samples[1].normal_impulse=0.f;
  H319L_DENY();
  chain->samples[1].normal_impulse=authentic_impulse;
+ /* H319M: positive but forged A5 impulse and mismatched A4 receipt
+    magnitude must both be rejected; restore each real source field. */
+ chain->samples[1].normal_impulse=authentic_impulse+1.f;
+ H319L_DENY();
+ chain->samples[1].normal_impulse=authentic_impulse;
+ chain->contacts[1].normal_impulse.x=authentic_a4_impulse_x+1.f;
+ H319L_DENY();
+ chain->contacts[1].normal_impulse.x=authentic_a4_impulse_x;
  #undef H319L_DENY
- CHECK(forged_denials==12u&&
+ CHECK(forged_denials==14u&&
        nf_retc_m2_three_contact_source_witness(chain,world,owner));
  CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
        owner->physical.world.history.raw_samples==samples&&
