@@ -10,6 +10,8 @@
 #include "nf_retc_m2_three_entity_tick.h"
 typedef struct NfRetcM2ThreeContact {
  Nf18a5World material;
+ /* H319N immutable in-tick real actor/input source provenance. */
+ NfMa03Roster source_roster;
  Nf18a4Body bodies[3];
  Nf18a4Receipt contacts[2];
  Nf18a5Sample samples[2];
@@ -178,6 +180,7 @@ static inline bool nf_retc_m2_three_contact_ordered_in_tick(
          owner->physical.world.history.raw_samples+2u){ out->reject_line=(uint32_t)__LINE__; return false; }
  for(size_t i=0;i<3u;++i)next.bodies[i]=bodies[i];
  next.source_tick=w->tick;
+ next.source_roster=roster;
  next.source_revision=revision;
  next.expected_velocity=oracle;
  next.first_impact_time=contact_time;
@@ -205,6 +208,36 @@ static inline bool nf_retc_m2_three_contact_source_witness(
         owner->physical.world.history.raw_samples+2u||
     candidate->material.grid.global_revision!=
         owner->physical.world.grid.global_revision)return false;
+ /* H319N: the private A4/A5 contact is admissible only while BOTH
+  * actor transforms and intent still match the precise authoritative
+  * roster captured inside the same A6 tick. No caller restaging and
+  * no permissive prediction if the source has changed. */
+ if(candidate->source_roster.count!=2u||
+    candidate->source_roster.source_tick!=candidate->source_tick)
+    return false;
+ NfMa03Roster current={0};
+ if(!nf_ma03_roster_capture(world,&current)||
+    current.count!=2u||current.source_tick!=candidate->source_tick)
+    return false;
+ for(size_t i=0u;i<2u;++i){
+  const NfMa03Participant *a=&candidate->source_roster.actors[i];
+  const NfMa03Participant *b=&current.actors[i];
+  if(a->id!=b->id||
+     a->position.x!=b->position.x||
+     a->position.y!=b->position.y||
+     a->position.z!=b->position.z||
+     a->velocity.x!=b->velocity.x||
+     a->velocity.y!=b->velocity.y||
+     a->velocity.z!=b->velocity.z||
+     a->input.forward!=b->input.forward||
+     a->input.strafe!=b->input.strafe||
+     a->input.yaw_radians!=b->input.yaw_radians||
+     a->input.jump_pressed!=b->input.jump_pressed||
+     a->input.crouch_held!=b->input.crouch_held||
+     a->input.sprint_held!=b->input.sprint_held||
+     a->input.interact_held!=b->input.interact_held)
+    return false;
+ }
  const uint32_t a=candidate->bodies[0].id;
  const uint32_t obj=candidate->bodies[1].id;
  const uint32_t b=candidate->bodies[2].id;
