@@ -724,8 +724,27 @@ int main(void){
  chain->contacts[1].normal_impulse.x=authentic_a4_impulse_x+1.f;
  H319L_DENY();
  chain->contacts[1].normal_impulse.x=authentic_a4_impulse_x;
+ /* H319N: same-tick source identity is not enough if the live actor
+    moved, changed velocity, or withdrew PUSH intent after staging.
+    Deny each and restore before trying the next source mutation. */
+ const float original_rival_x=rival->transform.position.x;
+ const float original_rival_vx=rival->transform.velocity.x;
+ const uint8_t original_owner_interact=a->input.interact_held;
+ const float captured_x=chain->source_roster.actors[0].position.x;
+ rival->transform.position.x=original_rival_x+.05f;
+ H319L_DENY();
+ rival->transform.position.x=original_rival_x;
+ rival->transform.velocity.x=original_rival_vx+.1f;
+ H319L_DENY();
+ rival->transform.velocity.x=original_rival_vx;
+ a->input.interact_held=(uint8_t)!original_owner_interact;
+ H319L_DENY();
+ a->input.interact_held=original_owner_interact;
+ chain->source_roster.actors[0].position.x=captured_x+.1f;
+ H319L_DENY();
+ chain->source_roster.actors[0].position.x=captured_x;
  #undef H319L_DENY
- CHECK(forged_denials==14u&&
+ CHECK(forged_denials==18u&&
        nf_retc_m2_three_contact_source_witness(chain,world,owner));
  CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
        owner->physical.world.history.raw_samples==samples&&
