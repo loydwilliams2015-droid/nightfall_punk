@@ -34,7 +34,7 @@ jobs:
             -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
             -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
           cmake --build build-h319l --parallel 2 --target nightfall_v18c2_retc_m2_actor_object_test
-      - name: Verify authentic two-edge witness and 12 denials
+      - name: Verify authentic two-edge witness and 14 denials
         env:
           ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
@@ -47,7 +47,7 @@ jobs:
           source=Path('build-h319l/h319l.log').read_text()
           matches=re.findall(r'H319L M2_TWO_EDGE_SOURCE positive=(\d+) forged_denied=(\d+) owner_preserved=(\d+)',source)
           assert len(matches)==1,matches
-          assert tuple(map(int,matches[0]))==(1,12,1),matches
+          assert tuple(map(int,matches[0]))==(1,14,1),matches
           assert 'M2 H198-H202 failure' not in source
-          print('H319L source-owned two-contact/private A5 witness PASS; 12 forged denials')
+          print('H319L source-owned two-contact/private A5 witness PASS; 14 forged denials')
           PY
