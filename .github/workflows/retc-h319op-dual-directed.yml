@@ -1,0 +1,53 @@
+name: RET-C H319O/P two independently directed A4-to-crate research
+on:
+  push:
+    branches:
+      - planning/retc-h323-h324-d-e-private-recovery
+    paths:
+      - 'src/shared/nf_retc_m2_dual_directed_probe.h'
+      - 'src/tests/test_v18c2_retc_m2_actor_object.c'
+      - '.github/workflows/retc-h319op-dual-directed.yml'
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_m2_dual_directed_probe.h'
+      - 'src/tests/test_v18c2_retc_m2_actor_object.c'
+      - '.github/workflows/retc-h319op-dual-directed.yml'
+  workflow_dispatch:
+jobs:
+  dual-directed-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source SHA and sanitized M2 build
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          cmake -S . -B build-h319op -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-h319op --parallel 2 --target nightfall_v18c2_retc_m2_actor_object_test
+      - name: Observe two source-exact actor-to-object CCD contacts and denials
+        env:
+          ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          set -euo pipefail
+          build-h319op/nightfall_v18c2_retc_m2_actor_object_test 2>&1 | tee build-h319op/h319op.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('build-h319op/h319op.log').read_text()
+          positive=re.findall(r'H319O DUAL_DIRECTED private_pairs=(\d+) actor_ids=(\d+),(\d+) object=(\d+) owner_preserved=(\d+)',s)
+          negative=re.findall(r'H319P DUAL_DIRECTED_DENIAL cases=(\d+) restored=(\d+) owner_preserved=(\d+)',s)
+          assert positive==[('2','30','40','3050','1')],positive
+          assert negative==[('2','1','1')],negative
+          assert 'M2 H198-H202 failure' not in s
+          print('H319O/P research-only real A4 actor->same-object CCD plus two authorization-denial controls PASS')
+          PY
