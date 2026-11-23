@@ -259,7 +259,7 @@ if(NF_CONTACT_LAB_ONLY)
     add_executable(nightfall_v18c2_retc_real_twotick_test
         src/tests/test_v18c2_retc_real_twotick.c
         src/shared/nf_protocol.c)
-    target_link_libraries(nightfall_v18c2_retc_real_twotick_test PRIVATE nightfall_embody_h1)
+    target_link_libraries(nightfall_v18c2_retc_real_twotick_test PRIVATE nightfall_embody_h1 Threads::Threads)
     nf_project_warnings(nightfall_v18c2_retc_real_twotick_test)
     add_test(NAME retc_real_dispatcher_two_joint_ticks_v18c2 COMMAND nightfall_v18c2_retc_real_twotick_test)
     # M2 H198-H202: actual A6 owner-tick actor-to-dynamic-object physical

@@ -7,6 +7,8 @@
 #include "nf_retc_m2_fairness_tick.h"
 #include "nf_retc_m2_three_entity_tick.h"
 #include "nf_retc_m2_three_contact_tick.h"
+#include "nf_retc_m2_dual_directed_probe.h"
+#include "nf_retc_m2_dual_coupled_probe.h"
 #include "nf_retc_m2_event_scheduler.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,6 +92,18 @@ static bool three_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,voi
  const bool ok=nf_retc_m2_three_entity_in_tick(w,owner,dt,p->out);
  if(ok)++p->passed;
  return ok;
+}
+typedef struct M2DirectedProbe {
+ NfRetcM2DualDirected *out;
+ unsigned calls,passed;
+} M2DirectedProbe;
+static bool directed_probe(const NfWorld *w,const Nf18a6Runtime *owner,
+ float dt,void *ctx){
+ M2DirectedProbe *p=ctx;
+ ++p->calls;
+ const bool result=nf_retc_m2_dual_directed_probe_in_tick(w,owner,dt,p->out);
+ if(result)++p->passed;
+ return result;
 }
 typedef struct M2ChainProbe {NfRetcM2ThreeContact *out;unsigned calls,passed;bool reverse;} M2ChainProbe;
 static bool chain_probe(const NfWorld *w,const Nf18a6Runtime *owner,float dt,void *context){
@@ -658,6 +672,100 @@ int main(void){
        chain->samples[1].body_a==3050u&&chain->samples[1].body_b==40u);
  for(unsigned k=0u;k<3u;++k)
   CHECK(fabsf(chain->bodies[k].velocity.x-chain->expected_velocity)<.004f);
+ /* H319L: genuine two-contact M2 source ancestry is required before
+    considering any future independent B2 PUSH issuer. This is read-only
+    and does not substitute for owner-issued grants or B3/A6 publication. */
+ CHECK(nf_retc_m2_three_contact_source_witness(chain,world,owner));
+ const uint32_t authentic_contact_id=chain->contacts[1].contact_id;
+ const uint32_t authentic_sample_body=chain->samples[1].body_a;
+ const uint32_t authentic_sample_epoch=chain->samples[1].material_epoch;
+ const uint32_t authentic_sample_tick=chain->samples[1].tick;
+ const uint32_t authentic_sample_id=chain->samples[1].contact_id;
+ const uint32_t authentic_actor_id=chain->bodies[2].id;
+ const uint32_t authentic_world_version=chain->contacts[0].world_version;
+ const uint8_t authentic_applied=chain->contacts[0].impulses_applied;
+ const uint32_t authentic_source_revision=chain->source_revision;
+ const uint64_t authentic_source_tick=chain->source_tick;
+ const uint32_t authentic_material_revision=chain->material.revision;
+ const float authentic_impulse=chain->samples[1].normal_impulse;
+ const float authentic_a4_impulse_x=chain->contacts[1].normal_impulse.x;
+ unsigned forged_denials=0u;
+ #define H319L_DENY() do { \
+   CHECK(!nf_retc_m2_three_contact_source_witness(chain,world,owner)); \
+   ++forged_denials; \
+ } while(0)
+ chain->contacts[1].contact_id=chain->contacts[0].contact_id;
+ H319L_DENY();
+ chain->contacts[1].contact_id=authentic_contact_id;
+ chain->samples[1].body_a=chain->bodies[0].id;
+ H319L_DENY();
+ chain->samples[1].body_a=authentic_sample_body;
+ chain->samples[1].material_epoch=authentic_sample_epoch+1u;
+ H319L_DENY();
+ chain->samples[1].material_epoch=authentic_sample_epoch;
+ chain->samples[1].tick=authentic_sample_tick+1u;
+ H319L_DENY();
+ chain->samples[1].tick=authentic_sample_tick;
+ chain->samples[1].contact_id=authentic_sample_id+1u;
+ H319L_DENY();
+ chain->samples[1].contact_id=authentic_sample_id;
+ chain->bodies[2].id=chain->bodies[0].id;
+ H319L_DENY();
+ chain->bodies[2].id=authentic_actor_id;
+ chain->contacts[0].world_version=authentic_world_version+1u;
+ H319L_DENY();
+ chain->contacts[0].world_version=authentic_world_version;
+ chain->contacts[0].impulses_applied=0u;
+ H319L_DENY();
+ chain->contacts[0].impulses_applied=authentic_applied;
+ chain->source_revision=authentic_source_revision+1u;
+ H319L_DENY();
+ chain->source_revision=authentic_source_revision;
+ chain->source_tick=authentic_source_tick+1u;
+ H319L_DENY();
+ chain->source_tick=authentic_source_tick;
+ chain->material.revision=authentic_material_revision+1u;
+ H319L_DENY();
+ chain->material.revision=authentic_material_revision;
+ chain->samples[1].normal_impulse=0.f;
+ H319L_DENY();
+ chain->samples[1].normal_impulse=authentic_impulse;
+ /* H319M: positive but forged A5 impulse and mismatched A4 receipt
+    magnitude must both be rejected; restore each real source field. */
+ chain->samples[1].normal_impulse=authentic_impulse+1.f;
+ H319L_DENY();
+ chain->samples[1].normal_impulse=authentic_impulse;
+ chain->contacts[1].normal_impulse.x=authentic_a4_impulse_x+1.f;
+ H319L_DENY();
+ chain->contacts[1].normal_impulse.x=authentic_a4_impulse_x;
+ /* H319N: same-tick source identity is not enough if the live actor
+    moved, changed velocity, or withdrew PUSH intent after staging.
+    Deny each and restore before trying the next source mutation. */
+ const float original_rival_x=rival->transform.position.x;
+ const float original_rival_vx=rival->transform.velocity.x;
+ const uint8_t original_owner_interact=a->input.interact_held;
+ const float captured_x=chain->source_roster.actors[0].position.x;
+ rival->transform.position.x=original_rival_x+.05f;
+ H319L_DENY();
+ rival->transform.position.x=original_rival_x;
+ rival->transform.velocity.x=original_rival_vx+.1f;
+ H319L_DENY();
+ rival->transform.velocity.x=original_rival_vx;
+ a->input.interact_held=(uint8_t)!original_owner_interact;
+ H319L_DENY();
+ a->input.interact_held=original_owner_interact;
+ chain->source_roster.actors[0].position.x=captured_x+.1f;
+ H319L_DENY();
+ chain->source_roster.actors[0].position.x=captured_x;
+ #undef H319L_DENY
+ CHECK(forged_denials==18u&&
+       nf_retc_m2_three_contact_source_witness(chain,world,owner));
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ fprintf(stderr,
+   "H319L M2_TWO_EDGE_SOURCE positive=1 forged_denied=%u owner_preserved=1\n",
+   forged_denials);
  /* H239: exact same in-tick source reproduces both causal A4/A5 edges. */
  const uint32_t chain_history=nf18a5_history_hash(&chain->material.history);
  const float common_speed=chain->expected_velocity;
@@ -690,6 +798,87 @@ int main(void){
        a->transform.position.x==before_actor.x&&
        owner->physical.object.center.x==before_crate.x&&
        fabsf(rival->transform.position.x-(before_crate.x+owner->physical.object.box_half.x+owner->physical.actor.radius))<.0001f);
+ /* H319O: two independent real A4 capsule/box CCD contacts
+    from one source actor roster onto the SAME immutable crate snapshot.
+    Unlike H238, rival is actively closing from the opposite side.
+    This is two PRIVATE pairwise feasibility witnesses, NOT one coupled
+    3-body response, A5 clearance, B2 grants, B3 effects or A6 commit. */
+ NfRetcM2DualDirected *directed=calloc(1,sizeof *directed);
+ CHECK(directed);
+ M2DirectedProbe dprobe={.out=directed};
+ const NfTransform saved_rival= rival->transform;
+ const uint8_t saved_rival_intent=rival->input.interact_held;
+ rival->transform.position.x=owner->physical.object.center.x+
+      owner->physical.object.box_half.x+owner->physical.actor.radius+.25f;
+ rival->transform.velocity.x=-4.f;
+ rival->input.interact_held=true;
+ owner->research_pair_stage=directed_probe;
+ owner->research_pair_context=&dprobe;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(dprobe.calls==1u&&dprobe.passed==1u&&directed->staged);
+ CHECK(directed->source.count==2u&&directed->object_id==3050u&&
+       directed->actor_id[0]!=directed->actor_id[1]);
+ CHECK((directed->actor_id[0]==30u||directed->actor_id[1]==30u)&&
+       (directed->actor_id[0]==40u||directed->actor_id[1]==40u));
+ CHECK(directed->contact[0].receipt.impulses_applied&&
+       directed->contact[1].receipt.impulses_applied&&
+       directed->contact[0].object.id==3050u&&
+       directed->contact[1].object.id==3050u);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ fprintf(stderr,
+   "H319O DUAL_DIRECTED private_pairs=2 actor_ids=30,40 object=3050 owner_preserved=1\n");
+ /* H319Q: try to couple the independently directed real A4 contacts
+    into the unchanged A4 three-body island from the SAME source snapshot.
+    Unequal times of impact remain a diagnostic refusal, never a forced
+    simultaneous hit or a published physical/contract consequence. */
+ NfRetcM2DualCoupled couplingQ={0};
+ CHECK(nf_retc_m2_dual_coupled_probe(directed,.125f,&couplingQ));
+ CHECK(couplingQ.actor_id[0]!=couplingQ.actor_id[1]&&
+       couplingQ.object_id==3050u&&isfinite(couplingQ.difference));
+ CHECK(!couplingQ.accepted||
+       (couplingQ.contemporaneous&&couplingQ.order_equivalent));
+ CHECK(couplingQ.contemporaneous||!couplingQ.accepted);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples&&
+       owner->physical.committed_receipts==0u);
+ fprintf(stderr,
+   "H319Q COUPLED_SOURCE pairs=2 difference_micros=%u contemporaneous=%u accepted=%u order_equivalent=%u owner_preserved=1\n",
+   (unsigned)lroundf(couplingQ.difference*125000.f),
+   (unsigned)couplingQ.contemporaneous,(unsigned)couplingQ.accepted,
+   (unsigned)couplingQ.order_equivalent);
+ const bool authentic_stageQ=directed->staged;
+ directed->staged=false;
+ CHECK(!nf_retc_m2_dual_coupled_probe(directed,.125f,&couplingQ));
+ directed->staged=authentic_stageQ;
+ CHECK(nf_retc_m2_dual_coupled_probe(directed,.125f,&couplingQ));
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.committed_receipts==0u);
+ fprintf(stderr,
+   "H319Q SOURCE_DENIAL stale_stage=1 restored=1 owner_preserved=1\n");
+ /* H319P negative: withdrawing the rival's interaction intent denies
+    independently directed contact even when raw CCD would still hit. */
+ rival->input.interact_held=false;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(dprobe.calls==2u&&dprobe.passed==1u&&!directed->staged);
+ rival->input.interact_held=true;
+ /* H319P negative: no inward approach from the rival. */
+ rival->transform.velocity.x=4.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(dprobe.calls==3u&&dprobe.passed==1u&&!directed->staged);
+ rival->transform.velocity.x=-4.f;
+ CHECK(nf_world_step_checked(world,.125f)==NF_WORLD_TICK_REJECTED);
+ CHECK(dprobe.calls==4u&&dprobe.passed==2u&&directed->staged);
+ CHECK(world->tick==0u&&owner->physical.world.revision==revision&&
+       owner->physical.world.history.raw_samples==samples);
+ fprintf(stderr,
+   "H319P DUAL_DIRECTED_DENIAL cases=2 restored=1 owner_preserved=1\n");
+ owner->research_pair_stage=chain_probe;
+ owner->research_pair_context=&chain_probe_state;
+ rival->transform=saved_rival;
+ rival->input.interact_held=saved_rival_intent;
+ free(directed);
  /* H243-H247: material transaction integrity on the true two-edge
     A4 contact graph. All calls use PRIVATE copied A5 world state. */
  const uint32_t chain_ids[3]={30u,3050u,40u};

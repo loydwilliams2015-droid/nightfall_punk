@@ -10,6 +10,8 @@
 #include "nf_retc_m2_three_entity_tick.h"
 typedef struct NfRetcM2ThreeContact {
  Nf18a5World material;
+ /* H319N immutable in-tick real actor/input source provenance. */
+ NfMa03Roster source_roster;
  Nf18a4Body bodies[3];
  Nf18a4Receipt contacts[2];
  Nf18a5Sample samples[2];
@@ -178,6 +180,7 @@ static inline bool nf_retc_m2_three_contact_ordered_in_tick(
          owner->physical.world.history.raw_samples+2u){ out->reject_line=(uint32_t)__LINE__; return false; }
  for(size_t i=0;i<3u;++i)next.bodies[i]=bodies[i];
  next.source_tick=w->tick;
+ next.source_roster=roster;
  next.source_revision=revision;
  next.expected_velocity=oracle;
  next.first_impact_time=contact_time;
@@ -185,6 +188,90 @@ static inline bool nf_retc_m2_three_contact_ordered_in_tick(
  next.passes=passes;
  next.staged=true;
  *out=next;
+ return true;
+}
+/* H319L: source-exact, read-only TWO-EDGE actor->object<-actor
+ * contact ancestry gate. A4 pair receipts and A5 private material samples
+ * must identify the same three distinct bodies, tick and material epoch.
+ * This does not issue B2 grants, apply B3 effects or publish an A6 frame. */
+static inline bool nf_retc_m2_three_contact_source_witness(
+ const NfRetcM2ThreeContact *candidate,
+ const NfWorld *world,const Nf18a6Runtime *owner){
+ if(!candidate||!world||!owner||!candidate->staged||
+    world->tick_in_progress||world->tick_owner_context!=owner||
+    !world->tick_owner||owner->actor_id==0u||
+    candidate->source_tick!=world->tick||
+    candidate->source_revision!=owner->physical.world.revision||
+    candidate->material.revision!=candidate->source_revision+1u||
+    candidate->material.tick!=candidate->source_tick+1u||
+    candidate->material.history.raw_samples!=
+        owner->physical.world.history.raw_samples+2u||
+    candidate->material.grid.global_revision!=
+        owner->physical.world.grid.global_revision)return false;
+ /* H319N: the private A4/A5 contact is admissible only while BOTH
+  * actor transforms and intent still match the precise authoritative
+  * roster captured inside the same A6 tick. No caller restaging and
+  * no permissive prediction if the source has changed. */
+ if(candidate->source_roster.count!=2u||
+    candidate->source_roster.source_tick!=candidate->source_tick)
+    return false;
+ NfMa03Roster current={0};
+ if(!nf_ma03_roster_capture(world,&current)||
+    current.count!=2u||current.source_tick!=candidate->source_tick)
+    return false;
+ for(size_t i=0u;i<2u;++i){
+  const NfMa03Participant *a=&candidate->source_roster.actors[i];
+  const NfMa03Participant *b=&current.actors[i];
+  if(a->id!=b->id||
+     a->position.x!=b->position.x||
+     a->position.y!=b->position.y||
+     a->position.z!=b->position.z||
+     a->velocity.x!=b->velocity.x||
+     a->velocity.y!=b->velocity.y||
+     a->velocity.z!=b->velocity.z||
+     a->input.forward!=b->input.forward||
+     a->input.strafe!=b->input.strafe||
+     a->input.yaw_radians!=b->input.yaw_radians||
+     a->input.jump_pressed!=b->input.jump_pressed||
+     a->input.crouch_held!=b->input.crouch_held||
+     a->input.sprint_held!=b->input.sprint_held||
+     a->input.interact_held!=b->input.interact_held)
+    return false;
+ }
+ const uint32_t a=candidate->bodies[0].id;
+ const uint32_t obj=candidate->bodies[1].id;
+ const uint32_t b=candidate->bodies[2].id;
+ if(!a||!obj||!b||a==obj||a==b||obj==b||
+    a!=owner->actor_id||obj!=owner->physical.object.id||
+    !nf_world_find_actor_const(world,b))return false;
+ for(unsigned k=0u;k<2u;++k){
+  const Nf18a4Receipt *r=&candidate->contacts[k];
+  const Nf18a5Sample *s=&candidate->samples[k];
+  if(r->status!=NF18A4_ACCEPTED||!r->impulses_applied||
+     !r->contact_id||r->contact_id!=s->contact_id||
+     r->tick!=candidate->source_tick+1u||
+     s->tick!=r->tick||
+     r->world_version!=candidate->source_revision||
+     s->material_epoch!=owner->physical.world.grid.global_revision||
+     s->body_a!=candidate->bodies[k].id||
+     s->body_b!=candidate->bodies[k+1u].id||
+     !isfinite(s->normal_impulse)||s->normal_impulse<=0.f||
+     !isfinite(r->normal_impulse.x)||
+     !isfinite(r->normal_impulse.y)||
+     !isfinite(r->normal_impulse.z))return false;
+  const double magnitude=sqrt((double)r->normal_impulse.x*r->normal_impulse.x+
+      (double)r->normal_impulse.y*r->normal_impulse.y+
+      (double)r->normal_impulse.z*r->normal_impulse.z);
+  /* H319M: A5 magnitude must be derived from this exact A4 receipt,
+     not merely a positive caller-selected number. This validation is
+     diagnostic and creates no public or durable state. */
+  if(!isfinite(magnitude)||magnitude<=0.0||
+     fabs((double)s->normal_impulse-magnitude)>
+       fmax(0.0002,0.00002*magnitude))
+     return false;
+ }
+ if(candidate->contacts[0].contact_id==
+    candidate->contacts[1].contact_id)return false;
  return true;
 }
 /* Production-like research incumbent retains its original fixed order.

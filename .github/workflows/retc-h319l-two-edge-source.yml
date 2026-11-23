@@ -1,0 +1,53 @@
+name: RET-C H319L two-edge source ancestry gate
+on:
+  push:
+    branches:
+      - planning/retc-h323-h324-d-e-private-recovery
+    paths:
+      - 'src/shared/nf_retc_m2_three_contact_tick.h'
+      - 'src/tests/test_v18c2_retc_m2_actor_object.c'
+      - '.github/workflows/retc-h319l-two-edge-source.yml'
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_m2_three_contact_tick.h'
+      - 'src/tests/test_v18c2_retc_m2_actor_object.c'
+      - '.github/workflows/retc-h319l-two-edge-source.yml'
+  workflow_dispatch:
+jobs:
+  source-two-edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact source SHA
+        run: git rev-parse HEAD
+      - name: Configure and compile actual M2 source
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-h319l -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-h319l --parallel 2 --target nightfall_v18c2_retc_m2_actor_object_test
+      - name: Verify authentic two-edge witness and 18 denials
+        env:
+          ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          set -euo pipefail
+          build-h319l/nightfall_v18c2_retc_m2_actor_object_test 2>&1 | tee build-h319l/h319l.log
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          source=Path('build-h319l/h319l.log').read_text()
+          matches=re.findall(r'H319L M2_TWO_EDGE_SOURCE positive=(\d+) forged_denied=(\d+) owner_preserved=(\d+)',source)
+          assert len(matches)==1,matches
+          assert tuple(map(int,matches[0]))==(1,18,1),matches
+          assert 'M2 H198-H202 failure' not in source
+          print('H319L source-owned two-contact/private A5 witness PASS; 18 forged denials')
+          PY

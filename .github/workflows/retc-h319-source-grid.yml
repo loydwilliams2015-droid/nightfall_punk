@@ -1,0 +1,152 @@
+name: RET-C H319 same-source dual PUSH feasibility research
+on:
+  push:
+    branches:
+      - 'planning/retc-h323-h324-d-e-private-recovery'
+    paths:
+      - 'src/shared/nf_multi_ma03c.c'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h319-source-grid.yml'
+  pull_request:
+    paths:
+      - 'src/shared/nf_multi_ma03c.c'
+      - 'src/tests/test_v18c2_retc_real_twotick.c'
+      - '.github/workflows/retc-h319-source-grid.yml'
+  workflow_dispatch:
+jobs:
+  h319-source-grid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build source exact A6 A4 A5 B2 test
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          cmake -S . -B build-h319 -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h319 --parallel 2 --target nightfall_v18c2_retc_real_twotick_test
+      - name: Run genuine sixty-four-pose A4 B2 source intersection
+        run: |
+          set -euo pipefail
+          build-h319/nightfall_v18c2_retc_real_twotick_test 2>&1 | tee build-h319/h319.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path("build-h319/h319.log").read_text()
+          rows=re.findall(r"H319 SOURCE_GRID case=(\d+) side=(\d+) dx_mm=(-?\d+) z_mm=(\d+) a4=([01]) b10=(\d+) b20=(\d+) reason20=(\d+) joint=([01]) preserved=1",s)
+          assert len(rows)==64,len(rows)
+          assert {int(row[0]) for row in rows}==set(range(64))
+          totals=re.findall(r"H319 SOURCE_GRID_COMPLETE cases=64 a4=(\d+) dual_b2=(\d+) intersection=(\d+) pending20=(\d+) occluded20=(\d+) order_differences=(\d+) reverse_dual=(\d+) restored=1",s)
+          assert len(totals)==1,totals
+          a4,grants,joint,pending,occluded,diffs,reverse_dual=map(int,totals[0])
+          assert a4==sum(int(row[4]) for row in rows)
+          assert joint==sum(int(row[8]) for row in rows)
+          assert 0<=joint<=min(a4,grants)<=64
+          assert pending+occluded<=64
+          assert 0<=diffs<=64 and 0<=reverse_dual<=64
+          reverse_rows=re.findall(r"H319 REVERSE_ORDER case=(\d+) forward10=(\d+) reverse10=(\d+) forward20=(\d+) reverse20=(\d+) reason20=(\d+) reverse_reason20=(\d+) same=([01]) preserved=1",s)
+          assert len(reverse_rows)==64,len(reverse_rows)
+          assert {int(x[0]) for x in reverse_rows}==set(range(64))
+          assert sum(1-int(x[7]) for x in reverse_rows)==diffs
+          assert sum(int(x[2])==0 and int(x[4])==0 for x in reverse_rows)==reverse_dual
+          assert "H317 OPPOSITE_APPROACH_COMPLETE cases=10 joint_positive=" in s
+          print("H319 observed genuine A4 source pairs",a4)
+          print("H319 B2 dual proposals",grants)
+          print("H319 valid same-pose A4/B2 intersection",joint)
+          print("H319 second-actor pending/occluded",pending,occluded)
+          print("H319 reverse proposal-order differences",diffs)
+          print("H319 reverse dual-eligible proposals",reverse_dual)
+          peer=re.findall(r"H319B PEER_APPROACH case=(\d+) dx_mm=(-?\d+) z_mm=(\d+) a4=([01]) b10=(\d+) b20=(\d+) reason20=(\d+) joint=([01]) preserved=1",s)
+          assert len(peer)==32,len(peer)
+          assert {int(x[0]) for x in peer}==set(range(32))
+          summary=re.findall(r"H319B PEER_APPROACH_COMPLETE cases=32 a4=(\d+) dual_b2=(\d+) intersection=(\d+) restored=1",s)
+          assert len(summary)==1,summary
+          p_a4,p_dual,p_joint=map(int,summary[0])
+          assert p_a4==sum(int(x[3]) for x in peer)
+          assert p_dual==sum(int(x[4])==0 and int(x[5])==0 for x in peer)
+          assert p_joint==sum(int(x[7]) for x in peer)
+          assert 0<=p_joint<=min(p_a4,p_dual)<=32
+          print("H319B peer-origin approach A4/dual/intersection",p_a4,p_dual,p_joint)
+          balanced=re.findall(r"H319C BALANCED_CLOSE case=(\d+) dx_mm=(-?\d+) z_mm=(\d+) a4=([01]) b10=(\d+) b20=(\d+) reason20=(\d+) joint=([01]) preserved=1",s)
+          assert len(balanced)==32,len(balanced)
+          assert {int(x[0]) for x in balanced}==set(range(32))
+          balanced_summary=re.findall(r"H319C BALANCED_CLOSE_COMPLETE cases=32 a4=(\d+) dual_b2=(\d+) intersection=(\d+) restored=1",s)
+          assert len(balanced_summary)==1,balanced_summary
+          b_a4,b_dual,b_joint=map(int,balanced_summary[0])
+          assert b_a4==sum(int(x[3]) for x in balanced)
+          assert b_dual==sum(int(x[4])==0 and int(x[5])==0 for x in balanced)
+          assert b_joint==sum(int(x[7]) for x in balanced)
+          assert 0<=b_joint<=min(b_a4,b_dual)<=32
+          print("H319C balanced closing A4/dual/intersection",b_a4,b_dual,b_joint)
+          raw=re.findall(r"H319D RAW_PAIR case=(\d+) status=(\d+) count=(\d+) impacts=(\d+) matched=(\d+) disagreed=(\d+) unresolved=(\d+) stage=([01]) preserved=1",s)
+          assert len(raw)==32,len(raw)
+          assert {int(x[0]) for x in raw}==set(range(32))
+          raw_summary=re.findall(r"H319D RAW_PAIR_COMPLETE cases=32 raw_impacts=(\d+) matched=(\d+) disagree_or_unresolved=(\d+) stage_a4=(\d+) restored=1",s)
+          assert len(raw_summary)==1,raw_summary
+          raw_impacts,matched,disagreed,stage=map(int,raw_summary[0])
+          assert raw_impacts==sum(int(x[3])==1 for x in raw)
+          assert matched==sum(int(x[4])==1 for x in raw)
+          assert disagreed==sum(int(x[5])!=0 or int(x[6])!=0 for x in raw)
+          assert stage==sum(int(x[7]) for x in raw)
+          assert stage<=raw_impacts
+          print("H319D raw solver impacts/matched/disagreement/stage",raw_impacts,matched,disagreed,stage)
+          mirrored=re.findall(r"H319E REORDERED case=(\d+) forward_impacts=(\d+) swapped_impacts=(\d+) matched=(\d+) disagreed=(\d+) unresolved=(\d+) impact_parity=([01]) preserved=1",s)
+          assert len(mirrored)==32,len(mirrored)
+          assert {int(x[0]) for x in mirrored}==set(range(32))
+          mirrored_summary=re.findall(r"H319E REORDERED_COMPLETE cases=32 swapped_impacts=(\d+) matched=(\d+) unresolved=(\d+) impact_parity=(\d+) restored=1",s)
+          assert len(mirrored_summary)==1,mirrored_summary
+          s_imp,s_match,s_unresolved,s_parity=map(int,mirrored_summary[0])
+          assert s_imp==sum(int(x[2])==1 for x in mirrored)
+          assert s_match==sum(int(x[3])==1 for x in mirrored)
+          assert s_unresolved==sum(int(x[5])!=0 for x in mirrored)
+          assert s_parity==sum(int(x[6]) for x in mirrored)
+          assert 0<=s_match<=32 and 0<=s_parity<=32
+          print("H319E swapped raw impacts/reference matches/unresolved/parity",s_imp,s_match,s_unresolved,s_parity)
+          stable=re.findall(r"H319F REFERENCE_ORDER case=(\d+) forward_match=([01]) reverse_match=([01]) stage=([01]) raw_impact=([01]) equivalent=1 preserved=1",s)
+          assert len(stable)==32,len(stable)
+          assert {int(x[0]) for x in stable}==set(range(32))
+          assert all(x[1]==x[2] for x in stable)
+          stable_summary=re.findall(r"H319F REFERENCE_ORDER_COMPLETE cases=32 stage_a4=(\d+) matched=(\d+) equivalent=32 restored=1",s)
+          assert len(stable_summary)==1,stable_summary
+          stage_new,matched_new=map(int,stable_summary[0])
+          assert stage_new==sum(int(x[3]) for x in stable)
+          assert matched_new==sum(int(x[1]) for x in stable)
+          assert stage_new==matched_new
+          print("H319F validated A4 physical references and order invariance",stage_new,matched_new)
+          keyed=re.findall(r"H319G ID_KEYED case=(\d+) compared=([01]) equivalent=([01]) original_status=(\d+) reversed_status=(\d+) preserved=1",s)
+          assert len(keyed)==32,len(keyed)
+          assert {int(x[0]) for x in keyed}==set(range(32))
+          keyed_summary=re.findall(r"H319G ID_KEYED_COMPLETE cases=32 compared=(\d+) equivalent=(\d+) restored=1",s)
+          assert len(keyed_summary)==1,keyed_summary
+          k_comp,k_equiv=map(int,keyed_summary[0])
+          assert k_comp==sum(int(x[1]) for x in keyed)
+          assert k_equiv==sum(int(x[2]) for x in keyed)
+          assert k_equiv==k_comp
+          assert all(int(x[2])<=int(x[1]) for x in keyed)
+          print("H319G source-actor ID-keyed solver order invariance",k_comp,k_equiv)
+          material=re.findall(r"H319H MATERIAL_SOURCE case=(\d+) reason=(\d+) body_a5=(\d+) ray_a5=(\d+) a3_clear=([01]) source_tick=(\d+) preserved=1",s)
+          assert len(material)==32,len(material)
+          assert {int(x[0]) for x in material}==set(range(32))
+          pending_cases=[x for x in material if int(x[1])==7]
+          assert all(int(x[2])==2 or int(x[3])==2 for x in pending_cases)
+          assert len({x[5] for x in material})==1
+          print("H319H material-pending cases attributed to original A5",len(pending_cases))
+          simultaneous=re.findall(r"H319I PARALLEL_REFERENCE workers=(\d+) cases_per_worker=(\d+) reversed_workers=(\d+) mismatches=(\d+) owner_preserved=1",s)
+          assert len(simultaneous)==1,simultaneous
+          assert tuple(map(int,simultaneous[0]))==(4,32,2,0)
+          print("H319I real parallel immutable reference workers",simultaneous[0])
+          gated=re.findall(r"H319J START_GATE workers=(\d+) joined=(\d+) matched=(\d+) cancelled=0 owner_preserved=1",s)
+          assert len(gated)==1,gated
+          assert tuple(map(int,gated[0]))==(4,1,1)
+          cancelled=re.findall(r"H319K CANCELLED_REPLAY workers=(\d+) joined=(\d+) evaluations=(\d+) owner_preserved=1",s)
+          assert len(cancelled)==1,cancelled
+          assert tuple(map(int,cancelled[0]))==(2,2,0)
+          print("H319J/K synchronized four-worker replay and two-worker cancellation passed")
+          print("H319 scope is research observation only, not two actor-to-object PUSH or publication")
+          PY
