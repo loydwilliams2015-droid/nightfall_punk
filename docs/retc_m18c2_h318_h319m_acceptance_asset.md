@@ -39,3 +39,20 @@ Date: 2026-11-23. Status: RESEARCH — production HOLD. Source is append-only dr
 5. Run independent GCC/Clang, ASan/UBSan, true multi-actor scheduling, held-out and source-exact acceptance.
 
 Distance remains high uncertainty; previous 7–14 substantial five-objective C2 sweeps is only a planning envelope. M18C.2 production certification remains HOLD. M18C.3 durability promotion remains HOLD.
+
+
+## H319N roster and intent source-coherence amendment — 2026-11-23
+
+### Why this exists
+An A4 receipt and matching A5 sample can be internally consistent while the live actors have moved or changed their intents since the A6 tick that produced the private contact. Source-epoch equality alone does not exclude such a stale candidate.
+
+### Implementation and test assets
+- `src/shared/nf_retc_m2_three_contact_tick.h`: stage the exact immutable `NfMa03Roster` during original A6 owner tick; after the tick rejects privately, re-capture the authoritative live roster and compare actor identities, XYZ positions, XYZ velocities, and the full interaction/movement input fields individually. Reject any divergence; no world mutation.
+- `src/tests/test_v18c2_retc_m2_actor_object.c`: expand source-witness falsifications to 18 by temporarily changing (then restoring) the rival's live position, rival velocity, owner interaction hold, and a captured roster position. Positive restaging after all controls is required. No real B2 grant, B3 effect or A6 publication is performed.
+- `.github/workflows/retc-h319l-two-edge-source.yml`: source-exact GCC and Clang, ASan/UBSan enabled, must assert `H319L M2_TWO_EDGE_SOURCE positive=1 forged_denied=18 owner_preserved=1` before accepting the research milestone.
+- H318 reverse-motion source diagnostics remain separate; A4=1 coupled with A5 body PENDING and B2 MATERIAL_PENDING is an intentional fail-closed outcome, not PUSH authorization.
+
+### Acceptance and limitations
+R1: 18 distinct negative controls plus authentic positive recheck pass on GCC and Clang at the **same exact SHA**, with sanitizer success and no authority mutation. Status: **PENDING** until CI job logs verified.
+R2: The source roster must be rechecked after the candidate is created and before considering any subsequent permission stage. Status: implemented research gate, final production integration OPEN.
+P1–P4: Both independently directed actor→object A4+ A5 FREE, owner-issued B2 grants, two APPLIED B3 effects, and single atomic A6 immutable publication remain OPEN, as do real concurrent actor scheduling and independent held-out acceptance.
