@@ -33,7 +33,11 @@ jobs:
           rows=re.findall(r'H318 REVERSE_SOURCE case=(\d+) a4=([01]) dx_mm=(-?\d+) dv_cms=(-?\d+) projected_closing=([01]) body_a5=(\d+) ray_a5=(\d+) b2_reason=(\d+) preserved=1',s)
           assert len(rows)==10,len(rows)
           assert {int(x[0]) for x in rows}==set(range(10))
-          assert all(int(x[1])==0 and int(x[7])==7 for x in rows)
+          # H319F canonicalized the private left/right oracle. Raw A4
+          # reverse-approach contact is now legitimately stage-positive,
+          # while the original A5 occupancy remains PENDING and B2 denies.
+          assert all(int(x[1])==1 and int(x[4])==1 and int(x[7])==7 for x in rows),rows
+          assert all(int(x[2])==-800 and int(x[3])==-450 for x in rows),rows
           assert all(int(x[5])==2 or int(x[6])==2 for x in rows),rows
           assert 'H317 OPPOSITE_APPROACH_COMPLETE cases=10 joint_positive=0 restored=1' in s
           for x in rows:
