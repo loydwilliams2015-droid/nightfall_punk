@@ -40,38 +40,26 @@ static inline bool nf_retc_m2_dual_coupled_probe(
  /* A mismatch cannot be silently flattened into a made-up manifold. */
  if(out->difference>.0001f)return true;
  out->contemporaneous=true;
- Nf18a4Body sourceBodies[3]={0};
+ Nf18a4Body sourceBodies[3]={
+   source->source_actor[0],source->source_object,
+   source->source_actor[1]};
  Nf18a4Constraint cs[2]={{0},{0}};
- const Nf18a4Body obj=source->contact[0].object;
- if(source->contact[1].object.id!=obj.id||
-    !nf18a4_body_valid(&obj))return false;
- sourceBodies[1]=obj;
- /* Pair-step results are post-contact and cannot be reused as pre-contact
-    bodies. Recover independent source pre-impulse velocities using the
-    known two-body impulses, and reverse the independent pair travel.
-    If source contact chronology cannot be reconstructed safely, refuse. */
+ if(sourceBodies[1].id!=source->object_id||
+    !nf18a4_body_valid(&sourceBodies[1]))return false;
  for(unsigned i=0u;i<2u;++i){
-  const Nf18a4PairResult *r=&source->contact[i];
-  Nf18a4Body a=r->actor;
-  const float t=dt*r->toi;
-  const float remaining=dt-t;
-  const float sign=(a.center.x<obj.center.x)?-1.f:1.f;
-  if(!isfinite(t)||!isfinite(remaining)||remaining<0.f||
-     !isfinite(a.inverse_mass)||a.inverse_mass<=0.f||
-     fabsf(r->receipt.normal_impulse.y)>.0001f||
-     fabsf(r->receipt.normal_impulse.z)>.0001f)return false;
-  /* Recover only a conservative one-dimensional pre-contact state.
-     A4 impulses in pair_step are the actor-normal impulse. */
-  a.velocity.x-=r->receipt.normal_impulse.x*a.inverse_mass;
-  a.center.x-=r->actor.velocity.x*remaining;
-  a.center.x-=a.velocity.x*t;
-  sourceBodies[i==0u?0u:2u]=a;
-  cs[i].body_a=a.id;
-  cs[i].body_b=obj.id;
-  cs[i].feature_id=obj.id^(i+1u);
+  const Nf18a4Body *a=&source->source_actor[i];
+  const Nf18a4Body *obj=&source->source_object;
+  const float sign=a->center.x<obj->center.x?-1.f:1.f;
+  if(!nf18a4_body_valid(a)||a->id!=source->actor_id[i]||
+     !isfinite(a->velocity.x)||
+     (sign<0.f&&a->velocity.x<=.1f)||
+     (sign>0.f&&a->velocity.x>=-.1f))return false;
+  cs[i].body_a=a->id;
+  cs[i].body_b=obj->id;
+  cs[i].feature_id=obj->id^(i+1u);
   cs[i].normal_b_to_a=(NfVec3){sign,0.f,0.f};
   cs[i].contact_point=(NfVec3){
-   obj.center.x+sign*obj.box_half.x,obj.center.y,obj.center.z};
+   obj->center.x+sign*obj->box_half.x,obj->center.y,obj->center.z};
  }
  /* This path is intentionally a feasibility discriminator. Never
     claim coupled PASS unless stable forward/reverse A4 solves agree. */
