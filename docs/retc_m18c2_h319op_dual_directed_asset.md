@@ -34,3 +34,16 @@ R4: B2 grants independently owner-issued and consumed once; two typed B3 PUSH ef
 R5: GCC, Clang, ASan, UBSan, thread sanitizer where feasible, canonical/randomized/pathological/held-out and true concurrent authoritative actor scheduling all pass at same exact SHA. **OPEN**.
 
 Do not promote M18C.2 or M18C.3 until R1–R5 plus independent source review pass. Native playability P0/P1/P2 has not been measured.
+
+
+## H319Q — co-arrival and private three-body island extension (2026-11-23)
+
+**Purpose:** two actor→crate CCD receipts from one source object snapshot do not establish simultaneous contact. H319Q reads the actual two pairwise A4 times of impact and *refuses* coupled acceptance when their normalized arrival times differ by more than 0.0001. The discrepancy is reported as a measured research finding, not silently coerced into a manifold.
+
+**Implementation:** `src/shared/nf_retc_m2_dual_coupled_probe.h` uses the same engine A4 island solver with two actor→crate constraints and the original, immutable pre-contact actor and crate bodies preserved by `nf_retc_m2_dual_directed_probe.h`. It advances the original bodies to the common time of impact only after co-arrival validation. It compares forward versus reversed constraint order on independent private copies, requiring matching positions/velocities (0.003 tolerance). A failed island solution remains unaccepted, with no world mutation.
+
+**Tests:** `src/tests/test_v18c2_retc_m2_actor_object.c` records a two-pair H319Q feasibility observation, requires no acceptance unless times are coincident and order-equivalent, denies forged `staged=false`, then restores the source and checks A6 tick/history/receipts are unchanged.
+
+**Executable asset:** `.github/workflows/retc-h319op-dual-directed.yml`, GCC and Clang with ASan/UBSan, source-exact. The CI log parser requires H319Q source, co-arrival, coupling invariants and restored negative control. **No successful execution is yet claimed**; CI may report a timing mismatch as an appropriately fail-closed result.
+
+**Still open:** a positive synchronized coupled three-body contact, both independent A5 FREE sweeps, A6-owner-issued B2 authorization, B3 application, one indivisible accepted frame, fault/replay/revocation/true concurrent authoritative and held-out acceptance. Do not confuse private island diagnostics with production PASS.
