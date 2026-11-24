@@ -9,3 +9,9 @@ Twenty off-owner geometry configurations (two independent actor→crate pair cal
 **CI command:** the `retc-h319-pair-lab.yml` workflow builds the real `nightfall_contact_lab` static library via CMake, compiles this test with GCC/Clang `-std=c11 -Wall -Wextra -Wpedantic -Werror`, executes it at the exact checked-out SHA. Treat any pending/red workflow as not accepted. The original H55 sanitizer workflows also have failures on PR #275 and require separate triage; do not report whole-branch green.
 
 **Release:** PR remains DRAFT/HOLD. Neither this test nor its artifacts are a production B2 issuer, B3 effect, immutable A6 publication, WAL/recovery or playability certificate.
+
+## H319 follow-on hardening
+- Diagnostic log verification requires exactly 40 distinct (case, actor) rows, expected tick/version and an explicit zero A6/B2/B3 authority summary; this is an evidence completeness gate, not a positive physics gate.
+- Python schema diagnostics now reject duplicate JSON keys, reused contact IDs, bool/int confusion on per-row epochs and object IDs, and zero global source epochs. Six new negative tests accompany the original twelve, bringing the synthetic test file to eighteen cases.
+- The standalone C lab is not wired to an A6-world scene; neither its contact counts nor `SCHEMA PASS` may be promoted into an H319 production PASS.
+- Historical workflow results must not be applied to later SHAs. H55 sanitizer YAML was repaired on this draft, but exact-current-head outcomes must be inspected separately.
