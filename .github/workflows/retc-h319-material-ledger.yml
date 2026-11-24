@@ -1,0 +1,34 @@
+name: RET-C H319 ONI-style conserved material ledger (research only)
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_h319_material_ledger.h'
+      - 'src/tests/test_retc_h319_material_ledger.c'
+      - '.github/workflows/retc-h319-material-ledger.yml'
+  workflow_dispatch:
+jobs:
+  conservation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build actual A5 library and bounded ledger under strict C11
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          cmake -S . -B build-h319-material -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build-h319-material --parallel 2 --target nightfall_contact_lab
+          "$CC" -std=c11 -Wall -Wextra -Wpedantic -Werror -Isrc/shared \
+            src/tests/test_retc_h319_material_ledger.c \
+            build-h319-material/libnightfall_contact_lab.a -lm -o build-h319-material/material
+      - name: Verify conservation and fail-closed material states
+        run: |
+          set -euo pipefail
+          build-h319-material/material 2>&1 | tee build-h319-material/material.log
+          grep -Fx 'H319 ONI_LEDGER_COMPLETE transfers=128 mass=12000 thermal=70000 denied=5 rollback=1 source_A5=1 A6_owner=0 B2_grants=0 B3_effects=0' build-h319-material/material.log
