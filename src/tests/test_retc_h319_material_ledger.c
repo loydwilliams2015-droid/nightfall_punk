@@ -14,7 +14,7 @@ static int unchanged(const NfRetcH319Cell a[2],const NfRetcH319Cell b[2]){
 int main(void){
     Nf18a5Grid *g=malloc(sizeof *g);
     CK(g);
-    nf18a5_grid_init(g,1u,NF18A5_COARSE_ONLY);
+    nf18a5_grid_init(g,1u,NF18A5_SELECTIVE_FINE);
     uint8_t cells[NF18A5_CANON_VOXELS]={0};
     CK(nf18a5_load_canonical(g,0,0,0,cells,1u));
     NfRetcH319Cell ledger[2]={
