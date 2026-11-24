@@ -73,3 +73,16 @@ New `src/shared/nf_retc_h319_owner_frontier.h` checks actual `NfWorld` and `Nf18
 **Practical boundary:** Input selection at an A6 owner boundary is a preflight hint, not authority for contacts, permissions or consequences. A5 queries may alter last-access/cache bookkeeping. It does not write B2 grants, B3 effects, A6 frame state, or durable journals. Full 60 Hz runtime time/memory benchmarking, deterministic summary-to-detail replay, source-authenticated A6 binding and H319 coupled physics still remain OPEN.
 
 **Caller-supplied provenance update:** the owner preflight now requires exact expected tick, local material-world revision and canonical A5 epoch supplied by the caller. Neither later material changes nor stale caller assumptions can be automatically adopted as an acceptable snapshot. The extra two negative tests cover stale caller revision and material epoch. This does not provide concurrency-safe world-lock ownership or a complete A6 commit certificate.
+
+## O1 lifecycle-bound A6 source regression (new)
+
+The prior H319 source guard used a controlled synthetic `NfWorld` and `Nf18a6Runtime`. The next evidence increment extends the **existing production-path A6 tick owner regression** `src/tests/test_v18a6_tick_owner.c`, without modifying A6 production code:
+
+1. Initialize a real world, spawn player actor 10 and bind the real A6 embodiment tick owner through `nf18a6_bind_world_tick`.
+2. Load canonical A5 evidence, then use the actual `nf_world_step` owner route to achieve an authoritative committed world tick (existing S13 scenario).
+3. Immediately stage one finite-world A5 region against that **same** committed world tick, the caller-pinned owner-local material revision and canonical A5 epoch.
+4. Reject an incorrect expected revision, incorrect expected epoch and future tick without modifying the preflight receipt; verify the operation did not run a second world tick.
+
+`.github/workflows/retc-h319-owner-lifecycle.yml` compiles and executes the full tick-owner regression under GCC and Clang, capturing logs and requiring the five new H319 assertions. These checks are **read/stage preflight only**: no extra B2 grant, B3 effect or A6 joint transaction. The real lifecycle route is a meaningful upgrade from the standalone synthetic fixture, but not a certification of contested shared-object simulation.
+
+**Measurement boundary:** the finite scheduler's work budget is declared **abstract units**, not measured CPU microseconds. No measurable 60 Hz budget, cache-efficiency advantage or ONI-equivalent performance should be claimed from these unit tests; next benchmark must instrument actual tick duration and resident allocation separately from deterministic correctness.
