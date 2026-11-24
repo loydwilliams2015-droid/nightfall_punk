@@ -32,6 +32,11 @@ int main(void) {
         const float v=1.f+(float)(seed%10u)*.5f;
         Nf18a4Body bodies[3]={
           make_actor(10u,1.5f,v),make_actor(20u,2.5f,-v),make_crate()};
+        const float before_momentum=80.f*bodies[0].velocity.x+
+          80.f*bodies[1].velocity.x+24.f*bodies[2].velocity.x;
+        const float before_energy=40.f*bodies[0].velocity.x*bodies[0].velocity.x+
+          40.f*bodies[1].velocity.x*bodies[1].velocity.x+
+          12.f*bodies[2].velocity.x*bodies[2].velocity.x;
         Nf18a4Body reversed[3];
         memcpy(reversed,bodies,sizeof bodies);
         Nf18a4Constraint constraints[2]={
@@ -53,9 +58,18 @@ int main(void) {
             CK(a.contact_count==2u);
             CK(a.receipts[0].contact_id!=0u && a.receipts[1].contact_id!=0u);
             CK(a.receipts[0].tick==17u && a.receipts[1].tick==17u);
+            const float after_momentum=80.f*bodies[0].velocity.x+
+              80.f*bodies[1].velocity.x+24.f*bodies[2].velocity.x;
+            const float after_energy=40.f*bodies[0].velocity.x*bodies[0].velocity.x+
+              40.f*bodies[1].velocity.x*bodies[1].velocity.x+
+              12.f*bodies[2].velocity.x*bodies[2].velocity.x;
+            CK(isfinite(after_momentum) && isfinite(after_energy));
+            CK(fabsf(after_momentum-before_momentum)<.01f);
+            CK(after_energy<=before_energy+.01f);
         } else {
             ++pending;
             CK(a.status==NF18A4_PENDING_CONTACT);
+            CK(bodies[0].velocity.x==v && bodies[1].velocity.x==-v && bodies[2].velocity.x==0.f);
         }
         Nf18a4Body invalid[3]={
           make_actor(10u,1.5f,v),make_actor(20u,2.5f,-v),make_crate()};
