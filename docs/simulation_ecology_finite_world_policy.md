@@ -86,3 +86,13 @@ The prior H319 source guard used a controlled synthetic `NfWorld` and `Nf18a6Run
 `.github/workflows/retc-h319-owner-lifecycle.yml` compiles and executes the full tick-owner regression under GCC and Clang, capturing logs and requiring the five new H319 assertions. These checks are **read/stage preflight only**: no extra B2 grant, B3 effect or A6 joint transaction. The real lifecycle route is a meaningful upgrade from the standalone synthetic fixture, but not a certification of contested shared-object simulation.
 
 **Measurement boundary:** the finite scheduler's work budget is declared **abstract units**, not measured CPU microseconds. No measurable 60 Hz budget, cache-efficiency advantage or ONI-equivalent performance should be claimed from these unit tests; next benchmark must instrument actual tick duration and resident allocation separately from deterministic correctness.
+
+## CI closeout and bounded cost diagnostics
+
+At commit `c87855b1`, nine targeted CI workflows completed successfully: the real A6 tick-owner lifecycle, A5-source frontier, pure frontier, O0 material transfer, O1 material transport, A4/A5 pair, A4 three-body island, schema guard and H55 sanitizer. The standalone synthetic owner preflight failed to compile because its workflow built against the contact-only library, which lacks the camera/embodiment include paths. **This is a build wiring defect, not verified physics failure.**
+
+Remediation: `CMakeLists.txt` registers `nightfall_h319_owner_frontier_test` against the existing `nightfall_embody_h1` target, importing the correct header paths and source dependencies. `.github/workflows/retc-h319-owner-frontier.yml` builds and runs this CMake target in GCC and Clang. Outcomes at the new commit remain unverified until exact-head CI is available.
+
+New bounded cost diagnostic `src/tests/bench_retc_h319_frontier_cost.c`, run by `.github/workflows/retc-h319-frontier-cost.yml`, performs 20,000 sixteen-region scheduling decisions across declared budgets and emits process CPU milliseconds and microseconds per scheduling decision. The benchmark enforces budget and accounting invariants. **No timing threshold or 60 Hz gameplay claim** is attached: process CPU time excludes world, AI, A4/A5 dynamics, networking, rendering, allocation pressure and tail latency. Compare results only on identified toolchains and machines; keep deterministic checksum separate from time variation.
+
+Next acceptance requirement: a realistic live A6 multi-actor tick benchmark (p50/p95/p99, max, resident material bytes and unresolved backlog) with controlled actors, world sizes and tick rates, without fabricating authoritative state on over-budget ticks.
