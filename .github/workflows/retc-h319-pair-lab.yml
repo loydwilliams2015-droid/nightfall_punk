@@ -1,0 +1,30 @@
+name: RET-C H319 A4/A5 pair source lab (NOT A6 acceptance)
+on:
+  pull_request:
+    paths:
+      - 'src/tests/test_retc_h319_pair_a4_a5_lab.c'
+      - '.github/workflows/retc-h319-pair-lab.yml'
+  workflow_dispatch:
+jobs:
+  source-pair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile source C11 A4 and A5 library
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          cmake -S . -B build-h319-pair -DCMAKE_BUILD_TYPE=Debug -DNF_CONTACT_LAB_ONLY=ON
+          cmake --build build-h319-pair --parallel 2 --target nightfall_contact_lab
+          "$CC" -std=c11 -Wall -Wextra -Wpedantic -Werror -Isrc/shared \
+            src/tests/test_retc_h319_pair_a4_a5_lab.c \
+            build-h319-pair/libnightfall_contact_lab.a -lm -o build-h319-pair/h319-pair
+      - name: Execute source pair/epoch controls, no A6 claim
+        run: |
+          git rev-parse HEAD
+          build-h319-pair/h319-pair
