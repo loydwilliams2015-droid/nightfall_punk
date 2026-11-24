@@ -67,7 +67,7 @@ int main(void) {
         }
         if(left.receipt.impulses_applied && right.receipt.impulses_applied) ++accepted;
     }
-    nf18a5_grid_init(grid,1u,NF18A5_COARSE_ONLY);
+    nf18a5_grid_init(grid,1u,NF18A5_SELECTIVE_FINE);
     uint8_t voxels[NF18A5_CANON_VOXELS]={0};
     REQUIRE(nf18a5_load_canonical(grid,0,0,0,voxels,tick));
     REQUIRE(nf18a5_query(grid,1.5f,.5f,1.5f,tick,true)==NF18A5_Q_FREE);
