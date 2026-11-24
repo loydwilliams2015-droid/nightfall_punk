@@ -109,6 +109,10 @@ if(NF_CONTACT_LAB_ONLY)
     nf_project_warnings(nightfall_h319_owner_frontier_test)
     add_test(NAME h319_owner_source_frontier_research
         COMMAND nightfall_h319_owner_frontier_test)
+    add_executable(nightfall_h319_a6_tick_cost
+        src/tests/bench_retc_h319_a6_tick_cost.c)
+    target_link_libraries(nightfall_h319_a6_tick_cost PRIVATE nightfall_embody_h1)
+    nf_project_warnings(nightfall_h319_a6_tick_cost)
     # Corrected 1.8B.6: real A6-owned A4/A5 impulse + B3 PUSH receipt
     # scientific integration. No new world tick owner or graphics/net dependency.
     add_executable(nightfall_v18b6_physics_push_test
