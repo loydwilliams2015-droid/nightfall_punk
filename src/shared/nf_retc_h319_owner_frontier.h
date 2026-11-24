@@ -15,14 +15,17 @@ typedef struct NfRetcH319OwnerFrontier {
 
 static inline bool nf_retc_h319_owner_frontier_stage(
      const NfWorld *world,Nf18a6Runtime *owner,
+     uint64_t expected_tick,uint32_t expected_revision,uint32_t expected_epoch,
      const NfRetcH319Region *regions,const NfVec3 *samples,
      size_t count,uint32_t budget,NfRetcH319OwnerFrontier *out){
-    if(!world||!owner||!out||!world->tick||
+    if(!world||!owner||!out||!expected_tick||!expected_revision||!expected_epoch||
+       world->tick!=expected_tick||!world->tick||
        world->tick>UINT32_MAX||world->tick_in_progress||
        !world->tick_owner||world->tick_owner_context!=owner||
        !owner->actor_id||owner->last_commit_tick!=world->tick||
        owner->physical.world.tick!=world->tick||
-       !owner->physical.world.revision)return false;
+       owner->physical.world.revision!=expected_revision||
+       owner->physical.world.grid.global_revision!=expected_epoch)return false;
     /* Owner must correspond to an actual live actor in this world snapshot. */
     bool source_actor=false;
     for(size_t i=0;i<NF_MAX_ENTITIES;++i)
@@ -33,7 +36,7 @@ static inline bool nf_retc_h319_owner_frontier_stage(
     if(!source_actor)return false;
     Nf18a5Grid *grid=&owner->physical.world.grid;
     const uint32_t epoch=grid->global_revision;
-    if(!epoch)return false;
+    if(!epoch||epoch!=expected_epoch)return false;
     NfRetcH319OwnerFrontier staged={0};
     if(!nf_retc_h319_a5_frontier(grid,(uint32_t)world->tick,epoch,
         regions,samples,count,budget,&staged.material))return false;
