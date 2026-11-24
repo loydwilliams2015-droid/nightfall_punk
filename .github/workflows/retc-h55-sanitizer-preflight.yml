@@ -41,24 +41,7 @@ jobs:
         env:
           ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
-        run: ctest --test-dir build-h55 -R '^retc_m2_actor_object_private_owner_tick_v18c2
-        env:
-          ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
-          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
-        run: ctest --test-dir build-h55 -R '^h14_concurrent_lifecycle_v18c2$' --output-on-failure --output-junit h55-h14.xml
-      - name: Preserve sanitizer evidence only
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: retc-h55-sanitizer-${{ matrix.compiler }}-${{ github.sha }}
-          retention-days: 7
-          if-no-files-found: warn
-          path: |
-            build-h55/h55-a6.xml
-            build-h55/h55-h14.xml
-            build-h55/h55-m2.xml
-            build-h55/Testing/Temporary/LastTest.log
- --output-on-failure --output-junit h55-m2.xml
+        run: ctest --test-dir build-h55 -R '^retc_m2_actor_object_private_owner_tick_v18c2$' --output-on-failure --output-junit h55-m2.xml
       - name: Execute A6 H14 authorization lifecycle control
         env:
           ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
@@ -74,4 +57,5 @@ jobs:
           path: |
             build-h55/h55-a6.xml
             build-h55/h55-h14.xml
+            build-h55/h55-m2.xml
             build-h55/Testing/Temporary/LastTest.log
