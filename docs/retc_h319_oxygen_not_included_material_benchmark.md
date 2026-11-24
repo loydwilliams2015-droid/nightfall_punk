@@ -36,3 +36,15 @@ New source files:
 **Acceptance boundary:** O1 code and verification assets are committed, but O1's complete scientific gate remains **OPEN** until exact-head GCC/Clang execution, independently reproduced conservation and actual multi-cell transport beyond one shared A5 chunk are verified. O0 also remains pending exact-head CI. The quantities called `thermal_units` are abstract inventories, not temperatures or thermal diffusion. No fluid dynamics, multi-species transport, cell-to-cell flux law, persistence, or integration with authoritative gameplay is demonstrated.
 
 **Next recommended O1 extension:** cross-chunk topology, explicit capacity accounting, source snapshot replay under varied edge permutations, reject material revision changes, and source-owned epoch binding. O2 should start only after O1 is independently closed.
+
+## O1 finite-world boundary amendment
+
+Governing policy: `docs/simulation_ecology_finite_world_policy.md`. The project explicitly rejects any obligation to simulate an entire universe. Use relevance-selected detail, conservative summaries, dormant canonical state and PENDING for consequential unresolved work. New pure C11 bounded frontier source, tests, and GCC/Clang CI:
+
+- `src/shared/nf_retc_h319_simulation_frontier.h`
+- `src/tests/test_retc_h319_simulation_frontier.c`
+- `.github/workflows/retc-h319-simulation-frontier.yml`
+
+Each of these remains research-only. Neither frontier rank nor a budget allocation authorizes physical contacts or world publication.
+
+**Exact-head CI triage:** Prior H319 material tests expected MIXED/PENDING while running `NF18A5_COARSE_ONLY`; the A5 source correctly reports SOLID in that mode. Changed test fixture modes to `NF18A5_SELECTIVE_FINE` for unresolved MIXED. Historical H55 sanitizer, island and schema workflows passed at `eab40457`; earlier O0, O1 and pair A5 controls failed there. New code may only be certified after exact current SHA CI finishes.
