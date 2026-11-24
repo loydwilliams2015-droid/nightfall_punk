@@ -22,7 +22,7 @@ def valid(d):
     if not isinstance(d["frame_hash"], str) or not d["frame_hash"]:
         errors.append("missing frame_hash")
     for k in ("world_tick", "source_version", "material_epoch"):
-        if type(d[k]) is not int or d[k] < 0:
+        if type(d[k]) is not int or d[k] <= 0:
             errors.append("invalid " + k)
     for label, keys in (("contacts", ("actor_id", "object_id", "contact_id",
                                       "accepted", "impulse", "toi", "tick",
@@ -34,6 +34,7 @@ def valid(d):
             errors.append(label + " must have exactly two rows")
             continue
         seen = set()
+        contact_ids = set()
         for i, row in enumerate(rows):
             if not isinstance(row, dict) or any(k not in row for k in keys):
                 errors.append(f"{label}[{i}]: malformed row")
@@ -44,8 +45,12 @@ def valid(d):
             else:
                 seen.add(actor)
             if label == "contacts":
-                if row["object_id"] != TARGET or type(row["contact_id"]) is not int or row["contact_id"] <= 0:
+                if type(row["object_id"]) is not int or row["object_id"] != TARGET or type(row["contact_id"]) is not int or row["contact_id"] <= 0:
                     errors.append(f"contact[{i}]: invalid object/contact id")
+                elif row["contact_id"] in contact_ids:
+                    errors.append(f"contact[{i}]: duplicate contact id")
+                else:
+                    contact_ids.add(row["contact_id"])
                 if row["accepted"] is not True or row["oracle_agrees"] is not True:
                     errors.append(f"contact[{i}]: not accepted or oracle disagrees")
                 impulse, toi = row["impulse"], row["toi"]
@@ -53,12 +58,12 @@ def valid(d):
                     errors.append(f"contact[{i}]: invalid impulse")
                 if type(toi) not in (int, float) or not math.isfinite(toi) or not 0 <= toi <= 1:
                     errors.append(f"contact[{i}]: invalid time-of-impact")
-                if row["tick"] != d["world_tick"] or row["source_version"] != d["source_version"]:
+                if type(row["tick"]) is not int or type(row["source_version"]) is not int or row["tick"] != d["world_tick"] or row["source_version"] != d["source_version"]:
                     errors.append(f"contact[{i}]: stale epoch")
             else:
                 if row["status"] != "FREE" or row["body_clear"] is not True or row["visible"] is not True:
                     errors.append(f"clearance[{i}]: blocked/pending/unknown")
-                if row["material_epoch"] != d["material_epoch"]:
+                if type(row["material_epoch"]) is not int or row["material_epoch"] != d["material_epoch"]:
                     errors.append(f"clearance[{i}]: material epoch mismatch")
         if seen != ACTORS:
             errors.append(label + ": required actors 10/20 absent")
@@ -72,8 +77,16 @@ def main():
     p.add_argument("evidence")
     a = p.parse_args()
     try:
+        def unique_pairs(pairs):
+            out = {}
+            for key, value in pairs:
+                if key in out:
+                    raise ValueError("duplicate JSON key: " + key)
+                out[key] = value
+            return out
         with open(a.evidence, encoding="utf-8") as f:
-            d = json.load(f, parse_constant=lambda x: (_ for _ in ()).throw(ValueError(x)))
+            d = json.load(f, object_pairs_hook=unique_pairs,
+                          parse_constant=lambda x: (_ for _ in ()).throw(ValueError(x)))
         errors = valid(d)
     except (OSError, ValueError) as e:
         errors = [str(e)]
