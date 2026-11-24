@@ -57,3 +57,17 @@ The frontier now has a bounded source-linked adapter:
 **Limits:** A5 reads update cache-access bookkeeping; this is not a pure read-only lookup in all senses. The adapter does not edit canonical voxels, ledger inventories, actor bodies, world ticks, B2 authorizations or B3 effects, and does not imply A6 publication. Its per-region source sample is an inspection point, *not* complete capsule/sweep clearance. Stable source identity binding to an actual A6 frame, cross-frame summary replay, and production environment scheduling remain OPEN.
 
 **Minimum review gate:** Budget cannot be exceeded, source epoch must match, input order must not affect decisions by region ID, missing/MIXED/SOLID material can never be interpreted as a successful detailed interaction, and invalid requests cannot modify the output receipt. Exact-head CI must PASS before describing this as a verified research milestone.
+
+## O1 A6-owned snapshot gating (research stage only)
+
+New `src/shared/nf_retc_h319_owner_frontier.h` checks actual `NfWorld` and `Nf18a6Runtime` fields before calling the source-bound A5 frontier:
+- world tick is nonzero, representable in material tick units and at a safe tick boundary;
+- world tick owner exists and its context is the exact supplied runtime object;
+- A6 runtime's latest committed tick and its material-world tick equal the authoritative world tick;
+- owner actor ID is nonzero and has a live, active source actor in the world roster;
+- material revision is nonzero and A5 provenance matches the source epoch;
+- a fresh receipt is written only after all checks, with the world tick, local material revision, material epoch and owner identity.
+
+`src/tests/test_retc_h319_owner_frontier.c` uses a controlled, **synthetic** bound-owner fixture to sweep 32 work budgets and refuse nine detached/stale/inconsistent owner conditions without altering the output receipt. It does **not** execute `nf18a6_step` or exercise the true source-authentication lifecycle. The accompanying GCC/Clang workflow `.github/workflows/retc-h319-owner-frontier.yml` is a source-field validation laboratory, not an A6 publication test.
+
+**Practical boundary:** Input selection at an A6 owner boundary is a preflight hint, not authority for contacts, permissions or consequences. A5 queries may alter last-access/cache bookkeeping. It does not write B2 grants, B3 effects, A6 frame state, or durable journals. Full 60 Hz runtime time/memory benchmarking, deterministic summary-to-detail replay, source-authenticated A6 binding and H319 coupled physics still remain OPEN.
