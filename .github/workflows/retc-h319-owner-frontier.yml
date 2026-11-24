@@ -31,4 +31,4 @@ jobs:
         run: |
           set -euo pipefail
           build-h319-owner/owner 2>&1 | tee build-h319-owner/owner.log
-          grep -Fx 'H319 OWNER_FRONTIER_COMPLETE budget_sweeps=32 invalid_owner_controls=9 source_A6_snapshot=1 source_A5=1 actor_verified=1 publication=0' build-h319-owner/owner.log
+          grep -Fx 'H319 OWNER_FRONTIER_COMPLETE budget_sweeps=32 invalid_owner_controls=11 source_A6_snapshot=1 source_A5=1 actor_verified=1 publication=0' build-h319-owner/owner.log
