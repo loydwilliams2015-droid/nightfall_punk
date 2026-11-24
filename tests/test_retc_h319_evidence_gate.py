@@ -49,6 +49,24 @@ class TestEvidence(unittest.TestCase):
     def test_missing_field(self):
         d = fixture(); del d["contacts"][0]["contact_id"]
         self.assertTrue(valid(d))
+    def test_duplicate_contact_receipt(self):
+        d = fixture(); d["contacts"][1]["contact_id"] = d["contacts"][0]["contact_id"]
+        self.assertTrue(valid(d))
+    def test_boolean_contact_epoch(self):
+        d = fixture(); d["contacts"][0]["tick"] = True
+        self.assertTrue(valid(d))
+    def test_boolean_material_epoch(self):
+        d = fixture(); d["clearances"][0]["material_epoch"] = True
+        self.assertTrue(valid(d))
+    def test_boolean_object_id(self):
+        d = fixture(); d["contacts"][0]["object_id"] = True
+        self.assertTrue(valid(d))
+    def test_zero_source_epoch(self):
+        d = fixture(); d["material_epoch"] = 0
+        self.assertTrue(valid(d))
+    def test_zero_world_tick(self):
+        d = fixture(); d["world_tick"] = 0
+        self.assertTrue(valid(d))
     def test_digest_order_sensitive(self):
         d = fixture(); e = copy.deepcopy(d)
         e["contacts"].reverse()
