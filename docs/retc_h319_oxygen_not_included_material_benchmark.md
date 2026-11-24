@@ -25,3 +25,14 @@ O0 remains **pending exact-head CI** until actual GCC/Clang execution. O1-O5 rem
 
 ## Guidance
 ONI is a simulation-ecology reference, not a requirement to simulate every gas particle or cellular behavior. Prioritize accounting correctness, stable data ownership, explicit propagation, and no partial effects; only then add realism and optimization.
+
+## O1 implementation cut (research only)
+
+New source files:
+- `src/shared/nf_retc_h319_material_transport.h` — bounded 8-cell / 16-edge simultaneous transfer operation; validates all ledger rows, positive source-snapshot debits, cumulative destinations, duplicate directed edges and canonical A5 queries, with the caller-bound material revision checked before and after inspection. Publishes all staged in-memory cell values and a receipt only on total success. Does **not** own or alter A6 world state.
+- `src/tests/test_retc_h319_material_transport.c` — four real-A5-sampled cells; 64 ticks; 128 applied operations across forward/reversed edge schedules; independent total-mass and total-thermal-accounting checks; no grant/owner publication. Nine refusal controls cover duplicate edges, aggregate oversubscription, self/unknown destination, negative quantities, stale epoch, nonfinite source position, MIXED/PENDING, and SOLID. Every refusal preserves ledger inventories and the receipt.
+- `.github/workflows/retc-h319-material-transport.yml` — compiles actual A5 library plus O1 research test under strict C11 GCC and Clang; asserts exact 128/9 output, no A6/B2/B3 acceptance assertion.
+
+**Acceptance boundary:** O1 code and verification assets are committed, but O1's complete scientific gate remains **OPEN** until exact-head GCC/Clang execution, independently reproduced conservation and actual multi-cell transport beyond one shared A5 chunk are verified. O0 also remains pending exact-head CI. The quantities called `thermal_units` are abstract inventories, not temperatures or thermal diffusion. No fluid dynamics, multi-species transport, cell-to-cell flux law, persistence, or integration with authoritative gameplay is demonstrated.
+
+**Next recommended O1 extension:** cross-chunk topology, explicit capacity accounting, source snapshot replay under varied edge permutations, reject material revision changes, and source-owned epoch binding. O2 should start only after O1 is independently closed.
