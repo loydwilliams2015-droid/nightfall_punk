@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #define REQUIRE(x) do { if (!(x)) { \
-  fprintf(stderr,"H319 LAB FAIL line %d: %s\\n",__LINE__,#x);return 1; \
+  fprintf(stderr,"H319 LAB FAIL line %d: %s\n",__LINE__,#x);return 1; \
 } } while(0)
 
 static Nf18a4Body actor(uint32_t id, float x, float speed) {
@@ -60,7 +60,7 @@ int main(void) {
                 REQUIRE(sample.normal_impulse>0.f);
                 ++applied;
             } else ++noncontact;
-            printf("H319 A4_PAIR case=%u actor=%u target=2010 status=%u swept=%u impulse_applied=%u contact_id=%u toi=%.6f source_tick=%u source_version=%u\\n",
+            printf("H319 A4_PAIR case=%u actor=%u target=2010 status=%u swept=%u impulse_applied=%u contact_id=%u toi=%.6f source_tick=%u source_version=%u\n",
               i,j?20u:10u,(unsigned)r->status,(unsigned)r->swept_hit,
               (unsigned)r->receipt.impulses_applied,r->receipt.contact_id,
               (double)r->toi,tick,version);
@@ -79,7 +79,7 @@ int main(void) {
     REQUIRE(nf18a5_load_canonical(grid,0,0,0,voxels,tick+2u));
     REQUIRE(nf18a5_query(grid,2.5f,.5f,1.5f,tick+2u,true)==NF18A5_Q_SOLID);
     REQUIRE(nf18a5_query(grid,NAN,.5f,1.5f,tick+2u,true)==NF18A5_Q_INVALID);
-    printf("H319 LAB_SOURCE_COMPLETE configurations=20 applied_pairs=%u dual_impulse_candidates=%u noncontact=%u material_controls=4 A6_owner=0 B2_grants=0 B3_effects=0\\n",
+    printf("H319 LAB_SOURCE_COMPLETE configurations=20 applied_pairs=%u dual_impulse_candidates=%u noncontact=%u material_controls=4 A6_owner=0 B2_grants=0 B3_effects=0\n",
        applied,accepted,noncontact);
     free(grid);
     return 0;
