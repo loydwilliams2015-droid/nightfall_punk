@@ -46,3 +46,14 @@ At commit `eab40457`: three inherited research workflows failed because their te
 ## Sole reference
 
 **Oxygen Not Included** provides the current external design reference for environmental causality and practical region-level simulation. The project is not committed to reproducing its complete gas/liquid, thermodynamic, electrical or biological world. Select the minimal mechanics necessary for a coherent player experience.
+
+## O1 actual A5 material-source preflight (new)
+
+The frontier now has a bounded source-linked adapter:
+- `src/shared/nf_retc_h319_a5_frontier.h`: binds the pure region scheduler to `nf18a5_query` using a source material epoch; makes only selected DETAIL-region A5 queries; downgrades unresolved or blocked consequential requests to PENDING and nonconsequential requests to SUMMARY. Cost already reserved by the scheduler is **not redistributed** within the tick. This avoids invisible second chances or accidental unfair reallocation.
+- `src/tests/test_retc_h319_a5_frontier.c`: five canonical candidate regions, three actual A5 chunks (FREE, MIXED, SOLID) plus missing material, 13 simulation budgets, reversed-order reproducibility, canonical epoch mutation and invalid-source refusals.
+- `.github/workflows/retc-h319-a5-frontier.yml`: exact-source GCC/Clang strict-C11 compilation and diagnostic verification.
+
+**Limits:** A5 reads update cache-access bookkeeping; this is not a pure read-only lookup in all senses. The adapter does not edit canonical voxels, ledger inventories, actor bodies, world ticks, B2 authorizations or B3 effects, and does not imply A6 publication. Its per-region source sample is an inspection point, *not* complete capsule/sweep clearance. Stable source identity binding to an actual A6 frame, cross-frame summary replay, and production environment scheduling remain OPEN.
+
+**Minimum review gate:** Budget cannot be exceeded, source epoch must match, input order must not affect decisions by region ID, missing/MIXED/SOLID material can never be interpreted as a successful detailed interaction, and invalid requests cannot modify the output receipt. Exact-head CI must PASS before describing this as a verified research milestone.
