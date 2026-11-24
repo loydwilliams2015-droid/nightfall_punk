@@ -70,7 +70,7 @@ int main(void){
     NfRetcH319Edge duplicated[2]={edges[0],edges[0]};
     DENY(duplicated,2u,65u,epoch,NF_RETC_H319_TRANSFER_INVALID);
     NfRetcH319Edge overdraw[2]={
-        {0u,1u,3000,1},{0u,2u,3000,1}};
+        {0u,1u,2000,1},{0u,2u,2000,1}};
     /* Duplicate-direction independent destinations cannot borrow incoming. */
     DENY(overdraw,2u,65u,epoch,NF_RETC_H319_TRANSFER_INVALID);
     NfRetcH319Edge self={0u,0u,1,1};
