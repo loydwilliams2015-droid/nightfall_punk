@@ -1,0 +1,31 @@
+name: H319 finite simulation frontier (research only)
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_h319_simulation_frontier.h'
+      - 'src/tests/test_retc_h319_simulation_frontier.c'
+      - '.github/workflows/retc-h319-simulation-frontier.yml'
+  workflow_dispatch:
+jobs:
+  finite-frontier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build strict C11 pure deterministic frontier
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          "$CC" -std=c11 -Wall -Wextra -Wpedantic -Werror -Isrc/shared \
+            src/tests/test_retc_h319_simulation_frontier.c -o /tmp/h319-frontier
+      - name: Run 17 budgets and reject malformed simulations
+        run: |
+          set -euo pipefail
+          /tmp/h319-frontier 2>&1 | tee /tmp/h319-frontier.log
+          grep -Fx 'H319 FRONTIER_COMPLETE budget_sweeps=17 source_regions=6 detail_at_7=2 pending_at_7=2 summary_at_7=1 dormant_at_7=1 permutation_invariant=1 no_mutation=1 authority=0' /tmp/h319-frontier.log

@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include "nf_embody18a6.h"
+#include "nf_retc_h319_owner_frontier.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -97,6 +98,38 @@ int main(void){
          "S13_opt_in_world_tick_actual_actor");
     gate(r->camera.initialized&&r->tick_trace.world_status==NF_WORLD_TICK_COMMITTED &&
          !r->tick_trace.purple_present,"S14_one_way_success_decomposes");
+    /* H319: stage real committed A6-owner tick into the A5 finite frontier.
+     * This tests the owner life-cycle SOURCE, not publication of a new tick. */
+    const NfRetcH319Region region={
+        .id=10u,.work_cost=1u,.consequential=1u,.observed=1u,.resident=1u
+    };
+    const NfVec3 probe={1.5f,.5f,1.5f};
+    const uint32_t source_rev=r->physical.world.revision;
+    const uint32_t source_epoch=r->physical.world.grid.global_revision;
+    NfRetcH319OwnerFrontier staged={0};
+    const bool staged_ok=nf_retc_h319_owner_frontier_stage(
+        w,r,w->tick,source_rev,source_epoch,&region,&probe,1u,1u,&staged);
+    gate(staged_ok&&staged.source_tick==w->tick &&
+         staged.world_revision==source_rev&&staged.material_epoch==source_epoch &&
+         staged.owner_actor==10u&&staged.material.plan.detailed==1u &&
+         staged.material.plan.spent==1u&&staged.material.queried==1u &&
+         staged.material.evidence[0]==NF_RETC_H319_A5_FREE,
+         "H319_real_A6_lifecycle_A5_frontier_stage");
+    const NfRetcH319OwnerFrontier intact=staged;
+    gate(!nf_retc_h319_owner_frontier_stage(w,r,w->tick,source_rev+1u,
+          source_epoch,&region,&probe,1u,1u,&staged) &&
+         memcmp(&intact,&staged,sizeof intact)==0,
+         "H319_real_A6_lifecycle_refuses_stale_revision");
+    gate(!nf_retc_h319_owner_frontier_stage(w,r,w->tick,source_rev,
+          source_epoch+1u,&region,&probe,1u,1u,&staged) &&
+         memcmp(&intact,&staged,sizeof intact)==0,
+         "H319_real_A6_lifecycle_refuses_stale_A5_epoch");
+    gate(!nf_retc_h319_owner_frontier_stage(w,r,w->tick+1u,source_rev,
+          source_epoch,&region,&probe,1u,1u,&staged) &&
+         memcmp(&intact,&staged,sizeof intact)==0,
+         "H319_real_A6_lifecycle_refuses_future_tick");
+    gate(w->tick==staged.source_tick&&r->last_commit_tick==w->tick,
+         "H319_preflight_has_no_second_world_tick");
     gate(!nf18a6_bind_world_tick(w,r,NULL,NULL,NULL),"S15_no_duplicate_bind");
     gate(nf18a6_unbind_world_tick(w,r),"S16_unbind_embodiment");
     gate(setup(w,r,true),"S17_dynamic_contact_fixture");

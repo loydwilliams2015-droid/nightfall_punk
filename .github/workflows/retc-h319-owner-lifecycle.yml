@@ -1,0 +1,46 @@
+name: RET-C H319 real A6 owner lifecycle A5 frontier gate
+on:
+  pull_request:
+    paths:
+      - 'src/tests/test_v18a6_tick_owner.c'
+      - 'src/shared/nf_retc_h319_owner_frontier.h'
+      - 'src/shared/nf_retc_h319_a5_frontier.h'
+      - '.github/workflows/retc-h319-owner-lifecycle.yml'
+  workflow_dispatch:
+jobs:
+  lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build real A6 owner regression with strict C11
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          cmake -S . -B build-h319-lifecycle -DCMAKE_BUILD_TYPE=Debug \
+            -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_C_COMPILER="$CC"
+          cmake --build build-h319-lifecycle --parallel 2 \
+            --target nightfall_v18a6_tick_owner_test
+      - name: Run actual owner tick and source-bound frontier regressions
+        run: |
+          set -euo pipefail
+          build-h319-lifecycle/nightfall_v18a6_tick_owner_test 2>&1 | tee build-h319-lifecycle/owner.log
+          grep -Fx 'H319_real_A6_lifecycle_A5_frontier_stage,PASS' build-h319-lifecycle/owner.log
+          grep -Fx 'H319_real_A6_lifecycle_refuses_stale_revision,PASS' build-h319-lifecycle/owner.log
+          grep -Fx 'H319_real_A6_lifecycle_refuses_stale_A5_epoch,PASS' build-h319-lifecycle/owner.log
+          grep -Fx 'H319_real_A6_lifecycle_refuses_future_tick,PASS' build-h319-lifecycle/owner.log
+          grep -Fx 'H319_preflight_has_no_second_world_tick,PASS' build-h319-lifecycle/owner.log
+          if grep -q ',FAIL' build-h319-lifecycle/owner.log; then exit 1; fi
+      - name: Preserve diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h319-a6-owner-${{ matrix.cc }}
+          path: build-h319-lifecycle/owner.log
+          if-no-files-found: warn

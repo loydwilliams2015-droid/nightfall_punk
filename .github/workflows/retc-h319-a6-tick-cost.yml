@@ -1,0 +1,41 @@
+name: H319 headless A6 tick cost diagnostics (not gameplay certification)
+on:
+  pull_request:
+    paths:
+      - 'src/tests/bench_retc_h319_a6_tick_cost.c'
+      - 'src/shared/nf_retc_h319*'
+      - 'src/shared/nf_embody18a6.*'
+      - 'CMakeLists.txt'
+      - '.github/workflows/retc-h319-a6-tick-cost.yml'
+  workflow_dispatch:
+jobs:
+  tick-cost:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build headless A6 timing harness
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          "$CC" --version
+          cmake -S . -B build-h319-tick-cost -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$CC"
+          cmake --build build-h319-tick-cost --parallel 2 --target nightfall_h319_a6_tick_cost
+      - name: Record wall latency and resident payload without timing threshold
+        run: |
+          set -euo pipefail
+          build-h319-tick-cost/nightfall_h319_a6_tick_cost | tee h319-tick-cost.log
+          grep -E '^H319 A6_COST samples=128 actors=1 committed=128 .* max_pending=1 full_game_certified=0$' h319-tick-cost.log
+      - name: Archive timing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h319-a6-tick-cost-${{ matrix.cc }}
+          path: h319-tick-cost.log
+          if-no-files-found: warn

@@ -1,0 +1,32 @@
+name: H319 A6 snapshot-bound finite-world frontier (research only)
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_h319_owner_frontier.h'
+      - 'src/tests/test_retc_h319_owner_frontier.c'
+      - '.github/workflows/retc-h319-owner-frontier.yml'
+      - 'CMakeLists.txt'
+  workflow_dispatch:
+jobs:
+  source-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile strict C11 with actual source A5 library
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          cmake -S . -B build-h319-owner -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER="$CC"
+          cmake --build build-h319-owner --parallel 2 --target nightfall_h319_owner_frontier_test
+      - name: Verify source tick binding and no unauthorized publication
+        run: |
+          set -euo pipefail
+          build-h319-owner/nightfall_h319_owner_frontier_test 2>&1 | tee build-h319-owner/owner.log
+          grep -Fx 'H319 OWNER_FRONTIER_COMPLETE budget_sweeps=32 invalid_owner_controls=11 source_A6_snapshot=1 source_A5=1 actor_verified=1 publication=0' build-h319-owner/owner.log

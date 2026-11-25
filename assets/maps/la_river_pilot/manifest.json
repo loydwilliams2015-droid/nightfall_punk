@@ -1,0 +1,71 @@
+{
+  "schema": "nf-map-pilot-v1",
+  "status": "PREPARATION_ONLY",
+  "design": [
+    "MAP-D01",
+    "MAP-D02"
+  ],
+  "identity": "Fictional future Los Angeles",
+  "reference": "LA River corridor",
+  "extent_m": {
+    "east_west": 500,
+    "north_south": 800
+  },
+  "scale": 1,
+  "area_of_interest": null,
+  "local_origin": null,
+  "projected_crs": "EPSG:26911",
+  "vertical_datum": null,
+  "layers": [
+    {
+      "id": "roads",
+      "candidate": "US Census TIGER/Line",
+      "catalog": "https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html",
+      "status": "LICENSE_QUALIFIED_DOWNLOAD_PENDING",
+      "license": "CC0-1.0",
+      "version": "2023",
+      "sha256": null,
+      "transform": "preserve centerlines; author widths separately",
+      "license_evidence": "https://catalog.data.gov/dataset/tiger-line-shapefile-2023-county-los-angeles-county-ca-all-roads",
+      "download_candidate": "https://www2.census.gov/geo/tiger/TIGER2023/ROADS/tl_2023_06037_roads.zip"
+    },
+    {
+      "id": "elevation",
+      "candidate": "USGS 3DEP",
+      "catalog": "https://www.usgs.gov/3d-elevation-program",
+      "status": "COLLECTION_LICENSE_QUALIFIED_TILE_PENDING",
+      "license": "public-domain",
+      "version": null,
+      "sha256": null,
+      "transform": "adaptive resolution with measured simplification error",
+      "license_evidence": "https://data.usgs.gov/datacatalog/data/USGS%3A4f34caac-f28f-4ea0-8d82-eafb2b8f9a5d",
+      "resolution_m": 1
+    },
+    {
+      "id": "building_footprints",
+      "candidate": null,
+      "status": "PENDING_ELIGIBLE_SOURCE",
+      "license": null,
+      "version": null,
+      "sha256": null,
+      "transform": "preserve eligible footprints; author fictional architecture"
+    }
+  ],
+  "allowed_licenses": [
+    "CC0-1.0",
+    "public-domain"
+  ],
+  "runtime_import_allowed": false,
+  "incumbent": "V15 movement laboratory",
+  "gates": [
+    "verified source versions and dataset-level license evidence",
+    "explicit AOI, CRS, local origin and vertical datum",
+    "reproducible checksums",
+    "1:1 metric geometry",
+    "finite valid geometry and topology",
+    "spawn, boundary and traversal validation",
+    "physical/visible correspondence",
+    "native screenshots and performance evidence"
+  ],
+  "notes": "Candidate projected CRS NAD83 / UTM zone 11N; confirm against source and transformations. No geographic data included. Null values are unresolved, not defaults. No runtime GIS dependency; no map expansion or new physics subsystem."
+}

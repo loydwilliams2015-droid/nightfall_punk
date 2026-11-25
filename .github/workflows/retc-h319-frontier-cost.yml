@@ -1,0 +1,38 @@
+name: H319 O1 finite-frontier CPU cost microbenchmark (not gameplay)
+on:
+  pull_request:
+    paths:
+      - 'src/tests/bench_retc_h319_frontier_cost.c'
+      - 'src/shared/nf_retc_h319_simulation_frontier.h'
+      - '.github/workflows/retc-h319-frontier-cost.yml'
+  workflow_dispatch:
+jobs:
+  cost:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile reproducible standalone frontier microbenchmark
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          "$CC" -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -Isrc/shared \
+            src/tests/bench_retc_h319_frontier_cost.c -o /tmp/h319-cost
+      - name: Record CPU cost without certifying frame time
+        run: |
+          set -euo pipefail
+          /tmp/h319-cost 2>&1 | tee h319-cost.log
+          grep -E '^H319 O1_COST_DIAGNOSTIC runs=20000 max_regions=16 .* 60hz_certified=0 A6_publication=0$' h319-cost.log
+      - name: Archive cost evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h319-o1-cost-${{ matrix.cc }}
+          path: h319-cost.log
+          if-no-files-found: warn

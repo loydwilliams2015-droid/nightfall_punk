@@ -17,6 +17,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 #define NF_V15_RIVALS 2u
 #define NF_V15_CATTLERS 2u
@@ -307,12 +308,39 @@ static void draw_world(const V15Demo *demo) {
         const NfCollider *c = &demo->world.colliders[i];
         const float cx = 0.5f*(c->min.x+c->max.x);
         const float cz = 0.5f*(c->min.z+c->max.z);
-        if (fabsf(cx) > 42.0f || fabsf(cz) > 42.0f) continue;
         const Vector3 p = {cx,0.5f*(c->min.y+c->max.y),cz};
-        const Color color = (int)i == demo->route.gate_collider
-            ? (Color){170,95,185,255} : (Color){90,99,108,255};
+        /* Diagnostic geometry palette: distinguish ground, walls, cover,
+           raised structures and traversal features without changing bounds. */
+        const float sx=c->max.x-c->min.x, sy=c->max.y-c->min.y, sz=c->max.z-c->min.z;
+        Color color={103,117,125,255};
+        if(sx>100.f && sz>100.f && sy<=1.f) color=(Color){39,48,53,255};
+        else if(sx>100.f || sz>100.f) color=(Color){76,91,98,255};
+        else if(c->kind==NF_COLLIDER_LADDER) color=(Color){190,148,83,255};
+        else if(c->kind==NF_COLLIDER_MOVING_PLATFORM) color=(Color){78,144,137,255};
+        else if(sy<=1.8f) color=(Color){131,111,91,255};
+        else if(c->min.y>0.f) color=(Color){93,129,137,255};
+        if((int)i==demo->route.gate_collider) color=(Color){170,95,185,255};
         DrawCube(p,c->max.x-c->min.x,c->max.y-c->min.y,c->max.z-c->min.z,color);
         DrawCubeWires(p,c->max.x-c->min.x,c->max.y-c->min.y,c->max.z-c->min.z,GRAY);
+    }
+    /* Draw the actual ramp surface, not a solid bounding box. */
+    for (size_t i=0u; i<demo->world.ramp_count; ++i) {
+        const NfRamp *r=&demo->world.ramps[i];
+        Vector3 v[4]={{r->min.x,r->min.y,r->min.z},
+                      {r->min.x,r->min.y,r->max.z},
+                      {r->max.x,r->min.y,r->max.z},
+                      {r->max.x,r->min.y,r->min.z}};
+        for (size_t k=0u;k<4u;++k) {
+            const bool high=(r->axis==NF_RAMP_POS_X && k>=2u) ||
+                (r->axis==NF_RAMP_NEG_X && k<2u) ||
+                (r->axis==NF_RAMP_POS_Z && (k==1u || k==2u)) ||
+                (r->axis==NF_RAMP_NEG_Z && (k==0u || k==3u));
+            if (high) v[k].y=r->max.y;
+        }
+        const Color ramp_color={118,133,143,255};
+        DrawTriangle3D(v[0],v[1],v[2],ramp_color);
+        DrawTriangle3D(v[0],v[2],v[3],ramp_color);
+        for(size_t k=0u;k<4u;++k) DrawLine3D(v[k],v[(k+1u)%4u],LIGHTGRAY);
     }
     const NfEnergyRegion *source = nf_energy_region_const(&demo->world.energy,2u);
     const NfEnergyRegion *sink = nf_energy_region_const(&demo->world.energy,14u);
@@ -433,7 +461,12 @@ static void draw_comm(
     }
 }
 
-int main(void) {
+int main(int argc, char **argv) {
+    const bool capture=argc==2 && strcmp(argv[1],"--capture-map")==0;
+    if(argc>1 && !capture) {
+        fprintf(stderr,"usage: nightfall_v15_demo [--capture-map]\n");
+        return 2;
+    }
     const int width = 1280;
     const int height = 720;
     InitWindow(width,height,
@@ -445,6 +478,36 @@ int main(void) {
     reset_demo(&demo);
     NfCameraState camera;
     nf_camera_init(&camera,82.0f);
+    if(capture) {
+        /* Static presentation only; no simulated ticks or AI mutations. */
+        const Camera3D views[3]={
+            {.position={0,1.7f,-18},.target={0,1.7f,20},.up={0,1,0},.fovy=75,.projection=CAMERA_PERSPECTIVE},
+            {.position={48,58,-58},.target={0,0,6},.up={0,1,0},.fovy=56,.projection=CAMERA_PERSPECTIVE},
+            {.position={0,950,0.01f},.target={0,0,0},.up={0,0,1},.fovy=55,.projection=CAMERA_PERSPECTIVE}
+        };
+        const char *names[3]={"map-first-person.png","map-observer.png","map-overview.png"};
+        for(size_t i=0u;i<3u;++i){
+            /* Capture an explicit render target before presenting; avoid
+               reading an unspecified back buffer after SwapBuffers. */
+            RenderTexture2D target=LoadRenderTexture(width,height);
+            if(!IsRenderTextureValid(target)) { CloseWindow(); return 1; }
+            BeginTextureMode(target);
+            ClearBackground((Color){14,18,20,255});
+            BeginMode3D(views[i]);
+            draw_world(&demo);
+            EndMode3D();
+            DrawText("NIGHTFALL!PUNK | V15 static map capture",20,20,20,RAYWHITE);
+            EndTextureMode();
+            Image image=LoadImageFromTexture(target.texture);
+            if(!IsImageValid(image)) { UnloadRenderTexture(target); CloseWindow(); return 1; }
+            ImageFlipVertical(&image);
+            const bool saved=ExportImage(image,names[i]);
+            UnloadImage(image);
+            UnloadRenderTexture(target);
+            if(!saved || !FileExists(names[i])) { CloseWindow(); return 1; }
+        }
+        EnableCursor(); CloseWindow(); return 0;
+    }
     double accumulator = 0.0;
     const double dt = 1.0/(double)NF_TICK_RATE;
 

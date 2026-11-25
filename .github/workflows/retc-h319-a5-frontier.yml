@@ -1,0 +1,34 @@
+name: H319 A5 finite-world source binding (research only)
+on:
+  pull_request:
+    paths:
+      - 'src/shared/nf_retc_h319_a5_frontier.h'
+      - 'src/tests/test_retc_h319_a5_frontier.c'
+      - '.github/workflows/retc-h319-a5-frontier.yml'
+  workflow_dispatch:
+jobs:
+  source-binding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact source A5 and bounded frontier
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          cmake -S . -B build-h319-frontier -DNF_CONTACT_LAB_ONLY=ON -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build-h319-frontier --parallel 2 --target nightfall_contact_lab
+          "$CC" -std=c11 -Wall -Wextra -Wpedantic -Werror -Isrc/shared \
+            src/tests/test_retc_h319_a5_frontier.c \
+            build-h319-frontier/libnightfall_contact_lab.a -lm -o build-h319-frontier/frontier
+      - name: Verify material epochs, region budgets, and source evidence
+        run: |
+          set -euo pipefail
+          build-h319-frontier/frontier 2>&1 | tee build-h319-frontier/frontier.log
+          grep -Fx 'H319 A5_FRONTIER_COMPLETE budgets=13 material_chunks=3 regions=5 detail_after_refine=2 pending_after_refine=1 source_epoch_bound=1 reversed_order=1 no_publish=1' build-h319-frontier/frontier.log
