@@ -478,15 +478,24 @@ int main(int argc, char **argv) {
         };
         const char *names[3]={"map-first-person.png","map-observer.png","map-overview.png"};
         for(size_t i=0u;i<3u;++i){
-            BeginDrawing();
+            /* Capture an explicit render target before presenting; avoid
+               reading an unspecified back buffer after SwapBuffers. */
+            RenderTexture2D target=LoadRenderTexture(width,height);
+            if(!IsRenderTextureValid(target)) { CloseWindow(); return 1; }
+            BeginTextureMode(target);
             ClearBackground((Color){14,18,20,255});
             BeginMode3D(views[i]);
             draw_world(&demo);
             EndMode3D();
             DrawText("NIGHTFALL!PUNK | V15 static map capture",20,20,20,RAYWHITE);
-            EndDrawing();
-            TakeScreenshot(names[i]);
-            if(!FileExists(names[i])) { CloseWindow(); return 1; }
+            EndTextureMode();
+            Image image=LoadImageFromTexture(target.texture);
+            if(!IsImageValid(image)) { UnloadRenderTexture(target); CloseWindow(); return 1; }
+            ImageFlipVertical(&image);
+            const bool saved=ExportImage(image,names[i]);
+            UnloadImage(image);
+            UnloadRenderTexture(target);
+            if(!saved || !FileExists(names[i])) { CloseWindow(); return 1; }
         }
         EnableCursor(); CloseWindow(); return 0;
     }
