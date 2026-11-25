@@ -14,28 +14,32 @@
   "scale": 1,
   "area_of_interest": null,
   "local_origin": null,
-  "projected_crs": null,
+  "projected_crs": "EPSG:26911",
   "vertical_datum": null,
   "layers": [
     {
       "id": "roads",
       "candidate": "US Census TIGER/Line",
       "catalog": "https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html",
-      "status": "PENDING_SOURCE_VERIFICATION",
-      "license": null,
-      "version": null,
+      "status": "LICENSE_QUALIFIED_DOWNLOAD_PENDING",
+      "license": "CC0-1.0",
+      "version": "2023",
       "sha256": null,
-      "transform": "preserve centerlines; author widths separately"
+      "transform": "preserve centerlines; author widths separately",
+      "license_evidence": "https://catalog.data.gov/dataset/tiger-line-shapefile-2023-county-los-angeles-county-ca-all-roads",
+      "download_candidate": "https://www2.census.gov/geo/tiger/TIGER2023/ROADS/tl_2023_06037_roads.zip"
     },
     {
       "id": "elevation",
       "candidate": "USGS 3DEP",
       "catalog": "https://www.usgs.gov/3d-elevation-program",
-      "status": "PENDING_SOURCE_VERIFICATION",
-      "license": null,
+      "status": "COLLECTION_LICENSE_QUALIFIED_TILE_PENDING",
+      "license": "public-domain",
       "version": null,
       "sha256": null,
-      "transform": "adaptive resolution with measured simplification error"
+      "transform": "adaptive resolution with measured simplification error",
+      "license_evidence": "https://data.usgs.gov/datacatalog/data/USGS%3A4f34caac-f28f-4ea0-8d82-eafb2b8f9a5d",
+      "resolution_m": 1
     },
     {
       "id": "building_footprints",
@@ -63,5 +67,5 @@
     "physical/visible correspondence",
     "native screenshots and performance evidence"
   ],
-  "notes": "No geographic data included. Null values are unresolved, not defaults. No runtime GIS dependency; no map expansion or new physics subsystem."
+  "notes": "Candidate projected CRS NAD83 / UTM zone 11N; confirm against source and transformations. No geographic data included. Null values are unresolved, not defaults. No runtime GIS dependency; no map expansion or new physics subsystem."
 }
