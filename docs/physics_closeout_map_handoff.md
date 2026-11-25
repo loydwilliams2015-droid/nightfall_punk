@@ -84,3 +84,35 @@ These are ordered work packages, not completed implementations. No additional en
 A6 remains sole tick publisher; map geometry proposals and optional guidance have no independent authority. Existing governor admission is computational delegation, not authorization. Human review and release ratification remain separate.
 
 Proposed implementation ordering above is engineering interpretation of the ten selections; the decisions themselves are user-authorized. No code, map geometry, or screenshot certification changes in this amendment.
+
+
+## Append-only geospatial design amendment MAP-D02 — 2026-11-24
+
+User-selected geospatial direction, supplementary to MAP-D01. All prior physics, map, and release acceptance conditions remain in force.
+
+| ID | Decision (user-selected, verbatim) | Bounded implementation |
+|---|---|---|
+| 01 | C — Selective 1:1 fidelity | Preserve selected real terrain and street relationships; fictionalize gameplay details. |
+| 02 | C — LA River corridor | Use one representative corridor sector for the initial pilot, exact extent not yet selected. |
+| 03 | C — Real centerlines with adjustable widths | Import eligible road centerlines; author widths separately, recording deviations. |
+| 04 | D — Adaptive resolution | Preserve consequential terrain detail and simplify elsewhere, subject to measured error and traversal checks. |
+| 05 | A — 1:1 | One metre of geographic displacement corresponds to one metre of engine space; no global compression. |
+| 06 | B — Real footprints, fictional buildings | Use eligible measured footprints where available; create original modular architecture above them. Do not silently substitute unlicensed data. |
+| 07 | D — Progressively connected districts | Establish one central arena first, reserving future connection interfaces; no metropolitan-scale runtime. |
+| 08 | B — Selective fictional tunnels | Author bounded fictional subsurface routes only when warranted by a playable objective; no real tunnel reconstruction required. |
+| 09 | B — Fictional future Los Angeles | Preserve geographic identity while fictionalizing buildings, institutions, inhabitants and narrative. |
+| 10 | B — CC0 and public domain | Require dataset-level documented CC0 or public-domain status before ingest and redistribution; quarantine unknown or incompatible inputs. |
+
+### Integration into MAP-D01
+
+- MAP-01 remains the current gate: validate incumbent geometry, spawn clearance, bounds, native screenshots and visual/physical correspondence. Keep the working V15 greybox as the comparison baseline.
+- MAP-02 gains a bounded offline GIS pilot, provisionally one existing 500 x 800 m envelope along the LA River corridor. Select and record the actual AOI before extraction. Use candidate Census TIGER/Line road centerlines and USGS 3DEP elevation only after verifying source/version/license. Independently verify any building-footprint source; if none qualifies, leave that layer pending rather than claiming real footprints.
+- Proposed asset flow: source manifest (dataset, URL, date/version, license evidence, CRS, AOI, checksum) -> clip and reproject to metric local coordinates -> translate to local engine origin at 1:1 scale (document axis/vertical datum) -> bounded road widths, adaptive terrain simplification and authored modules -> one shared physical/visible geometry asset -> regression and native review. Preserve source geometry and intentional deviations. No GIS runtime dependency.
+- MAP-03 and MAP-04 retain their existing authority and residency limits. Geographic detail and computational admission do not authorize physical interactions. MAP-05 retains objective, safe boundaries, native performance and human review requirements.
+- Connections and fictional tunnels are later gated extensions, not authorization to enlarge the current world or implement a new subsystem now. Retain moderate verticality and geometry-first presentation from MAP-D01.
+
+### Pilot acceptance boundary (proposed engineering interpretation)
+
+Require documented eligible sources, reproducible extraction, metric scale/origin, bounded geometric error, no invalid geometry, road connectivity and traversable slopes, spawn/boundary checks, matching physical and visible geometry, and native capture/performance evidence before replacing the incumbent. Establish numerical tolerances from the actual pilot data and existing movement limits, not guessed source precision. Preserve rollback to the known-good greybox.
+
+Status: MAP-D02 user decisions recorded; no GIS asset imported, exact AOI and eligible footprint source OPEN; no change to runtime code, map geometry or screenshot certification. M18C.2 production HOLD, M18C.3 OPEN; physics maintenance and A6 sole publication authority unchanged.
