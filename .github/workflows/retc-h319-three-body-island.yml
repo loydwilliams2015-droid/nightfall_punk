@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'src/tests/test_retc_h319_three_body_island.c'
+      - 'src/tests/test_retc_h319_shared_contact.c'
+      - 'src/shared/nf_retc_h319_shared_contact.h'
+      - 'src/shared/nf_contact18a4.*'
+      - 'src/shared/nf_contact18a3.*'
       - '.github/workflows/retc-h319-three-body-island.yml'
   workflow_dispatch:
 jobs:
@@ -41,3 +45,20 @@ jobs:
           assert sum(map(int,complete[0]))==20
           print("H319 THREE-BODY ISLAND DIAGNOSTIC PASS: no owner authorization claimed")
           PY
+      - name: Require at least one genuine dual swept-contact success
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          set -euo pipefail
+          "$CC" -std=c11 -Wall -Wextra -Wpedantic -Werror -Isrc/shared \
+            src/tests/test_retc_h319_shared_contact.c \
+            build-h319-island/libnightfall_contact_lab.a -lm -o build-h319-island/shared
+          build-h319-island/shared 2>&1 | tee build-h319-island/shared.log
+          grep -E '^H319 SHARED cases=20 accepted=[1-9][0-9]* pending=[0-9]+ refusal_controls=4 owner=0$' build-h319-island/shared.log
+      - name: Archive both island and discovery evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h319-shared-contact-${{ matrix.cc }}
+          path: build-h319-island/*.log
+          if-no-files-found: warn
