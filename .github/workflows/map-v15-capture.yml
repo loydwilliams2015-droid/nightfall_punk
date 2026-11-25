@@ -1,0 +1,58 @@
+name: Map V15 native screenshot capture
+on:
+  pull_request:
+    paths:
+      - 'src/demo/v15_greybox.c'
+      - 'src/shared/**'
+      - 'src/client/nf_camera.*'
+      - 'src/server/ai/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/map-v15-capture.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install graphical toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git pkg-config libsodium-dev libasound2-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev xvfb xauth python3-pil
+      - name: Build actual V15 executable
+        run: |
+          git rev-parse HEAD
+          cmake -S . -B build-map -DCMAKE_BUILD_TYPE=Release -DNF_BUILD_CLIENT=ON -DNF_BUILD_SERVER=OFF -DNF_BUILD_NETBOT=OFF -DNF_BUILD_TESTS=OFF
+          cmake --build build-map --parallel 2 --target nightfall_v15_demo
+      - name: Capture three static native views
+        run: |
+          set -euo pipefail
+          mkdir -p build-map/evidence
+          cd build-map/evidence
+          xvfb-run -a -s '-screen 0 1280x720x24' env LIBGL_ALWAYS_SOFTWARE=1 timeout 30s ../nightfall_v15_demo --capture-map 2>&1 | tee capture.log
+          git rev-parse HEAD > SOURCE_SHA
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          import hashlib
+          hashes=set()
+          for name in ('map-first-person.png','map-observer.png','map-overview.png'):
+              p=Path(name)
+              with Image.open(p) as im:
+                  assert im.format=='PNG' and im.size==(1280,720), (name,im.format,im.size)
+                  assert len(im.convert('RGB').getcolors(maxcolors=1000000))>10, name
+              hashes.add(hashlib.sha256(p.read_bytes()).hexdigest())
+          assert len(hashes)==3, 'duplicate view images'
+          print('MAP_CAPTURE_PASS three distinct native PNGs; static view only')
+          PY
+          sha256sum map-*.png > SHA256SUMS
+      - name: Archive real rendered screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: map-v15-native-screenshots
+          path: build-map/evidence/
+          if-no-files-found: warn
+          retention-days: 14
