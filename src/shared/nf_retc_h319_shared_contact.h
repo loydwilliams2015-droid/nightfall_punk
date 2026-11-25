@@ -23,6 +23,13 @@ static inline Nf18a4Status nf_retc_h319_shared_contact(
         for(size_t j=0;j<i;++j)if(source[i].id==source[j].id)
             return NF18A4_INVALID;
     }
+    /* The island returns receipts sorted by actor ID. Keep witness indexing
+       canonical even when callers reverse actor order. */
+    Nf18a4Body ordered[3]={source[0],source[1],source[2]};
+    if(ordered[0].id>ordered[1].id){
+        const Nf18a4Body tmp=ordered[0];ordered[0]=ordered[1];ordered[1]=tmp;
+    }
+    source=ordered;
     const Nf18a4Body *box=&source[2];
     if(box->box_half.x<=0.f||box->box_half.y<=0.f||
        box->box_half.z<=0.f||box->inverse_mass<=0.f)
