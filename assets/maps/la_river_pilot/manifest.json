@@ -1,0 +1,67 @@
+{
+  "schema": "nf-map-pilot-v1",
+  "status": "PREPARATION_ONLY",
+  "design": [
+    "MAP-D01",
+    "MAP-D02"
+  ],
+  "identity": "Fictional future Los Angeles",
+  "reference": "LA River corridor",
+  "extent_m": {
+    "east_west": 500,
+    "north_south": 800
+  },
+  "scale": 1,
+  "area_of_interest": null,
+  "local_origin": null,
+  "projected_crs": null,
+  "vertical_datum": null,
+  "layers": [
+    {
+      "id": "roads",
+      "candidate": "US Census TIGER/Line",
+      "catalog": "https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html",
+      "status": "PENDING_SOURCE_VERIFICATION",
+      "license": null,
+      "version": null,
+      "sha256": null,
+      "transform": "preserve centerlines; author widths separately"
+    },
+    {
+      "id": "elevation",
+      "candidate": "USGS 3DEP",
+      "catalog": "https://www.usgs.gov/3d-elevation-program",
+      "status": "PENDING_SOURCE_VERIFICATION",
+      "license": null,
+      "version": null,
+      "sha256": null,
+      "transform": "adaptive resolution with measured simplification error"
+    },
+    {
+      "id": "building_footprints",
+      "candidate": null,
+      "status": "PENDING_ELIGIBLE_SOURCE",
+      "license": null,
+      "version": null,
+      "sha256": null,
+      "transform": "preserve eligible footprints; author fictional architecture"
+    }
+  ],
+  "allowed_licenses": [
+    "CC0-1.0",
+    "public-domain"
+  ],
+  "runtime_import_allowed": false,
+  "incumbent": "V15 movement laboratory",
+  "gates": [
+    "verified source versions and dataset-level license evidence",
+    "explicit AOI, CRS, local origin and vertical datum",
+    "reproducible checksums",
+    "1:1 metric geometry",
+    "finite valid geometry and topology",
+    "spawn, boundary and traversal validation",
+    "physical/visible correspondence",
+    "native screenshots and performance evidence"
+  ],
+  "notes": "No geographic data included. Null values are unresolved, not defaults. No runtime GIS dependency; no map expansion or new physics subsystem."
+}
