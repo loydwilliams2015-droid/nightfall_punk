@@ -309,8 +309,17 @@ static void draw_world(const V15Demo *demo) {
         const float cx = 0.5f*(c->min.x+c->max.x);
         const float cz = 0.5f*(c->min.z+c->max.z);
         const Vector3 p = {cx,0.5f*(c->min.y+c->max.y),cz};
-        const Color color = (int)i == demo->route.gate_collider
-            ? (Color){170,95,185,255} : (Color){90,99,108,255};
+        /* Diagnostic geometry palette: distinguish ground, walls, cover,
+           raised structures and traversal features without changing bounds. */
+        const float sx=c->max.x-c->min.x, sy=c->max.y-c->min.y, sz=c->max.z-c->min.z;
+        Color color={103,117,125,255};
+        if(sx>100.f && sz>100.f && sy<=1.f) color=(Color){39,48,53,255};
+        else if(sx>100.f || sz>100.f) color=(Color){76,91,98,255};
+        else if(c->kind==NF_COLLIDER_LADDER) color=(Color){190,148,83,255};
+        else if(c->kind==NF_COLLIDER_MOVING_PLATFORM) color=(Color){78,144,137,255};
+        else if(sy<=1.8f) color=(Color){131,111,91,255};
+        else if(c->min.y>0.f) color=(Color){93,129,137,255};
+        if((int)i==demo->route.gate_collider) color=(Color){170,95,185,255};
         DrawCube(p,c->max.x-c->min.x,c->max.y-c->min.y,c->max.z-c->min.z,color);
         DrawCubeWires(p,c->max.x-c->min.x,c->max.y-c->min.y,c->max.z-c->min.z,GRAY);
     }
