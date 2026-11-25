@@ -1,0 +1,46 @@
+name: Physics five-round closeout (demo handoff only)
+on:
+  pull_request:
+    paths:
+      - 'tools/physics_closeout.sh'
+      - 'src/shared/**'
+      - 'src/tests/**'
+      - 'tests/test_retc_h319_evidence_gate.py'
+      - 'tools/retc_h319_evidence_gate.py'
+      - 'CMakeLists.txt'
+      - '.github/workflows/physics-closeout.yml'
+      - 'docs/physics_closeout_map_handoff.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  closeout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate runner syntax
+        run: bash -n tools/physics_closeout.sh
+      - name: Five incremental physics closeout rounds
+        env:
+          CC: ${{ matrix.cc }}
+          JOBS: 2
+        run: |
+          set -euo pipefail
+          bash tools/physics_closeout.sh all
+          log="build/physics-closeout/$CC/closeout-all.log"
+          for n in 1 2 3 4 5; do
+            grep -Fx "ROUND $n PASS" "$log"
+          done
+          grep -Fx 'PHYSICS_CLOSEOUT status=PASS round=all map_handoff=REVIEW_REQUIRED production=HOLD' "$log"
+      - name: Preserve closeout evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: physics-closeout-${{ matrix.cc }}
+          path: build/physics-closeout/${{ matrix.cc }}/closeout-all.log
+          if-no-files-found: warn
