@@ -25,6 +25,8 @@ int main(void){
     uint64_t tick_ns[SAMPLES],stage_ns[SAMPLES];
     size_t resident_max=0u;
     unsigned pending_max=0u;
+    unsigned selective_queries=0u,eager_queries=0u;
+    uint64_t selective_ns=0u,eager_ns=0u;
     for(unsigned i=0;i<SAMPLES;++i){
         nf_world_init(w,42u);
         nf_world_add_collider(w,NF_COLLIDER_SOLID,(NfVec3){0,-.5f,0},(NfVec3){4,0,4});
@@ -63,6 +65,36 @@ int main(void){
         const size_t bytes=nf18a5_resident_bytes(g);
         if(bytes>resident_max)resident_max=bytes;
         if(plan.material.plan.pending>pending_max)pending_max=plan.material.plan.pending;
+        /* Matched source, both policies inspect the same consequential
+           point. Eager inspection also visits seven irrelevant free points.
+           This is a query-work control, not an eager physics engine. */
+        NfRetcH319Region selected[8]={0},eager[8]={0};
+        NfVec3 probes[8];
+        for(unsigned k=0;k<8u;++k){
+            selected[k].id=k+1u;selected[k].work_cost=1u;
+            selected[k].resident=1u;
+            selected[k].consequential=(uint8_t)(k==0u);
+            eager[k]=selected[k];eager[k].observed=1u;
+            probes[k]=(NfVec3){.5f+(float)(k%4u),.5f,.5f+(float)(k/4u)};
+        }
+        NfRetcH319OwnerFrontier comparison[2]={{0}};
+        for(unsigned order=0;order<2u;++order){
+            const unsigned mode=(i+order)%2u;
+            struct timespec begin,end;
+            CK(clock_gettime(CLOCK_MONOTONIC,&begin)==0);
+            CK(nf_retc_h319_owner_frontier_stage(w,r,w->tick,r->physical.world.revision,
+                g->global_revision,mode?eager:selected,probes,8u,8u,&comparison[mode]));
+            CK(clock_gettime(CLOCK_MONOTONIC,&end)==0&&ns(end)>=ns(begin));
+            if(mode)eager_ns+=ns(end)-ns(begin);
+            else selective_ns+=ns(end)-ns(begin);
+        }
+        CK(comparison[0].material.queried==1u&&comparison[1].material.queried==8u);
+        CK(comparison[0].material.evidence[0]==NF_RETC_H319_A5_FREE&&
+           comparison[1].material.evidence[0]==NF_RETC_H319_A5_FREE);
+        CK(comparison[0].source_tick==comparison[1].source_tick&&
+           comparison[0].material_epoch==comparison[1].material_epoch);
+        selective_queries+=comparison[0].material.queried;
+        eager_queries+=comparison[1].material.queried;
         CK(nf18a6_unbind_world_tick(w,r));
     }
     qsort(tick_ns,SAMPLES,sizeof tick_ns[0],compare);
@@ -75,5 +107,9 @@ int main(void){
            percentile(tick_ns,99),tick_ns[SAMPLES-1],percentile(stage_ns,50),
            percentile(stage_ns,95),percentile(stage_ns,99),stage_ns[SAMPLES-1],
            resident_max,pending_max);
+    printf("H319 QUERY_CONTROL samples=128 selective_queries=%u eager_queries=%u "
+           " selective_total_ns=%" PRIu64 " eager_total_ns=%" PRIu64
+           " relevant_evidence_match=1 full_physics_equivalence=0\n",
+           selective_queries,eager_queries,selective_ns,eager_ns);
     free(r);free(w);return 0;
 }
