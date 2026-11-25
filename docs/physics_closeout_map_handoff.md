@@ -52,3 +52,35 @@ Map-first engineering may commence on the verified headless baseline. Physics mo
 Run `CC=gcc bash tools/physics_closeout.sh all` and `CC=clang bash tools/physics_closeout.sh all` for baseline changes; individual rounds for local iteration. Record commit, compiler, tracked worktree provenance, exact selected CTest count, test outcomes, unresolved cases and log. Full clean-source results permit handoff review; individual rounds do not. Untracked source and native graphics require separate review. Preserve last known-good source revision and artifacts. Never promote partial evidence to production acceptance.
 
 Status: five-round automated closeout PASS on cited SHA; MAP-FIRST DEVELOPMENT; native P-DEMO UNVERIFIED; M18C.2 HOLD; M18C.3 OPEN.
+
+
+## Append-only design amendment MAP-D01 — 2026-11-24
+
+User-selected near-term map programme. This amendment supplements the preceding handoff; historical evidence and production HOLDs are unchanged.
+
+| ID | Decision (user-selected, verbatim) | Implementation jurisdiction |
+|---|---|---|
+| 01 | C — Central arena, progressively expanding | Develop central incumbent first; retain existing world bounds; expand only after local acceptance. |
+| 02 | D — Hybrid industrial arena | Combine arena circulation and industrial architectural modules within existing geometry. |
+| 03 | B — Moderate ramps and elevated platforms | Reuse existing ramp/platform assets; verify visual and collision correspondence. |
+| 04 | D — Hybrid, favoring biopunk industrial | Guide module silhouettes and later selective lighting; no new simulation mechanics implied. |
+| 05 | B — Handcrafted with reusable modules | Author a bounded module inventory from the incumbent; no procedural generator requirement. |
+| 06 | D — Landmarks with optional guidance | Establish recognizable route landmarks before optional guidance UI. |
+| 07 | C — Advanced concurrent physical interactions | Adopt as a map gameplay requirement. Integrate only already verified authoritative capabilities; isolate unaccepted interactions behind existing fail-closed boundaries. |
+| 08 | D — Consequential regions active; dormant summaries elsewhere | Reuse bounded frontier research; no permission or clearance inferred from scheduling; preserve canonical state. |
+| 09 | D — Geometry first, then selective lighting | Require geometry/collision parity before lighting and atmospheric polish. |
+| 10 | D — Objective-based demo with measured performance and safe boundaries | Require native objective, movement, safe exit, boundary checks and measured frame timing. |
+
+### Ordered near-term implementation
+
+- MAP-01: verify native screenshot correction and inspect three captures; inventory central collision and traversal assets.
+- MAP-02: establish handcrafted modular central arena with industrial landmarks, moderate vertical routes and matching collision geometry.
+- MAP-03: integrate existing accepted A6 reader interfaces; design concurrent interaction stations using existing capabilities; keep unsupported interactions unavailable or explicitly refused.
+- MAP-04: apply consequential-region scheduling only where existing evidence supports it; verify dormant summaries do not confer authority or false clearance.
+- MAP-05: add a bounded objective, optional route guidance and selective lighting after geometry verification; run native performance and safety acceptance.
+
+These are ordered work packages, not completed implementations. No additional engine, world expansion, procedural generation, or new physics subsystem is authorized by this amendment. Concurrent interaction is explicitly in scope, but full M18C.2 production joint B2/B3/A6 acceptance remains HOLD and M18C.3 durability OPEN. Map-first operations continue; only map-blocking physical defects or necessary existing-interface integrations reopen physics maintenance. Demo acceptance must report which concurrent interaction capabilities actually execute; no simulated success or substitution for production evidence.
+
+A6 remains sole tick publisher; map geometry proposals and optional guidance have no independent authority. Existing governor admission is computational delegation, not authorization. Human review and release ratification remain separate.
+
+Proposed implementation ordering above is engineering interpretation of the ten selections; the decisions themselves are user-authorized. No code, map geometry, or screenshot certification changes in this amendment.
