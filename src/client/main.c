@@ -8,6 +8,7 @@
 #include "nf_security.h"
 #include "nf_world.h"
 #include "raylib.h"
+#include "nf_map_d02_overlay.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -137,11 +138,20 @@ static Vector2 update_mouse_capture(NfMouseCapture *state,uint32_t now) {
 }
 
 int main(int argc,char **argv) {
+    /* Presentation-only diagnostic; capture refuses an unwelcomed client. */
+    const char *render_capture_path=NULL;
+    unsigned render_smoke_frames=0u,render_frames_seen=0u;
+    int render_smoke_failed=0;
+    const char *map_d02_visual=NULL;
     const char *host="127.0.0.1"; uint16_t port=NF_NET_DEFAULT_PORT; uint32_t sim_latency=0,sim_jitter=0; float sim_loss=0.0f;
-    for(int i=1;i<argc;++i){if(strcmp(argv[i],"--host")==0&&i+1<argc)host=argv[++i];else if(strcmp(argv[i],"--port")==0&&i+1<argc)port=(uint16_t)atoi(argv[++i]);else if(strcmp(argv[i],"--sim-latency")==0&&i+1<argc)sim_latency=(uint32_t)atoi(argv[++i]);else if(strcmp(argv[i],"--sim-jitter")==0&&i+1<argc)sim_jitter=(uint32_t)atoi(argv[++i]);else if(strcmp(argv[i],"--sim-loss")==0&&i+1<argc)sim_loss=(float)atof(argv[++i]);}
+    for(int i=1;i<argc;++i){if(strcmp(argv[i],"--render-capture")==0&&i+1<argc)render_capture_path=argv[++i];else if(strcmp(argv[i],"--render-smoke-frames")==0&&i+1<argc){char *end=NULL;unsigned long frames=strtoul(argv[++i],&end,10);if(!end||*end||frames<1ul||frames>600ul){fprintf(stderr,"invalid --render-smoke-frames (1..600)\n");return 2;}render_smoke_frames=(unsigned)frames;}else if(strcmp(argv[i],"--map-d02-visual")==0&&i+1<argc)map_d02_visual=argv[++i];else if(strcmp(argv[i],"--host")==0&&i+1<argc)host=argv[++i];else if(strcmp(argv[i],"--port")==0&&i+1<argc)port=(uint16_t)atoi(argv[++i]);else if(strcmp(argv[i],"--sim-latency")==0&&i+1<argc)sim_latency=(uint32_t)atoi(argv[++i]);else if(strcmp(argv[i],"--sim-jitter")==0&&i+1<argc)sim_jitter=(uint32_t)atoi(argv[++i]);else if(strcmp(argv[i],"--sim-loss")==0&&i+1<argc)sim_loss=(float)atof(argv[++i]);}
+    if(render_capture_path && !render_smoke_frames){fprintf(stderr,"--render-capture requires --render-smoke-frames\n");return 2;}
     if(!nf_security_init()||!nf_net_global_init()){fprintf(stderr,"nightfall: network init failed\n");return 1;}
     NfNetHost net; if(!nf_net_client_open(&net)){nf_net_global_shutdown();return 1;} nf_net_set_simulation(&net,sim_latency,sim_jitter,sim_loss); void *peer=nf_net_connect(&net,host,port);
     const int width=1280,height=720; InitWindow(width,height,"nightfall!punk v1.0 topographic lifeworld lab"); SetTargetFPS(144);
+    NfMapD02Overlay map_d02_overlay={0};
+    if(map_d02_visual&&!nf_map_d02_overlay_load(&map_d02_overlay,map_d02_visual))
+        fprintf(stderr,"MAP-D02 visual overlay rejected: %s\n",map_d02_visual);
     NfMouseCapture mouse_capture={.requested=true,.capture_after_ms=nf_net_now_ms()+80u};
     NfRegionGraph region_graph;nf_region_graph_init_spatial_lab(&region_graph);bool spatial_debug=false;
     NfWorld world;nf_world_init(&world,20260807u);nf_world_build_movement_lab(&world); NfPrediction prediction;nf_prediction_init(&prediction); NfEntityId player_id=0; uint8_t session_token[NF_NET_TOKEN_BYTES]={0}; bool welcomed=false,connected=false,strong_crypto=false; uint32_t next_reconnect_ms=0,last_snapshot_ms=0,last_ping_ms=0,last_pong_ms=0; uint64_t last_server_tick=0; uint32_t candidate_disagreements=0; RemoteActor remotes[NF_REMOTE_SLOTS]={0};
@@ -178,16 +188,30 @@ int main(int argc,char **argv) {
         accumulator+=frame_dt;bool first_tick=true;
         while(accumulator>=fixed_dt){if(!first_tick){input.jump_pressed=false;combat.fire_pressed=false;combat.reload_pressed=false;combat.weapon_slot=0u;}if(welcomed&&player_id!=0){NfInputCommand cmd=nf_prediction_make_command(&prediction,world.tick,input,combat);nf_world_set_input(&world,player_id,cmd.move);nf_world_step(&world,(float)fixed_dt);NfActor *local=nf_world_find_actor(&world,player_id);nf_prediction_record(&prediction,&cmd,local);NfInputBundle bundle={0};memcpy(bundle.session_token,session_token,NF_NET_TOKEN_BYTES);nf_prediction_build_redundant_bundle(&prediction,cmd.sequence,&bundle);uint8_t buf[NF_NET_MAX_PACKET_BYTES];size_t n=nf_protocol_encode_input(buf,sizeof(buf),&bundle);if(n)nf_net_send(&net,peer,NF_NET_CHANNEL_STATE,buf,n,false);if(first_tick){if(input.jump_pressed)jump_latched=false;if(combat.fire_pressed)fire_latched=false;if(combat.reload_pressed)reload_latched=false;if(combat.weapon_slot)weapon_latched=0u;}}accumulator-=fixed_dt;first_tick=false;}
         const NfActor *player=player_id?nf_world_find_actor_const(&world,player_id):NULL; Vector3 eye={0,2,-18},look={0,0,1}; if(player!=NULL){eye=(Vector3){player->transform.position.x,player->transform.position.y+player->movement.eye_height,player->transform.position.z};look=(Vector3){cosf(pitch)*sinf(yaw),sinf(pitch),cosf(pitch)*cosf(yaw)};} Camera3D camera={.position=eye,.target={eye.x+look.x,eye.y+look.y,eye.z+look.z},.up={0,1,0},.fovy=82,.projection=CAMERA_PERSPECTIVE};
-        BeginDrawing();ClearBackground((Color){18,20,24,255});BeginMode3D(camera);DrawGrid(60,1);draw_lifeworld_surface(predicted_darkness);if(spatial_debug)draw_region_graph(&region_graph);for(size_t i=0;i<world.collider_count;++i)draw_collider(&world.colliders[i]);for(size_t i=0;i<world.ramp_count;++i)draw_ramp(&world.ramps[i]);NfFaction local_faction=player?player->faction:NF_FACTION_PLAYER;for(size_t i=0;i<NF_REMOTE_SLOTS;++i){if(!remotes[i].active)continue;float a=clampf_local((float)(now-remotes[i].received_ms)/(1000.0f/(float)NF_NET_SNAPSHOT_HZ),0,1);Vector3 p={remotes[i].from.x+(remotes[i].to.x-remotes[i].from.x)*a,remotes[i].from.y+(remotes[i].to.y-remotes[i].from.y)*a,remotes[i].from.z+(remotes[i].to.z-remotes[i].from.z)*a};draw_remote_actor(p,&remotes[i],local_faction);}if(player!=NULL&&player->movement.candidate.active){const NfTraversalCandidate *c=&player->movement.candidate;Vector3 p={c->point.x,c->point.y+0.15f,c->point.z};DrawSphere(p,0.14f,candidate_color(c->type));}EndMode3D();
+        BeginDrawing();ClearBackground((Color){18,20,24,255});BeginMode3D(camera);DrawGrid(60,1);nf_map_d02_overlay_draw(&map_d02_overlay);draw_lifeworld_surface(predicted_darkness);if(spatial_debug)draw_region_graph(&region_graph);for(size_t i=0;i<world.collider_count;++i)draw_collider(&world.colliders[i]);for(size_t i=0;i<world.ramp_count;++i)draw_ramp(&world.ramps[i]);NfFaction local_faction=player?player->faction:NF_FACTION_PLAYER;for(size_t i=0;i<NF_REMOTE_SLOTS;++i){if(!remotes[i].active)continue;float a=clampf_local((float)(now-remotes[i].received_ms)/(1000.0f/(float)NF_NET_SNAPSHOT_HZ),0,1);Vector3 p={remotes[i].from.x+(remotes[i].to.x-remotes[i].from.x)*a,remotes[i].from.y+(remotes[i].to.y-remotes[i].from.y)*a,remotes[i].from.z+(remotes[i].to.z-remotes[i].from.z)*a};draw_remote_actor(p,&remotes[i],local_faction);}if(player!=NULL&&player->movement.candidate.active){const NfTraversalCandidate *c=&player->movement.candidate;Vector3 p={c->point.x,c->point.y+0.15f,c->point.z};DrawSphere(p,0.14f,candidate_color(c->type));}EndMode3D();
         DrawText("nightfall!punk v1.0 - TOPOGRAPHIC LIFEWORLD LAB",24,18,23,RAYWHITE);DrawText("red = Human Rivals | tall orange = Dream Cattlers | yellow = authoritative knee/foot weakness | F4 regions",24,47,15,GRAY);const char *status=welcomed?"AUTHORITATIVE + PREDICTED":(connected?"HANDSHAKE":"RECONNECTING");DrawText(TextFormat("NET %s | ENet RTT %u ms | effective ping %u ms | snapshot age %u ms",status,peer?nf_net_peer_rtt_ms(peer):0,last_pong_ms,last_snapshot_ms?now-last_snapshot_ms:0),24,79,16,welcomed?GREEN:YELLOW);DrawText(TextFormat("server tick %llu | client tick %llu | cmd %u ack %u pending %u",(unsigned long long)last_server_tick,(unsigned long long)world.tick,prediction.next_sequence?prediction.next_sequence-1:0,prediction.last_acknowledged,(prediction.next_sequence-1)-prediction.last_acknowledged),24,101,16,RAYWHITE);DrawText(TextFormat("prediction %.3fm | max %.3fm | visible corrections %u | resyncs %u | traversal disagreements %u",prediction.last_error,prediction.max_error,prediction.corrections,prediction.resyncs,candidate_disagreements),24,123,16,RAYWHITE);
         if(player!=NULL){float speed=sqrtf(player->transform.velocity.x*player->transform.velocity.x+player->transform.velocity.z*player->transform.velocity.z);DrawText(TextFormat("MOVE %s %.2f m/s | health %.0f | %s %u/%u | %s",nf_movement_mode_name(player->movement.mode),speed,player->health,nf_weapon_name(player->combat.weapon),player->combat.ammo_mag[player->combat.weapon],player->combat.reserve_ammo[player->combat.weapon],nf_weapon_state_name(player->combat.state)),24,145,16,RAYWHITE);if(!player->combat.alive)DrawText("DEAD - authoritative respawn pending",width/2-190,height/2+45,20,RED);}
         DrawText(TextFormat("combat events %u | last %s src %u tgt %u zone %u dmg %.0f rewind %ums",combat_events,nf_combat_event_name(last_event.type),last_event.source,last_event.target,(unsigned)last_event.hit_zone,last_event.amount,last_event.rewind_ms),24,167,16,last_event_ms&&now-last_event_ms<1500u?YELLOW:GRAY);DrawText(TextFormat("crypto %s | sim %ums +/- %ums %.1f%% loss",strong_crypto?"libsodium":"scaffold",sim_latency,sim_jitter,sim_loss),24,189,16,strong_crypto?SKYBLUE:ORANGE);DrawText(TextFormat("mouse %s | capture %s | delta %.1f %.1f | abs-fallback %u | F10 toggle",IsWindowFocused()?"FOCUSED":"UNFOCUSED",mouse_capture.captured?"ON":(mouse_capture.requested?"WAIT":"OFF"),mouse_capture.last_delta.x,mouse_capture.last_delta.y,mouse_capture.absolute_fallback_frames),24,211,16,mouse_capture.captured?GREEN:YELLOW);uint8_t local_region=player?nf_region_nearest(&region_graph,player->transform.position):NF_REGION_INVALID;DrawText(TextFormat("SPATIAL F4 %s | local region %u %s | graph %zu | graybox 0.40 km^2",spatial_debug?"ON":"OFF",local_region,nf_region_name(local_region),region_graph.count),24,233,16,spatial_debug?SKYBLUE:GRAY);DrawCircle(width/2,height/2,2,RAYWHITE);if(now<hit_marker_until)draw_hit_marker(width/2,height/2,GREEN);draw_weapon_hud(player,width,height,now<muzzle_until);if(now<damage_flash_until)DrawRectangleLinesEx((Rectangle){4,4,width-8,height-8},8,RED);DrawText("v1.0: haunted habitat is predicted from replicated occupation; dark smoke/residue are waterline, not hidden ecology truth",24,height-32,15,(Color){160,166,178,255});EndDrawing();
+        if(render_smoke_frames && ++render_frames_seen>=render_smoke_frames){
+            if(render_capture_path){
+                if(!welcomed || last_server_tick==0u){
+                    fprintf(stderr,"nightfall: capture refused: no authenticated network welcome/snapshot\n");
+                    render_smoke_failed=1;
+                } else {
+                    TakeScreenshot(render_capture_path);
+                    fprintf(stderr,"nightfall: diagnostic client screenshot %s; welcomed=%u server_tick=%llu\n",
+                        render_capture_path,(unsigned)welcomed,(unsigned long long)last_server_tick);
+                }
+            }
+            break;
+        }
     }
     if(peer!=NULL) nf_net_disconnect(peer,0);
     nf_net_flush(&net);
     EnableCursor();
+    nf_map_d02_overlay_unload(&map_d02_overlay);
     CloseWindow();
     nf_net_close(&net);
     nf_net_global_shutdown();
-    return 0;
+    return render_smoke_failed ? 3 : 0;
 }
